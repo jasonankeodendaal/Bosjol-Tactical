@@ -18,8 +18,17 @@ const firebaseConfig = {
 // This flag controls whether the app uses Firebase or mock data.
 export const USE_FIREBASE = process.env.VITE_USE_FIREBASE === 'true';
 
+export const isFirebaseConfigured = () => {
+    return !!(
+        firebaseConfig.apiKey &&
+        firebaseConfig.authDomain &&
+        firebaseConfig.projectId
+    );
+};
+
+
 // Conditionally initialize Firebase
-const app = USE_FIREBASE && firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null;
+const app = USE_FIREBASE && isFirebaseConfigured() ? initializeApp(firebaseConfig) : null;
 
 export const auth = app ? getAuth(app) : null;
 export const db = app ? getFirestore(app) : null;

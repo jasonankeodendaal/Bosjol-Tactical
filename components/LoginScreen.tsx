@@ -14,8 +14,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails }) => {
   const auth = useContext(AuthContext);
   if (!auth) throw new Error("AuthContext not found");
 
-  const [identifier, setIdentifier] = useState('');
-  const [pin, setPin] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -45,7 +45,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails }) => {
       setIsLoading(true);
       setError(null);
 
-      const success = await login(identifier.trim(), pin.trim());
+      const success = await login(email.trim(), password.trim());
       if (!success) {
           setError("Invalid credentials. Please check your details and try again.");
       }
@@ -107,19 +107,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails }) => {
         <form onSubmit={handleLogin} className="space-y-6">
             <Input 
                 icon={<UserIcon className="w-5 h-5"/>}
-                type="text"
-                placeholder="Email or Initials (e.g., JM)"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
+                type="email"
+                placeholder="Email Address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="email"
             />
              <Input 
                 icon={<KeyIcon className="w-5 h-5"/>}
                 type="password"
-                placeholder="PIN"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
             />
 
             {error && (

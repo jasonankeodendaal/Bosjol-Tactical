@@ -616,6 +616,7 @@ export const MOCK_COMPANY_DETAILS: CompanyDetails = {
     loginAudioUrl: '', // Default to empty
     playerDashboardBackgroundUrl: '',
     adminDashboardBackgroundUrl: '',
+    apkUrl: '',
     socialLinks: [
         { id: 'sl1', name: 'Facebook', url: 'https://facebook.com', iconUrl: 'https://img.icons8.com/fluent/48/000000/facebook-new.png' },
         { id: 'sl2', name: 'Instagram', url: 'https://instagram.com', iconUrl: 'https://img.icons8.com/fluent/48/000000/instagram-new.png' },

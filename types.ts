@@ -94,7 +94,7 @@ export interface Admin extends User {
 export interface AuthContextType {
   user: User | Player | Admin | null;
   isAuthenticated: boolean;
-  login: (identifier: string, pin: string) => boolean;
+  login: (identifier: string, pin: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (user: User | Player | Admin) => void; 
 }
@@ -317,6 +317,7 @@ export interface CompanyDetails {
     loginAudioUrl?: string;
     playerDashboardBackgroundUrl?: string;
     adminDashboardBackgroundUrl?: string;
+    apkUrl?: string;
     socialLinks: SocialLink[];
     bankInfo: {
         bankName: string;

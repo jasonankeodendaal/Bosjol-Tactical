@@ -2036,6 +2036,30 @@ const SettingsTab: React.FC<Pick<AdminDashboardProps, 'companyDetails' | 'setCom
                         </div>
                      </div>
                 </DashboardCard>
+                <DashboardCard title="Mobile App APK" icon={<PhoneIcon className="w-6 h-6"/>}>
+                    <div className="p-6 space-y-4">
+                        <p className="text-sm text-gray-400">
+                            Upload the .APK file for your Android mobile app. Players will be able to download it from the login screen.
+                        </p>
+                        <ImageUpload 
+                            onUpload={base64 => setDetails(d => ({...d, apkUrl: base64}))} 
+                            accept=".apk"
+                        />
+                        {details.apkUrl && (
+                            <div className="text-center bg-zinc-800/50 p-3 rounded-md">
+                                <p className="text-sm text-green-400 font-semibold">APK file is currently uploaded.</p>
+                                <Button 
+                                    variant="danger" 
+                                    size="sm" 
+                                    className="mt-2"
+                                    onClick={() => setDetails(d => ({...d, apkUrl: ''}))}
+                                >
+                                    Remove APK
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                </DashboardCard>
                 <DashboardCard title="Danger Zone" icon={<ExclamationTriangleIcon className="w-6 h-6"/>}>
                     <div className="p-6 space-y-4">
                         <p className="text-sm text-gray-400">This will permanently delete all players, events, financial records, and other transactional data. This action cannot be undone.</p>

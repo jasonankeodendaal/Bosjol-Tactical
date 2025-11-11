@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext } from '../auth/AuthContext';
 import { Button } from './Button';
-import { UserIcon, KeyIcon, ExclamationTriangleIcon } from './icons/Icons';
+import { UserIcon, KeyIcon, ExclamationTriangleIcon, CloudArrowDownIcon } from './icons/Icons';
 import { CompanyDetails } from '../types';
 import { Input } from './Input';
 
@@ -141,6 +141,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails }) => {
                 {isLoading ? 'Authenticating...' : 'ACCESS TERMINAL'}
             </Button>
         </form>
+
+        {companyDetails.apkUrl && (
+          <div className="mt-4">
+            <a 
+              href={companyDetails.apkUrl} 
+              download="BosjolTactical.apk"
+              className="inline-block w-full"
+            >
+              <Button variant="secondary" size="sm" className="w-full !py-2">
+                <CloudArrowDownIcon className="w-5 h-5 mr-2" />
+                Download Android APK
+              </Button>
+            </a>
+          </div>
+        )}
 
          {companyDetails.socialLinks.length > 0 && (
             <div className="mt-8 pt-6 border-t border-zinc-700/50">

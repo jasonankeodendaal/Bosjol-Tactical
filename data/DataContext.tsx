@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { USE_FIREBASE, db } from '../firebase';
-import { collection, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
+// FIX: Remove modular imports and use compat syntax provided by `db` object.
+import { writeBatch } from 'firebase/firestore';
 import * as mock from '../constants';
 import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge } from '../types';
 
@@ -12,8 +13,8 @@ function useCollection<T>(collectionName: string, mockData: T[], dependencies: a
     useEffect(() => {
         if (USE_FIREBASE && db) {
             setLoading(true);
-            const q = collection(db, collectionName);
-            const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const q = db.collection(collectionName);
+            const unsubscribe = q.onSnapshot((querySnapshot) => {
                 const items: T[] = [];
                 querySnapshot.forEach((doc) => {
                     items.push({ id: doc.id, ...doc.data() } as unknown as T);
@@ -34,8 +35,8 @@ function useCollection<T>(collectionName: string, mockData: T[], dependencies: a
     const updateData = async (newData: T[] | ((prev: T[]) => T[])) => {
         const finalData = typeof newData === 'function' ? newData(data) : newData;
         if (USE_FIREBASE && db) {
-            const batch = writeBatch(db);
-            const collectionRef = collection(db, collectionName);
+            const batch = db.batch();
+            const collectionRef = db.collection(collectionName);
             
             // This is a simple diffing approach. More complex logic might be needed for large datasets.
             const existingIds = new Set(data.map((d: any) => d.id));
@@ -43,13 +44,13 @@ function useCollection<T>(collectionName: string, mockData: T[], dependencies: a
 
             for (const item of finalData) {
                 const { id, ...itemData } = item as any;
-                const docRef = doc(collectionRef, id);
+                const docRef = collectionRef.doc(id);
                 batch.set(docRef, itemData);
             }
 
             for (const id of existingIds) {
                 if (!newIds.has(id)) {
-                     batch.delete(doc(collectionRef, id));
+                     batch.delete(collectionRef.doc(id));
                 }
             }
             await batch.commit();
@@ -70,9 +71,9 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
     useEffect(() => {
         if (USE_FIREBASE && db) {
             setLoading(true);
-            const docRef = doc(db, collectionName, docId);
-            const unsubscribe = onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
+            const docRef = db.collection(collectionName).doc(docId);
+            const unsubscribe = docRef.onSnapshot((docSnap) => {
+                if (docSnap.exists) {
                     setData(docSnap.data() as T);
                 } else {
                     console.warn(`Document ${docId} not found in ${collectionName}. Using mock data.`);
@@ -95,8 +96,8 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
         // This resolves the "expression is not callable" error with generic types.
         const finalData = typeof newData === 'function' ? (newData as (prev: T) => T)(data) : newData;
         if (USE_FIREBASE && db) {
-            const docRef = doc(db, collectionName, docId);
-            await setDoc(docRef, finalData);
+            const docRef = db.collection(collectionName).doc(docId);
+            await docRef.set(finalData);
         } else {
             setData(finalData);
         }
@@ -169,8 +170,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const collectionsToDelete = ['players', 'events', 'sponsors', 'vouchers', 'inventory', 'suppliers', 'transactions', 'locations', 'raffles'];
         for (const collectionName of collectionsToDelete) {
             try {
-                const querySnapshot = await getDocs(collection(db, collectionName));
-                const batch = writeBatch(db);
+                const querySnapshot = await db.collection(collectionName).get();
+                const batch = db.batch();
                 querySnapshot.forEach(doc => {
                     batch.delete(doc.ref);
                 });

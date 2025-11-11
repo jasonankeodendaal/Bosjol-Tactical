@@ -61,6 +61,92 @@ interface AdminDashboardProps {
 type Tab = 'Events' | 'Players' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Settings' | 'About';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
 
+const NewPlayerModal: React.FC<{
+    onClose: () => void;
+    players: Player[];
+    setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
+}> = ({ onClose, players, setPlayers }) => {
+    const [formData, setFormData] = useState({
+        name: '',
+        surname: '',
+        email: '',
+        phone: '',
+        pin: '',
+    });
+
+    const handleSave = () => {
+        // Validation
+        if (!formData.name || !formData.surname || !formData.email || !formData.pin) {
+            alert('Please fill in all required fields.');
+            return;
+        }
+        if (!/^\d{4}$/.test(formData.pin)) {
+            alert('PIN must be 4 digits.');
+            return;
+        }
+
+        // Auto-generate playerCode based on initials
+        const initials = (formData.name.charAt(0) + formData.surname.charAt(0)).toUpperCase();
+        const existingPlayersWithInitials = players.filter(p => p.playerCode.startsWith(initials));
+        
+        let newNumber = 1;
+        if (existingPlayersWithInitials.length > 0) {
+            const highestNumber = existingPlayersWithInitials.reduce((max, p) => {
+                const numPart = p.playerCode.substring(initials.length);
+                const num = parseInt(numPart, 10);
+                return !isNaN(num) && num > max ? num : max;
+            }, 0);
+            newNumber = highestNumber + 1;
+        }
+        
+        const newPlayerCode = `${initials}${String(newNumber).padStart(2, '0')}`;
+        
+        const newPlayer: Player = {
+            id: `p${Date.now()}`,
+            name: formData.name,
+            surname: formData.surname,
+            playerCode: newPlayerCode,
+            email: formData.email,
+            phone: formData.phone,
+            pin: formData.pin,
+            role: 'player',
+            callsign: formData.name, // Default callsign to first name
+            rank: MOCK_RANKS[0],
+            status: 'Active',
+            avatarUrl: `https://api.dicebear.com/8.x/bottts/svg?seed=${formData.name}${formData.surname}`, // Default avatar
+            stats: { kills: 0, deaths: 0, headshots: 0, gamesPlayed: 0, xp: 0 },
+            matchHistory: [],
+            xpAdjustments: [],
+            badges: [],
+            legendaryBadges: [],
+            loadout: {
+                primaryWeapon: 'M4A1 Assault Rifle',
+                secondaryWeapon: 'X12 Pistol',
+                lethal: 'Frag Grenade',
+                tactical: 'Flashbang',
+            },
+        };
+
+        setPlayers(prev => [...prev, newPlayer]);
+        onClose();
+    };
+
+    return (
+        <Modal isOpen={true} onClose={onClose} title="Create New Player">
+            <div className="space-y-4">
+                <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
+                <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({ ...f, surname: e.target.value }))} />
+                <Input label="Email" type="email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
+                <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} />
+                <Input label="4-Digit PIN" type="password" value={formData.pin} onChange={e => setFormData(f => ({ ...f, pin: e.target.value.replace(/\D/g, '') }))} maxLength={4} />
+            </div>
+            <div className="mt-6">
+                <Button className="w-full" onClick={handleSave}>Create Player</Button>
+            </div>
+        </Modal>
+    );
+};
+
 const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({ activeTab, setActiveTab }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const tabs: {name: Tab, icon: React.ReactNode}[] = [
@@ -821,26 +907,36 @@ const EventsTab: React.FC<Pick<AdminDashboardProps, 'events' | 'setEvents' | 'pl
     );
 };
 
-const PlayersTab: React.FC<{ players: Player[], onPlayerSelect: (id: string) => void }> = ({ players, onPlayerSelect }) => {
+const PlayersTab: React.FC<{ players: Player[], onPlayerSelect: (id: string) => void, setPlayers: React.Dispatch<React.SetStateAction<Player[]>> }> = ({ players, onPlayerSelect, setPlayers }) => {
+    const [isCreatingPlayer, setIsCreatingPlayer] = useState(false);
     
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-           {players.map(player => {
-               const rank = getRankForPlayer(player);
-               return (
-                    <div key={player.id} onClick={() => onPlayerSelect(player.id)} className="bg-zinc-800/50 p-4 rounded-lg flex items-center gap-4 cursor-pointer hover:bg-zinc-800 transition-colors border border-transparent hover:border-red-600/50">
-                        <img src={player.avatarUrl} alt={player.name} className="w-16 h-16 rounded-full object-cover border-2 border-zinc-700"/>
-                        <div>
-                            <p className="font-bold text-lg text-white">{player.name} {player.surname}</p>
-                            <p className="text-sm text-gray-400">"{player.callsign}"</p>
-                            <div className="flex items-center mt-1">
-                                <img src={rank.iconUrl} alt={rank.name} className="w-5 h-5 mr-1.5" />
-                                <span className="text-xs font-semibold text-red-400">{rank.name}</span>
+        <div>
+            {isCreatingPlayer && <NewPlayerModal onClose={() => setIsCreatingPlayer(false)} players={players} setPlayers={setPlayers} />}
+            <div className="flex justify-end mb-4">
+                <Button onClick={() => setIsCreatingPlayer(true)}>
+                    <PlusIcon className="w-5 h-5 mr-2" />
+                    New Player
+                </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {players.map(player => {
+                const rank = getRankForPlayer(player);
+                return (
+                        <div key={player.id} onClick={() => onPlayerSelect(player.id)} className="bg-zinc-800/50 p-4 rounded-lg flex items-center gap-4 cursor-pointer hover:bg-zinc-800 transition-colors border border-transparent hover:border-red-600/50">
+                            <img src={player.avatarUrl} alt={player.name} className="w-16 h-16 rounded-full object-cover border-2 border-zinc-700"/>
+                            <div>
+                                <p className="font-bold text-lg text-white">{player.name} {player.surname}</p>
+                                <p className="text-sm text-gray-400">"{player.callsign}"</p>
+                                <div className="flex items-center mt-1">
+                                    <img src={rank.iconUrl} alt={rank.name} className="w-5 h-5 mr-1.5" />
+                                    <span className="text-xs font-semibold text-red-400">{rank.name}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-               )
-            })}
+                )
+                })}
+            </div>
         </div>
     )
 }
@@ -2279,7 +2375,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <div className="p-4 sm:p-6 lg:p-8">
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             {activeTab === 'Events' && <EventsTab events={events} setEvents={setEvents} players={players} vouchers={vouchers} setVouchers={setVouchers} setPlayers={setPlayers} gamificationSettings={gamificationSettings} inventory={inventory} companyDetails={companyDetails} setTransactions={setTransactions} onManageEvent={handleManageEvent} />}
-            {activeTab === 'Players' && <PlayersTab players={players} onPlayerSelect={handlePlayerSelect} />}
+            {activeTab === 'Players' && <PlayersTab players={players} onPlayerSelect={handlePlayerSelect} setPlayers={setPlayers} />}
             {activeTab === 'Progression' && <ProgressionTab ranks={ranks} setRanks={setRanks} badges={badges} setBadges={setBadges} gamificationSettings={gamificationSettings} setGamificationSettings={setGamificationSettings} legendaryBadges={legendaryBadges} setLegendaryBadges={setLegendaryBadges} setPlayers={setPlayers} />}
             {activeTab === 'Inventory' && <InventoryTab inventory={inventory} setInventory={setInventory} suppliers={suppliers} />}
             {activeTab === 'Locations' && <LocationsTab locations={locations} setLocations={setLocations} />}

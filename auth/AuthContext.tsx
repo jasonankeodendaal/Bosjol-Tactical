@@ -1,9 +1,11 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
+// FIX: Use compat imports to align with v8 syntax and resolve module export error.
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
 import type { User, AuthContextType, Player, Admin } from '../types';
 import { MOCK_PLAYERS, MOCK_ADMIN } from '../constants';
 import { auth, db, USE_FIREBASE } from '../firebase';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as FirebaseUser } from 'firebase/auth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -18,24 +20,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | Player | Admin | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // This effect now only handles session persistence for the admin via Firebase Auth.
-    // It ensures that only the admin can have a persistent session through Firebase.
     useEffect(() => {
-        if (!USE_FIREBASE || !auth) {
+        if (!USE_FIREBASE || !auth || !db) {
             setLoading(false);
             return;
         }
 
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+        const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: firebase.User | null) => {
             if (firebaseUser && firebaseUser.email?.toLowerCase() === ADMIN_EMAIL) {
-                // If a Firebase user is logged in and it's the admin, set the user state.
-                setUser(MOCK_ADMIN);
+                // Firebase user is the admin, fetch their profile from Firestore 'admins' collection.
+                try {
+                    const adminsRef = db.collection("admins");
+                    // Assuming there's only one admin document or we can find it by email
+                    const q = adminsRef.where("email", "==", firebaseUser.email).limit(1);
+                    const querySnapshot = await q.get();
+                    
+                    if (!querySnapshot.empty) {
+                        const adminDoc = querySnapshot.docs[0];
+                        setUser({ id: adminDoc.id, ...adminDoc.data() } as Admin);
+                    } else {
+                        console.error("Admin user authenticated but no profile found in Firestore 'admins' collection.");
+                        await auth.signOut(); // Sign out to prevent inconsistent state
+                        setUser(null);
+                    }
+                } catch (error) {
+                    console.error("Error fetching admin profile from Firestore:", error);
+                    await auth.signOut();
+                    setUser(null);
+                }
             } else if (firebaseUser) {
-                // If a non-admin Firebase user is somehow logged in, sign them out to prevent conflicts.
-                await signOut(auth);
+                // If a non-admin Firebase user is somehow logged in, sign them out.
+                await auth.signOut();
                 setUser(null);
             } else {
-                // No Firebase user, so no admin session.
+                // No Firebase user.
                 setUser(null);
             }
             setLoading(false);
@@ -44,16 +62,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return () => unsubscribe();
     }, []);
 
-    const login = async (email: string, password: string): Promise<boolean> => {
-        const cleanEmail = email.trim().toLowerCase();
+    const login = async (username: string, password: string): Promise<boolean> => {
+        const cleanUsername = username.trim();
         const cleanPassword = password.trim();
 
-        if (cleanEmail === ADMIN_EMAIL) {
+        if (cleanUsername.toLowerCase() === ADMIN_EMAIL) {
             // --- ADMIN LOGIN LOGIC ---
             if (USE_FIREBASE && auth) {
                 try {
-                    await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
-                    // onAuthStateChanged will set the user state upon successful login
+                    await auth.signInWithEmailAndPassword(cleanUsername, cleanPassword);
+                    // onAuthStateChanged will fetch the profile and set the user state.
                     return true;
                 } catch (error) {
                     console.error("Admin Firebase login failed:", error);
@@ -70,24 +88,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // --- PLAYER LOGIN LOGIC ---
             if (USE_FIREBASE && db) {
                  try {
-                    const playersRef = collection(db, "players");
-                    const q = query(playersRef, where("email", "==", cleanEmail));
-                    const querySnapshot = await getDocs(q);
+                    const playersRef = db.collection("players");
+                    const q = playersRef.where("playerCode", "==", cleanUsername.toUpperCase());
+                    const querySnapshot = await q.get();
                     
                     if (querySnapshot.empty) {
-                        console.log('No player found with that email.');
+                        console.log('No player found with that player code.');
                         return false;
                     }
 
                     const playerDoc = querySnapshot.docs[0];
                     const playerData = { id: playerDoc.id, ...playerDoc.data() } as Player;
                     
-                    // Check if the provided password matches the player's PIN
                     if (playerData.pin === cleanPassword) {
                         setUser(playerData);
                         return true;
                     } else {
-                        console.log('Incorrect password for player.');
+                        console.log('Incorrect PIN for player.');
                         return false;
                     }
                 } catch (error) {
@@ -96,7 +113,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 }
             } else { // Mock player login
                 const player = MOCK_PLAYERS.find(p => 
-                    p.email.toLowerCase() === cleanEmail && p.pin === cleanPassword
+                    p.playerCode.toLowerCase() === cleanUsername.toLowerCase() && p.pin === cleanPassword
                 );
                 if (player) {
                     setUser(player);
@@ -109,10 +126,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const logout = async () => {
         if (USE_FIREBASE && auth && auth.currentUser) {
-            // Only signs out the admin from Firebase Auth
-            await signOut(auth);
+            await auth.signOut();
         }
-        // Always clear local user state for both players and admins
         setUser(null);
     };
 

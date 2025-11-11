@@ -94,7 +94,7 @@ export interface Admin extends User {
 export interface AuthContextType {
   user: User | Player | Admin | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (user: User | Player | Admin) => void; 
 }

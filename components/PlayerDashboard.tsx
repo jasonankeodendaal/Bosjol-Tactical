@@ -678,11 +678,13 @@ const LeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players'>>
         return sortedPlayers.slice(0, limit);
     }, [limit, sortedPlayers, rest]);
 
-    const listVariants = {
+    // FIX: Explicitly type framer-motion variants to satisfy TypeScript's strict type checking.
+    const listVariants: Variants = {
         visible: { transition: { staggerChildren: 0.05 } },
         hidden: {},
     };
-    const itemVariants = {
+    // FIX: Explicitly type framer-motion variants to satisfy TypeScript's strict type checking.
+    const itemVariants: Variants = {
         visible: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
         hidden: { opacity: 0, x: -20 },
     };

@@ -116,12 +116,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails }) => {
              <Input 
                 icon={<KeyIcon className="w-5 h-5"/>}
                 type="password"
-                placeholder="4-Digit PIN"
+                placeholder="PIN"
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
-                maxLength={4}
-                pattern="\d{4}"
-                title="PIN must be 4 digits"
                 required
             />
 

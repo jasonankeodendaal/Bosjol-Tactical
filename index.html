@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bosjol Tactical Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^12.23.24",
+    "@phosphor-icons/react": "https://aistudiocdn.com/@phosphor-icons/react@^2.1.10",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/"
+  }
+}
+</script>
+    <style type="text/tailwindcss">
+      body {
+        font-family: 'Chakra Petch', sans-serif;
+        background-color: #0A0A0A;
+        background-image: url('https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png');
+        background-attachment: fixed;
+      }
+      /* Custom scrollbar for a more tactical feel */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #18181b; /* zinc-900 */
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #b91c1c; /* red-700 */
+        border-radius: 2px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #dc2626; /* red-600 */
+      }
+      .glitch-text {
+        position: relative;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .glitch-text:before,
+      .glitch-text:after {
+        content: attr(data-text);
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: transparent; /* Use parent background */
+        overflow: hidden;
+        color: #ef4444; /* red-500 */
+      }
+      .glitch-text:before {
+        left: 3px;
+        text-shadow: -2px 0 #ff00ff; /* Magenta */
+        animation: glitch-anim-1 2s linear infinite reverse;
+      }
+      .glitch-text:after {
+        left: -3px;
+        text-shadow: -2px 0 #00ffff; /* Cyan */
+        animation: glitch-anim-2 2s linear infinite reverse;
+      }
+      @keyframes glitch-anim-1 {
+        0% { clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%); }
+        10% { clip-path: polygon(0 40%, 100% 40%, 100% 42%, 0 42%); }
+        20% { clip-path: polygon(0 62%, 100% 62%, 100% 65%, 0 65%); }
+        30% { clip-path: polygon(0 22%, 100% 22%, 100% 25%, 0 25%); }
+        40% { clip-path: polygon(0 82%, 100% 82%, 100% 85%, 0 85%); }
+        50% { clip-path: polygon(0 45%, 100% 45%, 100% 47%, 0 47%); }
+        60% { clip-path: polygon(0 14%, 100% 14%, 100% 17%, 0 17%); }
+        70% { clip-path: polygon(0 92%, 100% 92%, 100% 95%, 0 95%); }
+        80% { clip-path: polygon(0 33%, 100% 33%, 100% 35%, 0 35%); }
+        90% { clip-path: polygon(0 72%, 100% 72%, 100% 75%, 0 75%); }
+        100% { clip-path: polygon(0 52%, 100% 52%, 100% 55%, 0 55%); }
+      }
+      @keyframes glitch-anim-2 {
+        0% { clip-path: polygon(0 5%, 100% 5%, 100% 6%, 0 6%); }
+        15% { clip-path: polygon(0 42%, 100% 42%, 100% 43%, 0 43%); }
+        25% { clip-path: polygon(0 65%, 100% 65%, 100% 66%, 0 66%); }
+        35% { clip-path: polygon(0 25%, 100% 25%, 100% 26%, 0 26%); }
+        45% { clip-path: polygon(0 85%, 100% 85%, 100% 86%, 0 86%); }
+        55% { clip-path: polygon(0 47%, 100% 47%, 100% 48%, 0 48%); }
+        65% { clip-path: polygon(0 17%, 100% 17%, 100% 18%, 0 18%); }
+        75% { clip-path: polygon(0 95%, 100% 95%, 100% 96%, 0 96%); }
+        85% { clip-path: polygon(0 35%, 100% 35%, 100% 36%, 0 36%); }
+        95% { clip-path: polygon(0 75%, 100% 75%, 100% 76%, 0 76%); }
+        100% { clip-path: polygon(0 55%, 100% 55%, 100% 56%, 0 56%); }
+      }
+      @keyframes scroll {
+        from { transform: translateX(0); }
+        to { transform: translateX(-50%); }
+      }
+      .scrolling-wrapper {
+        animation: scroll 40s linear infinite;
+      }
+      @keyframes prestige-glow {
+        0% { box-shadow: 0 0 5px #ef4444, 0 0 10px #ef4444, 0 0 15px #b91c1c; }
+        50% { box-shadow: 0 0 10px #ef4444, 0 0 20px #b91c1c, 0 0 30px #b91c1c; }
+        100% { box-shadow: 0 0 5px #ef4444, 0 0 10px #ef4444, 0 0 15px #b91c1c; }
+      }
+      .prestige-rank {
+        animation: prestige-glow 3s ease-in-out infinite;
+        border-color: #ef4444 !important; /* red-500 */
+        background: radial-gradient(circle, rgba(153,27,27,0.2) 0%, rgba(10,10,10,0) 70%);
+      }
+      @keyframes legendary-glow {
+        0% { box-shadow: 0 0 5px #facc15, 0 0 10px #facc15, 0 0 15px #ca8a04; }
+        50% { box-shadow: 0 0 10px #facc15, 0 0 20px #ca8a04, 0 0 30px #ca8a04; }
+        100% { box-shadow: 0 0 5px #facc15, 0 0 10px #facc15, 0 0 15px #ca8a04; }
+      }
+      .legendary-badge-item {
+        animation: legendary-glow 2.5s ease-in-out infinite;
+        border-color: #facc15 !important; /* amber-400 */
+        background: radial-gradient(circle, rgba(202,138,4,0.2) 0%, rgba(10,10,10,0) 70%);
+      }
+      /* Leaderboard styles */
+      .leaderboard-podium-bg {
+        background: linear-gradient(180deg, #4c0a77 0%, #a21caf 60%, #e11d48 100%);
+        box-shadow: inset 0 -10px 20px -10px rgba(0,0,0,0.5);
+        padding: 1rem 0;
+      }
+      .podium-container {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 0.5rem;
+        max-width: 500px;
+        margin: 0 auto;
+        height: 250px;
+        position: relative;
+      }
+      .podium-item {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        width: 33.33%;
+        text-align: center;
+        transition: transform 0.3s ease;
+      }
+      .podium-item:hover {
+        transform: translateY(-10px);
+      }
+      .podium-base {
+        background: linear-gradient(to top, rgba(255,255,255,0.05), rgba(255,255,255,0.15));
+        backdrop-filter: blur(5px);
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        width: 100%;
+        color: white;
+        font-weight: bold;
+        font-size: 3rem; /* Bigger rank number */
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-bottom: none;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        padding-bottom: 0.5rem;
+      }
+      .podium-1 { order: 2; z-index: 10; }
+      .podium-2 { order: 1; }
+      .podium-3 { order: 3; }
+      
+      .podium-1 .podium-base { height: 150px; }
+      .podium-2 .podium-base { height: 110px; }
+      .podium-3 .podium-base { height: 90px; }
+      
+      .podium-avatar-wrapper {
+        position: relative;
+        z-index: 10;
+        margin-bottom: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .podium-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 9999px;
+        border: 4px solid white;
+        object-fit: cover;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        margin: 0 auto;
+      }
+      .podium-1 .podium-avatar {
+        width: 96px;
+        height: 96px;
+        border-color: #facc15;
+      }
+      .crown-icon {
+        position: absolute;
+        top: -18px;
+        left: 50%;
+        transform: translateX(-50%) rotate(-15deg);
+        color: #facc15;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+      }
+    </style>
+    <style>
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #printable-report, #printable-report * {
+          visibility: visible;
+        }
+        #printable-report {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          color: black;
+          background: white;
+        }
+        @page {
+          size: auto;
+          margin: 0.5in;
+        }
+        .no-print {
+            display: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-zinc-950 h-full">
+    <div id="root" class="h-full"></div>
+    <div id="printable-report-container" class="no-print"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

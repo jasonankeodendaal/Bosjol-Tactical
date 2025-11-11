@@ -1,0 +1,5 @@
+{
+  "name": "Bosjol Tactical Dashboard",
+  "description": "A comprehensive dashboard for players and administrators of Bosjol Tactical. Players can track their progress, view events, and rent gear, while admins can manage events, pricing, and player progression.",
+  "requestFramePermissions": []
+}

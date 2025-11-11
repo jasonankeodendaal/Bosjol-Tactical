@@ -40,19 +40,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails }) => {
     };
   }, [companyDetails.loginAudioUrl]);
   
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
       e.preventDefault();
       setIsLoading(true);
       setError(null);
 
-      // Simulate network delay for better UX
-      setTimeout(() => {
-        const success = login(identifier.trim(), pin.trim());
-        if (!success) {
-            setError("Invalid credentials. Please check your details and try again.");
-        }
-        setIsLoading(false);
-      }, 500);
+      const success = await login(identifier.trim(), pin.trim());
+      if (!success) {
+          setError("Invalid credentials. Please check your details and try again.");
+      }
+      setIsLoading(false);
   }
 
   const renderBackground = () => {

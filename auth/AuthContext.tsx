@@ -3,7 +3,7 @@ import type { User, AuthContextType, Player, Admin } from '../types';
 import { MOCK_PLAYERS, MOCK_ADMIN } from '../constants';
 import { auth, db, USE_FIREBASE } from '../firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, getDocs } from 'firebase/firestore';
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -16,7 +16,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!USE_FIREBASE) {
+        if (!USE_FIREBASE || !auth) {
             setLoading(false);
             return;
         }
@@ -50,33 +50,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const cleanIdentifier = identifier.trim();
         const cleanPin = pin.trim();
 
-        if (USE_FIREBASE) {
+        if (USE_FIREBASE && db && auth) {
             try {
-                let emailToLogin: string | undefined;
-                if (cleanIdentifier.toLowerCase() === 'bosjol@gmail.com') {
-                    emailToLogin = 'bosjol@gmail.com';
-                } else {
-                    const player = MOCK_PLAYERS.find(p => {
-                        const playerIdentifier = (p.name.charAt(0) + p.surname.charAt(0)).toUpperCase();
-                        return playerIdentifier === cleanIdentifier.toUpperCase();
-                    });
-                    if (player) {
-                        emailToLogin = player.email;
-                    }
+                // Admin Login or Player Login via Email
+                if (cleanIdentifier.includes('@')) {
+                    await signInWithEmailAndPassword(auth, cleanIdentifier, cleanPin);
+                    return true;
                 }
 
-                if (!emailToLogin) {
-                    console.error("Could not find email for identifier:", cleanIdentifier);
+                // Player Login via Initials
+                const playersRef = collection(db, "players");
+                const q = query(playersRef);
+                const querySnapshot = await getDocs(q);
+                
+                let foundPlayer: Player | null = null;
+                querySnapshot.forEach((doc) => {
+                    const playerData = doc.data() as Omit<Player, 'id'>;
+                    if (playerData.name && playerData.surname) {
+                        const playerIdentifier = (playerData.name.charAt(0) + playerData.surname.charAt(0)).toUpperCase();
+                        if (playerIdentifier === cleanIdentifier.toUpperCase() && playerData.pin === cleanPin) {
+                            foundPlayer = { id: doc.id, ...playerData } as Player;
+                        }
+                    }
+                });
+
+                if (foundPlayer) {
+                    await signInWithEmailAndPassword(auth, foundPlayer.email, foundPlayer.pin);
+                    return true;
+                } else {
+                    console.error("No player found with those credentials.");
                     return false;
                 }
-                
-                await signInWithEmailAndPassword(auth, emailToLogin, cleanPin);
-                return true;
+
             } catch (error) {
                 console.error("Firebase login failed:", error);
                 return false;
             }
-
         } else {
             // Mock Login Logic
             if (cleanIdentifier.toLowerCase() === 'bosjol@gmail.com' && cleanPin === '1234') {
@@ -96,7 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     const logout = async () => {
-        if (USE_FIREBASE) {
+        if (USE_FIREBASE && auth) {
             await signOut(auth);
         }
         setUser(null);

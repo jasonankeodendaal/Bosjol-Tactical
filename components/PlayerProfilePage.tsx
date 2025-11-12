@@ -114,7 +114,6 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
     };
 
     const handleAwardXp = (amount: number, reason: string) => {
-        // FIX: The date object was missing the `date` property key.
         const newAdjustment: XpAdjustment = {
             amount,
             reason,

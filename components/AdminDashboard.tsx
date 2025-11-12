@@ -1972,7 +1972,6 @@ const InventoryTab: React.FC<Pick<AdminDashboardProps, 'inventory' | 'setInvento
 }
 
 const GamificationTab: React.FC<Pick<AdminDashboardProps, 'gamificationSettings' | 'setGamificationSettings'>> = ({ gamificationSettings, setGamificationSettings }) => {
-    // FIX: Initialize state with `gamificationSettings || []` to prevent a crash if the prop is undefined, which can happen with async data. This also helps TypeScript infer the correct array type, fixing the '.map' error.
     const [settings, setSettings] = useState<GamificationRule[]>(gamificationSettings || []);
 
     const handleSave = () => {

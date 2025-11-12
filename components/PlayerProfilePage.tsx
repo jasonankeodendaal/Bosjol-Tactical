@@ -86,6 +86,8 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
     const [formData, setFormData] = useState({ ...player });
     const [isAwardingXp, setIsAwardingXp] = useState(false);
     const [selectedLegendaryBadge, setSelectedLegendaryBadge] = useState('');
+    const [showPin, setShowPin] = useState(false);
+    const [isResettingPin, setIsResettingPin] = useState(false);
     
     useEffect(() => {
         setFormData(player);
@@ -112,6 +114,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
     };
 
     const handleAwardXp = (amount: number, reason: string) => {
+        // FIX: The date object was missing the `date` property key.
         const newAdjustment: XpAdjustment = {
             amount,
             reason,
@@ -163,10 +166,56 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
     const availableBadgesToAward = legendaryBadges.filter(
         globalBadge => !player.legendaryBadges.some(playerBadge => playerBadge.id === globalBadge.id)
     );
+    
+    const handleResetPin = (newPin: string) => {
+        const updatedPlayer: Player = { ...player, pin: newPin };
+        onUpdatePlayer(updatedPlayer);
+        setIsResettingPin(false);
+    };
+
+    const ResetPinModal: React.FC<{ onClose: () => void, onSave: (newPin: string) => void }> = ({ onClose, onSave }) => {
+        const [newPin, setNewPin] = useState('');
+        const isValid = /^\d{4}$/.test(newPin);
+
+        const handleSave = () => {
+            if (isValid) {
+                onSave(newPin);
+            }
+        };
+
+        return (
+            <Modal isOpen={true} onClose={onClose} title={`Reset PIN for ${player.name}`}>
+                <div className="space-y-4">
+                    <Input
+                        label="New 4-Digit PIN"
+                        type="text"
+                        value={newPin}
+                        onChange={e => {
+                            const val = e.target.value.replace(/\D/g, '');
+                            if (val.length <= 4) {
+                                setNewPin(val);
+                            }
+                        }}
+                        maxLength={4}
+                        placeholder="Enter a new 4-digit PIN"
+                        inputMode="numeric"
+                        pattern="\d{4}"
+                    />
+                </div>
+                <div className="mt-6">
+                    <Button onClick={handleSave} className="w-full" disabled={!isValid}>
+                        Confirm Reset
+                    </Button>
+                </div>
+            </Modal>
+        );
+    };
+
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             {isAwardingXp && <AwardXpModal onClose={() => setIsAwardingXp(false)} onSave={handleAwardXp} />}
+            {isResettingPin && <ResetPinModal onClose={() => setIsResettingPin(false)} onSave={handleResetPin} />}
             <header className="flex items-center mb-6">
                 <Button onClick={onBack} variant="secondary" size="sm" className="mr-4">
                     <ArrowLeftIcon className="w-5 h-5" />
@@ -195,6 +244,20 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                                     <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))}/>
                                     <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({...f, surname: e.target.value}))}/>
                                     <Input label="Callsign" value={formData.callsign} onChange={e => setFormData(f => ({...f, callsign: e.target.value}))}/>
+                                    <Input
+                                        label="4-Digit PIN"
+                                        type="text"
+                                        value={formData.pin}
+                                        onChange={e => {
+                                            const val = e.target.value.replace(/\D/g, '');
+                                            if (val.length <= 4) {
+                                                setFormData(f => ({ ...f, pin: val }));
+                                            }
+                                        }}
+                                        maxLength={4}
+                                        pattern="\d{4}"
+                                        inputMode="numeric"
+                                    />
                                     <Input label="Email" value={formData.email} onChange={e => setFormData(f => ({...f, email: e.target.value}))}/>
                                     <Input label="Phone" value={formData.phone} onChange={e => setFormData(f => ({...f, phone: e.target.value}))}/>
                                     <Input label="Address" value={formData.address} onChange={e => setFormData(f => ({...f, address: e.target.value}))}/>
@@ -223,6 +286,18 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                             ) : (
                                 <>
                                     <p><strong className="text-gray-400">Code:</strong> <span className="font-mono text-red-400">{player.playerCode}</span> <InfoTooltip text="Unique code for event check-in and live stat tracking." /></p>
+                                    <div className="bg-zinc-800/50 p-3 rounded-md border border-zinc-700/50">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-400">PIN Code</label>
+                                                <p className="font-mono text-lg text-red-400 tracking-widest">{showPin ? player.pin : '****'}</p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Button size="sm" variant="secondary" onClick={() => setShowPin(!showPin)}>{showPin ? 'Hide' : 'Show'}</Button>
+                                                <Button size="sm" variant="secondary" onClick={() => setIsResettingPin(true)}>Reset</Button>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <p><strong className="text-gray-400">Email:</strong> {player.email}</p>
                                     <p><strong className="text-gray-400">Phone:</strong> {player.phone}</p>
                                     <p><strong className="text-gray-400">Address:</strong> {player.address || 'N/A'}</p>

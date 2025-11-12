@@ -42,6 +42,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails }) => {
   
   const handleLogin = async (e: React.FormEvent) => {
       e.preventDefault();
+
+      try {
+        const audio = new Audio('https://www.myinstants.com/media/sounds/cod-mw-ui-sfx-2.mp3');
+        audio.volume = 0.5;
+        audio.play();
+      } catch (err) {
+        console.error("Failed to play login sound:", err);
+      }
+
       setIsLoading(true);
       setError(null);
 

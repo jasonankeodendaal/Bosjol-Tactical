@@ -611,7 +611,7 @@ export const MOCK_COMPANY_DETAILS: CompanyDetails = {
     website: 'https://www.bosjol-tactical.com',
     regNumber: '2023/123456/07',
     vatNumber: '9876543210',
-    logoUrl: 'https://img.logoipsum.com/297.svg',
+    logoUrl: 'https://i.ibb.co/HL2Lc6Rz/file-0000000043b061f7b655a0077343e063.png',
     loginBackgroundUrl: '', // Default to empty, let user upload
     loginAudioUrl: '', // Default to empty
     playerDashboardBackgroundUrl: '',

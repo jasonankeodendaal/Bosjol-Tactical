@@ -1,7 +1,5 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { USE_FIREBASE, db } from '../firebase';
-// FIX: Remove modular imports and use compat syntax provided by `db` object.
-import { writeBatch } from 'firebase/firestore';
 import * as mock from '../constants';
 import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge } from '../types';
 

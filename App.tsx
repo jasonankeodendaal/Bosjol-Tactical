@@ -75,6 +75,7 @@ const AppContent: React.FC = () => {
         locations, setLocations,
         raffles, setRaffles,
         deleteAllData,
+        seedInitialData,
         loading
     } = data;
     
@@ -201,6 +202,7 @@ const AppContent: React.FC = () => {
                             raffles={raffles}
                             setRaffles={setRaffles}
                             onDeleteAllData={handleDeleteAllData}
+                            onSeedInitialData={seedInitialData}
                         />
                     }
                 </div>

@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 import React, { useContext, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext } from '../auth/AuthContext';

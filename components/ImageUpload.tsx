@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 import React, { useState, useRef, useCallback } from 'react';
 import { UploadCloudIcon } from './icons/Icons';
 
@@ -49,16 +50,4 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept }) => 
         onDrop={onDrop}
         onDragOver={onDragOver}
       >
-        <div className="flex flex-col items-center justify-center p-5 text-center">
-          <UploadCloudIcon className="w-8 h-8 mb-4 text-gray-500" />
-          <p className="mb-2 text-sm text-gray-400">
-            <span className="font-semibold">Click to upload</span> or drag & drop
-          </p>
-          <p className="text-xs text-gray-500 uppercase">{accept.replace('image/', '').replace('audio/', '').replace('video/', '')}</p>
-          {fileName && <p className="text-xs text-amber-400 mt-2 truncate max-w-full">{fileName}</p>}
-        </div>
-        <input ref={fileInputRef} id={`dropzone-file-${accept}`} type="file" className="hidden" onChange={onFileChange} accept={accept} />
-      </label>
-    </div>
-  );
-};
+        <div className="flex

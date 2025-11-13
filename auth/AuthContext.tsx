@@ -1,12 +1,18 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
-// FIX: Use compat imports to align with v8 syntax and resolve module export error.
-import * as firebase from 'firebase/compat/app';
+// Load Firebase scripts for their side effects (populating window.firebase)
+import 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
 import type { User, AuthContextType, Player, Admin } from '../types';
 import { MOCK_PLAYERS, MOCK_ADMIN } from '../constants';
 import { auth, db, USE_FIREBASE } from '../firebase';
 
+// Let TypeScript know about the global firebase object.
+declare global {
+  interface Window {
+    firebase: any;
+  }
+}
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -27,7 +33,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             return;
         }
 
-        const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: firebase.User | null) => {
+        // FIX: Use the `firebase` namespace for types, which is made available by the compat imports, instead of `window`.
+        const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: firebase.auth.User | null) => {
             if (firebaseUser && firebaseUser.email?.toLowerCase() === ADMIN_EMAIL) {
                 // Firebase user is the admin, fetch their profile from Firestore 'admins' collection.
                 try {

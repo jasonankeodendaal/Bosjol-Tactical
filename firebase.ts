@@ -4,7 +4,7 @@ import 'firebase/compat/firestore';
 
 // Helper to get environment variables from either Vite's `import.meta.env` or a Node-like `process.env`.
 // This provides compatibility for both the AI Studio preview environment and a standard Vite deployment.
-const getEnvVar = (key: string): string | undefined => {
+export const getEnvVar = (key: string): string | undefined => {
   // Vite environment variables are replaced at build time, so `import.meta.env` will be an object.
   // FIX: Cast `import.meta` to `any` to resolve TypeScript error "Property 'env' does not exist on type 'ImportMeta'".
   // This is necessary because the environment doesn't include Vite's client type definitions.

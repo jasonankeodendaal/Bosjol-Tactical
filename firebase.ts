@@ -1,13 +1,6 @@
-import 'firebase/compat/app';
+import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
-
-// Tell TypeScript about the global firebase object populated by the CDN scripts.
-declare global {
-  interface Window {
-    firebase: any;
-  }
-}
 
 // Helper to get environment variables from either Vite's `import.meta.env` or a Node-like `process.env`.
 // This provides compatibility for both the AI Studio preview environment and a standard Vite deployment.
@@ -54,16 +47,16 @@ export const isFirebaseConfigured = () => {
 
 
 // Conditionally initialize Firebase and capture any errors.
-let app: any | null = null;
+let app: firebase.app.App | null = null;
 export let firebaseInitializationError: Error | null = null;
 
 try {
-  if (USE_FIREBASE && isFirebaseConfigured() && window.firebase) {
+  if (USE_FIREBASE && isFirebaseConfigured()) {
     // Check if Firebase is already initialized to prevent re-initialization errors.
-    if (!window.firebase.apps.length) {
-      app = window.firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+      app = firebase.initializeApp(firebaseConfig);
     } else {
-      app = window.firebase.app();
+      app = firebase.app();
     }
   }
 } catch (error) {
@@ -72,5 +65,5 @@ try {
 }
 
 
-export const auth = app ? window.firebase.auth() : null;
-export const db = app ? window.firebase.firestore() : null;
+export const auth = app ? firebase.auth() : null;
+export const db = app ? firebase.firestore() : null;

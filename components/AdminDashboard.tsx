@@ -6,26 +6,19 @@ import { Button } from './Button';
 import { Input } from './Input';
 import { UsersIcon, CogIcon, CalendarIcon, TrashIcon, ShieldCheckIcon, PlusIcon, TrophyIcon, BuildingOfficeIcon, SparklesIcon, PencilIcon, XIcon, TicketIcon, AtSymbolIcon, PhoneIcon, GlobeAltIcon, ArrowLeftIcon, ArchiveBoxIcon, CurrencyDollarIcon, TruckIcon, MapPinIcon, MinusIcon, KeyIcon, Bars3Icon, ExclamationTriangleIcon, InformationCircleIcon, CreditCardIcon, CheckCircleIcon, PrinterIcon, PlusCircleIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
-import { EventCard } from './EventCard';
 import { Modal } from './Modal';
 import { ImageUpload } from './ImageUpload';
-import { MOCK_RANKS, UNRANKED_RANK, INVENTORY_CATEGORIES, INVENTORY_CONDITIONS, MOCK_EVENT_THEMES } from '../constants';
+import { MOCK_RANKS } from '../constants';
 import { PlayerProfilePage } from './PlayerProfilePage';
-import { InfoTooltip } from './InfoTooltip';
 import { FinanceTab } from './FinanceTab';
 import { SuppliersTab } from './SuppliersTab';
 import { LocationsTab } from './LocationsTab';
-import { USE_FIREBASE } from '../firebase';
-
-
-const getRankForPlayer = (player: Player, ranks: Rank[]): Rank => {
-    if (player.stats.gamesPlayed < 10) {
-        return UNRANKED_RANK;
-    }
-    const sortedRanks = [...ranks].sort((a, b) => b.minXp - a.minXp);
-    const rank = sortedRanks.find(r => player.stats.xp >= r.minXp);
-    return rank || ranks[0] || UNRANKED_RANK;
-};
+import { EventsTab } from './EventsTab';
+import { ManageEventPage } from './ManageEventPage';
+import { ProgressionTab } from './ProgressionTab';
+import { InventoryTab } from './InventoryTab';
+import { VouchersRafflesTab } from './VouchersRafflesTab';
+import { SponsorsTab } from './SponsorsTab';
 
 interface AdminDashboardProps {
     players: Player[];
@@ -59,7 +52,7 @@ interface AdminDashboardProps {
     onDeleteAllData: () => void;
 }
 
-type Tab = 'Events' | 'Players' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Settings' | 'About';
+type Tab = 'Events' | 'Players' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Settings';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
 
 const NewPlayerModal: React.FC<{
@@ -272,7 +265,6 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Vouchers & Raffles', icon: <TicketIcon className="w-5 h-5"/>},
         {name: 'Sponsors', icon: <SparklesIcon className="w-5 h-5"/>},
         {name: 'Settings', icon: <CogIcon className="w-5 h-5"/>},
-        // {name: 'About', icon: <InformationCircleIcon className="w-5 h-5"/>},
     ];
 
     const activeTabInfo = tabs.find(t => t.name === activeTab);
@@ -336,8 +328,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     );
 }
 
-const PlayersTab: React.FC<AdminDashboardProps & { onViewPlayer: (id: string) => void }> = (props) => {
-    const { players, setPlayers, onViewPlayer, ranks } = props;
+const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'setPlayers' | 'ranks'> & { onViewPlayer: (id: string) => void }> = ({ players, setPlayers, ranks, onViewPlayer }) => {
     const [showNewPlayerModal, setShowNewPlayerModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -367,7 +358,7 @@ const PlayersTab: React.FC<AdminDashboardProps & { onViewPlayer: (id: string) =>
                     <div className="max-h-[60vh] overflow-y-auto pr-2">
                         <ul className="space-y-2">
                             {filteredPlayers.map(p => {
-                                const rank = getRankForPlayer(p, ranks);
+                                const rank = ranks.find(r => r.id === p.rank.id) || p.rank;
                                 return (
                                     <li key={p.id} onClick={() => onViewPlayer(p.id)} className="flex items-center p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer border border-transparent hover:border-red-600/50">
                                         <img src={p.avatarUrl} alt={p.name} className="w-12 h-12 rounded-full object-cover mr-4" />
@@ -402,7 +393,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
-    const { players, setPlayers, events, setEvents, legendaryBadges, setLegendaryBadges, ranks } = props;
+    const { players, setPlayers, events, setEvents, legendaryBadges, ranks } = props;
 
     const handleViewPlayer = (id: string) => {
         setSelectedPlayerId(id);
@@ -413,6 +404,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         setSelectedEventId(id);
         setView('manage_event');
     }
+    
+    const handleSaveEvent = (eventData: GameEvent) => {
+        if (eventData.id) {
+            setEvents(prev => prev.map(e => e.id === eventData.id ? eventData : e));
+        } else {
+            setEvents(prev => [...prev, { ...eventData, id: `e${Date.now()}` }]);
+        }
+        setView('dashboard');
+    }
+
+    const handleDeleteEvent = (eventId: string) => {
+        if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+            setEvents(prev => prev.filter(e => e.id !== eventId));
+            setView('dashboard');
+        }
+    }
+
 
     const handleUpdatePlayer = (updatedPlayer: Player) => {
         setPlayers(prev => prev.map(p => p.id === updatedPlayer.id ? updatedPlayer : p));
@@ -431,23 +439,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         />;
     }
 
+    if (view === 'manage_event') {
+        const eventToManage = selectedEventId ? events.find(e => e.id === selectedEventId) : undefined;
+        return <ManageEventPage 
+            event={eventToManage}
+            players={props.players}
+            inventory={props.inventory}
+            gamificationSettings={props.gamificationSettings}
+            onBack={() => setView('dashboard')}
+            onSave={handleSaveEvent}
+            onDelete={handleDeleteEvent}
+            setPlayers={props.setPlayers}
+            setTransactions={props.setTransactions}
+        />
+    }
+
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-            {activeTab === 'Players' && <PlayersTab {...props} onViewPlayer={handleViewPlayer}/>}
-            {activeTab === 'Finance' && <FinanceTab {...props} />}
-            {activeTab === 'Suppliers' && <SuppliersTab {...props} />}
+            {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
+            {activeTab === 'Players' && <PlayersTab players={props.players} setPlayers={props.setPlayers} ranks={props.ranks} onViewPlayer={handleViewPlayer}/>}
+            {activeTab === 'Progression' && <ProgressionTab {...props} />}
+            {activeTab === 'Inventory' && <InventoryTab {...props} />}
             {activeTab === 'Locations' && <LocationsTab {...props} />}
+            {activeTab === 'Suppliers' && <SuppliersTab {...props} />}
+            {activeTab === 'Finance' && <FinanceTab {...props} />}
+            {activeTab === 'Vouchers & Raffles' && <VouchersRafflesTab {...props} />}
+            {activeTab === 'Sponsors' && <SponsorsTab {...props} />}
             {activeTab === 'Settings' && <SettingsTab companyDetails={props.companyDetails} setCompanyDetails={props.setCompanyDetails} onDeleteAllData={props.onDeleteAllData} />}
-            
-            {/* Render other tab content based on activeTab */}
-            {['Events', 'Progression', 'Inventory', 'Vouchers & Raffles', 'Sponsors', 'About'].includes(activeTab) && (
-                <DashboardCard title={activeTab} icon={<CogIcon className="w-6 h-6"/>}>
-                    <p className="p-6 text-center text-gray-500">
-                        The "{activeTab}" tab is under construction. Check back later for more features.
-                    </p>
-                </DashboardCard>
-            )}
         </div>
     );
 };

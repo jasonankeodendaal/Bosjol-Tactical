@@ -216,6 +216,29 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 operationsCount++;
             }
             
+             // 5. Seed Admin User
+            const adminRef = db.collection('admins').doc(mock.MOCK_ADMIN.id);
+            const adminSnap = await adminRef.get();
+            if (!adminSnap.exists) {
+                console.log('Seeding admin user document...');
+                const { id, ...adminData } = mock.MOCK_ADMIN;
+                batch.set(adminRef, adminData);
+                operationsCount++;
+            }
+
+            // 6. Seed Players
+            const playersRef = db.collection('players');
+            const playersSnap = await playersRef.limit(1).get();
+            if (playersSnap.empty) {
+                console.log('Seeding players collection...');
+                mock.MOCK_PLAYERS.forEach(player => {
+                    const { id, ...playerData } = player;
+                    const docRef = playersRef.doc(id);
+                    batch.set(docRef, playerData);
+                    operationsCount++;
+                });
+            }
+
             if (operationsCount > 0) {
                 await batch.commit();
                 alert('Database has been seeded with initial configuration data. Please refresh the page to see the changes.');

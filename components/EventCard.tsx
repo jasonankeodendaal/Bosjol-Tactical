@@ -27,7 +27,8 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
   // FIX: Removed explicit Variants type as it's not available and can be inferred.
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+    // FIX: Replaced string "easeOut" with its cubic-bezier array equivalent to resolve framer-motion type error.
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0, 0, 0.58, 1] } }
   };
   
   return (

@@ -15,7 +15,8 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({ title, icon, child
   // FIX: Removed explicit Variants type as it's not available and can be inferred.
   const cardVariants = {
     hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeInOut" } }
+    // FIX: Replaced string "easeInOut" with its cubic-bezier array equivalent to resolve framer-motion type error.
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.42, 0, 0.58, 1] } }
   };
 
   return (

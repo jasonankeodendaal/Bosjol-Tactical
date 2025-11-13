@@ -1,6 +1,6 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 // FIX: Use compat imports to align with v8 syntax and resolve module export error.
-import firebase from 'firebase/compat/app';
+import * as firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
 import type { User, AuthContextType, Player, Admin } from '../types';

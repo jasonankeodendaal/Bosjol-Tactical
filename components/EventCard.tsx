@@ -1,5 +1,4 @@
 import React from 'react';
-// FIX: The Variants type is not exported from framer-motion in this environment. It has been removed.
 import { motion } from 'framer-motion';
 import { GameEvent, EventType, EventStatus } from '../types';
 import { BadgePill } from './BadgePill';
@@ -24,11 +23,10 @@ const eventStatusColorMap: Record<EventStatus, 'green' | 'blue' | 'red' | 'amber
 };
 
 export const EventCard: React.FC<EventCardProps> = ({ event }) => {
-  // FIX: Removed explicit Variants type as it's not available and can be inferred.
+  // FIX: Replaced cubic-bezier array with a string literal ("easeOut") to fix framer-motion typing issue.
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
-    // FIX: Replaced string "easeOut" with its cubic-bezier array equivalent to resolve framer-motion type error.
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0, 0, 0.58, 1] } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
   };
   
   return (

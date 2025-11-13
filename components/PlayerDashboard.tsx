@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-// FIX: The Variants type is not exported from framer-motion in this environment. It has been removed.
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Rank, Badge, LegendaryBadge, Raffle } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -12,6 +11,7 @@ import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
+import { Leaderboard } from './Leaderboard';
 
 
 const getRankForPlayer = (player: Player, ranks: Rank[]): Rank => {
@@ -623,153 +623,10 @@ const AchievementsTab: React.FC<{ player: Player, ranks: Rank[] }> = ({ player, 
     )
 }
 
-// FIX: The Variants type is not available, using 'any' for the prop type.
-const RankedPlayerListItem: React.FC<{ player: Player, rank: number, isCurrentUser: boolean, variants: any }> = ({ player, rank, isCurrentUser, variants }) => {
-    return (
-        <motion.li
-            variants={variants}
-            className={`flex items-center p-3 rounded-lg transition-colors bg-zinc-800/40 border border-transparent ${isCurrentUser ? 'bg-red-500/20 !border-red-500/30' : 'hover:bg-zinc-800/80'}`}
-        >
-            <div className={`text-center w-10 font-bold text-xl ${rank <= 3 ? 'text-amber-400' : isCurrentUser ? 'text-red-400' : 'text-gray-400'}`}>{rank}</div>
-            <img src={player.avatarUrl} alt={player.name} className="w-12 h-12 rounded-full object-cover mx-4 border-2 border-zinc-700" />
-            <div className="flex-grow">
-                <p className={`font-bold text-lg ${isCurrentUser ? 'text-white' : 'text-gray-200'}`}>{player.name}</p>
-                <p className="text-sm text-gray-500">"{player.callsign}"</p>
-            </div>
-            <div className="text-right">
-                <p className={`font-bold text-xl ${isCurrentUser ? 'text-red-300' : 'text-gray-100'}`}>{player.stats.xp.toLocaleString()}</p>
-                <p className="text-xs text-gray-500">Rank Points</p>
-            </div>
-        </motion.li>
-    );
-};
-
-const PodiumPlayer: React.FC<{ player: Player, rank: 1 | 2 | 3, delay: number }> = ({ player, rank, delay }) => {
-    const podiumClass = `podium-${rank}`;
-    const animationVariants = {
-        hidden: { opacity: 0, y: 50 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay } }
-    };
-
-    return (
-        <motion.div className={`podium-item ${podiumClass}`} variants={animationVariants}>
-            <div className="podium-avatar-wrapper">
-                {rank === 1 && <CrownIcon className="w-10 h-10 crown-icon" />}
-                <img src={player.avatarUrl} alt={player.name} className="podium-avatar" />
-                <p className={`font-bold text-base mt-2 truncate max-w-full px-1 ${rank === 1 ? 'text-amber-300' : 'text-white'}`}>{player.name}</p>
-                <p className="text-xs text-zinc-300">{player.stats.xp.toLocaleString()} RP</p>
-            </div>
-            <div className="podium-base">
-                {rank}
-            </div>
-        </motion.div>
-    );
-};
-
 const LeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players'>> = ({ player: currentPlayer, players }) => {
-    const [limit, setLimit] = useState<'all' | 3 | 5 | 10>('all');
-
-    const sortedPlayers = useMemo(() => {
-        return [...players].sort((a, b) => b.stats.xp - a.stats.xp);
-    }, [players]);
-
-    const topThree = sortedPlayers.slice(0, 3);
-    const rest = sortedPlayers.slice(3);
-
-    const listPlayers = useMemo(() => {
-        if (limit === 'all') return rest;
-        return sortedPlayers.slice(0, limit);
-    }, [limit, sortedPlayers, rest]);
-
-    // FIX: Removed explicit Variants type as it's not available and can be inferred.
-    const listVariants = {
-        visible: { transition: { staggerChildren: 0.05 } },
-        hidden: {},
-    };
-    // FIX: Removed explicit Variants type as it's not available and can be inferred.
-    const itemVariants = {
-        visible: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
-        hidden: { opacity: 0, x: -20 },
-    };
-
-
     return (
         <DashboardCard title="Leaderboard" icon={<TrophyIcon className="w-6 h-6" />} fullHeight>
-             <div className="flex flex-col h-full">
-                <div className="p-4 border-b border-zinc-800 flex justify-center">
-                    <div className="flex space-x-1 p-1 bg-zinc-900/80 rounded-lg border border-zinc-700">
-                        <Button size="sm" variant={limit === 'all' ? 'primary' : 'secondary'} onClick={() => setLimit('all')}>All</Button>
-                        <Button size="sm" variant={limit === 3 ? 'primary' : 'secondary'} onClick={() => setLimit(3)}>Top 3</Button>
-                        <Button size="sm" variant={limit === 5 ? 'primary' : 'secondary'} onClick={() => setLimit(5)}>Top 5</Button>
-                        <Button size="sm" variant={limit === 10 ? 'primary' : 'secondary'} onClick={() => setLimit(10)}>Top 10</Button>
-                    </div>
-                </div>
-                
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={limit}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="flex-grow flex flex-col"
-                    >
-                         {limit === 'all' ? (
-                            <>
-                                <div className="leaderboard-podium-bg">
-                                    <motion.div
-                                        className="podium-container"
-                                        initial="hidden"
-                                        animate="visible"
-                                        variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-                                    >
-                                        {topThree.length > 1 && <PodiumPlayer player={topThree[1]} rank={2} delay={0.1} />}
-                                        {topThree.length > 0 && <PodiumPlayer player={topThree[0]} rank={1} delay={0} />}
-                                        {topThree.length > 2 && <PodiumPlayer player={topThree[2]} rank={3} delay={0.2} />}
-                                    </motion.div>
-                                </div>
-                                <div className="flex-grow overflow-y-auto p-4">
-                                     <motion.ul 
-                                        className="space-y-2"
-                                        variants={listVariants}
-                                        initial="hidden"
-                                        animate="visible"
-                                    >
-                                        {listPlayers.map((player, index) => (
-                                            <RankedPlayerListItem 
-                                                key={player.id} 
-                                                player={player} 
-                                                rank={index + 4}
-                                                isCurrentUser={player.id === currentPlayer.id}
-                                                variants={itemVariants}
-                                            />
-                                        ))}
-                                    </motion.ul>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="flex-grow overflow-y-auto p-4">
-                                 <motion.ul 
-                                    className="space-y-2"
-                                    variants={listVariants}
-                                    initial="hidden"
-                                    animate="visible"
-                                >
-                                    {listPlayers.map((player, index) => (
-                                        <RankedPlayerListItem
-                                            key={player.id}
-                                            player={player}
-                                            rank={index + 1}
-                                            isCurrentUser={player.id === currentPlayer.id}
-                                            variants={itemVariants}
-                                        />
-                                    ))}
-                                </motion.ul>
-                            </div>
-                        )}
-                    </motion.div>
-                </AnimatePresence>
-            </div>
+            <Leaderboard players={players} currentPlayerId={currentPlayer.id} />
         </DashboardCard>
     );
 }

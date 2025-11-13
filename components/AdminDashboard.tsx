@@ -19,6 +19,7 @@ import { ProgressionTab } from './ProgressionTab';
 import { InventoryTab } from './InventoryTab';
 import { VouchersRafflesTab } from './VouchersRafflesTab';
 import { SponsorsTab } from './SponsorsTab';
+import { Leaderboard } from './Leaderboard';
 
 interface AdminDashboardProps {
     players: Player[];
@@ -53,7 +54,7 @@ interface AdminDashboardProps {
     addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<void>;
 }
 
-type Tab = 'Events' | 'Players' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Settings';
+type Tab = 'Events' | 'Players' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
 
 const NewPlayerModal: React.FC<{
@@ -264,6 +265,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Finance', icon: <CurrencyDollarIcon className="w-5 h-5"/>},
         {name: 'Vouchers & Raffles', icon: <TicketIcon className="w-5 h-5"/>},
         {name: 'Sponsors', icon: <SparklesIcon className="w-5 h-5"/>},
+        {name: 'Leaderboard', icon: <TrophyIcon className="w-5 h-5"/>},
         {name: 'Settings', icon: <CogIcon className="w-5 h-5"/>},
     ];
 
@@ -386,6 +388,14 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
     );
 };
 
+const LeaderboardTab: React.FC<{ players: Player[] }> = ({ players }) => {
+    return (
+        <DashboardCard title="Global Leaderboard" icon={<TrophyIcon className="w-6 h-6" />} fullHeight>
+            <Leaderboard players={players} />
+        </DashboardCard>
+    );
+};
+
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [activeTab, setActiveTab] = useState<Tab>('Events');
@@ -466,6 +476,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             {activeTab === 'Finance' && <FinanceTab {...props} />}
             {activeTab === 'Vouchers & Raffles' && <VouchersRafflesTab {...props} />}
             {activeTab === 'Sponsors' && <SponsorsTab {...props} />}
+            {activeTab === 'Leaderboard' && <LeaderboardTab players={props.players} />}
             {activeTab === 'Settings' && <SettingsTab companyDetails={props.companyDetails} setCompanyDetails={props.setCompanyDetails} onDeleteAllData={props.onDeleteAllData} />}
         </div>
     );

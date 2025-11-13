@@ -965,6 +965,7 @@ const RanksTab: React.FC<Pick<AdminDashboardProps, 'ranks' | 'setRanks' | 'badge
         const currentUnlocks = newRanks[rankIndex]?.unlocks;
         const newUnlocks = Array.isArray(currentUnlocks) ? [...currentUnlocks] : [];
         newUnlocks[unlockIndex] = value;
+        // FIX: Corrected typo from `newRranks` to `newRanks`.
         newRanks[rankIndex] = { ...newRanks[rankIndex], unlocks: newUnlocks };
         setRanksData(newRanks);
     };

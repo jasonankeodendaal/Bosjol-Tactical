@@ -500,6 +500,7 @@ export const MOCK_PLAYERS: Player[] = [
 export const MOCK_ADMIN: Admin = {
   id: 'a001',
   name: 'General Shepherd',
+  email: 'bosjoltactical@gmail.com',
   role: 'admin',
   clearanceLevel: 5,
   avatarUrl: 'https://cdn.pixabay.com/photo/2018/03/13/11/13/program-3222397_1280.jpg',

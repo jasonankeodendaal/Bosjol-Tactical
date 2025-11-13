@@ -14,7 +14,7 @@ interface AuthProviderProps {
 }
 
 // In a real production app, this should come from an environment variable for security.
-const ADMIN_EMAIL = 'bosjol@gmail.com';
+const ADMIN_EMAIL = 'bosjoltactical@gmail.com';
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | Player | Admin | null>(null);

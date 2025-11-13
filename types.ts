@@ -87,6 +87,7 @@ export interface Player extends User {
 
 export interface Admin extends User {
   role: 'admin';
+  email: string;
   clearanceLevel: number;
   avatarUrl: string;
 }

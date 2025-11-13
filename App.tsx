@@ -129,6 +129,7 @@ const AppContent: React.FC = () => {
         loading,
         isSeeding,
         updatePlayerDoc,
+        addPlayerDoc,
         updateEventDoc,
     } = data;
     
@@ -267,6 +268,7 @@ const AppContent: React.FC = () => {
                             raffles={raffles}
                             setRaffles={setRaffles}
                             onDeleteAllData={handleDeleteAllData}
+                            addPlayerDoc={addPlayerDoc}
                         />
                     }
                 </div>

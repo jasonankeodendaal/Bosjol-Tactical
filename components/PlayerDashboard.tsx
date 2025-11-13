@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+// FIX: The Variants type is not exported from framer-motion in this environment. It has been removed.
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Rank, Badge, LegendaryBadge, Raffle } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
@@ -622,7 +623,8 @@ const AchievementsTab: React.FC<{ player: Player, ranks: Rank[] }> = ({ player, 
     )
 }
 
-const RankedPlayerListItem: React.FC<{ player: Player, rank: number, isCurrentUser: boolean, variants: Variants }> = ({ player, rank, isCurrentUser, variants }) => {
+// FIX: The Variants type is not available, using 'any' for the prop type.
+const RankedPlayerListItem: React.FC<{ player: Player, rank: number, isCurrentUser: boolean, variants: any }> = ({ player, rank, isCurrentUser, variants }) => {
     return (
         <motion.li
             variants={variants}
@@ -679,13 +681,13 @@ const LeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players'>>
         return sortedPlayers.slice(0, limit);
     }, [limit, sortedPlayers, rest]);
 
-    // FIX: Explicitly type framer-motion variants to satisfy TypeScript's strict type checking.
-    const listVariants: Variants = {
+    // FIX: Removed explicit Variants type as it's not available and can be inferred.
+    const listVariants = {
         visible: { transition: { staggerChildren: 0.05 } },
         hidden: {},
     };
-    // FIX: Explicitly type framer-motion variants to satisfy TypeScript's strict type checking.
-    const itemVariants: Variants = {
+    // FIX: Removed explicit Variants type as it's not available and can be inferred.
+    const itemVariants = {
         visible: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
         hidden: { opacity: 0, x: -20 },
     };

@@ -1,5 +1,6 @@
 import React from 'react';
-import { motion, Variants } from 'framer-motion';
+// FIX: The Variants type is not exported from framer-motion in this environment. It has been removed.
+import { motion } from 'framer-motion';
 import { GameEvent, EventType, EventStatus } from '../types';
 import { BadgePill } from './BadgePill';
 import { CalendarIcon } from './icons/Icons';
@@ -23,8 +24,8 @@ const eventStatusColorMap: Record<EventStatus, 'green' | 'blue' | 'red' | 'amber
 };
 
 export const EventCard: React.FC<EventCardProps> = ({ event }) => {
-  // FIX: Explicitly type cardVariants with Variants to satisfy framer-motion's expected types.
-  const cardVariants: Variants = {
+  // FIX: Removed explicit Variants type as it's not available and can be inferred.
+  const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
   };

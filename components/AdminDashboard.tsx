@@ -50,6 +50,7 @@ interface AdminDashboardProps {
     raffles: Raffle[];
     setRaffles: React.Dispatch<React.SetStateAction<Raffle[]>>;
     onDeleteAllData: () => void;
+    addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<void>;
 }
 
 type Tab = 'Events' | 'Players' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Settings';
@@ -58,8 +59,8 @@ type View = 'dashboard' | 'player_profile' | 'manage_event';
 const NewPlayerModal: React.FC<{
     onClose: () => void;
     players: Player[];
-    setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
-}> = ({ onClose, players, setPlayers }) => {
+    addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<void>;
+}> = ({ onClose, players, addPlayerDoc }) => {
     const [formData, setFormData] = useState({
         name: '',
         surname: '',
@@ -68,7 +69,7 @@ const NewPlayerModal: React.FC<{
         pin: '',
     });
 
-    const handleSave = () => {
+    const handleSave = async () => {
         // Validation
         if (!formData.name || !formData.surname || !formData.email || !formData.pin) {
             alert('Please fill in all required fields.');
@@ -95,8 +96,7 @@ const NewPlayerModal: React.FC<{
         
         const newPlayerCode = `${initials}${String(newNumber).padStart(2, '0')}`;
         
-        const newPlayer: Player = {
-            id: `p${Date.now()}`,
+        const newPlayerData: Omit<Player, 'id'> = {
             name: formData.name,
             surname: formData.surname,
             playerCode: newPlayerCode,
@@ -121,7 +121,7 @@ const NewPlayerModal: React.FC<{
             },
         };
 
-        setPlayers(prev => [...prev, newPlayer]);
+        await addPlayerDoc(newPlayerData);
         onClose();
     };
 
@@ -328,7 +328,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     );
 }
 
-const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'setPlayers' | 'ranks'> & { onViewPlayer: (id: string) => void }> = ({ players, setPlayers, ranks, onViewPlayer }) => {
+const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' | 'ranks'> & { onViewPlayer: (id: string) => void }> = ({ players, addPlayerDoc, ranks, onViewPlayer }) => {
     const [showNewPlayerModal, setShowNewPlayerModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -340,7 +340,7 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'setPlayers' | 
 
     return (
         <div>
-            {showNewPlayerModal && <NewPlayerModal onClose={() => setShowNewPlayerModal(false)} players={players} setPlayers={setPlayers} />}
+            {showNewPlayerModal && <NewPlayerModal onClose={() => setShowNewPlayerModal(false)} players={players} addPlayerDoc={addPlayerDoc} />}
             <DashboardCard title="Player Management" icon={<UsersIcon className="w-6 h-6" />}>
                 <div className="p-4">
                     <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
@@ -458,7 +458,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         <div className="p-4 sm:p-6 lg:p-8">
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
-            {activeTab === 'Players' && <PlayersTab players={props.players} setPlayers={props.setPlayers} ranks={props.ranks} onViewPlayer={handleViewPlayer}/>}
+            {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} onViewPlayer={handleViewPlayer}/>}
             {activeTab === 'Progression' && <ProgressionTab {...props} />}
             {activeTab === 'Inventory' && <InventoryTab {...props} />}
             {activeTab === 'Locations' && <LocationsTab {...props} />}

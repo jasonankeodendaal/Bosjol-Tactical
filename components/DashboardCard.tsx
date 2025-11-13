@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
-import { motion, Variants } from 'framer-motion';
+// FIX: The Variants type is not exported from framer-motion in this environment. It has been removed.
+import { motion } from 'framer-motion';
 
 interface DashboardCardProps {
   title: string;
@@ -11,8 +12,8 @@ interface DashboardCardProps {
 }
 
 export const DashboardCard: React.FC<DashboardCardProps> = ({ title, icon, children, className = '', fullHeight = false, titleAddon }) => {
-  // FIX: Explicitly type cardVariants with Variants to satisfy framer-motion's expected types.
-  const cardVariants: Variants = {
+  // FIX: Removed explicit Variants type as it's not available and can be inferred.
+  const cardVariants = {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeInOut" } }
   };

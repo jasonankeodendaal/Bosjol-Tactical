@@ -96,6 +96,7 @@ interface DataContextType {
     loading: boolean;
     isSeeding: boolean;
     updatePlayerDoc: (player: Player) => Promise<void>;
+    addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<void>;
     updateEventDoc: (event: GameEvent) => Promise<void>;
     addEventDoc: (eventData: Omit<GameEvent, 'id'>) => Promise<void>;
     deleteEventDoc: (eventId: string) => Promise<void>;
@@ -208,6 +209,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { id, ...playerData } = player;
         await db.collection('players').doc(id).set(playerData, { merge: true });
     };
+    
+    const addPlayerDoc = async (playerData: Omit<Player, 'id'>) => {
+        if (!USE_FIREBASE || !db) {
+            const newPlayer = { ...playerData, id: `p${Date.now()}` };
+            setPlayers(prev => [...prev, newPlayer]);
+            return;
+        }
+        await db.collection('players').add(playerData);
+    };
 
     const updateEventDoc = async (event: GameEvent) => {
         if (!USE_FIREBASE || !db) {
@@ -255,6 +265,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loading,
         isSeeding,
         updatePlayerDoc,
+        addPlayerDoc,
         updateEventDoc,
         addEventDoc,
         deleteEventDoc

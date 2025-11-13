@@ -46,9 +46,24 @@ export const isFirebaseConfigured = () => {
 };
 
 
-// Conditionally initialize Firebase
-// FIX: Use compat library initialization to resolve module export error.
-const app = USE_FIREBASE && isFirebaseConfigured() ? firebase.initializeApp(firebaseConfig) : null;
+// Conditionally initialize Firebase and capture any errors.
+let app: firebase.app.App | null = null;
+export let firebaseInitializationError: Error | null = null;
+
+try {
+  if (USE_FIREBASE && isFirebaseConfigured()) {
+    // Check if Firebase is already initialized to prevent re-initialization errors.
+    if (!firebase.apps.length) {
+      app = firebase.initializeApp(firebaseConfig);
+    } else {
+      app = firebase.app();
+    }
+  }
+} catch (error) {
+    console.error("Firebase initialization failed:", error);
+    firebaseInitializationError = error as Error;
+}
+
 
 export const auth = app ? firebase.auth() : null;
 export const db = app ? firebase.firestore() : null;

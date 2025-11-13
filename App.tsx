@@ -8,7 +8,7 @@ import type { Player, GameEvent, CompanyDetails } from './types';
 import { BuildingOfficeIcon, ExclamationTriangleIcon } from './components/icons/Icons';
 import { DataProvider, DataContext } from './data/DataContext';
 import { Loader } from './components/Loader';
-import { USE_FIREBASE, isFirebaseConfigured, getEnvVar } from './firebase';
+import { USE_FIREBASE, isFirebaseConfigured, getEnvVar, firebaseInitializationError } from './firebase';
 
 const Footer: React.FC<{ details: CompanyDetails }> = ({ details }) => (
     <footer className="bg-zinc-900/80 backdrop-blur-sm border-t border-zinc-800 p-6 text-center text-sm text-gray-400 mt-auto">
@@ -37,6 +37,24 @@ const Footer: React.FC<{ details: CompanyDetails }> = ({ details }) => (
 const AppContent: React.FC = () => {
     const auth = useContext(AuthContext);
     const data = useContext(DataContext);
+
+    if (firebaseInitializationError) {
+        return (
+            <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center p-8 text-center">
+                <div className="bg-red-900/50 border border-red-700 text-red-200 p-8 rounded-lg max-w-2xl">
+                    <ExclamationTriangleIcon className="w-12 h-12 mx-auto mb-4 text-red-400" />
+                    <h1 className="text-2xl font-bold mb-2 text-white">Firebase Initialization Error</h1>
+                    <p className="text-base mb-4">
+                        The application could not connect to Firebase. This usually happens if the environment variables are set, but contain incorrect values (e.g., a typo in the Project ID).
+                    </p>
+                    <div className="text-sm mt-6 text-left bg-black/20 p-4 rounded-md font-mono text-xs text-red-300">
+                        <h2 className="text-lg font-bold mb-2 text-white">Error Details:</h2>
+                        <pre className="whitespace-pre-wrap">{firebaseInitializationError.message}</pre>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (USE_FIREBASE && !isFirebaseConfigured()) {
         const vars = [

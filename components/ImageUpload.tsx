@@ -50,4 +50,20 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept }) => 
         onDrop={onDrop}
         onDragOver={onDragOver}
       >
-        <div className="flex
+        <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
+            <UploadCloudIcon className="w-8 h-8 mb-4 text-gray-500" />
+            <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+            <p className="text-xs text-gray-500 truncate max-w-full px-2">{fileName || `Accepted: ${accept}`}</p>
+        </div>
+        <input 
+            id={`dropzone-file-${accept}`}
+            ref={fileInputRef} 
+            type="file" 
+            className="hidden" 
+            onChange={onFileChange}
+            accept={accept} 
+        />
+      </label>
+    </div>
+  );
+};

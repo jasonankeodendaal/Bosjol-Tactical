@@ -648,23 +648,6 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
     const [isDirty, setIsDirty] = useState(false);
 
     useEffect(() => {
-        // This effect synchronizes the form state with the player prop.
-        // It runs when the component mounts and any time the player data changes.
-        setFormData({
-            name: player.name,
-            surname: player.surname,
-            callsign: player.callsign,
-            bio: player.bio || '',
-            preferredRole: player.preferredRole || MOCK_PLAYER_ROLES[0],
-            email: player.email,
-            phone: player.phone,
-            address: player.address || '',
-            allergies: player.allergies || '',
-            medicalNotes: player.medicalNotes || '',
-        });
-    }, [player]);
-
-    useEffect(() => {
         const hasChanged = 
             player.name !== formData.name ||
             player.surname !== formData.surname ||

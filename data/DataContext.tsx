@@ -59,7 +59,7 @@ function useCollection<T>(collectionName: string, mockData: T[], dependencies: a
         }
     };
 
-    return [data, updateData, loading] as const;
+    return [data, setData, loading] as const;
 }
 
 // Helper to fetch a single document
@@ -121,7 +121,11 @@ interface DataContextType {
     locations: Location[]; setLocations: (d: Location[] | ((p: Location[]) => Location[])) => void;
     raffles: Raffle[]; setRaffles: (d: Raffle[] | ((p: Raffle[]) => Raffle[])) => void;
     deleteAllData: () => Promise<void>;
+    seedInitialData: () => Promise<void>;
     loading: boolean;
+    isSeeding: boolean;
+    updatePlayerDoc: (player: Player) => Promise<void>;
+    updateEventDoc: (event: GameEvent) => Promise<void>;
 }
 
 export const DataContext = createContext<DataContextType | null>(null);
@@ -143,81 +147,149 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Single documents in 'settings' collection
     const [companyDetails, setCompanyDetails, loadingCompany] = useDocument<CompanyDetails>('settings', 'companyDetails', mock.MOCK_COMPANY_DETAILS);
     const [gamificationSettingsDoc, setGamificationSettingsDoc, loadingGamification] = useDocument<{rules: GamificationSettings}>('settings', 'gamification', {rules: mock.MOCK_GAMIFICATION_SETTINGS});
-    
-    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingSponsors || loadingCompany || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingGamification;
-
-    useEffect(() => {
-        const seedInitialData = async () => {
-            if (!USE_FIREBASE || !db) {
-                console.warn("Firebase not configured, skipping seed.");
-                return;
-            }
-    
-            try {
-                const batch = db.batch();
-                let operationsCount = 0;
-    
-                const collectionsToSeed = [
-                    { name: 'ranks', data: mock.MOCK_RANKS, useMockId: false },
-                    { name: 'badges', data: mock.MOCK_BADGES, useMockId: true },
-                    { name: 'legendaryBadges', data: mock.MOCK_LEGENDARY_BADGES, useMockId: true },
-                    { name: 'admins', data: [mock.MOCK_ADMIN], useMockId: true },
-                    { name: 'players', data: mock.MOCK_PLAYERS, useMockId: true },
-                    { name: 'inventory', data: mock.MOCK_INVENTORY, useMockId: true },
-                    { name: 'suppliers', data: mock.MOCK_SUPPLIERS, useMockId: true },
-                ];
-    
-                for (const coll of collectionsToSeed) {
-                    const ref = db.collection(coll.name);
-                    const snap = await ref.limit(1).get();
-                    if (snap.empty) {
-                        console.log(`Seeding '${coll.name}' collection...`);
-                        coll.data.forEach((item: any) => {
-                            const docRef = coll.useMockId ? ref.doc(item.id) : ref.doc();
-                             const { id, ...itemData } = item;
-                            batch.set(docRef, itemData);
-                            operationsCount++;
-                        });
-                    }
-                }
-    
-                const settingsDocsToSeed = [
-                    { id: 'companyDetails', data: mock.MOCK_COMPANY_DETAILS },
-                    { id: 'gamification', data: { rules: mock.MOCK_GAMIFICATION_SETTINGS } },
-                ];
-    
-                for (const doc of settingsDocsToSeed) {
-                    const ref = db.collection('settings').doc(doc.id);
-                    const snap = await ref.get();
-                    if (!snap.exists) {
-                        console.log(`Seeding '${doc.id}' document...`);
-                        batch.set(ref, doc.data);
-                        operationsCount++;
-                    }
-                }
-    
-                if (operationsCount > 0) {
-                    await batch.commit();
-                    alert('Database has been automatically seeded with initial data. The page will now reload.');
-                    window.location.reload();
-                }
-    
-            } catch (error) {
-                console.error("Error seeding initial data:", error);
-                alert("An error occurred while auto-seeding the database. Check the console for details.");
-            }
-        };
-
-        if (!loading) {
-            seedInitialData();
-        }
-    }, [loading]);
-
+    const [isSeeding, setIsSeeding] = useState(false);
 
     const gamificationSettings = gamificationSettingsDoc.rules;
     const setGamificationSettings = (newSettings: GamificationSettings | ((p: GamificationSettings) => GamificationSettings)) => {
         const finalRules = typeof newSettings === 'function' ? newSettings(gamificationSettings) : newSettings;
         setGamificationSettingsDoc({ rules: finalRules });
+    };
+    
+    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingSponsors || loadingCompany || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingGamification;
+    
+    const seedInitialData = async () => {
+        if (!USE_FIREBASE || !db) {
+            console.warn("Seeding feature is only available when using Firebase.");
+            return;
+        }
+
+        try {
+            const batch = db.batch();
+            let operationsCount = 0;
+
+            // 1. Seed Ranks
+            const ranksRef = db.collection('ranks');
+            const ranksSnap = await ranksRef.limit(1).get();
+            if (ranksSnap.empty) {
+                console.log('Seeding ranks collection...');
+                mock.MOCK_RANKS.forEach(rank => {
+                    const docRef = ranksRef.doc(); // Firestore will auto-generate ID
+                    batch.set(docRef, rank);
+                    operationsCount++;
+                });
+            }
+
+            // 2. Seed Badges
+            const badgesRef = db.collection('badges');
+            const badgesSnap = await badgesRef.limit(1).get();
+            if (badgesSnap.empty) {
+                console.log('Seeding badges collection...');
+                mock.MOCK_BADGES.forEach(badge => {
+                    const docRef = badgesRef.doc(badge.id); // Use mock ID
+                    batch.set(docRef, badge);
+                    operationsCount++;
+                });
+            }
+            
+            // 3. Seed Legendary Badges
+            const legendaryBadgesRef = db.collection('legendaryBadges');
+            const legendaryBadgesSnap = await legendaryBadgesRef.limit(1).get();
+            if (legendaryBadgesSnap.empty) {
+                console.log('Seeding legendaryBadges collection...');
+                mock.MOCK_LEGENDARY_BADGES.forEach(badge => {
+                    const docRef = legendaryBadgesRef.doc(badge.id); // Use mock ID
+                    batch.set(docRef, badge);
+                    operationsCount++;
+                });
+            }
+
+            // 4. Seed Settings Documents
+            const settingsRef = db.collection('settings');
+            
+            const companyDetailsRef = settingsRef.doc('companyDetails');
+            const companyDetailsSnap = await companyDetailsRef.get();
+            if (!companyDetailsSnap.exists) {
+                console.log('Seeding companyDetails document...');
+                batch.set(companyDetailsRef, mock.MOCK_COMPANY_DETAILS);
+                operationsCount++;
+            }
+
+            const gamificationRef = settingsRef.doc('gamification');
+            const gamificationSnap = await gamificationRef.get();
+            if (!gamificationSnap.exists) {
+                console.log('Seeding gamification document...');
+                batch.set(gamificationRef, { rules: mock.MOCK_GAMIFICATION_SETTINGS });
+                operationsCount++;
+            }
+            
+             // 5. Seed Admin User
+            const adminRef = db.collection('admins').doc(mock.MOCK_ADMIN.id);
+            const adminSnap = await adminRef.get();
+            if (!adminSnap.exists) {
+                console.log('Seeding admin user document...');
+                const { id, ...adminData } = mock.MOCK_ADMIN;
+                batch.set(adminRef, adminData);
+                operationsCount++;
+            }
+
+            // 6. Seed Players
+            const playersRef = db.collection('players');
+            const playersSnap = await playersRef.limit(1).get();
+            if (playersSnap.empty) {
+                console.log('Seeding players collection...');
+                mock.MOCK_PLAYERS.forEach(player => {
+                    const { id, ...playerData } = player;
+                    const docRef = playersRef.doc(id);
+                    batch.set(docRef, playerData);
+                    operationsCount++;
+                });
+            }
+
+            if (operationsCount > 0) {
+                await batch.commit();
+                console.log('Database has been seeded. Reloading application...');
+                window.location.reload();
+            } else {
+                console.log('All initial configuration data already exists. No action taken.');
+            }
+
+        } catch (error) {
+            console.error("Error seeding initial data:", error);
+            setIsSeeding(false);
+        }
+    };
+
+    useEffect(() => {
+        // Automatically seed the database if it's a new Firebase project.
+        if (USE_FIREBASE && !loading && ranks.length === 0 && badges.length === 0) {
+            console.log("New Firebase project detected. Automatically seeding initial data...");
+            const doSeed = async () => {
+                setIsSeeding(true);
+                await seedInitialData();
+            };
+            doSeed();
+        }
+    }, [loading, ranks, badges]);
+
+
+    const updatePlayerDoc = async (player: Player) => {
+        if (USE_FIREBASE && db) {
+            const { id, ...playerData } = player;
+            await db.collection('players').doc(id).update(playerData);
+            // onSnapshot listener will update the local state automatically
+        } else {
+            setPlayers(prev => prev.map(p => p.id === player.id ? player : p));
+        }
+    };
+
+    const updateEventDoc = async (event: GameEvent) => {
+        if (USE_FIREBASE && db) {
+            const { id, ...eventData } = event;
+            await db.collection('events').doc(id).update(eventData);
+            // onSnapshot listener will update the local state automatically
+        } else {
+            setEvents(prev => prev.map(e => e.id === event.id ? event : e));
+        }
     };
 
     const deleteAllData = async () => {
@@ -252,7 +324,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const value = {
+
+    const value: DataContextType = {
         players, setPlayers,
         events, setEvents,
         ranks, setRanks,
@@ -268,7 +341,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         locations, setLocations,
         raffles, setRaffles,
         deleteAllData,
-        loading
+        seedInitialData,
+        loading,
+        isSeeding,
+        updatePlayerDoc,
+        updateEventDoc,
     };
 
     return (

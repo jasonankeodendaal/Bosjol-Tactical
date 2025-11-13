@@ -75,19 +75,23 @@ const AppContent: React.FC = () => {
         locations, setLocations,
         raffles, setRaffles,
         deleteAllData,
-        loading
+        seedInitialData,
+        loading,
+        isSeeding,
+        updatePlayerDoc,
+        updateEventDoc,
     } = data;
     
     const currentPlayer = players.find(p => p.id === user?.id);
 
-    const handleUpdatePlayer = (updatedPlayer: Player) => {
-        setPlayers(prev => prev.map(p => p.id === updatedPlayer.id ? updatedPlayer : p));
+    const handleUpdatePlayer = async (updatedPlayer: Player) => {
+        await updatePlayerDoc(updatedPlayer);
         if (auth.user?.id === updatedPlayer.id) {
             auth.updateUser(updatedPlayer);
         }
     }
 
-    const handleEventSignUp = (eventId: string, requestedGearIds: string[], note: string) => {
+    const handleEventSignUp = async (eventId: string, requestedGearIds: string[], note: string) => {
         if (!user || user.role !== 'player') return;
         const playerId = user.id;
 
@@ -111,7 +115,7 @@ const AppContent: React.FC = () => {
                 rentalSignups: [...rentalSignups, { playerId, requestedGearIds, note }]
             };
         }
-        setEvents(prevEvents => prevEvents.map(e => e.id === eventId ? updatedEvent : e));
+        await updateEventDoc(updatedEvent);
     };
     
     const handleDeleteAllData = async () => {
@@ -122,6 +126,17 @@ const AppContent: React.FC = () => {
         }
     };
 
+    if (isSeeding) {
+        return (
+            <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-[100]">
+                <div className="w-16 h-16 border-4 border-zinc-700 border-t-red-500 rounded-full animate-spin"></div>
+                <h1 className="mt-4 text-lg font-semibold text-gray-300 tracking-wider">
+                    New Project Detected
+                </h1>
+                <p className="text-gray-400">Seeding initial database configuration. Please wait...</p>
+            </div>
+        );
+    }
 
     if (!isAuthenticated || !user) {
         return <LoginScreen companyDetails={companyDetails} />;

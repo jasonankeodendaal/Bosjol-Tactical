@@ -1948,3 +1948,285 @@ const InventoryTab: React.FC<Pick<AdminDashboardProps, 'inventory' | 'setInvento
                                         <div className="flex-shrink-0">
                                             <p className="font-mono text-xl font-bold text-green-400">R{item.salePrice.toFixed(2)}</p>
                                         </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5 my-2">
+                                        <BadgePill color={conditionColors[item.condition]}>{item.condition}</BadgePill>
+                                        <BadgePill color="blue">{item.category}</BadgePill>
+                                    </div>
+                                    <p className="text-sm text-gray-400 line-clamp-2">{item.description}</p>
+                                </div>
+                                <div className="flex justify-between items-end mt-3 pt-3 border-t border-zinc-700/50">
+                                    <div>
+                                        <p className="text-xs text-gray-400">In Stock</p>
+                                        <p className={`font-bold text-xl ${item.stock <= (item.reorderLevel || 0) ? 'text-red-400' : 'text-white'}`}>{item.stock}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button size="sm" variant="secondary" onClick={() => setIsEditing(item)}><PencilIcon className="w-4 h-4"/></Button>
+                                        <Button size="sm" variant="danger" onClick={() => setDeletingItem(item)}><TrashIcon className="w-4 h-4"/></Button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </DashboardCard>
+        </div>
+    );
+};
+
+const GamificationSettingsTab: React.FC<Pick<AdminDashboardProps, 'gamificationSettings' | 'setGamificationSettings'>> = ({ gamificationSettings, setGamificationSettings }) => {
+    const [settings, setSettings] = useState<GamificationRule[]>(gamificationSettings);
+
+    const handleSettingChange = (id: string, value: string) => {
+        const numericValue = parseInt(value, 10);
+        if (!isNaN(numericValue)) {
+            setSettings(s => s.map(rule => rule.id === id ? { ...rule, xp: numericValue } : rule));
+        }
+    };
+    const handleSave = () => {
+        setGamificationSettings(settings);
+        alert('Gamification settings saved.');
+    };
+    
+    return (
+        <DashboardCard title="Gamification Settings" icon={<TrophyIcon className="w-6 h-6" />}>
+            <div className="p-6 space-y-4">
+                {settings.map(rule => (
+                    <div key={rule.id} className="grid grid-cols-3 items-center gap-4">
+                        <div className="col-span-2">
+                            <label className="font-semibold text-gray-200">{rule.name}</label>
+                            <p className="text-sm text-gray-400">{rule.description}</p>
+                        </div>
+                        <Input type="number" value={rule.xp} onChange={e => handleSettingChange(rule.id, e.target.value)} />
+                    </div>
+                ))}
+            </div>
+            <div className="p-4 border-t border-zinc-800">
+                <Button onClick={handleSave} className="w-full">Save Gamification Settings</Button>
+            </div>
+        </DashboardCard>
+    )
+}
+
+const SettingsTab: React.FC<Pick<AdminDashboardProps, 'companyDetails' | 'setCompanyDetails' | 'onDeleteAllData' | 'onSeedInitialData' | 'gamificationSettings' | 'setGamificationSettings'>> = ({ companyDetails, setCompanyDetails, onDeleteAllData, onSeedInitialData, gamificationSettings, setGamificationSettings }) => {
+    const [details, setDetails] = useState<CompanyDetails>(companyDetails);
+    
+    const handleDetailChange = (field: keyof Omit<CompanyDetails, 'socialLinks' | 'bankInfo'>, value: string) => {
+        setDetails(d => ({ ...d, [field]: value }));
+    };
+    
+    const handleSocialLinkChange = (id: string, field: keyof Omit<SocialLink, 'id'>, value: string) => {
+        setDetails(d => ({...d, socialLinks: d.socialLinks.map(link => link.id === id ? {...link, [field]: value} : link)}));
+    }
+
+    const handleSaveDetails = () => {
+        setCompanyDetails(details);
+        alert('Company details saved.');
+    };
+    
+    return (
+        <div className="space-y-6">
+            <DashboardCard title="Company & App Settings" icon={<BuildingOfficeIcon className="w-6 h-6" />}>
+                <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                    <Input label="Company Name" value={details.name} onChange={e => handleDetailChange('name', e.target.value)} />
+                    <Input label="Company Address" value={details.address} onChange={e => handleDetailChange('address', e.target.value)} />
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input label="Phone" value={details.phone} onChange={e => handleDetailChange('phone', e.target.value)} />
+                        <Input label="Email" value={details.email} onChange={e => handleDetailChange('email', e.target.value)} />
+                    </div>
+                    <Input label="Website" value={details.website} onChange={e => handleDetailChange('website', e.target.value)} />
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Company Logo</label>
+                        <ImageUpload onUpload={url => handleDetailChange('logoUrl', url)} accept="image/*" />
+                        {details.logoUrl && <img src={details.logoUrl} className="h-16 mt-2" alt="Logo preview"/>}
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Login Screen Background (Image or Video)</label>
+                        <ImageUpload onUpload={url => handleDetailChange('loginBackgroundUrl', url)} accept="image/*,video/*" />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Login Screen Background Audio</label>
+                        <ImageUpload onUpload={url => handleDetailChange('loginAudioUrl', url)} accept="audio/*" />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Player Dashboard Background</label>
+                        <ImageUpload onUpload={url => handleDetailChange('playerDashboardBackgroundUrl', url)} accept="image/*" />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Admin Dashboard Background</label>
+                        <ImageUpload onUpload={url => handleDetailChange('adminDashboardBackgroundUrl', url)} accept="image/*" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Android APK URL</label>
+                        <Input value={details.apkUrl} onChange={e => handleDetailChange('apkUrl', e.target.value)} placeholder="Direct link to APK file for download"/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Social Links</label>
+                        <div className="space-y-2">
+                            {details.socialLinks.map(link => (
+                                <div key={link.id} className="grid grid-cols-3 gap-2 items-center">
+                                    <Input value={link.name} onChange={e => handleSocialLinkChange(link.id, 'name', e.target.value)} placeholder="e.g. Facebook"/>
+                                    <Input value={link.url} onChange={e => handleSocialLinkChange(link.id, 'url', e.target.value)} placeholder="https://..."/>
+                                    <ImageUpload onUpload={url => handleSocialLinkChange(link.id, 'iconUrl', url)} accept="image/*" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Fixed Event Rules</label>
+                        <textarea value={details.fixedEventRules} onChange={e => handleDetailChange('fixedEventRules', e.target.value)} rows={5} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
+                    </div>
+                </div>
+                <div className="p-4 border-t border-zinc-800">
+                    <Button onClick={handleSaveDetails} className="w-full">Save App Settings</Button>
+                </div>
+            </DashboardCard>
+
+            <GamificationSettingsTab gamificationSettings={gamificationSettings} setGamificationSettings={setGamificationSettings} />
+
+            <DashboardCard title="Danger Zone" icon={<ExclamationTriangleIcon className="w-6 h-6 text-red-500"/>} >
+                <div className="p-6 space-y-4">
+                    <div>
+                        <h4 className="font-bold text-red-400">Delete Transactional Data</h4>
+                        <p className="text-sm text-gray-400 mb-2">This will permanently delete all players, events, inventory, transactions, etc. System settings like ranks and company details will be preserved. This is irreversible.</p>
+                        <Button variant="danger" onClick={onDeleteAllData}>Wipe All Player & Event Data</Button>
+                    </div>
+                    {USE_FIREBASE && (
+                         <div className="pt-4 border-t border-zinc-700">
+                             <h4 className="font-bold text-amber-400">Seed Initial Data</h4>
+                            <p className="text-sm text-gray-400 mb-2">If you have a fresh Firebase project, this will populate the necessary system settings (Ranks, Badges, etc.). It will not overwrite existing data.</p>
+                            <Button variant="secondary" onClick={onSeedInitialData}>Seed Firebase with System Data</Button>
+                        </div>
+                    )}
+                </div>
+            </DashboardCard>
+        </div>
+    );
+};
+
+
+const AboutTab: React.FC = () => {
+    return (
+        <DashboardCard title="About This Application" icon={<InformationCircleIcon className="w-6 h-6" />}>
+            <div className="p-6 space-y-4 text-gray-300">
+                <p>This is the <strong>Bosjol Tactical Solutions Admin Dashboard</strong>, a comprehensive management tool for airsoft fields and event organizers.</p>
+                <p>Features include:</p>
+                <ul className="list-disc list-inside space-y-1">
+                    <li>Player Management & Stat Tracking</li>
+                    <li>Event Creation & Live Game Management</li>
+                    <li>Customizable Ranks, Badges, and Gamification</li>
+                    <li>Inventory and Rental Management</li>
+                    <li>Financial Tracking and Reporting</li>
+                </ul>
+                <p className="pt-4 border-t border-zinc-700">Built for performance and ease of use, providing admins with complete control over their operations.</p>
+            </div>
+        </DashboardCard>
+    );
+}
+
+export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
+    const [view, setView] = useState<View>('dashboard');
+    const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+    const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<Tab>('Events');
+    const [editingBadge, setEditingBadge] = useState<Badge | {} | null>(null);
+
+    const handlePlayerSelect = (id: string) => {
+        setSelectedPlayerId(id);
+        setView('player_profile');
+    };
+
+    const handleManageEvent = (id: string) => {
+        setSelectedEventId(id);
+        setView('manage_event');
+    };
+
+    const handleBackToDashboard = () => {
+        setView('dashboard');
+        setSelectedPlayerId(null);
+        setSelectedEventId(null);
+    };
+    
+    const handleUpdatePlayer = (updatedPlayer: Player) => {
+        props.setPlayers(prev => prev.map(p => p.id === updatedPlayer.id ? updatedPlayer : p));
+    };
+
+    const handleUpdateEvent = (updatedEvent: GameEvent) => {
+        props.setEvents(prev => prev.map(e => e.id === updatedEvent.id ? updatedEvent : e));
+    };
+    
+    const handleUpdateVoucher = (updatedVoucher: Voucher) => {
+        props.setVouchers(prev => prev.map(v => v.id === updatedVoucher.id ? updatedVoucher : v));
+    };
+
+    const handleFinalizeEvent = (finalizedEvent: GameEvent, finalPlayers: Player[], newTransactions: Transaction[]) => {
+        props.setEvents(prev => prev.map(e => e.id === finalizedEvent.id ? finalizedEvent : e));
+        props.setPlayers(finalPlayers);
+        props.setTransactions(prev => [...prev, ...newTransactions]);
+        setView('dashboard');
+    };
+
+    const handleSaveBadge = (badgeData: Badge) => {
+        if ('id' in badgeData && badgeData.id) {
+            props.setBadges(bs => bs.map(b => b.id === badgeData.id ? badgeData : b));
+        } else {
+            props.setBadges(bs => [...bs, { ...badgeData, id: `b${Date.now()}` }]);
+        }
+        setEditingBadge(null);
+    };
+
+     const handleDeleteBadge = (id: string) => {
+        if(confirm('Are you sure you want to delete this badge? This will not revoke it from players who have already earned it.')) {
+            props.setBadges(bs => bs.filter(b => b.id !== id));
+        }
+    };
+
+    if (view === 'player_profile' && selectedPlayerId) {
+        const player = props.players.find(p => p.id === selectedPlayerId);
+        if (player) {
+            return <PlayerProfilePage player={player} events={props.events} legendaryBadges={props.legendaryBadges} onBack={handleBackToDashboard} onUpdatePlayer={handleUpdatePlayer} />;
+        }
+    }
+
+    if (view === 'manage_event' && selectedEventId) {
+        const event = props.events.find(e => e.id === selectedEventId);
+        if (event) {
+            return <ManageEventPage 
+                event={event} 
+                players={props.players}
+                vouchers={props.vouchers}
+                inventory={props.inventory}
+                gamificationSettings={props.gamificationSettings}
+                onBack={handleBackToDashboard} 
+                onUpdateEvent={handleUpdateEvent} 
+                onUpdateVoucher={handleUpdateVoucher}
+                onFinalizeEvent={handleFinalizeEvent}
+            />;
+        }
+    }
+
+    return (
+        <div className="p-4 sm:p-6 lg:p-8">
+            <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
+            {editingBadge && <BadgeEditorModal badge={editingBadge} onClose={() => setEditingBadge(null)} onSave={handleSaveBadge} />}
+            
+            {activeTab === 'Events' && <EventsTab {...props} onManageEvent={handleManageEvent} />}
+            {activeTab === 'Players' && <PlayersTab players={props.players} setPlayers={props.setPlayers} onPlayerSelect={handlePlayerSelect} />}
+            {activeTab === 'Progression' && (
+                <div className="space-y-6">
+                    <RanksTab ranks={props.ranks} setRanks={props.setRanks} badges={props.badges} setEditingBadge={setEditingBadge} />
+                    <BadgesTab badges={props.badges} setEditingBadge={setEditingBadge} onDeleteBadge={handleDeleteBadge} />
+                    <LegendaryBadgesTab legendaryBadges={props.legendaryBadges} setLegendaryBadges={props.setLegendaryBadges} setPlayers={props.setPlayers} />
+                </div>
+            )}
+            {activeTab === 'Inventory' && <InventoryTab {...props} />}
+            {activeTab === 'Locations' && <LocationsTab {...props} />}
+            {activeTab === 'Suppliers' && <SuppliersTab {...props} />}
+            {activeTab === 'Finance' && <FinanceTab {...props} />}
+            {activeTab === 'Vouchers & Raffles' && <VouchersAndRafflesTab {...props} />}
+            {activeTab === 'Sponsors' && <SponsorsTab {...props} />}
+            {activeTab === 'Settings' && <SettingsTab {...props} />}
+            {activeTab === 'About' && <AboutTab />}
+        </div>
+    );
+};

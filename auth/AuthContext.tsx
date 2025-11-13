@@ -54,8 +54,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 await auth.signOut();
                 setUser(null);
             } else {
-                // No Firebase user.
-                setUser(null);
+                // No Firebase user. Only nullify the user if they are an admin.
+                // This prevents the listener from wiping out a non-Firebase (player) login.
+                setUser(currentUser => {
+                    if (currentUser?.role === 'admin') {
+                        return null; // An admin was logged in and has now logged out via Firebase.
+                    }
+                    return currentUser; // A player is logged in, do not change their state.
+                });
             }
             setLoading(false);
         });

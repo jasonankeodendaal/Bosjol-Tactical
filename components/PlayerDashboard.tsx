@@ -13,13 +13,13 @@ import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
 
 
-const getRankForPlayer = (player: Player): Rank => {
+const getRankForPlayer = (player: Player, ranks: Rank[]): Rank => {
     if (player.stats.gamesPlayed < 10) {
         return UNRANKED_RANK;
     }
-    const sortedRanks = [...MOCK_RANKS].sort((a, b) => b.minXp - a.minXp);
+    const sortedRanks = [...ranks].sort((a, b) => b.minXp - a.minXp);
     const rank = sortedRanks.find(r => player.stats.xp >= r.minXp);
-    return rank || MOCK_RANKS[0];
+    return rank || ranks[0] || UNRANKED_RANK;
 };
 
 interface PlayerDashboardProps {
@@ -31,6 +31,7 @@ interface PlayerDashboardProps {
     onEventSignUp: (eventId: string, requestedGearIds: string[], note: string) => void;
     legendaryBadges: LegendaryBadge[];
     raffles: Raffle[];
+    ranks: Rank[];
 }
 
 type Tab = 'Overview' | 'Events' | 'Raffles' | 'Stats' | 'Achievements' | 'Leaderboard' | 'Settings';
@@ -266,7 +267,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     );
 }
 
-const calculateBadgeProgress = (badge: Badge, player: Player) => {
+const calculateBadgeProgress = (badge: Badge, player: Player, ranks: Rank[]) => {
     const isEarned = player.badges.some(b => b.id === badge.id);
     if (isEarned) return { current: 1, max: 1, percentage: 100, isEarned: true, text: 'Unlocked' };
 
@@ -288,7 +289,7 @@ const calculateBadgeProgress = (badge: Badge, player: Player) => {
             max = Number(criteria.value);
             break;
         case 'rank':
-            const playerRank = getRankForPlayer(player);
+            const playerRank = getRankForPlayer(player, ranks);
             if (playerRank.name === criteria.value) {
                  return { current: 1, max: 1, percentage: 100, isEarned: true, text: 'Unlocked' };
             }
@@ -301,8 +302,8 @@ const calculateBadgeProgress = (badge: Badge, player: Player) => {
     return { current, max, percentage, isEarned: false, text: `${current.toLocaleString()} / ${max.toLocaleString()}` };
 };
 
-const BadgeProgressCard: React.FC<{badge: Badge, player: Player}> = ({ badge, player }) => {
-    const progress = calculateBadgeProgress(badge, player);
+const BadgeProgressCard: React.FC<{badge: Badge, player: Player, ranks: Rank[]}> = ({ badge, player, ranks }) => {
+    const progress = calculateBadgeProgress(badge, player, ranks);
     
     const baseClasses = "bg-zinc-800/50 p-3 rounded-lg border flex items-center gap-4 transition-all duration-300";
     const unlockedClasses = "border-red-500/50 shadow-lg shadow-red-900/10";
@@ -325,13 +326,13 @@ const BadgeProgressCard: React.FC<{badge: Badge, player: Player}> = ({ badge, pl
     );
 }
 
-const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sponsors'>> = ({ player, events, sponsors }) => {
+const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sponsors' | 'ranks'>> = ({ player, events, sponsors, ranks }) => {
     const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 
-    const playerRank = getRankForPlayer(player);
-    const currentRankIndex = MOCK_RANKS.findIndex(r => r.name === playerRank.name);
-    const nextRank = MOCK_RANKS[currentRankIndex + 1];
+    const playerRank = getRankForPlayer(player, ranks);
+    const currentRankIndex = ranks.findIndex(r => r.name === playerRank.name);
+    const nextRank = ranks[currentRankIndex + 1];
 
     const xpForCurrentRank = playerRank.minXp;
     const xpForNextRank = nextRank ? nextRank.minXp : playerRank.minXp;
@@ -588,7 +589,7 @@ const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ p
     )
 }
 
-const AchievementsTab: React.FC<{ player: Player }> = ({ player }) => {
+const AchievementsTab: React.FC<{ player: Player, ranks: Rank[] }> = ({ player, ranks }) => {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <DashboardCard 
@@ -598,7 +599,7 @@ const AchievementsTab: React.FC<{ player: Player }> = ({ player }) => {
             >
                 <div className="p-6 space-y-3 max-h-[30rem] overflow-y-auto">
                     {MOCK_BADGES.map(badge => (
-                        <BadgeProgressCard key={badge.id} badge={badge} player={player} />
+                        <BadgeProgressCard key={badge.id} badge={badge} player={player} ranks={ranks} />
                     ))}
                 </div>
             </DashboardCard>
@@ -973,18 +974,18 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'raffles' | 'pl
     );
 }
 
-export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, players, sponsors, onPlayerUpdate, events, onEventSignUp, legendaryBadges, raffles }) => {
+export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, players, sponsors, onPlayerUpdate, events, onEventSignUp, legendaryBadges, raffles, ranks }) => {
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             
-            {activeTab === 'Overview' && <OverviewTab player={player} events={events} sponsors={sponsors} />}
+            {activeTab === 'Overview' && <OverviewTab player={player} events={events} sponsors={sponsors} ranks={ranks} />}
             {activeTab === 'Events' && <EventsTab player={player} events={events} onEventSignUp={onEventSignUp} />}
             {activeTab === 'Raffles' && <RafflesTab player={player} raffles={raffles} players={players} />}
             {activeTab === 'Stats' && <StatsTab player={player} events={events} />}
-            {activeTab === 'Achievements' && <AchievementsTab player={player} />}
+            {activeTab === 'Achievements' && <AchievementsTab player={player} ranks={ranks} />}
             {activeTab === 'Leaderboard' && <LeaderboardTab player={player} players={players} />}
             {activeTab === 'Settings' && <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />}
         </div>

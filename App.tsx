@@ -217,6 +217,7 @@ const AppContent: React.FC = () => {
                             onEventSignUp={handleEventSignUp}
                             legendaryBadges={legendaryBadges}
                             raffles={raffles}
+                            ranks={ranks}
                         /> : 
                         <AdminDashboard 
                             players={players}

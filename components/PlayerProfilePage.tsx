@@ -11,10 +11,10 @@ import { ImageUpload } from './ImageUpload';
 import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
 
-const getRankForPlayer = (player: Player): Rank => {
+const getRankForPlayer = (player: Player, ranks: Rank[]): Rank => {
     if (player.stats.gamesPlayed < 10) return UNRANKED_RANK;
-    const sortedRanks = [...MOCK_RANKS].sort((a, b) => b.minXp - a.minXp);
-    return sortedRanks.find(r => player.stats.xp >= r.minXp) || MOCK_RANKS[0];
+    const sortedRanks = [...ranks].sort((a, b) => b.minXp - a.minXp);
+    return sortedRanks.find(r => player.stats.xp >= r.minXp) || ranks[0] || UNRANKED_RANK;
 };
 
 interface PlayerProfilePageProps {
@@ -23,6 +23,7 @@ interface PlayerProfilePageProps {
     legendaryBadges: LegendaryBadge[];
     onBack: () => void;
     onUpdatePlayer: (player: Player) => void;
+    ranks: Rank[];
 }
 
 const StatDisplay: React.FC<{ value: string | number, label: string, tooltip?: string }> = ({ value, label, tooltip }) => (
@@ -81,7 +82,7 @@ const AwardXpModal: React.FC<{ onClose: () => void, onSave: (amount: number, rea
     );
 };
 
-export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, events, legendaryBadges, onBack, onUpdatePlayer }) => {
+export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, events, legendaryBadges, onBack, onUpdatePlayer, ranks }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ ...player });
     const [isAwardingXp, setIsAwardingXp] = useState(false);
@@ -93,7 +94,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
         setFormData(player);
     }, [player]);
 
-    const playerRank = getRankForPlayer(player);
+    const playerRank = getRankForPlayer(player, ranks);
     const { stats, matchHistory } = player;
     const kdr = stats.deaths > 0 ? (stats.kills / stats.deaths).toFixed(2) : stats.kills.toFixed(2);
 

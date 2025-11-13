@@ -18,13 +18,13 @@ import { LocationsTab } from './LocationsTab';
 import { USE_FIREBASE } from '../firebase';
 
 
-const getRankForPlayer = (player: Player): Rank => {
+const getRankForPlayer = (player: Player, ranks: Rank[]): Rank => {
     if (player.stats.gamesPlayed < 10) {
         return UNRANKED_RANK;
     }
-    const sortedRanks = [...MOCK_RANKS].sort((a, b) => b.minXp - a.minXp);
+    const sortedRanks = [...ranks].sort((a, b) => b.minXp - a.minXp);
     const rank = sortedRanks.find(r => player.stats.xp >= r.minXp);
-    return rank || MOCK_RANKS[0];
+    return rank || ranks[0] || UNRANKED_RANK;
 };
 
 interface AdminDashboardProps {
@@ -336,7 +336,8 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     );
 }
 
-const PlayersTab: React.FC<AdminDashboardProps & { onViewPlayer: (id: string) => void }> = ({ players, setPlayers, onViewPlayer }) => {
+const PlayersTab: React.FC<AdminDashboardProps & { onViewPlayer: (id: string) => void }> = (props) => {
+    const { players, setPlayers, onViewPlayer, ranks } = props;
     const [showNewPlayerModal, setShowNewPlayerModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -366,7 +367,7 @@ const PlayersTab: React.FC<AdminDashboardProps & { onViewPlayer: (id: string) =>
                     <div className="max-h-[60vh] overflow-y-auto pr-2">
                         <ul className="space-y-2">
                             {filteredPlayers.map(p => {
-                                const rank = getRankForPlayer(p);
+                                const rank = getRankForPlayer(p, ranks);
                                 return (
                                     <li key={p.id} onClick={() => onViewPlayer(p.id)} className="flex items-center p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer border border-transparent hover:border-red-600/50">
                                         <img src={p.avatarUrl} alt={p.name} className="w-12 h-12 rounded-full object-cover mr-4" />
@@ -401,7 +402,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
-    const { players, setPlayers, events, setEvents, legendaryBadges, setLegendaryBadges } = props;
+    const { players, setPlayers, events, setEvents, legendaryBadges, setLegendaryBadges, ranks } = props;
 
     const handleViewPlayer = (id: string) => {
         setSelectedPlayerId(id);
@@ -426,6 +427,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             legendaryBadges={legendaryBadges}
             onBack={() => setView('dashboard')}
             onUpdatePlayer={handleUpdatePlayer}
+            ranks={ranks}
         />;
     }
 

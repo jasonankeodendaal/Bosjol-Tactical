@@ -60,24 +60,32 @@ type View = 'dashboard' | 'player_profile' | 'manage_event';
 const NewPlayerModal: React.FC<{
     onClose: () => void;
     players: Player[];
+    companyDetails: CompanyDetails;
     addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<void>;
-}> = ({ onClose, players, addPlayerDoc }) => {
+}> = ({ onClose, players, companyDetails, addPlayerDoc }) => {
     const [formData, setFormData] = useState({
         name: '',
         surname: '',
         email: '',
         phone: '',
         pin: '',
+        age: '',
+        idNumber: '',
     });
 
     const handleSave = async () => {
         // Validation
-        if (!formData.name || !formData.surname || !formData.email || !formData.pin) {
+        const ageNum = Number(formData.age);
+        if (!formData.name || !formData.surname || !formData.email || !formData.pin || !formData.age || !formData.idNumber) {
             alert('Please fill in all required fields.');
             return;
         }
         if (!/^\d{4}$/.test(formData.pin)) {
             alert('PIN must be 4 digits.');
+            return;
+        }
+        if (ageNum < companyDetails.minimumSignupAge) {
+            alert(`Player must be at least ${companyDetails.minimumSignupAge} years old to sign up.`);
             return;
         }
 
@@ -104,6 +112,8 @@ const NewPlayerModal: React.FC<{
             email: formData.email,
             phone: formData.phone,
             pin: formData.pin,
+            age: ageNum,
+            idNumber: formData.idNumber,
             role: 'player',
             callsign: formData.name, // Default callsign to first name
             rank: MOCK_RANKS[0],
@@ -129,10 +139,16 @@ const NewPlayerModal: React.FC<{
     return (
         <Modal isOpen={true} onClose={onClose} title="Create New Player">
             <div className="space-y-4">
-                <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
-                <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({ ...f, surname: e.target.value }))} />
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
+                    <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({ ...f, surname: e.target.value }))} />
+                </div>
                 <Input label="Email" type="email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
                 <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input label="Age" type="number" value={formData.age} onChange={e => setFormData(f => ({ ...f, age: e.target.value }))} />
+                    <Input label="ID Number" value={formData.idNumber} onChange={e => setFormData(f => ({ ...f, idNumber: e.target.value }))} />
+                </div>
                 <Input label="4-Digit PIN" type="password" value={formData.pin} onChange={e => setFormData(f => ({ ...f, pin: e.target.value.replace(/\D/g, '') }))} maxLength={4} />
             </div>
             <div className="mt-6">
@@ -178,6 +194,22 @@ const SettingsTab: React.FC<Pick<AdminDashboardProps, 'companyDetails' | 'setCom
         }));
     };
 
+    const handleCarouselMediaUpload = (base64: string) => {
+        const type = base64.startsWith('data:image') ? 'image' : 'video';
+        setFormData(prev => ({
+            ...prev,
+            carouselMedia: [...prev.carouselMedia, { id: `cm${Date.now()}`, type, url: base64 }]
+        }))
+    };
+
+    const handleRemoveCarouselMedia = (id: string) => {
+        setFormData(prev => ({
+            ...prev,
+            carouselMedia: prev.carouselMedia.filter(media => media.id !== id)
+        }));
+    };
+
+
     const isDirty = JSON.stringify(formData) !== JSON.stringify(companyDetails);
 
     return (
@@ -190,6 +222,7 @@ const SettingsTab: React.FC<Pick<AdminDashboardProps, 'companyDetails' | 'setCom
                         <Input label="Phone" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} />
                         <Input label="Email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
                         <Input label="Address" value={formData.address} onChange={e => setFormData(f => ({ ...f, address: e.target.value }))} className="md:col-span-2"/>
+                        <Input label="Minimum Signup Age" type="number" value={formData.minimumSignupAge} onChange={e => setFormData(f => ({...f, minimumSignupAge: Number(e.target.value)}))} />
                     </div>
                      <div className="pt-4 border-t border-zinc-700">
                         <h4 className="font-semibold text-gray-200 mb-2">Branding & Assets</h4>
@@ -212,6 +245,27 @@ const SettingsTab: React.FC<Pick<AdminDashboardProps, 'companyDetails' | 'setCom
                                 <ImageUpload onUpload={(url) => setFormData(f => ({...f, apkUrl: url}))} accept=".apk" />
                             </div>
                         </div>
+                     </div>
+                     <div className="pt-4 border-t border-zinc-700">
+                        <h4 className="font-semibold text-gray-200 mb-2">Front Page Carousel Media</h4>
+                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
+                            {formData.carouselMedia.map(media => (
+                                <div key={media.id} className="relative group aspect-video bg-zinc-800 rounded-md overflow-hidden">
+                                    {media.type === 'image' ? (
+                                        <img src={media.url} alt="carousel item" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <video src={media.url} muted loop className="w-full h-full object-cover" />
+                                    )}
+                                    <button
+                                        onClick={() => handleRemoveCarouselMedia(media.id)}
+                                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <XIcon className="w-4 h-4"/>
+                                    </button>
+                                </div>
+                            ))}
+                         </div>
+                        <ImageUpload onUpload={handleCarouselMediaUpload} accept="image/*,video/*" />
                      </div>
                       <div className="pt-4 border-t border-zinc-700">
                         <h4 className="font-semibold text-gray-200 mb-2">Social Links</h4>
@@ -330,7 +384,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     );
 }
 
-const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' | 'ranks'> & { onViewPlayer: (id: string) => void }> = ({ players, addPlayerDoc, ranks, onViewPlayer }) => {
+const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' | 'ranks' | 'companyDetails'> & { onViewPlayer: (id: string) => void }> = ({ players, addPlayerDoc, ranks, companyDetails, onViewPlayer }) => {
     const [showNewPlayerModal, setShowNewPlayerModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -342,7 +396,7 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
 
     return (
         <div>
-            {showNewPlayerModal && <NewPlayerModal onClose={() => setShowNewPlayerModal(false)} players={players} addPlayerDoc={addPlayerDoc} />}
+            {showNewPlayerModal && <NewPlayerModal onClose={() => setShowNewPlayerModal(false)} players={players} addPlayerDoc={addPlayerDoc} companyDetails={companyDetails} />}
             <DashboardCard title="Player Management" icon={<UsersIcon className="w-6 h-6" />}>
                 <div className="p-4">
                     <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
@@ -468,7 +522,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         <div className="p-4 sm:p-6 lg:p-8">
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
-            {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} onViewPlayer={handleViewPlayer}/>}
+            {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}
             {activeTab === 'Progression' && <ProgressionTab {...props} />}
             {activeTab === 'Inventory' && <InventoryTab {...props} />}
             {activeTab === 'Locations' && <LocationsTab {...props} />}

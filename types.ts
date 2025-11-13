@@ -78,6 +78,8 @@ export interface Player extends User {
   email: string;
   phone: string;
   pin: string;
+  age: number;
+  idNumber: string;
   address?: string;
   allergies?: string;
   medicalNotes?: string;
@@ -335,4 +337,5 @@ export interface CompanyDetails {
     };
     fixedEventRules?: string;
     carouselMedia: CarouselMedia[];
+    minimumSignupAge: number;
 }

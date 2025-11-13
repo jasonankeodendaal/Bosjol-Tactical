@@ -99,7 +99,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
     const kdr = stats.deaths > 0 ? (stats.kills / stats.deaths).toFixed(2) : stats.kills.toFixed(2);
 
     const handleSave = () => {
-        onUpdatePlayer(formData);
+        onUpdatePlayer({...formData, age: Number(formData.age) });
         setIsEditing(false);
     };
 
@@ -244,6 +244,10 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                                     <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))}/>
                                     <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({...f, surname: e.target.value}))}/>
                                     <Input label="Callsign" value={formData.callsign} onChange={e => setFormData(f => ({...f, callsign: e.target.value}))}/>
+                                     <div className="grid grid-cols-2 gap-4">
+                                        <Input label="Age" type="number" value={formData.age} onChange={e => setFormData(f => ({...f, age: Number(e.target.value)}))} />
+                                        <Input label="ID Number" value={formData.idNumber} onChange={e => setFormData(f => ({...f, idNumber: e.target.value}))} />
+                                    </div>
                                     <Input
                                         label="4-Digit PIN"
                                         type="text"
@@ -286,6 +290,8 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                             ) : (
                                 <>
                                     <p><strong className="text-gray-400">Code:</strong> <span className="font-mono text-red-400">{player.playerCode}</span> <InfoTooltip text="Unique code for event check-in and live stat tracking." /></p>
+                                    <p><strong className="text-gray-400">Age:</strong> {player.age}</p>
+                                    <p><strong className="text-gray-400">ID Number:</strong> {player.idNumber}</p>
                                     <div className="bg-zinc-800/50 p-3 rounded-md border border-zinc-700/50">
                                         <div className="flex items-center justify-between">
                                             <div>

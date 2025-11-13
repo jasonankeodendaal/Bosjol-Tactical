@@ -23,12 +23,6 @@ const SignUpInfoModal: React.FC<{ companyDetails: CompanyDetails, onContinue: ()
                         <span>{companyDetails.phone}</span>
                     </div>
                 )}
-                {companyDetails.website && (
-                     <a href={companyDetails.website} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 text-red-400 hover:underline">
-                        <GlobeAltIcon className="w-5 h-5"/>
-                        <span>Visit Website</span>
-                    </a>
-                )}
             </div>
             <div className="mt-6">
                 <Button variant="secondary" onClick={onContinue} size="sm">

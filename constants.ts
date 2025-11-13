@@ -253,6 +253,8 @@ export const MOCK_PLAYERS: Player[] = [
     email: 'j.mactavish@tf141.dev',
     phone: '555-0101',
     pin: '1111',
+    age: 28,
+    idNumber: 'A12345678',
     address: 'Hereford, UK',
     allergies: 'None',
     medicalNotes: 'Resistant to flashbangs.',
@@ -291,6 +293,8 @@ export const MOCK_PLAYERS: Player[] = [
     email: 's.riley@tf141.dev',
     phone: '555-0102',
     pin: '2222',
+    age: 35,
+    idNumber: 'B87654321',
     address: 'Manchester, UK',
     allergies: 'Penicillin',
     medicalNotes: 'Prefers to remain masked.',
@@ -327,6 +331,8 @@ export const MOCK_PLAYERS: Player[] = [
     email: 'k.garrick@tf141.dev',
     phone: '555-0103',
     pin: '3333',
+    age: 32,
+    idNumber: 'C11223344',
     address: 'London, UK',
     role: 'player',
     callsign: 'Gaz',
@@ -361,6 +367,8 @@ export const MOCK_PLAYERS: Player[] = [
     email: 'j.doe@newblood.net',
     phone: '555-0104',
     pin: '4444',
+    age: 21,
+    idNumber: 'D55667788',
     role: 'player',
     callsign: 'Rook',
     rank: MOCK_RANKS[3], // Cadet 2
@@ -394,6 +402,8 @@ export const MOCK_PLAYERS: Player[] = [
     email: 'a.johnson@operator.net',
     phone: '555-0105',
     pin: '5555',
+    age: 29,
+    idNumber: 'E99887766',
     role: 'player',
     callsign: 'Nomad',
     rank: MOCK_RANKS[12], // Lieutenant 1
@@ -413,6 +423,8 @@ export const MOCK_PLAYERS: Player[] = [
     email: 'm.garcia@operator.net',
     phone: '555-0106',
     pin: '6666',
+    age: 26,
+    idNumber: 'F12123434',
     role: 'player',
     callsign: 'Valkyrie',
     rank: MOCK_RANKS[10], // Staff Sergeant 1
@@ -432,6 +444,8 @@ export const MOCK_PLAYERS: Player[] = [
     email: 'k.tanaka@operator.net',
     phone: '555-0107',
     pin: '7777',
+    age: 31,
+    idNumber: 'G56567878',
     role: 'player',
     callsign: 'Oni',
     rank: MOCK_RANKS[5], // Private 2
@@ -451,6 +465,8 @@ export const MOCK_PLAYERS: Player[] = [
     email: 'c.williams@operator.net',
     phone: '555-0108',
     pin: '8888',
+    age: 33,
+    idNumber: 'H90901212',
     role: 'player',
     callsign: 'Echo',
     rank: MOCK_RANKS[15], // First Sergeant 2
@@ -470,6 +486,8 @@ export const MOCK_PLAYERS: Player[] = [
     email: 'd.chen@operator.net',
     phone: '555-0109',
     pin: '9999',
+    age: 27,
+    idNumber: 'I34345656',
     role: 'player',
     callsign: 'Breach',
     rank: MOCK_RANKS[6], // Corporal 1
@@ -489,6 +507,8 @@ export const MOCK_PLAYERS: Player[] = [
     email: 's.petrova@operator.net',
     phone: '555-0110',
     pin: '1010',
+    age: 19,
+    idNumber: 'J78789090',
     role: 'player',
     callsign: 'Spectre',
     rank: MOCK_RANKS[1], // Novice
@@ -623,6 +643,7 @@ export const MOCK_COMPANY_DETAILS: CompanyDetails = {
     playerDashboardBackgroundUrl: '',
     adminDashboardBackgroundUrl: '',
     apkUrl: '',
+    minimumSignupAge: 18,
     carouselMedia: [
         { id: 'cm1', type: 'image', url: 'https://images.pexels.com/photos/163822/soldier-airsoft-gun-weapon-163822.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
         { id: 'cm2', type: 'image', url: 'https://images.pexels.com/photos/7984333/pexels-photo-7984333.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },

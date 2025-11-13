@@ -40,9 +40,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         const adminDoc = querySnapshot.docs[0];
                         setUser({ id: adminDoc.id, ...adminDoc.data() } as Admin);
                     } else {
-                        console.error("Admin user authenticated but no profile found in Firestore 'admins' collection.");
-                        await auth.signOut(); // Sign out to prevent inconsistent state
-                        setUser(null);
+                        // Admin authenticated but no profile. Let's create one.
+                        console.warn("Admin profile not found in Firestore. Creating a default profile.");
+                        const { id, ...newAdminData } = MOCK_ADMIN;
+                        newAdminData.email = firebaseUser.email!; // Ensure email matches for consistency
+                        
+                        try {
+                            const docRef = await db.collection("admins").add(newAdminData);
+                            setUser({ ...newAdminData, id: docRef.id });
+                        } catch (creationError) {
+                            console.error("Failed to create default admin profile:", creationError);
+                            await auth.signOut();
+                            setUser(null);
+                        }
                     }
                 } catch (error) {
                     console.error("Error fetching admin profile from Firestore:", error);

@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
 import { LoginScreen } from './components/LoginScreen';
 import { PlayerDashboard } from './components/PlayerDashboard';
@@ -9,6 +9,7 @@ import { BuildingOfficeIcon, ExclamationTriangleIcon } from './components/icons/
 import { DataProvider, DataContext } from './data/DataContext';
 import { Loader } from './components/Loader';
 import { USE_FIREBASE, isFirebaseConfigured, getEnvVar, firebaseInitializationError } from './firebase';
+import { FrontPage } from './components/FrontPage';
 
 const Footer: React.FC<{ details: CompanyDetails }> = ({ details }) => (
     <footer className="bg-zinc-900/80 backdrop-blur-sm border-t border-zinc-800 p-6 text-center text-sm text-gray-400 mt-auto">
@@ -37,6 +38,7 @@ const Footer: React.FC<{ details: CompanyDetails }> = ({ details }) => (
 const AppContent: React.FC = () => {
     const auth = useContext(AuthContext);
     const data = useContext(DataContext);
+    const [showFrontPage, setShowFrontPage] = useState(true);
 
     if (firebaseInitializationError) {
         return (
@@ -190,6 +192,9 @@ const AppContent: React.FC = () => {
     }
 
     if (!isAuthenticated || !user) {
+        if (showFrontPage) {
+            return <FrontPage companyDetails={companyDetails} onEnter={() => setShowFrontPage(false)} />;
+        }
         return <LoginScreen companyDetails={companyDetails} />;
     }
 

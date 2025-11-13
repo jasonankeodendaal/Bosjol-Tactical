@@ -307,6 +307,12 @@ export interface SocialLink {
     iconUrl: string;
 }
 
+export interface CarouselMedia {
+    id: string;
+    type: 'image' | 'video';
+    url: string;
+}
+
 export interface CompanyDetails {
     name: string;
     address: string;
@@ -328,4 +334,5 @@ export interface CompanyDetails {
         routingNumber: string;
     };
     fixedEventRules?: string;
+    carouselMedia: CarouselMedia[];
 }

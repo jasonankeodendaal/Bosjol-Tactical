@@ -1,4 +1,4 @@
-import type { Player, Admin, GameEvent, Briefing, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle } from './types';
+import type { Player, Admin, GameEvent, Briefing, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType } from './types';
 
 export const MOCK_BADGES: Badge[] = [
     { id: 'b01', name: 'Sharpshooter', description: 'Achieve 50 headshots', iconUrl: 'https://cdn.pixabay.com/photo/2012/04/13/19/27/target-33391_1280.png', criteria: { type: 'headshots', value: 50 }},
@@ -103,6 +103,8 @@ export const MOCK_EVENT_THEMES: string[] = [
     'SpeedQB',
     'Mil-Sim',
 ];
+export const EVENT_STATUSES: EventStatus[] = ['Upcoming', 'In Progress', 'Completed', 'Cancelled'];
+export const EVENT_TYPES: EventType[] = ['Training', 'Mission', 'Briefing', 'Maintenance'];
 
 export const MOCK_SUPPLIERS: Supplier[] = [
     { id: 'sup01', name: 'Tactical Imports Inc.', contactPerson: 'John Smith', email: 'sales@tacimports.com', phone: '555-0301', website: 'https://tacimports.com', address: '123 Supply Chain Rd, Industrial Park, USA' },

@@ -4,7 +4,7 @@ import * as mock from '../constants';
 import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule } from '../types';
 
 // Helper to fetch collection data
-function useCollection<T>(collectionName: string, mockData: T[], dependencies: any[] = []) {
+function useCollection<T extends {id: string}>(collectionName: string, mockData: T[], dependencies: any[] = []) {
     const [data, setData] = useState<T[]>(mockData);
     const [loading, setLoading] = useState(true);
 
@@ -47,9 +47,8 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                 if (docSnap.exists) {
                     setData(docSnap.data() as T);
                 } else {
-                    console.warn(`Document ${docId} not found in ${collectionName}. Seeding with mock data.`);
-                    docRef.set(mockData); // Seed the document if it doesn't exist
-                    setData(mockData);
+                    // This will be handled by the global seeder now
+                    console.warn(`Document ${docId} not found in ${collectionName}. Waiting for seed.`);
                 }
                 setLoading(false);
             }, (error) => {
@@ -107,6 +106,7 @@ export const DataContext = createContext<DataContextType | null>(null);
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [players, setPlayers, loadingPlayers] = useCollection<Player>('players', mock.MOCK_PLAYERS);
     const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', mock.MOCK_EVENTS);
+    // FIX: Remove 'as any' cast as MOCK_RANKS now conforms to Rank[] where Rank has an 'id'.
     const [ranks, setRanks, loadingRanks] = useCollection<Rank>('ranks', mock.MOCK_RANKS);
     const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', mock.MOCK_BADGES);
     const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', mock.MOCK_LEGENDARY_BADGES);
@@ -126,35 +126,50 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const seedInitialData = async () => {
         if (!USE_FIREBASE || !db) return;
         setIsSeeding(true);
-        console.log("Seeding initial database configuration...");
+        console.log("FRESH DATABASE DETECTED: Seeding all initial data...");
         try {
             const batch = db.batch();
+
+            // System Settings & Config
+            // FIX: Update rank seeding to use the predefined ID from the mock data.
+            mock.MOCK_RANKS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('ranks').doc(id), data); });
+            mock.MOCK_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('badges').doc(id), data); });
+            mock.MOCK_LEGENDARY_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('legendaryBadges').doc(id), data); });
+            mock.MOCK_GAMIFICATION_SETTINGS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('gamificationSettings').doc(id), data); });
+            batch.set(db.collection('settings').doc('companyDetails'), mock.MOCK_COMPANY_DETAILS);
             
-            mock.MOCK_RANKS.forEach(item => batch.set(db.collection('ranks').doc(), item));
-            mock.MOCK_BADGES.forEach(item => batch.set(db.collection('badges').doc(item.id), item));
-            mock.MOCK_LEGENDARY_BADGES.forEach(item => batch.set(db.collection('legendaryBadges').doc(item.id), item));
-            mock.MOCK_GAMIFICATION_SETTINGS.forEach(item => batch.set(db.collection('gamificationSettings').doc(item.id), item));
-            
-            // For other collections, you might want to add them here too if they are static
-            mock.MOCK_SPONSORS.forEach(item => batch.set(db.collection('sponsors').doc(item.id), item));
-            mock.MOCK_SUPPLIERS.forEach(item => batch.set(db.collection('suppliers').doc(item.id), item));
-            mock.MOCK_LOCATIONS.forEach(item => batch.set(db.collection('locations').doc(item.id), item));
-            
+            // Admin User
+            const { id: adminId, ...adminData } = mock.MOCK_ADMIN;
+            batch.set(db.collection('admins').doc(adminId), adminData);
+
+            // Transactional Data
+            mock.MOCK_PLAYERS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('players').doc(id), data); });
+            mock.MOCK_EVENTS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('events').doc(id), data); });
+            mock.MOCK_VOUCHERS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('vouchers').doc(id), data); });
+            mock.MOCK_INVENTORY.forEach(item => { const {id, ...data} = item; batch.set(db.collection('inventory').doc(id), data); });
+            mock.MOCK_SUPPLIERS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('suppliers').doc(id), data); });
+            mock.MOCK_TRANSACTIONS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('transactions').doc(id), data); });
+            mock.MOCK_LOCATIONS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('locations').doc(id), data); });
+            mock.MOCK_RAFFLES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('raffles').doc(id), data); });
+            mock.MOCK_SPONSORS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('sponsors').doc(id), data); });
+
             await batch.commit();
-            console.log('Initial data seeded successfully.');
+            console.log('All initial data seeded successfully. Refreshing the page to load new data...');
+            // Force a reload to ensure all components get the fresh data from Firestore listeners
+            window.location.reload();
 
         } catch (error) {
             console.error("Error seeding initial data: ", error);
-        } finally {
-            setIsSeeding(false);
+            setIsSeeding(false); // Stop seeding on error
         }
     };
     
      useEffect(() => {
         const checkAndSeed = async () => {
             if (USE_FIREBASE && db && !loading) {
-                const ranksSnapshot = await db.collection('ranks').limit(1).get();
-                if (ranksSnapshot.empty) {
+                // Check a core transactional collection to see if data exists.
+                const playersSnapshot = await db.collection('players').limit(1).get();
+                if (playersSnapshot.empty) {
                     await seedInitialData();
                 }
             }

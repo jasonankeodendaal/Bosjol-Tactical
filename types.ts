@@ -184,6 +184,8 @@ export interface Briefing {
 }
 
 export interface Rank {
+    // FIX: Add 'id' to the Rank interface to align with the data model.
+    id: string;
     name: string;
     tier: string;
     minXp: number; // Represents Rank Points

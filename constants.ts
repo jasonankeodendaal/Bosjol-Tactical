@@ -14,6 +14,8 @@ export const MOCK_LEGENDARY_BADGES: LegendaryBadge[] = [
 ];
 
 export const UNRANKED_RANK: Rank = { 
+    // FIX: Add id to conform to the updated Rank interface.
+    id: 'rank_unranked',
     name: 'Unranked',
     tier: 'N/A',
     minXp: 0, 
@@ -22,52 +24,53 @@ export const UNRANKED_RANK: Rank = {
 };
 
 // New 30-rank structure
+// FIX: Add unique id properties to all ranks to conform to the Rank interface.
 export const MOCK_RANKS: Rank[] = [
     // Tier 1 - Recruit
-    { tier: "Tier 1 – Recruit", name: "Trainee", minXp: 0, iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png", unlocks: ["Basic Loadout"] },
-    { tier: "Tier 1 – Recruit", name: "Novice", minXp: 100, iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png", unlocks: ["New Pistol Option"] },
+    { id: "rank_t01_1", tier: "Tier 1 – Recruit", name: "Trainee", minXp: 0, iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png", unlocks: ["Basic Loadout"] },
+    { id: "rank_t01_2", tier: "Tier 1 – Recruit", name: "Novice", minXp: 100, iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png", unlocks: ["New Pistol Option"] },
     // Tier 2 - Cadet
-    { tier: "Tier 2 – Cadet", name: "Cadet 1", minXp: 250, iconUrl: "https://img.icons8.com/external-flatart-icons-outline-flatarticons/64/external-rank-military-flatart-icons-outline-flatarticons.png", unlocks: ["New SMG Option"] },
-    { tier: "Tier 2 – Cadet", name: "Cadet 2", minXp: 400, iconUrl: "https://img.icons8.com/external-flatart-icons-outline-flatarticons/64/external-rank-military-flatart-icons-outline-flatarticons.png", unlocks: ["First Perk Slot"] },
+    { id: "rank_t02_1", tier: "Tier 2 – Cadet", name: "Cadet 1", minXp: 250, iconUrl: "https://img.icons8.com/external-flatart-icons-outline-flatarticons/64/external-rank-military-flatart-icons-outline-flatarticons.png", unlocks: ["New SMG Option"] },
+    { id: "rank_t02_2", tier: "Tier 2 – Cadet", name: "Cadet 2", minXp: 400, iconUrl: "https://img.icons8.com/external-flatart-icons-outline-flatarticons/64/external-rank-military-flatart-icons-outline-flatarticons.png", unlocks: ["First Perk Slot"] },
     // Tier 3 - Private
-    { tier: "Tier 3 – Private", name: "Private 1", minXp: 600, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png", unlocks: ["New AR Option"] },
-    { tier: "Tier 3 – Private", name: "Private 2", minXp: 800, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png", unlocks: ["New Tactical Grenade"] },
+    { id: "rank_t03_1", tier: "Tier 3 – Private", name: "Private 1", minXp: 600, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png", unlocks: ["New AR Option"] },
+    { id: "rank_t03_2", tier: "Tier 3 – Private", name: "Private 2", minXp: 800, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png", unlocks: ["New Tactical Grenade"] },
     // Tier 4 - Corporal
-    { tier: "Tier 4 – Corporal", name: "Corporal 1", minXp: 1050, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png", unlocks: ["New Scope Attachment"] },
-    { tier: "Tier 4 – Corporal", name: "Corporal 2", minXp: 1300, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png", unlocks: ["5% Store Discount"] },
+    { id: "rank_t04_1", tier: "Tier 4 – Corporal", name: "Corporal 1", minXp: 1050, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png", unlocks: ["New Scope Attachment"] },
+    { id: "rank_t04_2", tier: "Tier 4 – Corporal", name: "Corporal 2", minXp: 1300, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png", unlocks: ["5% Store Discount"] },
     // Tier 5 - Sergeant
-    { tier: "Tier 5 – Sergeant", name: "Sergeant 1", minXp: 1600, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png", unlocks: ["New Sniper Rifle"] },
-    { tier: "Tier 5 – Sergeant", name: "Sergeant 2", minXp: 1900, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png", unlocks: ["Second Perk Slot"] },
+    { id: "rank_t05_1", tier: "Tier 5 – Sergeant", name: "Sergeant 1", minXp: 1600, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png", unlocks: ["New Sniper Rifle"] },
+    { id: "rank_t05_2", tier: "Tier 5 – Sergeant", name: "Sergeant 2", minXp: 1900, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png", unlocks: ["Second Perk Slot"] },
     // Tier 6 - Staff Sergeant
-    { tier: "Tier 6 – Staff Sergeant", name: "Staff Sergeant 1", minXp: 2250, iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png", unlocks: ["New Shotgun"] },
-    { tier: "Tier 6 – Staff Sergeant", name: "Staff Sergeant 2", minXp: 2600, iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png", unlocks: ["New Lethal Grenade"] },
+    { id: "rank_t06_1", tier: "Tier 6 – Staff Sergeant", name: "Staff Sergeant 1", minXp: 2250, iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png", unlocks: ["New Shotgun"] },
+    { id: "rank_t06_2", tier: "Tier 6 – Staff Sergeant", name: "Staff Sergeant 2", minXp: 2600, iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png", unlocks: ["New Lethal Grenade"] },
     // Tier 7 - Gunnery Sergeant
-    { tier: "Tier 7 – Gunnery Sergeant", name: "Gunnery Sergeant 1", minXp: 3000, iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png", unlocks: ["Custom Weapon Charm"] },
-    { tier: "Tier 7 – Gunnery Sergeant", name: "Gunnery Sergeant 2", minXp: 3400, iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png", unlocks: ["10% Store Discount"] },
+    { id: "rank_t07_1", tier: "Tier 7 – Gunnery Sergeant", name: "Gunnery Sergeant 1", minXp: 3000, iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png", unlocks: ["Custom Weapon Charm"] },
+    { id: "rank_t07_2", tier: "Tier 7 – Gunnery Sergeant", name: "Gunnery Sergeant 2", minXp: 3400, iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png", unlocks: ["10% Store Discount"] },
     // Tier 8 - First Sergeant
-    { tier: "Tier 8 – First Sergeant", name: "First Sergeant 1", minXp: 3850, iconUrl: "https://img.icons8.com/ios-filled/50/insignia.png", unlocks: ["New Underbarrel Attachment"] },
-    { tier: "Tier 8 – First Sergeant", name: "First Sergeant 2", minXp: 4300, iconUrl: "https://img.icons8.com/ios-filled/50/insignia.png", unlocks: ["New Operator Skin"] },
+    { id: "rank_t08_1", tier: "Tier 8 – First Sergeant", name: "First Sergeant 1", minXp: 3850, iconUrl: "https://img.icons8.com/ios-filled/50/insignia.png", unlocks: ["New Underbarrel Attachment"] },
+    { id: "rank_t08_2", tier: "Tier 8 – First Sergeant", name: "First Sergeant 2", minXp: 4300, iconUrl: "https://img.icons8.com/ios-filled/50/insignia.png", unlocks: ["New Operator Skin"] },
     // Tier 9 - Master Sergeant
-    { tier: "Tier 9 – Master Sergeant", name: "Master Sergeant 1", minXp: 4800, iconUrl: "https://img.icons8.com/ios-filled/50/military-rank.png", unlocks: ["Third Perk Slot"] },
-    { tier: "Tier 9 – Master Sergeant", name: "Master Sergeant 2", minXp: 5300, iconUrl: "https://img.icons8.com/ios-filled/50/military-rank.png", unlocks: ["New LMG"] },
+    { id: "rank_t09_1", tier: "Tier 9 – Master Sergeant", name: "Master Sergeant 1", minXp: 4800, iconUrl: "https://img.icons8.com/ios-filled/50/military-rank.png", unlocks: ["Third Perk Slot"] },
+    { id: "rank_t09_2", tier: "Tier 9 – Master Sergeant", name: "Master Sergeant 2", minXp: 5300, iconUrl: "https://img.icons8.com/ios-filled/50/military-rank.png", unlocks: ["New LMG"] },
     // Tier 10 - Sergeant Major
-    { tier: "Tier 10 – Sergeant Major", name: "Sergeant Major 1", minXp: 5850, iconUrl: "https://img.icons8.com/color/48/sergeant-major-of-the-army.png", unlocks: ["Exclusive Calling Card"] },
-    { tier: "Tier 10 – Sergeant Major", name: "Sergeant Major 2", minXp: 6400, iconUrl: "https://img.icons8.com/color/48/sergeant-major-of-the-army.png", unlocks: ["15% Store Discount"] },
+    { id: "rank_t10_1", tier: "Tier 10 – Sergeant Major", name: "Sergeant Major 1", minXp: 5850, iconUrl: "https://img.icons8.com/color/48/sergeant-major-of-the-army.png", unlocks: ["Exclusive Calling Card"] },
+    { id: "rank_t10_2", tier: "Tier 10 – Sergeant Major", name: "Sergeant Major 2", minXp: 6400, iconUrl: "https://img.icons8.com/color/48/sergeant-major-of-the-army.png", unlocks: ["15% Store Discount"] },
     // Tier 11 - Warrant Officer
-    { tier: "Tier 11 – Warrant Officer", name: "Warrant Officer 1", minXp: 7000, iconUrl: "https://img.icons8.com/external-justicon-flat-justicon/64/external-award-reward-and-badges-justicon-flat-justicon-1.png", unlocks: ["New Marksman Rifle"] },
-    { tier: "Tier 11 – Warrant Officer", name: "Warrant Officer 2", minXp: 7600, iconUrl: "https://img.icons8.com/external-justicon-flat-justicon/64/external-award-reward-and-badges-justicon-flat-justicon-1.png", unlocks: ["Free Gear Rental Coupon"] },
+    { id: "rank_t11_1", tier: "Tier 11 – Warrant Officer", name: "Warrant Officer 1", minXp: 7000, iconUrl: "https://img.icons8.com/external-justicon-flat-justicon/64/external-award-reward-and-badges-justicon-flat-justicon-1.png", unlocks: ["New Marksman Rifle"] },
+    { id: "rank_t11_2", tier: "Tier 11 – Warrant Officer", name: "Warrant Officer 2", minXp: 7600, iconUrl: "https://img.icons8.com/external-justicon-flat-justicon/64/external-award-reward-and-badges-justicon-flat-justicon-1.png", unlocks: ["Free Gear Rental Coupon"] },
     // Tier 12 - Lieutenant
-    { tier: "Tier 12 – Lieutenant", name: "Lieutenant 1", minXp: 8250, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-rank-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["New Laser Sight"] },
-    { tier: "Tier 12 – Lieutenant", name: "Lieutenant 2", minXp: 8900, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-rank-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["Additional Loadout Slot"] },
+    { id: "rank_t12_1", tier: "Tier 12 – Lieutenant", name: "Lieutenant 1", minXp: 8250, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-rank-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["New Laser Sight"] },
+    { id: "rank_t12_2", tier: "Tier 12 – Lieutenant", name: "Lieutenant 2", minXp: 8900, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-rank-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["Additional Loadout Slot"] },
     // Tier 13 - Captain
-    { tier: "Tier 13 – Captain", name: "Captain 1", minXp: 9600, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-badge-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["New Suppressor"] },
-    { tier: "Tier 13 – Captain", name: "Captain 2", minXp: 10300, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-badge-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["20% Store Discount"] },
+    { id: "rank_t13_1", tier: "Tier 13 – Captain", name: "Captain 1", minXp: 9600, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-badge-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["New Suppressor"] },
+    { id: "rank_t13_2", tier: "Tier 13 – Captain", name: "Captain 2", minXp: 10300, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-badge-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["20% Store Discount"] },
     // Tier 14 - Major
-    { tier: "Tier 14 – Major", name: "Major 1", minXp: 11050, iconUrl: "https://img.icons8.com/fluency/48/medal2.png", unlocks: ["Elite Operator Skin"] },
-    { tier: "Tier 14 – Major", name: "Major 2", minXp: 11800, iconUrl: "https://img.icons8.com/fluency/48/medal2.png", unlocks: ["Prestige Weapon Blueprint"] },
+    { id: "rank_t14_1", tier: "Tier 14 – Major", name: "Major 1", minXp: 11050, iconUrl: "https://img.icons8.com/fluency/48/medal2.png", unlocks: ["Elite Operator Skin"] },
+    { id: "rank_t14_2", tier: "Tier 14 – Major", name: "Major 2", minXp: 11800, iconUrl: "https://img.icons8.com/fluency/48/medal2.png", unlocks: ["Prestige Weapon Blueprint"] },
     // Tier 15 - Colonel
-    { tier: "Tier 15 – Colonel", name: "Colonel 1", minXp: 12600, iconUrl: "https://img.icons8.com/officel/40/command-sergeant-major.png", unlocks: ["Hall of Fame Entry"] },
-    { tier: "Tier 15 – Colonel", name: "Colonel 2", minXp: 13500, iconUrl: "https://img.icons8.com/officel/40/command-sergeant-major.png", unlocks: ["Lifetime 25% Discount"] }
+    { id: "rank_t15_1", tier: "Tier 15 – Colonel", name: "Colonel 1", minXp: 12600, iconUrl: "https://img.icons8.com/officel/40/command-sergeant-major.png", unlocks: ["Hall of Fame Entry"] },
+    { id: "rank_t15_2", tier: "Tier 15 – Colonel", name: "Colonel 2", minXp: 13500, iconUrl: "https://img.icons8.com/officel/40/command-sergeant-major.png", unlocks: ["Lifetime 25% Discount"] }
 ];
 
 

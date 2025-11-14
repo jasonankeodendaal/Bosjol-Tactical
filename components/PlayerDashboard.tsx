@@ -667,6 +667,11 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
         setIsUploading(false);
     };
 
+    const handleRemoveAvatar = () => {
+        const defaultAvatar = `https://api.dicebear.com/8.x/bottts/svg?seed=${player.name}${player.surname}`;
+        onPlayerUpdate({ ...player, avatarUrl: defaultAvatar });
+    };
+
     const handleSave = () => {
         onPlayerUpdate({ ...player, ...formData });
         setIsDirty(false);
@@ -679,7 +684,7 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-1 flex flex-col items-center">
                             <h4 className="font-bold text-gray-200 mb-2">Avatar</h4>
-                            <div className="relative group w-32 h-32 mb-4">
+                            <div className="relative group w-32 h-32 mb-2">
                                 <img src={player.avatarUrl} alt={player.name} className="w-32 h-32 rounded-full mx-auto border-2 border-red-500 object-cover" />
                                 <div 
                                     className="absolute top-0 left-0 w-32 h-32 rounded-full bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
@@ -688,7 +693,8 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
                                     <p className="text-xs font-bold text-white">CHANGE</p>
                                 </div>
                             </div>
-                             <div className="flex items-center gap-2">
+                            <Button size="sm" variant="secondary" onClick={handleRemoveAvatar} className="!text-xs">Reset to default</Button>
+                             <div className="flex items-center gap-2 mt-4">
                                 <h4 className="font-bold text-gray-200">Player Code</h4>
                                 <InfoTooltip text="Your unique identification code. Admins use this to check you into events and record your stats during a game." />
                              </div>

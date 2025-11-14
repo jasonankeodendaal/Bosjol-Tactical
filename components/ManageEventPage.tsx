@@ -253,7 +253,14 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                 <Input label="Theme" value={formData.theme} onChange={e => setFormData(f => ({ ...f, theme: e.target.value }))} />
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1.5">Event Image</label>
-                                    <ImageUpload onUpload={(url) => setFormData(f => ({...f, imageUrl: url}))} accept="image/*" />
+                                    {formData.imageUrl ? (
+                                        <div className="flex items-center gap-2">
+                                            <img src={formData.imageUrl} alt="Event preview" className="w-32 h-20 object-cover rounded-md bg-zinc-800 p-1" />
+                                            <Button variant="danger" size="sm" onClick={() => setFormData(f => ({ ...f, imageUrl: '' }))}>Remove</Button>
+                                        </div>
+                                    ) : (
+                                        <ImageUpload onUpload={(url) => setFormData(f => ({ ...f, imageUrl: url }))} accept="image/*" />
+                                    )}
                                 </div>
                             </div>
                         </div>

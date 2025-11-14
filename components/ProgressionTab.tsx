@@ -71,8 +71,14 @@ const StandardBadgeEditorModal: React.FC<{ badge: Partial<Badge> | null, onClose
                 <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({...f, description: e.target.value}))} />
                 <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1.5">Badge Icon</label>
-                    <ImageUpload onUpload={(url) => setFormData(f => ({...f, iconUrl: url}))} accept="image/*" />
-                    {formData.iconUrl && <img src={formData.iconUrl} alt="Icon preview" className="w-16 h-16 object-contain rounded-md bg-zinc-800 p-1 mt-2" />}
+                    {formData.iconUrl ? (
+                        <div className="flex items-center gap-2">
+                            <img src={formData.iconUrl} alt="Icon preview" className="w-16 h-16 object-contain rounded-md bg-zinc-800 p-1" />
+                            <Button variant="danger" size="sm" onClick={() => setFormData(f => ({...f, iconUrl: ''}))}>Remove</Button>
+                        </div>
+                    ) : (
+                        <ImageUpload onUpload={(url) => setFormData(f => ({...f, iconUrl: url}))} accept="image/*" />
+                    )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -124,8 +130,14 @@ const LegendaryBadgeEditorModal: React.FC<{ badge: Partial<LegendaryBadge> | nul
                 <Input label="How to Obtain" value={formData.howToObtain} onChange={e => setFormData(f => ({...f, howToObtain: e.target.value}))} />
                 <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1.5">Badge Icon</label>
-                    <ImageUpload onUpload={(url) => setFormData(f => ({...f, iconUrl: url}))} accept="image/*" />
-                    {formData.iconUrl && <img src={formData.iconUrl} alt="Icon preview" className="w-16 h-16 object-contain rounded-md bg-zinc-800 p-1 mt-2" />}
+                    {formData.iconUrl ? (
+                         <div className="flex items-center gap-2">
+                            <img src={formData.iconUrl} alt="Icon preview" className="w-16 h-16 object-contain rounded-md bg-zinc-800 p-1" />
+                            <Button variant="danger" size="sm" onClick={() => setFormData(f => ({...f, iconUrl: ''}))}>Remove</Button>
+                        </div>
+                    ) : (
+                        <ImageUpload onUpload={(url) => setFormData(f => ({...f, iconUrl: url}))} accept="image/*" />
+                    )}
                 </div>
             </div>
             <div className="mt-6">

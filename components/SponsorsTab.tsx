@@ -37,8 +37,14 @@ const SponsorEditorModal: React.FC<{ sponsor: Sponsor | {}, onClose: () => void,
                 <Input label="Website" value={formData.website} onChange={e => setFormData(f => ({ ...f, website: e.target.value }))} placeholder="https://..." />
                 <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1.5">Sponsor Logo</label>
-                    <ImageUpload onUpload={(url) => setFormData(f => ({ ...f, logoUrl: url }))} accept="image/*" />
-                    {formData.logoUrl && <img src={formData.logoUrl} alt="logo preview" className="w-24 h-24 object-contain rounded-md bg-zinc-800 p-1 mt-2" />}
+                    {formData.logoUrl ? (
+                        <div className="flex items-center gap-2">
+                            <img src={formData.logoUrl} alt="logo preview" className="w-24 h-24 object-contain rounded-md bg-zinc-800 p-1" />
+                            <Button variant="danger" size="sm" onClick={() => setFormData(f => ({ ...f, logoUrl: '' }))}>Remove</Button>
+                        </div>
+                    ) : (
+                        <ImageUpload onUpload={(url) => setFormData(f => ({ ...f, logoUrl: url }))} accept="image/*" />
+                    )}
                 </div>
             </div>
             <div className="mt-6">

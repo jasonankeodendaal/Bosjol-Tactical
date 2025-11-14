@@ -109,9 +109,12 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
     };
     
     const handleAvatarUpload = (base64: string) => {
-        const updatedPlayer = {...player, avatarUrl: base64};
-        onUpdatePlayer(updatedPlayer);
-        setFormData(updatedPlayer);
+        setFormData(f => ({ ...f, avatarUrl: base64 }));
+    };
+
+    const handleRemoveAvatar = () => {
+        const defaultAvatar = `https://api.dicebear.com/8.x/bottts/svg?seed=${formData.name}${formData.surname}`;
+        setFormData(f => ({ ...f, avatarUrl: defaultAvatar }));
     };
 
     const handleAwardXp = (amount: number, reason: string) => {
@@ -239,7 +242,9 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                             {isEditing ? (
                                 <>
                                     <div className="flex flex-col items-center">
+                                        <img src={formData.avatarUrl} alt="Avatar Preview" className="w-24 h-24 rounded-full object-cover mb-2"/>
                                         <ImageUpload onUpload={handleAvatarUpload} accept="image/*" />
+                                        <Button size="sm" variant="secondary" className="!text-xs mt-2" onClick={handleRemoveAvatar}>Reset to default</Button>
                                     </div>
                                     <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))}/>
                                     <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({...f, surname: e.target.value}))}/>

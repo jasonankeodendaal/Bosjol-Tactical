@@ -4,7 +4,7 @@ import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { ImageUpload } from './ImageUpload';
-import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon } from './icons/Icons';
+import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, DocumentIcon } from './icons/Icons';
 
 interface SettingsTabProps {
     companyDetails: CompanyDetails;
@@ -19,6 +19,54 @@ const normalizeCompanyDetails = (details: CompanyDetails): CompanyDetails => ({
     carouselMedia: details?.carouselMedia ?? [],
     bankInfo: details?.bankInfo ?? { bankName: '', accountNumber: '', routingNumber: '' },
 });
+
+const FileUploadField: React.FC<{
+    label: string;
+    fileUrl: string | undefined;
+    onUpload: (url: string) => void;
+    onRemove: () => void;
+    accept: string;
+    previewType?: 'image' | 'audio' | 'apk';
+}> = ({ label, fileUrl, onUpload, onRemove, accept, previewType = 'image' }) => {
+    const previewContent = () => {
+        if (!fileUrl) return null;
+        switch (previewType) {
+            case 'image':
+                return <img src={fileUrl} alt="preview" className="w-16 h-16 object-contain rounded-md bg-zinc-800 p-1" />;
+            case 'audio':
+                return (
+                    <div className="w-16 h-16 flex items-center justify-center rounded-md bg-zinc-800 p-1">
+                        <MusicalNoteIcon className="w-8 h-8 text-gray-400" />
+                    </div>
+                );
+            case 'apk':
+                 return (
+                    <div className="w-16 h-16 flex items-center justify-center rounded-md bg-zinc-800 p-1">
+                        <DocumentIcon className="w-8 h-8 text-gray-400" />
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1.5">{label}</label>
+            {fileUrl ? (
+                <div className="flex items-center gap-3 bg-zinc-900/50 p-2 rounded-lg border border-zinc-700/50">
+                    {previewContent()}
+                    <p className="text-xs text-gray-400 truncate flex-grow">File uploaded</p>
+                    <Button variant="danger" size="sm" onClick={onRemove} className="!p-2 flex-shrink-0">
+                        <TrashIcon className="w-4 h-4" />
+                    </Button>
+                </div>
+            ) : (
+                <ImageUpload onUpload={onUpload} accept={accept} />
+            )}
+        </div>
+    );
+};
 
 
 export const SettingsTab: React.FC<SettingsTabProps> = ({ companyDetails, setCompanyDetails, onDeleteAllData }) => {
@@ -69,125 +117,136 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ companyDetails, setCom
         }));
     };
 
-    const isDirty = JSON.stringify(formData) !== JSON.stringify(companyDetails);
+    const isDirty = JSON.stringify(formData) !== JSON.stringify(normalizeCompanyDetails(companyDetails));
 
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                 {/* Column 1 */}
-                 <div className="space-y-6">
-                     <DashboardCard title="Company Information" icon={<BuildingOfficeIcon className="w-6 h-6" />}>
-                        <div className="p-6 space-y-4">
-                            <Input label="Company Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
-                            <Input label="Address" value={formData.address} onChange={e => setFormData(f => ({ ...f, address: e.target.value }))} />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Input label="Registration Number" value={formData.regNumber || ''} onChange={e => setFormData(f => ({ ...f, regNumber: e.target.value }))} />
-                                <Input label="VAT Number" value={formData.vatNumber || ''} onChange={e => setFormData(f => ({ ...f, vatNumber: e.target.value }))} />
-                            </div>
+             <DashboardCard title="Core Company Details" icon={<BuildingOfficeIcon className="w-6 h-6" />}>
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2">
+                        <Input label="Company Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
+                    </div>
+                    <div className="md:col-span-2">
+                        <Input label="Address" value={formData.address} onChange={e => setFormData(f => ({ ...f, address: e.target.value }))} />
+                    </div>
+                    <Input label="Registration Number" value={formData.regNumber || ''} onChange={e => setFormData(f => ({ ...f, regNumber: e.target.value }))} />
+                    <Input label="VAT Number" value={formData.vatNumber || ''} onChange={e => setFormData(f => ({ ...f, vatNumber: e.target.value }))} />
+                    <Input label="Phone" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} />
+                    <Input label="Email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
+                    <div className="md:col-span-2">
+                        <Input label="Website" value={formData.website} onChange={e => setFormData(f => ({ ...f, website: e.target.value }))} />
+                    </div>
+                    
+                    <div className="md:col-span-2 pt-6 border-t border-zinc-800">
+                         <h4 className="font-semibold text-gray-200 mb-4 text-lg flex items-center gap-2"><CreditCardIcon className="w-5 h-5"/>Financial Details</h4>
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <Input label="Bank Name" value={formData.bankInfo.bankName} onChange={e => setFormData(f => ({ ...f, bankInfo: {...f.bankInfo, bankName: e.target.value} }))} />
+                            <Input label="Account Number" value={formData.bankInfo.accountNumber} onChange={e => setFormData(f => ({ ...f, bankInfo: {...f.bankInfo, accountNumber: e.target.value} }))} />
+                            <Input label="Routing/Branch Number" value={formData.bankInfo.routingNumber} onChange={e => setFormData(f => ({ ...f, bankInfo: {...f.bankInfo, routingNumber: e.target.value} }))} />
                         </div>
-                    </DashboardCard>
-                    <DashboardCard title="Contact & Socials" icon={<AtSymbolIcon className="w-6 h-6" />}>
-                        <div className="p-6 space-y-4">
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Input label="Phone" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} />
-                                <Input label="Email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
-                            </div>
-                            <Input label="Website" value={formData.website} onChange={e => setFormData(f => ({ ...f, website: e.target.value }))} />
-
-                             <div className="pt-4 border-t border-zinc-700">
-                                <h4 className="font-semibold text-gray-200 mb-2">Social Links</h4>
-                                <div className="space-y-2">
-                                {formData.socialLinks.map(link => (
-                                    <div key={link.id} className="flex items-center gap-2">
-                                        <Input value={link.name} onChange={(e) => handleSocialLinkChange(link.id, 'name', e.target.value)} placeholder="Name (e.g., Facebook)" />
-                                        <Input value={link.url} onChange={(e) => handleSocialLinkChange(link.id, 'url', e.target.value)} placeholder="URL" />
-                                        <Input value={link.iconUrl} onChange={(e) => handleSocialLinkChange(link.id, 'iconUrl', e.target.value)} placeholder="Icon URL" />
-                                        <Button variant="danger" size="sm" className="!p-2.5" onClick={() => handleRemoveSocialLink(link.id)}><TrashIcon className="w-5 h-5"/></Button>
-                                    </div>
-                                ))}
-                                </div>
-                                 <Button variant="secondary" size="sm" className="mt-3" onClick={handleAddSocialLink}><PlusIcon className="w-4 h-4 mr-2"/>Add Social Link</Button>
-                             </div>
-                        </div>
-                    </DashboardCard>
-
-                    <DashboardCard title="Financial Details" icon={<CreditCardIcon className="w-6 h-6" />}>
-                        <div className="p-6 space-y-4">
-                             <Input label="Bank Name" value={formData.bankInfo.bankName} onChange={e => setFormData(f => ({ ...f, bankInfo: {...f.bankInfo, bankName: e.target.value} }))} />
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Input label="Account Number" value={formData.bankInfo.accountNumber} onChange={e => setFormData(f => ({ ...f, bankInfo: {...f.bankInfo, accountNumber: e.target.value} }))} />
-                                <Input label="Routing/Branch Number" value={formData.bankInfo.routingNumber} onChange={e => setFormData(f => ({ ...f, bankInfo: {...f.bankInfo, routingNumber: e.target.value} }))} />
-                            </div>
-                        </div>
-                    </DashboardCard>
-                 </div>
-
-                 {/* Column 2 */}
-                <div className="space-y-6">
-                    <DashboardCard title="Branding & Theming" icon={<SparklesIcon className="w-6 h-6" />}>
-                        <div className="p-6 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-400">Company Logo</label>
-                                    <ImageUpload onUpload={(url) => setFormData(f => ({...f, logoUrl: url}))} accept="image/*" />
-                                    {formData.logoUrl && <img src={formData.logoUrl} alt="logo preview" className="w-24 h-24 object-contain rounded-md bg-zinc-800 p-1 mt-2" />}
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-400">Login Screen Background</label>
-                                    <ImageUpload onUpload={(url) => setFormData(f => ({...f, loginBackgroundUrl: url}))} accept="image/*,video/*" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-400">Login Screen Audio</label>
-                                    <ImageUpload onUpload={(url) => setFormData(f => ({...f, loginAudioUrl: url}))} accept="audio/*" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-400">Player Dashboard BG</label>
-                                    <ImageUpload onUpload={(url) => setFormData(f => ({...f, playerDashboardBackgroundUrl: url}))} accept="image/*" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-400">Admin Dashboard BG</label>
-                                    <ImageUpload onUpload={(url) => setFormData(f => ({...f, adminDashboardBackgroundUrl: url}))} accept="image/*" />
-                                </div>
-                            </div>
-                        </div>
-                    </DashboardCard>
-
-                    <DashboardCard title="App & Game Settings" icon={<CogIcon className="w-6 h-6" />}>
-                        <div className="p-6 space-y-4">
-                            <Input label="Minimum Signup Age" type="number" value={formData.minimumSignupAge} onChange={e => setFormData(f => ({...f, minimumSignupAge: Number(e.target.value)}))} />
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Fixed Event Rules</label>
-                                <textarea value={formData.fixedEventRules || ''} onChange={e => setFormData(f => ({...f, fixedEventRules: e.target.value}))} rows={5} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-400">Android APK File</label>
-                                <ImageUpload onUpload={(url) => setFormData(f => ({...f, apkUrl: url}))} accept=".apk" />
-                            </div>
-                             <div className="pt-4 border-t border-zinc-700">
-                                <h4 className="font-semibold text-gray-200 mb-2">Front Page Carousel Media</h4>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-                                    {formData.carouselMedia.map(media => (
-                                        <div key={media.id} className="relative group aspect-video bg-zinc-800 rounded-md overflow-hidden">
-                                            {media.type === 'image' ? (
-                                                <img src={media.url} alt="carousel item" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <video src={media.url} muted loop className="w-full h-full object-cover" />
-                                            )}
-                                            <button
-                                                onClick={() => handleRemoveCarouselMedia(media.id)}
-                                                className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                                <XIcon className="w-4 h-4"/>
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                                <ImageUpload onUpload={handleCarouselMediaUpload} accept="image/*,video/*" />
-                            </div>
-                        </div>
-                    </DashboardCard>
+                    </div>
                 </div>
-            </div>
+            </DashboardCard>
+            
+            <DashboardCard title="Branding & Visuals" icon={<SparklesIcon className="w-6 h-6" />}>
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <FileUploadField
+                        label="Company Logo"
+                        fileUrl={formData.logoUrl}
+                        onUpload={(url) => setFormData(f => ({ ...f, logoUrl: url }))}
+                        onRemove={() => setFormData(f => ({ ...f, logoUrl: '' }))}
+                        accept="image/*"
+                    />
+                    <FileUploadField
+                        label="Login Screen Background"
+                        fileUrl={formData.loginBackgroundUrl}
+                        onUpload={(url) => setFormData(f => ({ ...f, loginBackgroundUrl: url }))}
+                        onRemove={() => setFormData(f => ({ ...f, loginBackgroundUrl: '' }))}
+                        accept="image/*,video/*"
+                    />
+                    <FileUploadField
+                        label="Login Screen Audio"
+                        fileUrl={formData.loginAudioUrl}
+                        onUpload={(url) => setFormData(f => ({ ...f, loginAudioUrl: url }))}
+                        onRemove={() => setFormData(f => ({ ...f, loginAudioUrl: '' }))}
+                        accept="audio/*"
+                        previewType="audio"
+                    />
+                    <FileUploadField
+                        label="Player Dashboard BG"
+                        fileUrl={formData.playerDashboardBackgroundUrl}
+                        onUpload={(url) => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: url }))}
+                        onRemove={() => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: '' }))}
+                        accept="image/*"
+                    />
+                    <FileUploadField
+                        label="Admin Dashboard BG"
+                        fileUrl={formData.adminDashboardBackgroundUrl}
+                        onUpload={(url) => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: url }))}
+                        onRemove={() => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: '' }))}
+                        accept="image/*"
+                    />
+                </div>
+            </DashboardCard>
+
+            <DashboardCard title="App & Content Settings" icon={<CogIcon className="w-6 h-6" />}>
+                <div className="p-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Input label="Minimum Signup Age" type="number" value={formData.minimumSignupAge} onChange={e => setFormData(f => ({...f, minimumSignupAge: Number(e.target.value)}))} />
+                        <FileUploadField
+                            label="Android APK File"
+                            fileUrl={formData.apkUrl}
+                            onUpload={(url) => setFormData(f => ({ ...f, apkUrl: url }))}
+                            onRemove={() => setFormData(f => ({ ...f, apkUrl: '' }))}
+                            accept=".apk"
+                            previewType="apk"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Fixed Event Rules</label>
+                        <textarea value={formData.fixedEventRules || ''} onChange={e => setFormData(f => ({...f, fixedEventRules: e.target.value}))} rows={5} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
+                    </div>
+                     <div className="pt-6 border-t border-zinc-800">
+                        <h4 className="font-semibold text-gray-200 mb-4 text-lg">Front Page Carousel Media</h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
+                            {formData.carouselMedia.map(media => (
+                                <div key={media.id} className="relative group aspect-video bg-zinc-800 rounded-md overflow-hidden">
+                                    {media.type === 'image' ? (
+                                        <img src={media.url} alt="carousel item" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <video src={media.url} muted loop className="w-full h-full object-cover" />
+                                    )}
+                                    <button
+                                        onClick={() => handleRemoveCarouselMedia(media.id)}
+                                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <XIcon className="w-4 h-4"/>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                        <ImageUpload onUpload={handleCarouselMediaUpload} accept="image/*,video/*" />
+                    </div>
+                     <div className="pt-6 border-t border-zinc-800">
+                        <h4 className="font-semibold text-gray-200 mb-4 text-lg">Social Links</h4>
+                        <div className="space-y-3">
+                        {formData.socialLinks.map(link => (
+                            <div key={link.id} className="grid grid-cols-1 md:grid-cols-3 gap-2 items-end bg-zinc-900/50 p-3 rounded-lg border border-zinc-700/50">
+                                <Input value={link.name} onChange={(e) => handleSocialLinkChange(link.id, 'name', e.target.value)} placeholder="Name (e.g., Facebook)" label="Name"/>
+                                <Input value={link.iconUrl} onChange={(e) => handleSocialLinkChange(link.id, 'iconUrl', e.target.value)} placeholder="Icon URL" label="Icon URL"/>
+                                <div className="flex gap-2 items-end">
+                                    <div className="flex-grow">
+                                        <Input value={link.url} onChange={(e) => handleSocialLinkChange(link.id, 'url', e.target.value)} placeholder="Full URL" label="URL"/>
+                                    </div>
+                                    <Button variant="danger" size="sm" className="!p-2.5" onClick={() => handleRemoveSocialLink(link.id)}><TrashIcon className="w-5 h-5"/></Button>
+                                </div>
+                            </div>
+                        ))}
+                        </div>
+                         <Button variant="secondary" size="sm" className="mt-4" onClick={handleAddSocialLink}><PlusIcon className="w-4 h-4 mr-2"/>Add Social Link</Button>
+                     </div>
+                </div>
+            </DashboardCard>
 
             <DashboardCard title="Danger Zone" icon={<ExclamationTriangleIcon className="w-6 h-6 text-red-500"/>}>
                 <div className="p-6">

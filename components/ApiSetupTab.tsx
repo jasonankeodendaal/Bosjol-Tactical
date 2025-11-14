@@ -104,7 +104,7 @@ app.listen(PORT, () => {
 export const ApiSetupTab: React.FC = () => {
     return (
         <DashboardCard title="External API Server Setup" icon={<CodeBracketIcon className="w-6 h-6" />}>
-            <div className="p-6 space-y-8">
+            <div className="p-4 space-y-8">
                 <div className="bg-amber-900/40 border border-amber-700 text-amber-200 p-4 rounded-lg">
                     <h4 className="font-bold text-lg flex items-center gap-2"><InformationCircleIcon className="w-5 h-5"/>What Is This & Why Should I Use It?</h4>
                     <p className="text-sm mt-2">

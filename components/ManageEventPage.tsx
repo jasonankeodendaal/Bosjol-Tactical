@@ -205,7 +205,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     };
 
     return (
-        <div className="p-2 sm:p-4 md:p-6">
+        <div className="p-3 sm:p-4">
             <header className="flex items-center mb-6">
                 <Button onClick={onBack} variant="secondary" size="sm" className="mr-4">
                     <ArrowLeftIcon className="w-5 h-5" />
@@ -216,7 +216,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
                     <DashboardCard title="Event Details" icon={<CalendarIcon className="w-6 h-6" />}>
-                        <div className="p-6 space-y-4">
+                        <div className="p-4 space-y-4">
                             <Input label="Event Title" value={formData.title} onChange={e => setFormData(f => ({ ...f, title: e.target.value }))} />
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <Input label="Date" type="date" value={formData.date} onChange={e => setFormData(f => ({ ...f, date: e.target.value }))} />

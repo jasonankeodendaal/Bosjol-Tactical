@@ -16,12 +16,12 @@ import { Modal } from './components/Modal';
 const CreatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return (
         <Modal isOpen={true} onClose={onClose} title="App Creators">
-            <div className="tactical-bg -m-6 p-6 rounded-b-xl">
+            <div className="tactical-bg -m-4 p-4 rounded-b-xl">
                 <div className="relative z-10 flex flex-col items-center text-center text-gray-300">
                     <img 
                         src="https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png" 
                         alt="JSTYP.me Logo" 
-                        className="h-24 w-24 mb-4 rounded-full border-2 border-red-500 bg-white p-1"
+                        className="h-24 w-24 mb-4"
                     />
                     <h2 className="text-xl font-bold text-white">Jason's solutions to your problems</h2>
                     <p className="italic text-gray-400 mt-2 mb-6">
@@ -206,9 +206,9 @@ const AppContent: React.FC = () => {
                     whileTap={{ scale: 0.9 }}
                 >
                     <img
-                        src="https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png"
-                        alt="Creators Logo"
-                        className="w-14 h-14 object-contain drop-shadow-[0_3px_5px_rgba(0,0,0,0.8)]"
+                        src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png"
+                        alt="Bosjol Tactical Logo"
+                        className="w-16 h-16 object-contain drop-shadow-[0_3px_5px_rgba(0,0,0,0.8)]"
                     />
                 </motion.button>
             </div>

@@ -25,7 +25,7 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({ title, icon, child
       animate="visible"
       className={`bg-zinc-900/70 backdrop-blur-sm border border-zinc-800/80 rounded-lg shadow-lg flex flex-col ${fullHeight ? 'h-full' : ''} ${className}`}
     >
-      <header className="flex items-center p-5 border-b border-red-600/30 bg-black/20">
+      <header className="flex items-center p-4 border-b border-red-600/30 bg-black/20">
         <div className="text-red-500 mr-4">{icon}</div>
         <h3 className="font-bold text-lg text-gray-200 tracking-wider uppercase">{title}</h3>
         {titleAddon && <div className="ml-2">{titleAddon}</div>}

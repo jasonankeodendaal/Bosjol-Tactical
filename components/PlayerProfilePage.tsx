@@ -218,7 +218,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
 
 
     return (
-        <div className="p-2 sm:p-4 md:p-6">
+        <div className="p-3 sm:p-4">
             {isAwardingXp && <AwardXpModal onClose={() => setIsAwardingXp(false)} onSave={handleAwardXp} />}
             {isResettingPin && <ResetPinModal onClose={() => setIsResettingPin(false)} onSave={handleResetPin} />}
             <header className="flex items-center mb-6">
@@ -240,7 +240,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1 space-y-6">
                     <DashboardCard title="Operator Details" icon={<UserIcon className="w-6 h-6" />}>
-                        <div className="p-6 space-y-4">
+                        <div className="p-4 space-y-4">
                             {isEditing ? (
                                 <>
                                     <div className="flex flex-col items-center">
@@ -327,7 +327,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                         </div>
                     </DashboardCard>
                     <DashboardCard title="Legendary Awards" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
-                        <div className="p-6 space-y-3">
+                        <div className="p-4 space-y-3">
                             {player.legendaryBadges.length > 0 ? player.legendaryBadges.map(badge => (
                                 <div key={badge.id} className="flex items-center justify-between gap-3 bg-zinc-800/50 p-2 rounded-md">
                                     <div className="flex items-center gap-3">
@@ -354,7 +354,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                         </div>
                     </DashboardCard>
                     <DashboardCard title="XP History" icon={<PlusCircleIcon className="w-6 h-6" />} titleAddon={<InfoTooltip text="Log of all manual XP adjustments, both positive (bonuses) and negative (penalties)." />}>
-                        <div className="p-6 space-y-3 max-h-60 overflow-y-auto">
+                        <div className="p-4 space-y-3 max-h-60 overflow-y-auto">
                            {player.xpAdjustments.length > 0 ? [...player.xpAdjustments].reverse().map((adj, i) => (
                                <div key={i} className="bg-zinc-800/50 p-2.5 rounded-md">
                                     <div className="flex justify-between items-center">
@@ -373,7 +373,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                 </div>
                 <div className="lg:col-span-2 space-y-6">
                     <DashboardCard title="Lifetime Performance" icon={<ChartBarIcon className="w-6 h-6"/>}>
-                        <div className="p-6 grid grid-cols-3 gap-y-6">
+                        <div className="p-4 grid grid-cols-3 gap-y-6">
                             <StatDisplay value={kdr} label="K/D Ratio" tooltip="Kill/Death Ratio. Calculated as Total Kills divided by Total Deaths."/>
                             <StatDisplay value={stats.kills.toLocaleString()} label="Total Kills"/>
                             <StatDisplay value={stats.deaths.toLocaleString()} label="Total Deaths"/>
@@ -383,7 +383,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                         </div>
                     </DashboardCard>
                      <DashboardCard title="Match History" icon={<CalendarIcon className="w-6 h-6" />}>
-                        <div className="p-6 space-y-4 max-h-[40rem] overflow-y-auto">
+                        <div className="p-4 space-y-4 max-h-[40rem] overflow-y-auto">
                             {player.matchHistory.length > 0 ? (
                                 player.matchHistory
                                     .map(record => ({...record, event: events.find(e => e.id === record.eventId)}))

@@ -62,6 +62,13 @@ const AppContent: React.FC = () => {
     if (!data) throw new Error("DataContext not found.");
 
     const { isAuthenticated, user, logout } = auth;
+
+    useEffect(() => {
+      // Per user request, always log out on refresh to ensure the session starts
+      // from the front page, preventing accidental session continuation.
+      logout();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // This should only run once when the app component mounts.
     
     // Inactivity logout logic
     const logoutTimer = useRef<number | null>(null);

@@ -23,6 +23,7 @@
   ],
   "theme_color": "#b91c1c",
   "background_color": "#0A0A0A",
+  "orientation": "portrait-primary",
   "screenshots": [
     {
       "src": "https://i.ibb.co/tpZ29v4H/Whats-App-Image-2025-11-14-at-11-26-43.jpg",
@@ -51,6 +52,55 @@
       "sizes": "1080x2340",
       "form_factor": "narrow",
       "label": "Global Player Leaderboard"
+    },
+    {
+      "src": "https://i.ibb.co/j9NXjht1/Whats-App-Image-2025-11-14-at-11-26-33.jpg",
+      "type": "image/jpeg",
+      "sizes": "1080x2340",
+      "form_factor": "narrow",
+      "label": "Enter Raffles to Win Prizes"
+    },
+    {
+      "src": "https://i.ibb.co/N2FLTdrB/Whats-App-Image-2025-11-14-at-11-26-28.jpg",
+      "type": "image/jpeg",
+      "sizes": "1080x2340",
+      "form_factor": "narrow",
+      "label": "Track Your Performance"
+    },
+    {
+      "src": "https://i.ibb.co/Y7xdvrYY/Whats-App-Image-2025-11-14-at-11-26-25.jpg",
+      "type": "image/jpeg",
+      "sizes": "1080x2340",
+      "form_factor": "narrow",
+      "label": "Unlock Badges and Commendations"
+    },
+    {
+      "src": "https://i.ibb.co/Q7YBwHq5/Whats-App-Image-2025-11-14-at-11-26-21.jpg",
+      "type": "image/jpeg",
+      "sizes": "1080x2340",
+      "form_factor": "narrow",
+      "label": "Customize Your Profile"
+    },
+    {
+      "src": "https://i.ibb.co/Z1JZhPCZ/Whats-App-Image-2025-11-14-at-11-26-23.jpg",
+      "type": "image/jpeg",
+      "sizes": "1080x2340",
+      "form_factor": "narrow",
+      "label": "Manage Events (Admin)"
+    },
+    {
+      "src": "https://i.ibb.co/WWk7BJGY/Whats-App-Image-2025-11-14-at-11-26-20.jpg",
+      "type": "image/jpeg",
+      "sizes": "1080x2340",
+      "form_factor": "narrow",
+      "label": "Manage Players (Admin)"
+    },
+    {
+      "src": "https://i.ibb.co/whxg524c/Whats-App-Image-2025-11-14-at-11-26-19.jpg",
+      "type": "image/jpeg",
+      "sizes": "1080x2340",
+      "form_factor": "narrow",
+      "label": "Configure Progression (Admin)"
     }
   ],
   "shortcuts": [

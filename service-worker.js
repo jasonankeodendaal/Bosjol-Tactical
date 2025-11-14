@@ -7,6 +7,7 @@ const STATIC_ASSETS = [
   'https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png',
   'manifest.json',
   'https://i.ibb.co/HL2Lc6Rz/file-0000000043b061f7b655a0077343e063.png',
+  'https://i.ibb.co/v6qtDrT4/maskable-icon.png',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap'
   // Note: CDN resources used in importmap are harder to pre-cache reliably,

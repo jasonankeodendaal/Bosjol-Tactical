@@ -1,5 +1,6 @@
 
 
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -177,6 +178,67 @@ const AppContent: React.FC = () => {
         migrateToApiServer,
     } = data;
     
+    const creatorButtonAndModal = (
+        <>
+            {showCreatorModal && <CreatorModal onClose={() => setShowCreatorModal(false)} />}
+            <div className="fixed bottom-4 left-4 z-50">
+                 <motion.button
+                    onClick={() => setShowCreatorModal(true)}
+                    className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-red-500 rounded-full"
+                    aria-label="Show app creators"
+                    animate={{
+                        scale: [1, 1.1, 1.05, 1.15, 1],
+                        rotate: [0, -3, 3, -3, 0],
+                    }}
+                    transition={{
+                        duration: 1,
+                        ease: "easeInOut",
+                        repeat: Infinity,
+                        repeatType: "loop",
+                        repeatDelay: 4,
+                    }}
+                    whileHover={{ scale: 1.2, rotate: 0 }}
+                    whileTap={{ scale: 0.9 }}
+                >
+                    <img
+                        src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png"
+                        alt="Creators Logo"
+                        className="w-14 h-14 object-contain drop-shadow-[0_3px_5px_rgba(0,0,0,0.8)]"
+                    />
+                </motion.button>
+            </div>
+        </>
+    );
+
+    if (isSeeding) {
+        return (
+            <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-[100]">
+                <div className="w-16 h-16 border-4 border-zinc-700 border-t-red-500 rounded-full animate-spin"></div>
+                <h1 className="mt-4 text-lg font-semibold text-gray-300 tracking-wider">
+                    New Project Detected
+                </h1>
+                <p className="text-gray-400">Seeding initial database configuration. Please wait...</p>
+            </div>
+        );
+    }
+
+    if (loading) {
+        return <Loader />;
+    }
+
+    if (!isAuthenticated || !user) {
+        if (showFrontPage) {
+            return <>
+                <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} />
+                {creatorButtonAndModal}
+            </>;
+        }
+        return <>
+            <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />
+            {creatorButtonAndModal}
+        </>;
+    }
+    
     const currentPlayer = players.find(p => p.id === user?.id);
 
     const handleUpdatePlayer = async (updatedPlayer: Player) => {
@@ -220,29 +282,6 @@ const AppContent: React.FC = () => {
             logout();
         }
     };
-
-    if (isSeeding) {
-        return (
-            <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-[100]">
-                <div className="w-16 h-16 border-4 border-zinc-700 border-t-red-500 rounded-full animate-spin"></div>
-                <h1 className="mt-4 text-lg font-semibold text-gray-300 tracking-wider">
-                    New Project Detected
-                </h1>
-                <p className="text-gray-400">Seeding initial database configuration. Please wait...</p>
-            </div>
-        );
-    }
-
-    if (!isAuthenticated || !user) {
-        if (showFrontPage) {
-            return <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} />;
-        }
-        return <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />;
-    }
-
-    if (loading) {
-        return <Loader />;
-    }
 
     const dashboardBackground = user.role === 'admin' 
         ? companyDetails.adminDashboardBackgroundUrl 
@@ -325,33 +364,7 @@ const AppContent: React.FC = () => {
                 </div>
             </main>
             <Footer details={companyDetails} socialLinks={socialLinks} />
-             {showCreatorModal && <CreatorModal onClose={() => setShowCreatorModal(false)} />}
-            <div className="fixed bottom-4 left-4 z-50">
-                 <motion.button
-                    onClick={() => setShowCreatorModal(true)}
-                    className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-red-500 rounded-full"
-                    aria-label="Show app creators"
-                    animate={{
-                        scale: [1, 1.1, 1.05, 1.15, 1],
-                        rotate: [0, -3, 3, -3, 0],
-                    }}
-                    transition={{
-                        duration: 1,
-                        ease: "easeInOut",
-                        repeat: Infinity,
-                        repeatType: "loop",
-                        repeatDelay: 4,
-                    }}
-                    whileHover={{ scale: 1.2, rotate: 0 }}
-                    whileTap={{ scale: 0.9 }}
-                >
-                    <img
-                        src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png"
-                        alt="Creators Logo"
-                        className="w-16 h-16 object-contain drop-shadow-[0_3px_5px_rgba(0,0,0,0.8)]"
-                    />
-                </motion.button>
-            </div>
+            {creatorButtonAndModal}
         </div>
     );
 };

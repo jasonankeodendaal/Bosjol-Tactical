@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
 import { LoginScreen } from './components/LoginScreen';
 import { PlayerDashboard } from './components/PlayerDashboard';
@@ -62,6 +62,44 @@ const AppContent: React.FC = () => {
     if (!data) throw new Error("DataContext not found.");
 
     const { isAuthenticated, user, logout } = auth;
+    
+    // Inactivity logout logic
+    const logoutTimer = useRef<number | null>(null);
+
+    const resetInactivityTimer = useCallback(() => {
+        if (logoutTimer.current) {
+            clearTimeout(logoutTimer.current);
+        }
+
+        logoutTimer.current = window.setTimeout(() => {
+            if (auth.isAuthenticated) {
+                console.log("User inactive for 10 minutes. Logging out.");
+                logout();
+            }
+        }, 10 * 60 * 1000); // 10 minutes
+    }, [logout, auth.isAuthenticated]);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+
+            activityEvents.forEach(event => {
+                window.addEventListener(event, resetInactivityTimer);
+            });
+
+            resetInactivityTimer();
+
+            return () => {
+                if (logoutTimer.current) {
+                    clearTimeout(logoutTimer.current);
+                }
+                activityEvents.forEach(event => {
+                    window.removeEventListener(event, resetInactivityTimer);
+                });
+            };
+        }
+    }, [isAuthenticated, resetInactivityTimer]);
+
     const { 
         players, setPlayers,
         events, setEvents,

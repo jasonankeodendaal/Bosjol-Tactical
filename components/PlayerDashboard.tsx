@@ -842,6 +842,15 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'raffles' | 'pl
 export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, players, sponsors, onPlayerUpdate, events, onEventSignUp, legendaryBadges, raffles, ranks }) => {
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
 
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab') as Tab | null;
+        const validTabs: Tab[] = ['Overview', 'Events', 'Raffles', 'Stats', 'Achievements', 'Leaderboard', 'Settings'];
+        if (tab && validTabs.includes(tab)) {
+            setActiveTab(tab);
+        }
+    }, []);
+
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />

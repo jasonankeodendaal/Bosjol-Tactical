@@ -5,7 +5,7 @@
   "description": "A comprehensive dashboard for players and administrators of Bosjol Tactical. Players can track their progress, view events, and rent gear, while admins can manage events, pricing, and player progression.",
   "icons": [
     {
-      "src": "https://i.ibb.co/HL2Lc6Rz/file-0000000043b061f7b655a0077343e063.png",
+      "src": "https://i.ibb.co/v6qtDrT4/maskable-icon.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
@@ -18,6 +18,62 @@
   ],
   "start_url": "/",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay"
+  ],
   "theme_color": "#b91c1c",
-  "background_color": "#0A0A0A"
+  "background_color": "#0A0A0A",
+  "screenshots": [
+    {
+      "src": "https://i.ibb.co/tpZ29v4H/Whats-App-Image-2025-11-14-at-11-26-43.jpg",
+      "type": "image/jpeg",
+      "sizes": "1080x2340",
+      "form_factor": "narrow",
+      "label": "Secure Login Screen"
+    },
+    {
+      "src": "https://i.ibb.co/DSN8krs/Whats-App-Image-2025-11-14-at-11-26-40.jpg",
+      "type": "image/jpeg",
+      "sizes": "1080x2340",
+      "form_factor": "narrow",
+      "label": "Player Dashboard Overview"
+    },
+    {
+      "src": "https://i.ibb.co/S4HFgvkc/Whats-App-Image-2025-11-14-at-11-26-36.jpg",
+      "type": "image/jpeg",
+      "sizes": "1080x2340",
+      "form_factor": "narrow",
+      "label": "Browse Upcoming Events"
+    },
+    {
+      "src": "https://i.ibb.co/CjWH3mV/Whats-App-Image-2025-11-14-at-11-26-34.jpg",
+      "type": "image/jpeg",
+      "sizes": "1080x2340",
+      "form_factor": "narrow",
+      "label": "Global Player Leaderboard"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "View Events",
+      "short_name": "Events",
+      "description": "Check upcoming and past events",
+      "url": "/?tab=Events",
+      "icons": [{ "src": "https://img.icons8.com/ios-filled/96/ffffff/calendar.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Leaderboard",
+      "short_name": "Ranks",
+      "description": "See how you stack up against other players",
+      "url": "/?tab=Leaderboard",
+      "icons": [{ "src": "https://img.icons8.com/ios-filled/96/ffffff/trophy.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "My Stats",
+      "short_name": "Stats",
+      "description": "Review your performance statistics",
+      "url": "/?tab=Stats",
+      "icons": [{ "src": "https://img.icons8.com/ios-filled/96/ffffff/bar-chart.png", "sizes": "96x96" }]
+    }
+  ]
 }

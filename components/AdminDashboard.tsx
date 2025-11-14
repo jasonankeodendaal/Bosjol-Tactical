@@ -310,6 +310,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
 
     const { players, setPlayers, events, setEvents, legendaryBadges, ranks } = props;
 
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab') as Tab | null;
+        const validTabs: Tab[] = ['Events', 'Players', 'Progression', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings'];
+        if (tab && validTabs.includes(tab)) {
+            setActiveTab(tab);
+        }
+    }, []);
+
     const handleViewPlayer = (id: string) => {
         setSelectedPlayerId(id);
         setView('player_profile');

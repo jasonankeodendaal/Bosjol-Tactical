@@ -275,6 +275,15 @@
         animation: hud-pan 45s ease-in-out infinite, hud-scanline 6s linear infinite;
       }
 
+      .hud-bg::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(5, 8, 13, 0.7);
+        backdrop-filter: blur(2px);
+        z-index: 1;
+      }
+
       .hud-bg::after {
         content: '';
         position: absolute;
@@ -285,7 +294,7 @@
         height: 100%;
         background: linear-gradient(to bottom, transparent, rgba(0, 255, 255, 0.5), transparent);
         animation: hud-scanline 6s linear infinite;
-        z-index: 1;
+        z-index: 2;
       }
       .text-glow-cyan {
         text-shadow: 0 0 5px rgba(0, 255, 255, 0.7), 0 0 10px rgba(0, 255, 255, 0.5);
@@ -328,6 +337,7 @@
         right: 1rem;
         bottom: 1rem;
         pointer-events: none; /* Don't block clicks */
+        z-index: 3;
       }
 
       .hud-corners > span {

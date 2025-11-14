@@ -264,6 +264,39 @@
         z-index: 1;
         animation-delay: -3.5s;
       }
+      .hud-bg {
+        background-color: #05080d; /* Very dark blue */
+        background-image:
+            linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+        position: relative;
+        overflow: hidden;
+        border-top: 1px solid rgba(0, 255, 255, 0.3);
+      }
+
+      .hud-bg::after {
+        content: '';
+        position: absolute;
+        top: -100%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 2px;
+        height: 100%;
+        background: linear-gradient(to bottom, transparent, rgba(0, 255, 255, 0.5), transparent);
+        animation: hud-scanline 6s linear infinite;
+        z-index: 1;
+      }
+      .text-glow-cyan {
+        text-shadow: 0 0 5px rgba(0, 255, 255, 0.7), 0 0 10px rgba(0, 255, 255, 0.5);
+      }
+      .icon-glow-cyan {
+        filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.8));
+      }
+      @keyframes hud-scanline {
+        0% { top: -100%; }
+        100% { top: 100%; }
+      }
       @keyframes scanline {
         0% { top: -100%; left: 15%;}
         50% { left: 85%; }

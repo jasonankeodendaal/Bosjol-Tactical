@@ -15,42 +15,54 @@ import { Modal } from './components/Modal';
 
 const CreatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return (
-        <Modal isOpen={true} onClose={onClose} title="App Creators">
-            <div className="tactical-bg -m-4 p-4 rounded-b-xl">
-                <div className="relative z-10 flex flex-col items-center text-center text-gray-300">
-                    <img 
-                        src="https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png" 
-                        alt="JSTYP.me Logo" 
-                        className="h-24 w-24 mb-4"
-                    />
-                    <h2 className="text-xl font-bold text-white">Jason's solutions to your problems</h2>
-                    <p className="italic text-gray-400 mt-2 mb-6">
-                        Need a website, app or custom tool? Contact JSTYP.me
+        <Modal isOpen={true} onClose={onClose} title="SYSTEM CREATOR">
+            <div className="hud-bg -m-6 p-6 rounded-b-xl">
+                <div className="relative z-10 flex flex-col items-center text-center text-cyan-200">
+                    <a href="https://ibb.co/spB8SDCX" target="_blank" rel="noopener noreferrer">
+                        <img 
+                            src="https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png" 
+                            alt="JSTYP.me Logo" 
+                            className="h-28 w-28 mb-4 icon-glow-cyan transition-transform duration-300 hover:scale-110"
+                        />
+                    </a>
+                    
+                    <h2 className="text-2xl font-bold text-white text-glow-cyan uppercase tracking-widest">
+                        Jason's Solutions to Your Problems
+                    </h2>
+                    <p className="text-lg font-medium text-cyan-300">- Yes me! -</p>
+                    
+                    <p className="text-sm text-cyan-300 mt-6 max-w-xs">
+                        Need a website, mobile app or custom tool? Get in touch!
                     </p>
-                    <div className="flex items-start justify-center gap-8 mt-6">
-                        <div className="flex flex-col items-center gap-1">
+
+                    <div className="w-1/2 h-px bg-cyan-500/30 my-6"></div>
+
+                    <div className="flex items-start justify-center gap-12">
+                        <div className="flex flex-col items-center gap-2">
                             <a 
                                 href="https://wa.me/27695989427?text=Hi!%20I'm%20contacting%20you%20from%20the%20Bosjol%20Tactical%20Dashboard."
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="text-green-400 hover:text-green-300 transition-transform hover:scale-110"
+                                className="text-cyan-400 hover:text-white transition-all duration-300 transform hover:scale-110"
                                 aria-label="Contact on WhatsApp"
                             >
-                                <WhatsAppIcon className="w-12 h-12" />
+                                <WhatsAppIcon className="w-14 h-14 icon-glow-cyan" />
                             </a>
-                            <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase">WhatsApp</p>
+                            <p className="text-xs font-semibold tracking-wider text-cyan-400 uppercase">WhatsApp</p>
+                            <p className="text-xs text-cyan-200">069 598 9427</p>
                         </div>
-                         <div className="flex flex-col items-center gap-1">
+                         <div className="flex flex-col items-center gap-2">
                              <a 
                                 href="mailto:jstypme@gmail.com" 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="text-red-400 hover:text-red-300 transition-transform hover:scale-110"
+                                className="text-cyan-400 hover:text-white transition-all duration-300 transform hover:scale-110"
                                 aria-label="Send an email"
                             >
-                                <AtSymbolIcon className="w-12 h-12" />
+                                <AtSymbolIcon className="w-14 h-14 icon-glow-cyan" />
                             </a>
-                            <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase">Email</p>
+                            <p className="text-xs font-semibold tracking-wider text-cyan-400 uppercase">Email</p>
+                             <p className="text-xs text-cyan-200">jstypme@gmail.com</p>
                         </div>
                     </div>
                 </div>

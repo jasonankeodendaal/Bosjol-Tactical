@@ -205,7 +205,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8">
+        <div className="p-2 sm:p-4 md:p-6">
             <header className="flex items-center mb-6">
                 <Button onClick={onBack} variant="secondary" size="sm" className="mr-4">
                     <ArrowLeftIcon className="w-5 h-5" />

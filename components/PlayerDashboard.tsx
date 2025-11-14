@@ -854,7 +854,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, player
     }, []);
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8">
+        <div className="p-2 sm:p-4 md:p-6">
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             
             {activeTab === 'Overview' && <OverviewTab player={player} events={events} sponsors={sponsors} ranks={ranks} />}

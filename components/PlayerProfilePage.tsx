@@ -218,7 +218,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
 
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8">
+        <div className="p-2 sm:p-4 md:p-6">
             {isAwardingXp && <AwardXpModal onClose={() => setIsAwardingXp(false)} onSave={handleAwardXp} />}
             {isResettingPin && <ResetPinModal onClose={() => setIsResettingPin(false)} onSave={handleResetPin} />}
             <header className="flex items-center mb-6">

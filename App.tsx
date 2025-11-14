@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -20,35 +16,37 @@ import { Modal } from './components/Modal';
 const CreatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return (
         <Modal isOpen={true} onClose={onClose} title="App Creators">
-            <div className="flex flex-col items-center text-center text-gray-300">
-                <img 
-                    src="https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png" 
-                    alt="JSTYP.me Logo" 
-                    className="h-24 w-24 mb-4 rounded-full border-2 border-red-500 bg-white p-1"
-                />
-                <h2 className="text-xl font-bold text-white">Jason's solutions to your problems</h2>
-                <p className="italic text-gray-400 mt-2 mb-6">
-                    Need a website, app or custom tool? Contact JSTYP.me
-                </p>
-                <div className="flex items-center justify-center gap-8 mt-6">
-                    <a 
-                        href="https://wa.me/27695989427?text=Hi!%20I'm%20contacting%20you%20from%20the%20Bosjol%20Tactical%20Dashboard."
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-green-400 hover:text-green-300 transition-transform hover:scale-110"
-                        aria-label="Contact on WhatsApp"
-                    >
-                        <WhatsAppIcon className="w-12 h-12" />
-                    </a>
-                     <a 
-                        href="mailto:jstypme@gmail.com" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-red-400 hover:text-red-300 transition-transform hover:scale-110"
-                        aria-label="Send an email"
-                    >
-                        <AtSymbolIcon className="w-12 h-12" />
-                    </a>
+            <div className="tactical-bg -m-6 p-6 rounded-b-xl">
+                <div className="relative z-10 flex flex-col items-center text-center text-gray-300">
+                    <img 
+                        src="https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png" 
+                        alt="JSTYP.me Logo" 
+                        className="h-24 w-24 mb-4 rounded-full border-2 border-red-500 bg-white p-1"
+                    />
+                    <h2 className="text-xl font-bold text-white">Jason's solutions to your problems</h2>
+                    <p className="italic text-gray-400 mt-2 mb-6">
+                        Need a website, app or custom tool? Contact JSTYP.me
+                    </p>
+                    <div className="flex items-center justify-center gap-8 mt-6">
+                        <a 
+                            href="https://wa.me/27695989427?text=Hi!%20I'm%20contacting%20you%20from%20the%20Bosjol%20Tactical%20Dashboard."
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-green-400 hover:text-green-300 transition-transform hover:scale-110"
+                            aria-label="Contact on WhatsApp"
+                        >
+                            <WhatsAppIcon className="w-12 h-12" />
+                        </a>
+                         <a 
+                            href="mailto:jstypme@gmail.com" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-red-400 hover:text-red-300 transition-transform hover:scale-110"
+                            aria-label="Send an email"
+                        >
+                            <AtSymbolIcon className="w-12 h-12" />
+                        </a>
+                    </div>
                 </div>
             </div>
         </Modal>
@@ -185,7 +183,7 @@ const AppContent: React.FC = () => {
             <div className="fixed bottom-4 left-4 z-50">
                  <motion.button
                     onClick={() => setShowCreatorModal(true)}
-                    className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-red-500 rounded-full"
+                    className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-red-500 rounded-lg"
                     aria-label="Show app creators"
                     animate={{
                         scale: [1, 1.1, 1.05, 1.15, 1],

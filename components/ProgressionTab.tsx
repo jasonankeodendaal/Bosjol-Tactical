@@ -19,26 +19,39 @@ interface ProgressionTabProps {
     setGamificationSettings: React.Dispatch<React.SetStateAction<GamificationSettings>>;
 }
 
-const GamificationEditor: React.FC<{rule: GamificationRule, onSave: (id: string, newXp: number) => void}> = ({rule, onSave}) => {
-     const [xp, setXp] = useState(rule.xp);
-
-    const handleSave = () => {
-        onSave(rule.id, Number(xp));
-    }
+const GamificationRuleEditorModal: React.FC<{ rule: Partial<GamificationRule>, onSave: (rule: GamificationRule) => void, onClose: () => void }> = ({ rule, onSave, onClose }) => {
+    const [formData, setFormData] = useState({
+        name: rule.name || '',
+        description: rule.description || '',
+        xp: rule.xp ?? 0,
+    });
     
+    const handleSave = () => {
+        if (!formData.name.trim() || !formData.description.trim()) {
+            alert("Please fill out all fields.");
+            return;
+        }
+
+        onSave({
+            id: rule.id || `g_${formData.name.toLowerCase().replace(/\s/g, '_')}${Date.now()}`,
+            ...formData,
+            xp: Number(formData.xp)
+        });
+    };
+
     return (
-        <div className="flex items-center gap-4 bg-zinc-800/50 p-3 rounded-lg">
-            <div className="flex-grow">
-                <p className="font-bold text-white">{rule.name}</p>
-                <p className="text-xs text-gray-400">{rule.description}</p>
+        <Modal isOpen={true} onClose={onClose} title={rule.id ? "Edit Gamification Rule" : "Add Gamification Rule"}>
+            <div className="space-y-4">
+                <Input label="Rule Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))} />
+                <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({...f, description: e.target.value}))} />
+                <Input label="XP Value" type="number" value={formData.xp} onChange={e => setFormData(f => ({...f, xp: Number(e.target.value)}))} />
             </div>
-            <div className="flex items-center gap-2">
-                <Input type="number" value={xp} onChange={e => setXp(Number(e.target.value))} className="w-24 text-right"/>
-                <Button size="sm" onClick={handleSave} disabled={xp === rule.xp}>Save</Button>
+            <div className="mt-6">
+                <Button className="w-full" onClick={handleSave}>Save Rule</Button>
             </div>
-        </div>
-    )
-}
+        </Modal>
+    );
+};
 
 const StandardBadgeEditorModal: React.FC<{ badge: Partial<Badge> | null, onClose: () => void, onSave: (b: Badge) => void }> = ({ badge, onClose, onSave }) => {
     const [formData, setFormData] = useState({
@@ -149,12 +162,29 @@ const LegendaryBadgeEditorModal: React.FC<{ badge: Partial<LegendaryBadge> | nul
 
 
 export const ProgressionTab: React.FC<ProgressionTabProps> = ({ ranks, setRanks, badges, setBadges, legendaryBadges, setLegendaryBadges, gamificationSettings, setGamificationSettings }) => {
+    const [editingRule, setEditingRule] = useState<Partial<GamificationRule> | null>(null);
+    const [deletingRule, setDeletingRule] = useState<GamificationRule | null>(null);
     const [editingStandardBadge, setEditingStandardBadge] = useState<Partial<Badge> | null>(null);
     const [editingLegendaryBadge, setEditingLegendaryBadge] = useState<Partial<LegendaryBadge> | null>(null);
     const [deletingBadge, setDeletingBadge] = useState<Badge | LegendaryBadge | null>(null);
     
-    const handleGamificationSave = (id: string, newXp: number) => {
-        setGamificationSettings(prev => prev.map(rule => rule.id === id ? {...rule, xp: newXp} : rule));
+    const handleGamificationSave = (rule: GamificationRule) => {
+        setGamificationSettings(prev => {
+            const index = prev.findIndex(r => r.id === rule.id);
+            if (index > -1) {
+                const newSettings = [...prev];
+                newSettings[index] = rule;
+                return newSettings;
+            }
+            return [...prev, rule];
+        });
+        setEditingRule(null);
+    };
+    
+    const handleGamificationDelete = () => {
+        if (!deletingRule) return;
+        setGamificationSettings(prev => prev.filter(r => r.id !== deletingRule.id));
+        setDeletingRule(null);
     };
 
     const handleStandardBadgeSave = (badge: Badge) => {
@@ -193,6 +223,16 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({ ranks, setRanks,
 
     return (
          <div className="space-y-6">
+            {editingRule && <GamificationRuleEditorModal rule={editingRule} onClose={() => setEditingRule(null)} onSave={handleGamificationSave} />}
+            {deletingRule && (
+                <Modal isOpen={true} onClose={() => setDeletingRule(null)} title="Confirm Deletion">
+                    <p className="text-gray-300">Are you sure you want to delete the rule "{deletingRule.name}"? This action cannot be undone.</p>
+                    <div className="flex justify-end gap-4 mt-6">
+                        <Button variant="secondary" onClick={() => setDeletingRule(null)}>Cancel</Button>
+                        <Button variant="danger" onClick={handleGamificationDelete}>Delete</Button>
+                    </div>
+                </Modal>
+            )}
             {editingStandardBadge && <StandardBadgeEditorModal badge={editingStandardBadge} onClose={() => setEditingStandardBadge(null)} onSave={handleStandardBadgeSave} />}
             {editingLegendaryBadge && <LegendaryBadgeEditorModal badge={editingLegendaryBadge} onClose={() => setEditingLegendaryBadge(null)} onSave={handleLegendaryBadgeSave} />}
             {deletingBadge && (
@@ -206,10 +246,24 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({ ranks, setRanks,
             )}
 
             <DashboardCard title="Gamification Settings" icon={<PlusCircleIcon className="w-6 h-6"/>}>
-                <div className="p-4 space-y-2">
-                    {gamificationSettings.map(rule => (
-                        <GamificationEditor key={rule.id} rule={rule} onSave={handleGamificationSave} />
-                    ))}
+                <div className="p-4">
+                    <div className="flex justify-end mb-4">
+                        <Button onClick={() => setEditingRule({})}><PlusIcon className="w-5 h-5 mr-2" /> Add Rule</Button>
+                    </div>
+                    <div className="space-y-2">
+                        {gamificationSettings.map(rule => (
+                            <div key={rule.id} className="flex items-center gap-4 bg-zinc-800/50 p-3 rounded-lg">
+                                <div className="flex-grow">
+                                    <p className="font-bold text-white">{rule.name} (<span className={rule.xp >= 0 ? 'text-green-400' : 'text-red-400'}>{rule.xp > 0 ? '+' : ''}{rule.xp} XP</span>)</p>
+                                    <p className="text-xs text-gray-400">{rule.description}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button size="sm" variant="secondary" onClick={() => setEditingRule(rule)}><PencilIcon className="w-4 h-4" /></Button>
+                                    <Button size="sm" variant="danger" onClick={() => setDeletingRule(rule)}><TrashIcon className="w-4 h-4" /></Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </DashboardCard>
 

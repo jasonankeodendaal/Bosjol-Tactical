@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -9,7 +10,7 @@ import { PlayerDashboard } from './components/PlayerDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Button } from './components/Button';
 import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia } from './types';
-import { BuildingOfficeIcon, ExclamationTriangleIcon, CodeBracketIcon, AtSymbolIcon, PhoneIcon } from './components/icons/Icons';
+import { BuildingOfficeIcon, ExclamationTriangleIcon, CodeBracketIcon, AtSymbolIcon, WhatsAppIcon } from './components/icons/Icons';
 import { DataProvider, DataContext } from './data/DataContext';
 import { Loader } from './components/Loader';
 import { USE_FIREBASE, isFirebaseConfigured, getEnvVar, firebaseInitializationError } from './firebase';
@@ -29,24 +30,24 @@ const CreatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <p className="italic text-gray-400 mt-2 mb-6">
                     Need a website, app or custom tool? Contact JSTYP.me
                 </p>
-                <div className="space-y-3 w-full max-w-xs">
+                <div className="flex items-center justify-center gap-8 mt-6">
                     <a 
-                        href="https://wa.me/27695989427" 
+                        href="https://wa.me/27695989427?text=Hi!%20I'm%20contacting%20you%20from%20the%20Bosjol%20Tactical%20Dashboard."
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 bg-zinc-800/50 hover:bg-zinc-800 p-3 rounded-lg transition-colors w-full"
+                        className="text-green-400 hover:text-green-300 transition-transform hover:scale-110"
+                        aria-label="Contact on WhatsApp"
                     >
-                        <PhoneIcon className="w-6 h-6 text-green-400 flex-shrink-0" />
-                        <span className="flex-grow text-left">069 598 9427</span>
+                        <WhatsAppIcon className="w-12 h-12" />
                     </a>
                      <a 
                         href="mailto:jstypme@gmail.com" 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 bg-zinc-800/50 hover:bg-zinc-800 p-3 rounded-lg transition-colors w-full"
+                        className="text-red-400 hover:text-red-300 transition-transform hover:scale-110"
+                        aria-label="Send an email"
                     >
-                        <AtSymbolIcon className="w-6 h-6 text-red-400 flex-shrink-0" />
-                        <span className="flex-grow text-left">jstypme@gmail.com</span>
+                        <AtSymbolIcon className="w-12 h-12" />
                     </a>
                 </div>
             </div>

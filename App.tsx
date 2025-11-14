@@ -57,55 +57,6 @@ const AppContent: React.FC = () => {
             </div>
         );
     }
-
-    if (USE_FIREBASE && !isFirebaseConfigured()) {
-        const vars = [
-            'VITE_USE_FIREBASE',
-            'VITE_FIREBASE_API_KEY',
-            'VITE_FIREBASE_AUTH_DOMAIN',
-            'VITE_FIREBASE_PROJECT_ID',
-            'VITE_FIREBASE_STORAGE_BUCKET',
-            'VITE_FIREBASE_MESSAGING_SENDER_ID',
-            'VITE_FIREBASE_APP_ID',
-        ];
-
-        const varStatus = vars.map(v => ({
-            name: v,
-            value: getEnvVar(v),
-            isSet: !!getEnvVar(v)
-        }));
-
-        return (
-            <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center p-8 text-center">
-                <div className="bg-red-900/50 border border-red-700 text-red-200 p-8 rounded-lg max-w-2xl">
-                    <ExclamationTriangleIcon className="w-12 h-12 mx-auto mb-4 text-red-400" />
-                    <h1 className="text-2xl font-bold mb-2 text-white">Firebase Configuration Error</h1>
-                    <p className="text-base">
-                        The application is configured to use Firebase, but it's not receiving the necessary environment variables to connect to your project.
-                    </p>
-
-                    <div className="text-sm mt-6 text-left bg-black/20 p-4 rounded-md">
-                        <h2 className="text-lg font-bold mb-2 text-white">Environment Variable Status:</h2>
-                        <ul className="space-y-1 font-mono text-xs">
-                            {varStatus.map(v => (
-                            <li key={v.name} className="flex justify-between items-center">
-                                <span>{v.name}:</span>
-                                {v.isSet ? (
-                                <span className="font-bold text-green-400">✔️ SET</span>
-                                ) : (
-                                <span className="font-bold text-red-400">❌ NOT SET</span>
-                                )}
-                            </li>
-                            ))}
-                        </ul>
-                        <p className="mt-4 text-red-300 text-xs">
-                            <strong>Action Required:</strong> Please ensure the variables marked "NOT SET" are correctly configured in your project's environment settings. The app requires at least <code>VITE_FIREBASE_API_KEY</code>, <code>VITE_FIREBASE_AUTH_DOMAIN</code>, and <code>VITE_FIREBASE_PROJECT_ID</code> to connect.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
     
     if (!auth) throw new Error("AuthContext not found.");
     if (!data) throw new Error("DataContext not found.");

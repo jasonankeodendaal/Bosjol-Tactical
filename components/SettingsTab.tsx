@@ -65,6 +65,7 @@ const FileUploadField: React.FC<{
 
 export const SettingsTab: React.FC<SettingsTabProps> = ({ companyDetails, setCompanyDetails, onDeleteAllData }) => {
     const [formData, setFormData] = useState(() => normalizeCompanyDetails(companyDetails));
+    const [carouselUploadProgress, setCarouselUploadProgress] = useState<number | null>(null);
     
     useEffect(() => {
         setFormData(normalizeCompanyDetails(companyDetails));
@@ -114,6 +115,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ companyDetails, setCom
         }));
     };
 
+    const isUploading = carouselUploadProgress !== null && carouselUploadProgress < 100;
     const isDirty = JSON.stringify(formData) !== JSON.stringify(normalizeCompanyDetails(companyDetails));
 
     return (
@@ -220,7 +222,27 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ companyDetails, setCom
                                 </div>
                             ))}
                         </div>
-                        <ImageUpload onUpload={handleCarouselMediaUpload} accept="image/*,video/*" multiple />
+                        <ImageUpload 
+                            onUpload={handleCarouselMediaUpload} 
+                            accept="image/*,video/*" 
+                            multiple 
+                            onProgress={(percent) => {
+                                setCarouselUploadProgress(percent);
+                                if (percent === 100) {
+                                    setTimeout(() => setCarouselUploadProgress(null), 1500);
+                                }
+                            }}
+                        />
+                         {carouselUploadProgress !== null && (
+                            <div className="mt-2">
+                                <p className="text-sm text-gray-400 mb-1 text-center">
+                                    {carouselUploadProgress < 100 ? `Compressing... ${carouselUploadProgress}%` : 'Compression Complete!'}
+                                </p>
+                                <div className="w-full bg-zinc-700 rounded-full h-2.5">
+                                    <div className="bg-red-500 h-2.5 rounded-full transition-all duration-300" style={{ width: `${carouselUploadProgress}%` }}></div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                      <div className="pt-6 border-t border-zinc-800">
                         <h4 className="font-semibold text-gray-200 mb-4 text-lg">Social Links</h4>
@@ -269,8 +291,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ companyDetails, setCom
             </DashboardCard>
 
             <div className="mt-6 sticky bottom-6 z-20">
-                <Button onClick={handleSave} disabled={!isDirty} className="w-full py-3 text-lg shadow-lg">
-                    {isDirty ? 'Save All Settings' : 'All Changes Saved'}
+                <Button onClick={handleSave} disabled={!isDirty || isUploading} className="w-full py-3 text-lg shadow-lg">
+                    {isUploading ? 'Processing Media...' : isDirty ? 'Save All Settings' : 'All Changes Saved'}
                 </Button>
             </div>
         </div>

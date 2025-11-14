@@ -6,36 +6,31 @@ interface FileUploadProps {
   onUpload: (base64s: string[]) => void;
   accept: string;
   multiple?: boolean;
+  onProgress?: (percent: number) => void;
 }
 
-const compressImage = (file: File): Promise<string> => {
+const compressImage = (file: File, maxSizeKB: number = 950): Promise<string> => {
     return new Promise((resolve, reject) => {
         const MAX_WIDTH = 1920;
-        const MAX_HEIGHT = 1080;
-        const JPEG_QUALITY = 0.8; // Using 80% quality for a good balance
-
         const reader = new FileReader();
         reader.readAsDataURL(file);
+
         reader.onload = (event) => {
             if (!event.target?.result) {
                 return reject(new Error("Couldn't read file for compression."));
             }
             const img = new Image();
             img.src = event.target.result as string;
+
             img.onload = () => {
                 let { width, height } = img;
 
-                // Calculate new dimensions while maintaining aspect ratio
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width *= MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
-                    }
+                if (width > height && width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                } else if (height > MAX_WIDTH) { // Using MAX_WIDTH for both height and width for simplicity
+                    width *= MAX_WIDTH / height;
+                    height = MAX_WIDTH;
                 }
 
                 const canvas = document.createElement('canvas');
@@ -48,15 +43,26 @@ const compressImage = (file: File): Promise<string> => {
                 
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // Convert to JPEG for significant size reduction, which is the main goal
-                const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
-                resolve(dataUrl);
+                const performCompression = (quality: number): string => {
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    // Base64 is approx 4/3 the size of the original data.
+                    const sizeInBytes = Math.floor(dataUrl.length * (3/4)); 
+
+                    if (sizeInBytes / 1024 <= maxSizeKB || quality <= 0.1) {
+                        return dataUrl;
+                    }
+                    // Recursively lower quality to meet size target
+                    return performCompression(quality - 0.1);
+                };
+                
+                resolve(performCompression(0.9)); // Start with 90% quality
             };
             img.onerror = (err) => reject(new Error(`Image load error for compression: ${err}`));
         };
         reader.onerror = (err) => reject(new Error(`File read error for compression: ${err}`));
     });
 };
+
 
 const readFileAsBase64 = (file: File): Promise<string> => {
     return new Promise<string>((resolve, reject) => {
@@ -73,29 +79,46 @@ const readFileAsBase64 = (file: File): Promise<string> => {
     });
 };
 
-export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false }) => {
+export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, onProgress }) => {
   const [fileName, setFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFilesChange = useCallback((files: FileList | null) => {
-    if (files && files.length > 0) {
-      setFileName(multiple ? `${files.length} file(s) selected` : files[0].name);
-      const promises = Array.from(files).map(file => {
-        // Automatically compress files that are images. Other files (video, audio, etc.) are passed through.
-        if (file.type.startsWith('image/')) {
-            return compressImage(file);
+  const handleFilesChange = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    setFileName(multiple ? `${files.length} file(s) selected` : files[0].name);
+    onProgress?.(0);
+
+    const filesArray = Array.from(files);
+    const results: string[] = [];
+    let processedCount = 0;
+
+    for (const file of filesArray) {
+        try {
+            if (file.type.startsWith('image/')) {
+                results.push(await compressImage(file));
+            } else {
+                // For non-image files like videos, just read them.
+                results.push(await readFileAsBase64(file));
+            }
+        } catch (err) {
+            console.error(`Failed to process file ${file.name}:`, err);
+            // We can decide to alert the user here or just skip the file.
+            // Skipping is a smoother UX.
+        } finally {
+            processedCount++;
+            const percent = Math.round((processedCount / filesArray.length) * 100);
+            onProgress?.(percent);
         }
-        return readFileAsBase64(file);
-      });
-      
-      Promise.all(promises).then(base64s => {
-        onUpload(base64s);
-      }).catch(err => {
-        console.error("Error processing files:", err);
-        alert(`An error occurred while processing the files: ${err.message}`);
-      });
     }
-  }, [onUpload, multiple]);
+
+    if (results.length > 0) {
+        onUpload(results);
+    } else if (filesArray.length > 0) {
+        // This case handles if all files failed to process
+        alert('Could not process any of the selected files. Please try again with valid files.');
+    }
+}, [onUpload, multiple, onProgress]);
 
   const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       handleFilesChange(event.target.files);

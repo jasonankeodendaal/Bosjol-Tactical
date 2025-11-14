@@ -1,3 +1,4 @@
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -6,7 +7,7 @@ import { PlayerDashboard } from './components/PlayerDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Button } from './components/Button';
 import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia } from './types';
-import { BuildingOfficeIcon, ExclamationTriangleIcon, CodeBracketIcon, AtSymbolIcon, WhatsAppIcon } from './components/icons/Icons';
+import { BuildingOfficeIcon, ExclamationTriangleIcon, CodeBracketIcon } from './components/icons/Icons';
 import { DataProvider, DataContext } from './data/DataContext';
 import { Loader } from './components/Loader';
 import { USE_FIREBASE, isFirebaseConfigured, getEnvVar, firebaseInitializationError } from './firebase';
@@ -46,7 +47,7 @@ const CreatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 className="text-cyan-400 hover:text-white transition-all duration-300 transform hover:scale-110"
                                 aria-label="Contact on WhatsApp"
                             >
-                                <WhatsAppIcon className="w-14 h-14 icon-glow-cyan" />
+                                <img src="https://i.ibb.co/Z1YHvjgT/image-removebg-preview-1.png" alt="WhatsApp" className="w-14 h-14 object-contain icon-glow-cyan" />
                             </a>
                             <p className="text-xs font-semibold tracking-wider text-cyan-400 uppercase">WhatsApp</p>
                             <p className="text-xs text-cyan-200">069 598 9427</p>
@@ -59,7 +60,7 @@ const CreatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 className="text-cyan-400 hover:text-white transition-all duration-300 transform hover:scale-110"
                                 aria-label="Send an email"
                             >
-                                <AtSymbolIcon className="w-14 h-14 icon-glow-cyan" />
+                                <img src="https://i.ibb.co/r2HkbjLj/image-removebg-preview-2.png" alt="Email" className="w-14 h-14 object-contain icon-glow-cyan" />
                             </a>
                             <p className="text-xs font-semibold tracking-wider text-cyan-400 uppercase">Email</p>
                              <p className="text-xs text-cyan-200">jstypme@gmail.com</p>

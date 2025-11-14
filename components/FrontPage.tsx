@@ -32,7 +32,22 @@ Thank you.
     };
 
     const emailHref = `mailto:${companyDetails.email}?subject=${encodeURIComponent('New Recruit Enlistment Request')}&body=${encodeURIComponent(signupMessageTemplate)}`;
-    const whatsappNumber = companyDetails.phone ? companyDetails.phone.replace(/\D/g, '') : '';
+    
+    // Improved WhatsApp number formatting
+    const formatWhatsAppNumber = (phone: string | undefined): string => {
+        if (!phone) return '';
+        // Remove all non-digit characters
+        let digitsOnly = phone.replace(/\D/g, '');
+        // Check if it's a 10-digit SA number starting with 0
+        if (digitsOnly.length === 10 && digitsOnly.startsWith('0')) {
+            // Replace the leading 0 with the country code 27
+            return '27' + digitsOnly.substring(1);
+        }
+        // If it was entered as +27... the replace(/\D/g, '') would have already made it 27...
+        return digitsOnly;
+    };
+    
+    const whatsappNumber = formatWhatsAppNumber(companyDetails.phone);
     const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(signupMessageTemplate)}`;
     
     return (

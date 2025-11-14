@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -25,23 +26,65 @@ const WhatsAppIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 );
 
 const CreatorPopup: React.FC<{ onClose: () => void; }> = ({ onClose }) => {
-    // Pre-built message for email and WhatsApp
+    // Upgraded, more detailed pre-built messages
+    const emailSubject = "Project Inquiry via Bosjol Tactical Dashboard - [Your Name/Company Name]";
     const messageBody = `Hello JSTYP.me,
 
-I am interested in your development services after seeing your work on the Bosjol Tactical Dashboard.
+I found your details through the Bosjol Tactical Dashboard and I'm impressed with your work. I would like to inquire about your development services for a potential project.
 
-Here are my details:
-- Full Name: 
-- Company (if applicable): 
-- Project Type (Website, Mobile App, Custom Tool, etc.): 
-- Brief description of my needs: 
+To help you understand my needs better, here are some initial details:
 
-Looking forward to hearing from you.
+---
+
+**1. Contact Information:**
+   - Full Name: 
+   - Company Name (if applicable): 
+   - Best way to reach you (Email/Phone): 
+
+**2. Project Overview:**
+   - Project Name/Title: 
+   - Project Type (e.g., New Website, Mobile App, Custom Software, E-commerce, Feature addition, etc.): 
+   - Main Goal/Objective: (What problem are you trying to solve?)
+   
+**3. Key Features & Functionality:**
+   (Please list a few core features you envision)
+   - 
+   - 
+   - 
+
+**4. Target Audience:**
+   - Who will be using this application/website?
+   
+**5. Timeline & Budget:**
+   - Ideal Project Start Date: 
+   - Desired Completion Date: 
+   - Estimated Budget Range (Optional, but helpful): (e.g., < R5k, R5k-R15k, R15k+)
+   
+**6. Additional Information:**
+   (Is there anything else you'd like to share? e.g., existing systems, design preferences, specific technologies)
+   
+---
+
+I look forward to discussing this further with you.
 
 Best regards,
+
+[Your Name]
 `;
-    const emailHref = `mailto:jstypme@gmail.com?subject=${encodeURIComponent('Inquiry from Bosjol Tactical Dashboard')}&body=${encodeURIComponent(messageBody)}`;
-    const whatsappMessage = `Hello JSTYP.me, I'm contacting you from the Bosjol Tactical Dashboard regarding your services. Please provide the following information:\n- Full Name:\n- Company (if applicable):\n- Brief project description:\n\nThank you!`;
+    const emailHref = `mailto:jstypme@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(messageBody)}`;
+    
+    const whatsappMessage = `Hello JSTYP.me,
+
+I'm reaching out from the Bosjol Tactical Dashboard regarding your development services. I have a project in mind and would like to provide some initial details.
+
+*Project Inquiry:*
+- *Name:* 
+- *Project Type:* (e.g., Website, Mobile App, Custom Tool)
+- *Briefly, what is the main goal?* 
+- *What's your ideal start date?* 
+
+Please let me know when would be a good time to discuss this further. Thank you!
+`;
     const whatsappHref = `https://wa.me/27695989427?text=${encodeURIComponent(whatsappMessage)}`;
 
     return (

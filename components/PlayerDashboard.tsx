@@ -216,7 +216,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
             <div className="lg:hidden relative">
                  <button 
                     onClick={() => setMenuOpen(!menuOpen)}
-                    className="flex items-center justify-between w-full px-4 py-3 text-left text-gray-200 bg-zinc-900/50 backdrop-blur-sm rounded-md border border-zinc-700"
+                    className="flex items-center justify-between w-full px-4 py-3 text-left text-gray-200 bg-zinc-900/50 rounded-md border border-zinc-700"
                 >
                     <div className="flex items-center gap-3">
                         {activeTabInfo?.icon}
@@ -230,7 +230,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 mt-2 w-full bg-zinc-900/80 backdrop-blur-sm border border-zinc-700/50 rounded-md shadow-lg z-50 p-2"
+                        className="absolute top-full left-0 mt-2 w-full bg-zinc-900 border border-zinc-700 rounded-md shadow-lg z-50 p-2"
                     >
                         {tabs.map(tab => (
                             <button
@@ -345,7 +345,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sp
          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1 space-y-6">
                 <DashboardCard title="Player Profile" icon={<UserIcon className="w-6 h-6" />}>
-                    <div className="p-4 text-center">
+                    <div className="p-6 text-center">
                          <img src={player.avatarUrl} alt={player.name} className="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-red-500 object-cover" />
                         <h2 className="text-xl font-bold text-white">{player.name} {player.surname}</h2>
                         <p className="text-sm text-gray-400">"{player.callsign}" {player.preferredRole && `- ${player.preferredRole}`}</p>
@@ -360,7 +360,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sp
                     icon={<ShieldCheckIcon className="w-6 h-6" />}
                     titleAddon={<InfoTooltip text="Your rank is determined by your total Rank Points (XP). You must also play at least 10 games to be ranked. Earn XP by playing matches, getting kills, and completing objectives." />}
                   >
-                    <div className="p-4 space-y-4">
+                    <div className="p-6 space-y-4">
                         <div className="text-center">
                             <img src={playerRank.iconUrl} alt={playerRank.name} className="h-16 mx-auto mb-2" />
                             <h3 className="text-lg font-bold text-red-500">{playerRank.name}</h3>
@@ -532,7 +532,7 @@ const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ p
                     icon={<ChartBarIcon className="w-6 h-6" />}
                     titleAddon={<InfoTooltip text="Your complete performance statistics across all matches played." />}
                  >
-                    <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-y-6">
+                    <div className="p-6 grid grid-cols-2 sm:grid-cols-3 gap-y-6">
                         <StatDisplay value={kdr} label="K/D Ratio" tooltip="Kill/Death Ratio. Calculated as Total Kills divided by Total Deaths. A higher number is better."/>
                         <StatDisplay value={stats.kills.toLocaleString()} label="Total Kills" tooltip="Total number of opponents eliminated."/>
                         <StatDisplay value={stats.deaths.toLocaleString()} label="Total Deaths" tooltip="Total number of times you've been eliminated."/>
@@ -546,7 +546,7 @@ const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ p
                     icon={<CalendarIcon className="w-6 h-6" />}
                     titleAddon={<InfoTooltip text="A detailed log of your performance in every past match." />}
                 >
-                    <div className="p-4 space-y-4 max-h-[40rem] overflow-y-auto">
+                    <div className="p-6 space-y-4 max-h-[40rem] overflow-y-auto">
                         {player.matchHistory.length > 0 ? (
                             player.matchHistory
                                 .map(record => ({...record, event: events.find(e => e.id === record.eventId)}))
@@ -598,14 +598,14 @@ const AchievementsTab: React.FC<{ player: Player, ranks: Rank[] }> = ({ player, 
                 icon={<TrophyIcon className="w-6 h-6" />}
                 titleAddon={<InfoTooltip text="Badges are special achievements awarded for completing specific in-game challenges. Track your progress here." />}
             >
-                <div className="p-4 space-y-3 max-h-[30rem] overflow-y-auto">
+                <div className="p-6 space-y-3 max-h-[30rem] overflow-y-auto">
                     {MOCK_BADGES.map(badge => (
                         <BadgeProgressCard key={badge.id} badge={badge} player={player} ranks={ranks} />
                     ))}
                 </div>
             </DashboardCard>
             <DashboardCard title="Legendary Commendations" icon={<TrophyIcon className="w-6 h-6 text-amber-400"/>}>
-                <div className="p-4 grid grid-cols-1 gap-3">
+                <div className="p-6 grid grid-cols-1 gap-3">
                     {player.legendaryBadges.length > 0 ? player.legendaryBadges.map(badge => (
                         <div key={badge.id} className="legendary-badge-item bg-zinc-800/50 p-3 rounded-lg border flex items-center gap-4">
                             <img src={badge.iconUrl} alt={badge.name} className="w-12 h-12 flex-shrink-0" />
@@ -682,7 +682,7 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
     return (
         <>
             <DashboardCard title="Operator Profile Settings" icon={<UserCircleIcon className="w-6 h-6"/>}>
-                <div className="p-4 space-y-6">
+                <div className="p-6 space-y-6">
                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-1 flex flex-col items-center">
                             <h4 className="font-bold text-gray-200 mb-2">Avatar</h4>
@@ -854,7 +854,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, player
     }, []);
 
     return (
-        <div className="p-3 sm:p-4">
+        <div className="p-4 sm:p-6 lg:p-8">
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             
             {activeTab === 'Overview' && <OverviewTab player={player} events={events} sponsors={sponsors} ranks={ranks} />}

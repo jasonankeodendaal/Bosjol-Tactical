@@ -3,8 +3,8 @@ import { USE_FIREBASE, db } from '../firebase';
 import * as mock from '../constants';
 import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia } from '../types';
 
-// Helper to fetch and manage collection data
-function useManagedCollection<T extends {id: string}>(collectionName: string, mockData: T[], dependencies: any[] = []) {
+// Helper to fetch collection data
+function useCollection<T extends {id: string}>(collectionName: string, mockData: T[], dependencies: any[] = []) {
     const [data, setData] = useState<T[]>(USE_FIREBASE ? [] : mockData);
     const [loading, setLoading] = useState(true);
 
@@ -30,41 +30,8 @@ function useManagedCollection<T extends {id: string}>(collectionName: string, mo
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, dependencies);
-    
-    const updateCollection = async (newData: T[] | ((prev: T[]) => T[])) => {
-        const finalData = typeof newData === 'function' ? (newData as (prev: T[]) => T[])(data) : newData;
 
-        if (USE_FIREBASE && db) {
-            try {
-                const collectionRef = db.collection(collectionName);
-                const batch = db.batch();
-                
-                const snapshot = await collectionRef.get();
-                const existingIds = new Set(snapshot.docs.map(doc => doc.id));
-
-                for (const item of finalData) {
-                    const { id, ...itemData } = item;
-                    const docRef = collectionRef.doc(id);
-                    batch.set(docRef, itemData);
-                    existingIds.delete(id);
-                }
-
-                existingIds.forEach(idToDelete => {
-                    batch.delete(collectionRef.doc(idToDelete));
-                });
-
-                await batch.commit();
-                // The onSnapshot listener will automatically update the local state.
-            } catch (error) {
-                 console.error(`Failed to update collection ${collectionName}:`, error);
-                 alert(`Failed to save changes to ${collectionName}. Error: ${(error as Error).message}`);
-            }
-        } else {
-            setData(finalData); // Update mock data state
-        }
-    };
-
-    return [data, updateCollection, loading] as const;
+    return [data, setData, loading] as const;
 }
 
 // Helper to fetch a single document
@@ -144,28 +111,27 @@ interface DataContextType {
     updateEventDoc: (event: GameEvent) => Promise<void>;
     addEventDoc: (eventData: Omit<GameEvent, 'id'>) => Promise<void>;
     deleteEventDoc: (eventId: string) => Promise<void>;
-    migrateToApiServer: (apiUrl: string) => Promise<void>;
 }
 
 export const DataContext = createContext<DataContextType | null>(null);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [players, setPlayers, loadingPlayers] = useManagedCollection<Player>('players', mock.MOCK_PLAYERS, []);
-    const [events, setEvents, loadingEvents] = useManagedCollection<GameEvent>('events', mock.MOCK_EVENTS, []);
-    const [ranks, setRanks, loadingRanks] = useManagedCollection<Rank>('ranks', mock.MOCK_RANKS, []);
-    const [badges, setBadges, loadingBadges] = useManagedCollection<Badge>('badges', mock.MOCK_BADGES, []);
-    const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useManagedCollection<LegendaryBadge>('legendaryBadges', mock.MOCK_LEGENDARY_BADGES, []);
-    const [gamificationSettings, setGamificationSettings, loadingGamification] = useManagedCollection<GamificationRule>('gamificationSettings', mock.MOCK_GAMIFICATION_SETTINGS, []);
-    const [sponsors, setSponsors, loadingSponsors] = useManagedCollection<Sponsor>('sponsors', mock.MOCK_SPONSORS, []);
-    const [vouchers, setVouchers, loadingVouchers] = useManagedCollection<Voucher>('vouchers', mock.MOCK_VOUCHERS, []);
-    const [inventory, setInventory, loadingInventory] = useManagedCollection<InventoryItem>('inventory', mock.MOCK_INVENTORY, []);
-    const [suppliers, setSuppliers, loadingSuppliers] = useManagedCollection<Supplier>('suppliers', mock.MOCK_SUPPLIERS, []);
-    const [transactions, setTransactions, loadingTransactions] = useManagedCollection<Transaction>('transactions', mock.MOCK_TRANSACTIONS, []);
-    const [locations, setLocations, loadingLocations] = useManagedCollection<Location>('locations', mock.MOCK_LOCATIONS, []);
-    const [raffles, setRaffles, loadingRaffles] = useManagedCollection<Raffle>('raffles', mock.MOCK_RAFFLES, []);
+    const [players, setPlayers, loadingPlayers] = useCollection<Player>('players', mock.MOCK_PLAYERS, []);
+    const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', mock.MOCK_EVENTS, []);
+    const [ranks, setRanks, loadingRanks] = useCollection<Rank>('ranks', mock.MOCK_RANKS, []);
+    const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', mock.MOCK_BADGES, []);
+    const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', mock.MOCK_LEGENDARY_BADGES, []);
+    const [gamificationSettings, setGamificationSettings, loadingGamification] = useCollection<GamificationRule>('gamificationSettings', mock.MOCK_GAMIFICATION_SETTINGS, []);
+    const [sponsors, setSponsors, loadingSponsors] = useCollection<Sponsor>('sponsors', mock.MOCK_SPONSORS, []);
+    const [vouchers, setVouchers, loadingVouchers] = useCollection<Voucher>('vouchers', mock.MOCK_VOUCHERS, []);
+    const [inventory, setInventory, loadingInventory] = useCollection<InventoryItem>('inventory', mock.MOCK_INVENTORY, []);
+    const [suppliers, setSuppliers, loadingSuppliers] = useCollection<Supplier>('suppliers', mock.MOCK_SUPPLIERS, []);
+    const [transactions, setTransactions, loadingTransactions] = useCollection<Transaction>('transactions', mock.MOCK_TRANSACTIONS, []);
+    const [locations, setLocations, loadingLocations] = useCollection<Location>('locations', mock.MOCK_LOCATIONS, []);
+    const [raffles, setRaffles, loadingRaffles] = useCollection<Raffle>('raffles', mock.MOCK_RAFFLES, []);
     const [companyDetails, setCompanyDetails, loadingCompanyDetails] = useDocument<CompanyDetails>('settings', 'companyDetails', mock.MOCK_COMPANY_DETAILS);
-    const [socialLinks, setSocialLinks, loadingSocialLinks] = useManagedCollection<SocialLink>('socialLinks', mock.MOCK_SOCIAL_LINKS, []);
-    const [carouselMedia, setCarouselMedia, loadingCarouselMedia] = useManagedCollection<CarouselMedia>('carouselMedia', mock.MOCK_CAROUSEL_MEDIA, []);
+    const [socialLinks, setSocialLinks, loadingSocialLinks] = useCollection<SocialLink>('socialLinks', mock.MOCK_SOCIAL_LINKS, []);
+    const [carouselMedia, setCarouselMedia, loadingCarouselMedia] = useCollection<CarouselMedia>('carouselMedia', mock.MOCK_CAROUSEL_MEDIA, []);
     
     const [isSeeding, setIsSeeding] = useState(false);
 
@@ -261,29 +227,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
     
-    const migrateToApiServer = async (apiUrl: string) => {
-        if (!USE_FIREBASE || !db) {
-            alert("This feature is only available when connected to Firebase.");
-            return;
-        }
-        
-        console.log("Starting data migration to API server...");
-        // In a real app, this would involve a complex process:
-        // 1. Fetch all documents that might contain media URLs (base64 data).
-        // 2. For each base64 URL, convert it to a Blob/File.
-        // 3. POST the file to the new API server's /upload endpoint.
-        // 4. Get the new permanent URL back from the server.
-        // 5. Update the Firestore document with the new URL.
-        // This is a complex operation and for this context, we will simulate it.
-        // The main goal is to save the API server URL to settings.
-        
-        // This simplified function just confirms the URL and saves it.
-        // A full implementation is beyond the scope of this fix.
-        console.log(`Simulating migration. New server URL: ${apiUrl}`);
-        await setCompanyDetails(prev => ({...prev, apiServerUrl: apiUrl}));
-        console.log("Migration 'complete'. API Server URL has been saved.");
-    };
-
     const updatePlayerDoc = async (player: Player) => {
         if (!USE_FIREBASE || !db) {
             setPlayers(prev => prev.map(p => p.id === player.id ? player : p));
@@ -353,8 +296,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addPlayerDoc,
         updateEventDoc,
         addEventDoc,
-        deleteEventDoc,
-        migrateToApiServer,
+        deleteEventDoc
     };
 
     return (

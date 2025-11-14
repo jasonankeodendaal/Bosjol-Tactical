@@ -1,79 +1,15 @@
-
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
 import { LoginScreen } from './components/LoginScreen';
 import { PlayerDashboard } from './components/PlayerDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Button } from './components/Button';
 import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia } from './types';
-import { BuildingOfficeIcon, ExclamationTriangleIcon, CodeBracketIcon } from './components/icons/Icons';
+import { BuildingOfficeIcon, ExclamationTriangleIcon } from './components/icons/Icons';
 import { DataProvider, DataContext } from './data/DataContext';
 import { Loader } from './components/Loader';
 import { USE_FIREBASE, isFirebaseConfigured, getEnvVar, firebaseInitializationError } from './firebase';
 import { FrontPage } from './components/FrontPage';
-import { Modal } from './components/Modal';
-
-const CreatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    return (
-        <Modal isOpen={true} onClose={onClose} title="SYSTEM CREATOR">
-            <div className="hud-bg -m-6 p-6 rounded-b-xl">
-                <div className="hud-corners">
-                    <span />
-                </div>
-                <div className="relative z-10 flex flex-col items-center text-center text-cyan-200">
-                    <a href="https://ibb.co/spB8SDCX" target="_blank" rel="noopener noreferrer">
-                        <img 
-                            src="https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png" 
-                            alt="JSTYP.me Logo" 
-                            className="h-28 w-28 mb-4 icon-glow-cyan transition-transform duration-300 hover:scale-110"
-                        />
-                    </a>
-                    
-                    <h2 className="text-2xl font-bold text-white text-glow-cyan uppercase tracking-widest">
-                        Jason's Solutions to Your Problems
-                    </h2>
-                    <p className="text-lg font-medium text-cyan-300">- Yes me! -</p>
-                    
-                    <p className="text-sm text-cyan-300 mt-6 max-w-xs">
-                        Need a website, mobile app or custom tool? Get in touch!
-                    </p>
-
-                    <div className="w-1/2 h-px bg-cyan-500/30 my-6"></div>
-
-                    <div className="flex items-start justify-center gap-12">
-                        <div className="flex flex-col items-center gap-2">
-                            <a 
-                                href="https://wa.me/27695989427?text=Hi!%20I'm%20contacting%20you%20from%20the%20Bosjol%20Tactical%20Dashboard."
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-cyan-400 hover:text-white transition-all duration-300 transform hover:scale-110"
-                                aria-label="Contact on WhatsApp"
-                            >
-                                <img src="https://i.ibb.co/Z1YHvjgT/image-removebg-preview-1.png" alt="WhatsApp" className="w-14 h-14 object-contain icon-glow-cyan" />
-                            </a>
-                            <p className="text-xs font-semibold tracking-wider text-cyan-400 uppercase">WhatsApp</p>
-                            <p className="text-xs text-cyan-200">069 598 9427</p>
-                        </div>
-                         <div className="flex flex-col items-center gap-2">
-                             <a 
-                                href="mailto:jstypme@gmail.com" 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-cyan-400 hover:text-white transition-all duration-300 transform hover:scale-110"
-                                aria-label="Send an email"
-                            >
-                                <img src="https://i.ibb.co/r2HkbjLj/image-removebg-preview-2.png" alt="Email" className="w-14 h-14 object-contain icon-glow-cyan" />
-                            </a>
-                            <p className="text-xs font-semibold tracking-wider text-cyan-400 uppercase">Email</p>
-                             <p className="text-xs text-cyan-200">jstypme@gmail.com</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </Modal>
-    );
-};
 
 const Footer: React.FC<{ details: CompanyDetails, socialLinks: SocialLink[] }> = ({ details, socialLinks }) => (
     <footer className="bg-zinc-900/80 backdrop-blur-sm border-t border-zinc-800 p-6 text-center text-sm text-gray-400 mt-auto">
@@ -103,7 +39,6 @@ const AppContent: React.FC = () => {
     const auth = useContext(AuthContext);
     const data = useContext(DataContext);
     const [showFrontPage, setShowFrontPage] = useState(true);
-    const [showCreatorModal, setShowCreatorModal] = useState(false);
 
     if (firebaseInitializationError) {
         return (
@@ -196,69 +131,7 @@ const AppContent: React.FC = () => {
         updatePlayerDoc,
         addPlayerDoc,
         updateEventDoc,
-        migrateToApiServer,
     } = data;
-    
-    const creatorButtonAndModal = (
-        <>
-            {showCreatorModal && <CreatorModal onClose={() => setShowCreatorModal(false)} />}
-            <div className="fixed bottom-4 left-4 z-50">
-                 <motion.button
-                    onClick={() => setShowCreatorModal(true)}
-                    className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-red-500 rounded-lg"
-                    aria-label="Show app creators"
-                    animate={{
-                        scale: [1, 1.1, 1.05, 1.15, 1],
-                        rotate: [0, -3, 3, -3, 0],
-                    }}
-                    transition={{
-                        duration: 1,
-                        ease: "easeInOut",
-                        repeat: Infinity,
-                        repeatType: "loop",
-                        repeatDelay: 4,
-                    }}
-                    whileHover={{ scale: 1.2, rotate: 0 }}
-                    whileTap={{ scale: 0.9 }}
-                >
-                    <img
-                        src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png"
-                        alt="Bosjol Tactical Logo"
-                        className="w-16 h-16 object-contain drop-shadow-[0_3px_5px_rgba(0,0,0,0.8)]"
-                    />
-                </motion.button>
-            </div>
-        </>
-    );
-
-    if (isSeeding) {
-        return (
-            <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-[100]">
-                <div className="w-16 h-16 border-4 border-zinc-700 border-t-red-500 rounded-full animate-spin"></div>
-                <h1 className="mt-4 text-lg font-semibold text-gray-300 tracking-wider">
-                    New Project Detected
-                </h1>
-                <p className="text-gray-400">Seeding initial database configuration. Please wait...</p>
-            </div>
-        );
-    }
-
-    if (loading) {
-        return <Loader />;
-    }
-
-    if (!isAuthenticated || !user) {
-        if (showFrontPage) {
-            return <>
-                <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} />
-                {creatorButtonAndModal}
-            </>;
-        }
-        return <>
-            <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />
-            {creatorButtonAndModal}
-        </>;
-    }
     
     const currentPlayer = players.find(p => p.id === user?.id);
 
@@ -303,6 +176,29 @@ const AppContent: React.FC = () => {
             logout();
         }
     };
+
+    if (isSeeding) {
+        return (
+            <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-[100]">
+                <div className="w-16 h-16 border-4 border-zinc-700 border-t-red-500 rounded-full animate-spin"></div>
+                <h1 className="mt-4 text-lg font-semibold text-gray-300 tracking-wider">
+                    New Project Detected
+                </h1>
+                <p className="text-gray-400">Seeding initial database configuration. Please wait...</p>
+            </div>
+        );
+    }
+
+    if (!isAuthenticated || !user) {
+        if (showFrontPage) {
+            return <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} />;
+        }
+        return <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />;
+    }
+
+    if (loading) {
+        return <Loader />;
+    }
 
     const dashboardBackground = user.role === 'admin' 
         ? companyDetails.adminDashboardBackgroundUrl 
@@ -385,7 +281,6 @@ const AppContent: React.FC = () => {
                 </div>
             </main>
             <Footer details={companyDetails} socialLinks={socialLinks} />
-            {creatorButtonAndModal}
         </div>
     );
 };

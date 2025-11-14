@@ -48,15 +48,6 @@ const compressImage = (file: File, maxSizeKB: number = 200): Promise<string> => 
     });
 };
 
-const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = error => reject(error);
-    });
-};
-
 const uploadToServer = async (file: File, apiServerUrl: string): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
@@ -97,15 +88,12 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
                 // API Mode: Upload directly to the server
                 results.push(await uploadToServer(file, apiServerUrl));
             } else {
-                // Fallback Mode: Client-side processing for images and audio
-                if (file.type.startsWith('image/')) {
-                    results.push(await compressImage(file));
-                } else if (file.type.startsWith('audio/')) {
-                    results.push(await fileToBase64(file));
-                } else {
-                    alert(`Cannot upload "${file.name}". Video and other large files require setting up an External API Server in the admin settings to avoid exceeding database limits. This upload will be skipped.`);
+                // Fallback Mode: Client-side compression for images only
+                if (!file.type.startsWith('image/')) {
+                    alert(`Cannot upload "${file.name}". Video, audio, and large files require setting up an External API Server in the admin settings to avoid exceeding database limits. This upload will be skipped.`);
                     continue; // Skip this file
                 }
+                results.push(await compressImage(file));
             }
         } catch (err) {
             console.error(`Failed to process file ${file.name}:`, err);

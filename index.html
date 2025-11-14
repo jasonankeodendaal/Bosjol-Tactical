@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
   <head>
-    <meta charset="UTF-T" />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bosjol Tactical Dashboard</title>
     <link rel="manifest" href="/manifest.json">
@@ -36,7 +36,6 @@
         background-color: #0A0A0A;
         background-image: url('https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png');
         background-attachment: fixed;
-        position: relative; /* Required for pseudo-element z-indexing */
       }
       /* Custom scrollbar for a more tactical feel */
       ::-webkit-scrollbar {
@@ -134,20 +133,9 @@
       }
       /* Leaderboard styles */
       .leaderboard-podium-bg {
-        background-color: #0A0A0A; /* Black background */
-        background-image:
-            linear-gradient(rgba(220, 38, 38, 0.15) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(220, 38, 38, 0.15) 1px, transparent 1px);
-        background-size: 30px 30px;
+        background: linear-gradient(180deg, #4c0a77 0%, #a21caf 60%, #e11d48 100%);
         box-shadow: inset 0 -10px 20px -10px rgba(0,0,0,0.5);
         padding: 1rem 0;
-        animation: tactical-scan 10s linear infinite;
-        position: relative;
-        overflow: hidden;
-      }
-      @keyframes tactical-scan {
-        0% { background-position: 0 0; }
-        100% { background-position: 60px -60px; }
       }
       .podium-container {
         display: flex;
@@ -173,7 +161,7 @@
         transform: translateY(-10px);
       }
       .podium-base {
-        background: linear-gradient(to top, #111111, #2d2d2d);
+        background: linear-gradient(to top, rgba(255,255,255,0.05), rgba(255,255,255,0.15));
         backdrop-filter: blur(5px);
         border-top-left-radius: 8px;
         border-top-right-radius: 8px;
@@ -185,21 +173,16 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid #3f3f46; /* zinc-700 */
+        border: 1px solid rgba(255,255,255,0.1);
         border-bottom: none;
         box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         padding-bottom: 0.5rem;
-        border-top: 2px solid #b91c1c; /* red-700 */
       }
       .podium-1 { order: 2; z-index: 10; }
       .podium-2 { order: 1; }
       .podium-3 { order: 3; }
       
-      .podium-1 .podium-base {
-        height: 150px;
-        box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
-        border-color: #ef4444; /* red-500 */
-      }
+      .podium-1 .podium-base { height: 150px; }
       .podium-2 .podium-base { height: 110px; }
       .podium-3 .podium-base { height: 90px; }
       
@@ -224,144 +207,16 @@
       .podium-1 .podium-avatar {
         width: 96px;
         height: 96px;
-        border-color: #ef4444;
+        border-color: #facc15;
       }
       .crown-icon {
         position: absolute;
         top: -18px;
         left: 50%;
         transform: translateX(-50%) rotate(-15deg);
-        color: #ef4444;
+        color: #facc15;
         filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
       }
-      .tactical-bg {
-        position: relative;
-        overflow: hidden;
-      }
-      .tactical-bg::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-image:
-            linear-gradient(rgba(220, 38, 38, 0.15) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(220, 38, 38, 0.15) 1px, transparent 1px);
-        background-size: 25px 25px;
-        opacity: 0.9;
-        z-index: 0;
-      }
-      .tactical-bg::after {
-        content: '';
-        position: absolute;
-        top: -100%;
-        left: 0;
-        width: 3px;
-        height: 100%;
-        background: linear-gradient(to bottom, transparent, rgba(220, 38, 38, 0.6), rgba(249, 115, 22, 0.5), transparent);
-        animation: scanline 7s linear infinite;
-        z-index: 1;
-        animation-delay: -3.5s;
-      }
-      .hud-bg {
-        background-color: #05080d;
-        background-image: url('https://i.ibb.co/dsh2c2hp/unnamed.jpg');
-        background-size: 150%;
-        background-position: center;
-        position: relative;
-        overflow: hidden;
-        border-top: 1px solid rgba(0, 255, 255, 0.3);
-        animation: hud-pan 45s ease-in-out infinite, hud-scanline 6s linear infinite;
-      }
-
-      .hud-bg::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: rgba(5, 8, 13, 0.7);
-        backdrop-filter: blur(2px);
-        z-index: 1;
-      }
-
-      .hud-bg::after {
-        content: '';
-        position: absolute;
-        top: -100%;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 2px;
-        height: 100%;
-        background: linear-gradient(to bottom, transparent, rgba(0, 255, 255, 0.5), transparent);
-        animation: hud-scanline 6s linear infinite;
-        z-index: 2;
-      }
-      .text-glow-cyan {
-        text-shadow: 0 0 5px rgba(0, 255, 255, 0.7), 0 0 10px rgba(0, 255, 255, 0.5);
-      }
-      .icon-glow-cyan {
-        filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.8));
-      }
-      @keyframes hud-scanline {
-        0% { top: -100%; }
-        100% { top: 100%; }
-      }
-      @keyframes scanline {
-        0% { top: -100%; left: 15%;}
-        50% { left: 85%; }
-        100% { top: 100%; left: 15%;}
-      }
-      /* --- NEW HUD ANIMATIONS --- */
-      @keyframes hud-pan {
-        0% { background-position: 40% 50%; }
-        50% { background-position: 60% 50%; }
-        100% { background-position: 40% 50%; }
-      }
-
-      @keyframes hud-corner-pulse {
-        0%, 100% {
-          border-color: rgba(0, 255, 255, 0.5);
-          box-shadow: 0 0 3px rgba(0, 255, 255, 0.3);
-        }
-        50% {
-          border-color: rgba(0, 255, 255, 1);
-          box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
-        }
-      }
-
-      /* --- NEW HUD ELEMENTS --- */
-      .hud-corners {
-        position: absolute;
-        top: 1rem;
-        left: 1rem;
-        right: 1rem;
-        bottom: 1rem;
-        pointer-events: none; /* Don't block clicks */
-        z-index: 3;
-      }
-
-      .hud-corners > span {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-      }
-
-      .hud-corners::before,
-      .hud-corners::after,
-      .hud-corners > span::before,
-      .hud-corners > span::after {
-        content: '';
-        position: absolute;
-        width: 25px;
-        height: 25px;
-        border-color: rgba(0, 255, 255, 0.5);
-        border-style: solid;
-        animation: hud-corner-pulse 4s ease-in-out infinite;
-      }
-      .hud-corners::before { top: 0; left: 0; border-width: 2px 0 0 2px; }
-      .hud-corners::after { top: 0; right: 0; border-width: 2px 2px 0 0; animation-delay: -1s; }
-      .hud-corners > span::before { bottom: 0; left: 0; border-width: 0 0 2px 2px; animation-delay: -2s; }
-      .hud-corners > span::after { bottom: 0; right: 0; border-width: 0 0 2px 2px; animation-delay: -3s; }
     </style>
     <style>
       @media print {
@@ -385,36 +240,6 @@
         }
         .no-print {
             display: none !important;
-        }
-      }
-      /* Rippling background effect */
-      body::after {
-        content: '';
-        position: fixed;
-        left: 50%;
-        top: 50%;
-        width: 100vmin;
-        height: 100vmin;
-        transform: translate(-50%, -50%) scale(0);
-        background: radial-gradient(circle, rgba(185, 28, 28, 0.1) 0%, transparent 60%);
-        border-radius: 50%;
-        opacity: 0;
-        animation: ripple 12s ease-out 5s infinite;
-        z-index: -1;
-        pointer-events: none;
-      }
-
-      @keyframes ripple {
-        0% {
-            transform: translate(-50%, -50%) scale(0);
-            opacity: 0.7;
-        }
-        80% {
-            opacity: 0;
-        }
-        100% {
-            transform: translate(-50%, -50%) scale(2.5);
-            opacity: 0;
         }
       }
     </style>

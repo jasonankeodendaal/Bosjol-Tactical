@@ -253,7 +253,7 @@ export const FinanceTab: React.FC<{ transactions: Transaction[], players: Player
              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <div className="xl:col-span-2">
                     <DashboardCard title="Revenue Breakdown" icon={<CurrencyDollarIcon className="w-6 h-6" />}>
-                        <div className="p-4">
+                        <div className="p-6">
                             <BarChart data={chartData} />
                         </div>
                     </DashboardCard>
@@ -269,7 +269,7 @@ export const FinanceTab: React.FC<{ transactions: Transaction[], players: Player
                                              <div className="flex justify-between items-center">
                                                 <p className="font-semibold text-white truncate text-sm">{t.description}</p>
                                                 <p className={`font-bold text-lg ${t.type === 'Expense' ? 'text-red-400' : 'text-green-400'}`}>
-                                                    {t.type === 'Expense' ? '-' : ''} R{t.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                                                    {t.type === 'Expense' ? '-' : '+'} R{t.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
                                                 </p>
                                              </div>
                                             <div className="flex justify-between items-center text-xs text-gray-400 mt-1">

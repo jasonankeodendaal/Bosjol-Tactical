@@ -192,7 +192,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     return (
         <div className="space-y-6">
              <DashboardCard title="Core Company Details" icon={<BuildingOfficeIcon className="w-6 h-6" />}>
-                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
                         <Input label="Company Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                     </div>
@@ -219,7 +219,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </DashboardCard>
             
             <DashboardCard title="Branding & Visuals" icon={<SparklesIcon className="w-6 h-6" />}>
-                <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <FileUploadField
                         label="Company Logo"
                         fileUrl={formData.logoUrl}
@@ -265,7 +265,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </DashboardCard>
 
             <DashboardCard title="App & Content Settings" icon={<CogIcon className="w-6 h-6" />}>
-                <div className="p-4 space-y-6">
+                <div className="p-6 space-y-6">
                      <div className="pt-6 border-t border-zinc-800">
                         <h4 className="font-semibold text-gray-200 mb-4 text-lg flex items-center gap-2"><KeyIcon className="w-5 h-5" />External API Server</h4>
                         <p className="text-sm text-gray-400 mb-4">Connect to a self-hosted server to handle all file uploads and data management, bypassing Firebase's 1MB document limit. See the "API Setup" tab for instructions.</p>
@@ -380,7 +380,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </DashboardCard>
 
             <DashboardCard title="Danger Zone" icon={<ExclamationTriangleIcon className="w-6 h-6 text-red-500"/>}>
-                <div className="p-4">
+                <div className="p-6">
                     <div className="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg flex flex-col sm:flex-row justify-between items-center">
                         <div>
                             <h4 className="font-bold">Delete All Transactional Data</h4>

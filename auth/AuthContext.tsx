@@ -24,22 +24,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: firebase.User | null) => {
             if (firebaseUser && firebaseUser.email?.toLowerCase() === ADMIN_EMAIL) {
-                // Firebase user is the admin, fetch their profile from Firestore 'admins' collection using their UID.
+                // Firebase user is the admin, fetch their profile from Firestore 'admins' collection.
                 try {
-                    const adminDocRef = db.collection("admins").doc(firebaseUser.uid);
-                    const adminDoc = await adminDocRef.get();
+                    const adminsRef = db.collection("admins");
+                    // Assuming there's only one admin document or we can find it by email
+                    const q = adminsRef.where("email", "==", firebaseUser.email).limit(1);
+                    const querySnapshot = await q.get();
                     
-                    if (adminDoc.exists) {
+                    if (!querySnapshot.empty) {
+                        const adminDoc = querySnapshot.docs[0];
                         setUser({ id: adminDoc.id, ...adminDoc.data() } as Admin);
                     } else {
-                        // Admin authenticated but no profile. Let's create one with the UID as the document ID.
+                        // Admin authenticated but no profile. Let's create one.
                         console.warn("Admin profile not found in Firestore. Creating a default profile.");
                         const { id, ...newAdminData } = MOCK_ADMIN;
                         newAdminData.email = firebaseUser.email!; // Ensure email matches for consistency
                         
                         try {
-                            await db.collection("admins").doc(firebaseUser.uid).set(newAdminData);
-                            setUser({ ...newAdminData, id: firebaseUser.uid });
+                            const docRef = await db.collection("admins").add(newAdminData);
+                            setUser({ ...newAdminData, id: docRef.id });
                         } catch (creationError) {
                             console.error("Failed to create default admin profile:", creationError);
                             await auth.signOut();

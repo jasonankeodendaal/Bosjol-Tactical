@@ -3,35 +3,96 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { CompanyDetails, CarouselMedia, SocialLink } from '../types';
 import { Button } from './Button';
 import { Modal } from './Modal';
-import { AtSymbolIcon, PhoneIcon, GlobeAltIcon, InformationCircleIcon } from './icons/Icons';
+import { AtSymbolIcon, PhoneIcon, GlobeAltIcon, InformationCircleIcon, DocumentIcon, ClipboardListIcon, CheckCircleIcon } from './icons/Icons';
 
-const SignUpInfoModal: React.FC<{ companyDetails: CompanyDetails, onContinue: () => void }> = ({ companyDetails, onContinue }) => (
-    <Modal isOpen={true} onClose={onContinue} title="New Recruit Information">
-        <div className="text-center">
-            <InformationCircleIcon className="w-16 h-16 mx-auto text-red-500 mb-4"/>
-            <p className="text-lg text-gray-200 mb-4">To sign up for duty, please contact command leadership directly:</p>
-            <div className="space-y-3 text-gray-300 bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50">
-                {companyDetails.email && (
-                    <div className="flex items-center justify-center gap-2">
-                        <AtSymbolIcon className="w-5 h-5 text-red-400"/>
-                        <span>{companyDetails.email}</span>
+const SignUpInfoModal: React.FC<{ companyDetails: CompanyDetails, onContinue: () => void }> = ({ companyDetails, onContinue }) => {
+    const [copied, setCopied] = useState<'email' | 'phone' | null>(null);
+
+    const handleCopy = (text: string, type: 'email' | 'phone') => {
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        setCopied(type);
+        setTimeout(() => setCopied(null), 2000);
+    };
+    
+    return (
+        <Modal isOpen={true} onClose={onContinue} title="New Recruit Information">
+            <div className="text-left">
+                <div className="flex items-center justify-center mb-4 text-center border-b border-zinc-700/50 pb-4">
+                    <DocumentIcon className="w-12 h-12 text-red-500 mr-4 flex-shrink-0" />
+                    <div>
+                        <h3 className="text-2xl font-bold text-white tracking-wider">MANDATORY BRIEFING</h3>
+                        <p className="text-sm text-gray-400">Read the following before proceeding.</p>
                     </div>
-                )}
-                {companyDetails.phone && (
-                     <div className="flex items-center justify-center gap-2">
-                        <PhoneIcon className="w-5 h-5 text-red-400"/>
-                        <span>{companyDetails.phone}</span>
+                </div>
+
+                <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-6">
+                    <div>
+                        <h4 className="font-bold text-lg text-red-400 mb-2">Welcome, Recruit.</h4>
+                        <p className="text-gray-300 text-sm">
+                            To enlist with Bosjol Tactical, you must make direct contact with command. Use the official channels listed below to begin your registration process.
+                        </p>
                     </div>
-                )}
+
+                    <div>
+                        <h4 className="font-bold text-lg text-red-400 mb-2">CONTACT PROTOCOLS</h4>
+                        <div className="space-y-3">
+                            {companyDetails.email && (
+                                <div className="bg-zinc-800/50 p-3 rounded-md border border-zinc-700/50">
+                                    <label className="text-xs text-gray-500 uppercase">Primary Channel (Email)</label>
+                                    <div className="flex justify-between items-center mt-1">
+                                        <p className="text-gray-200 font-mono">{companyDetails.email}</p>
+                                        <button onClick={() => handleCopy(companyDetails.email, 'email')} className="text-gray-400 hover:text-white transition-colors">
+                                            {copied === 'email' ? <CheckCircleIcon className="w-5 h-5 text-green-400" /> : <ClipboardListIcon className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                            {companyDetails.phone && (
+                                 <div className="bg-zinc-800/50 p-3 rounded-md border border-zinc-700/50">
+                                    <label className="text-xs text-gray-500 uppercase">Secondary Channel (Phone)</label>
+                                    <div className="flex justify-between items-center mt-1">
+                                        <p className="text-gray-200 font-mono">{companyDetails.phone}</p>
+                                        <button onClick={() => handleCopy(companyDetails.phone, 'phone')} className="text-gray-400 hover:text-white transition-colors">
+                                            {copied === 'phone' ? <CheckCircleIcon className="w-5 h-5 text-green-400" /> : <ClipboardListIcon className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 className="font-bold text-lg text-red-400 mb-2">ENLISTMENT REQUIREMENTS</h4>
+                         <div className="bg-zinc-800/50 p-3 rounded-md border border-zinc-700/50">
+                            <p className="text-gray-300 text-sm">
+                                All operators must be <span className="font-bold text-white">{companyDetails.minimumSignupAge} years of age</span> or older. No exceptions.
+                            </p>
+                        </div>
+                    </div>
+                    
+                     {companyDetails.fixedEventRules && (
+                        <div>
+                            <h4 className="font-bold text-lg text-red-400 mb-2">STANDARD OPERATING PROCEDURES</h4>
+                            <div className="bg-zinc-900/70 p-3 rounded-md border border-zinc-700 h-32 overflow-y-auto">
+                                <pre className="text-xs text-gray-400 whitespace-pre-wrap font-sans">
+                                    {companyDetails.fixedEventRules}
+                                </pre>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="mt-6 pt-6 border-t border-zinc-700/50">
+                    <Button variant="primary" onClick={onContinue} size="md" className="w-full">
+                        I Understand - Proceed to Authentication
+                    </Button>
+                </div>
             </div>
-            <div className="mt-6">
-                <Button variant="secondary" onClick={onContinue} size="sm">
-                    Continue to Login
-                </Button>
-            </div>
-        </div>
-    </Modal>
-);
+        </Modal>
+    );
+};
+
 
 export const FrontPage: React.FC<{ companyDetails: CompanyDetails, socialLinks: SocialLink[], carouselMedia: CarouselMedia[], onEnter: () => void }> = ({ companyDetails, socialLinks, carouselMedia, onEnter }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -87,7 +148,7 @@ export const FrontPage: React.FC<{ companyDetails: CompanyDetails, socialLinks: 
                 )}
             </AnimatePresence>
 
-            <div className="absolute inset-0 bg-black/60"></div>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
 
             <div className="relative z-10 text-center p-4">
                  <motion.div

@@ -102,7 +102,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: "easeInOut" }}
-        className="relative z-10 w-full max-w-sm mx-auto text-center bg-zinc-950/60 backdrop-blur-sm border border-zinc-800/50 p-4 sm:p-6 rounded-lg shadow-2xl shadow-black/50"
+        className="relative z-10 w-full max-w-sm mx-auto text-center bg-zinc-950/60 backdrop-blur-sm border border-zinc-800/50 p-8 rounded-lg shadow-2xl shadow-black/50"
       >
         {companyDetails.logoUrl && (
           <img src={companyDetails.logoUrl} alt={`${companyDetails.name} Logo`} className="h-16 mx-auto mb-6" />

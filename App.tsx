@@ -131,6 +131,7 @@ const AppContent: React.FC = () => {
         updatePlayerDoc,
         addPlayerDoc,
         updateEventDoc,
+        migrateToApiServer,
     } = data;
     
     const currentPlayer = players.find(p => p.id === user?.id);

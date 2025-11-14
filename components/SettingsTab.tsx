@@ -161,8 +161,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     };
     
     const handleMigration = async () => {
-        if (!formData.apiServerUrl || !/^(http|https)
-:\/\/[^ "]+$/.test(formData.apiServerUrl)) {
+        if (!formData.apiServerUrl || !/^(http|https):\/\/[^ "]+$/.test(formData.apiServerUrl)) {
             alert('Please enter a valid, full URL for the API server (e.g., https://your-server.com).');
             return;
         }

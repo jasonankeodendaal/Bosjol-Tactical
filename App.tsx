@@ -1,5 +1,6 @@
 
 
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -8,7 +9,7 @@ import { PlayerDashboard } from './components/PlayerDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Button } from './components/Button';
 import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia } from './types';
-import { BuildingOfficeIcon, ExclamationTriangleIcon, AtSymbolIcon } from './components/icons/Icons';
+import { BuildingOfficeIcon, ExclamationTriangleIcon, AtSymbolIcon, XIcon } from './components/icons/Icons';
 import { DataProvider, DataContext } from './data/DataContext';
 import { Loader } from './components/Loader';
 import { USE_FIREBASE, isFirebaseConfigured, getEnvVar, firebaseInitializationError } from './firebase';
@@ -23,52 +24,76 @@ const WhatsAppIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     </svg>
 );
 
-
-const GitHubIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
-        <path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.165 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.269 2.75 1.026A9.564 9.564 0 0112 6.82c.85.004 1.705.115 2.504.337 1.909-1.295 2.747-1.027 2.747-1.027.546 1.378.203 2.397.1 2.65.64.7 1.03 1.595 1.03 2.688 0 3.848-2.338 4.695-4.566 4.942.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z" />
-    </svg>
-);
-
 const CreatorPopup: React.FC<{ onClose: () => void; }> = ({ onClose }) => {
+    // Pre-built message for email and WhatsApp
+    const messageBody = `Hello JSTYP.me,
+
+I am interested in your development services after seeing your work on the Bosjol Tactical Dashboard.
+
+Here are my details:
+- Full Name: 
+- Company (if applicable): 
+- Project Type (Website, Mobile App, Custom Tool, etc.): 
+- Brief description of my needs: 
+
+Looking forward to hearing from you.
+
+Best regards,
+`;
+    const emailHref = `mailto:jstypme@gmail.com?subject=${encodeURIComponent('Inquiry from Bosjol Tactical Dashboard')}&body=${encodeURIComponent(messageBody)}`;
+    const whatsappMessage = `Hello JSTYP.me, I'm contacting you from the Bosjol Tactical Dashboard regarding your services. Please provide the following information:\n- Full Name:\n- Company (if applicable):\n- Brief project description:\n\nThank you!`;
+    const whatsappHref = `https://wa.me/27695989427?text=${encodeURIComponent(whatsappMessage)}`;
+
     return (
-        <Modal isOpen={true} onClose={onClose} title="Creator Information">
-            <div
-                className="flex flex-col items-center text-center -m-6 p-6 rounded-b-xl"
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[60]"
+            aria-modal="true"
+            role="dialog"
+        >
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative bg-zinc-900 border border-zinc-700/50 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden"
                 style={{
-                    backgroundImage: "linear-gradient(rgba(10, 10, 10, 0.8), rgba(10, 10, 10, 0.8)), url('https://i.ibb.co/dsh2c2hp/unnamed.jpg')",
+                    backgroundImage: "linear-gradient(rgba(10, 10, 10, 0.85), rgba(10, 10, 10, 0.85)), url('https://i.ibb.co/dsh2c2hp/unnamed.jpg')",
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
-                    backgroundAttachment: 'local',
                 }}
             >
-                <div className="relative mb-4">
-                    <img src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png" alt="Creator Icon" className="h-24 w-24 rounded-full border-2 border-red-500 p-1 bg-zinc-900/50" />
-                    <div className="absolute -bottom-2 -right-2 bg-zinc-800 p-1 rounded-full border border-zinc-700">
-                        <img src="https://i.ibb.co/HL2Lc6Rz/file-0000000043b061f7b655a0077343e063.png" alt="Bosjol Tactical Logo" className="h-8 w-8 rounded-full" />
+                <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-white transition-colors z-10" aria-label="Close creator popup">
+                    <XIcon className="w-6 h-6" />
+                </button>
+
+                <div className="flex flex-col items-center text-center p-8 pt-12">
+                    <img src="https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png" alt="JSTYP.me Logo" className="h-28 w-auto mb-4" />
+                    
+                    <h3 className="text-3xl font-bold text-white tracking-wider">JSTYP.me</h3>
+                    <p className="text-md text-red-400 font-semibold italic">"Jason's solution to your problems, Yes me!"</p>
+                    
+                    <p className="text-sm text-gray-300 mt-6 max-w-md">
+                        Need a website, mobile app or custom tool get in touch today.. At Jstyp.me nothing is impossible, innovation is key and the mind is a open learning space. Here we build on what can not be done!
+                    </p>
+                    
+                    <div className="mt-8 pt-6 border-t border-zinc-700/50 w-full flex justify-center gap-8">
+                        <a href={emailHref} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-colors flex flex-col items-center gap-1.5 transform hover:scale-110">
+                            <AtSymbolIcon className="w-9 h-9" />
+                            <span className="text-xs font-semibold">Email</span>
+                        </a>
+                        <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-colors flex flex-col items-center gap-1.5 transform hover:scale-110">
+                            <WhatsAppIcon className="w-9 h-9" />
+                            <span className="text-xs font-semibold">WhatsApp</span>
+                        </a>
                     </div>
                 </div>
-                <h3 className="text-2xl font-bold text-white">J.C. De Klerk</h3>
-                <p className="text-md text-red-400 font-semibold">Lead Developer & UI/UX Designer</p>
-                <p className="text-sm text-gray-300 mt-4 max-w-md italic">
-                    "Passionate about creating immersive and functional digital experiences. This dashboard was built with a focus on performance, usability, and a distinct tactical aesthetic."
-                </p>
-                <div className="mt-6 pt-6 border-t border-zinc-700/50 w-full flex justify-center gap-6">
-                    <a href="mailto:bosjoltactical@gmail.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-colors flex flex-col items-center gap-1">
-                        <AtSymbolIcon className="w-8 h-8" />
-                        <span className="text-xs">Email</span>
-                    </a>
-                    <a href="https://wa.me/27798843232" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-colors flex flex-col items-center gap-1">
-                        <WhatsAppIcon className="w-8 h-8" />
-                        <span className="text-xs">WhatsApp</span>
-                    </a>
-                    <a href="https://github.com/jcdeklerk" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-colors flex flex-col items-center gap-1">
-                        <GitHubIcon className="w-8 h-8" />
-                        <span className="text-xs">GitHub</span>
-                    </a>
-                </div>
-            </div>
-        </Modal>
+            </motion.div>
+        </motion.div>
     );
 };
 // --- END Creator Popup ---

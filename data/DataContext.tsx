@@ -45,7 +45,9 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
             const docRef = db.collection(collectionName).doc(docId);
             const unsubscribe = docRef.onSnapshot((docSnap) => {
                 if (docSnap.exists) {
-                    setData(docSnap.data() as T);
+                    const firestoreData = docSnap.data() || {};
+                    // Merge Firestore data with mock data to ensure a complete object and prevent data loss on subsequent writes.
+                    setData({ ...mockData, ...firestoreData } as T);
                 } else {
                     // This will be handled by the global seeder now
                     console.warn(`Document ${docId} not found in ${collectionName}. Waiting for seed.`);
@@ -67,7 +69,9 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
         const finalData = typeof newData === 'function' ? (newData as (prev: T) => T)(data) : newData;
         if (USE_FIREBASE && db) {
             const docRef = db.collection(collectionName).doc(docId);
-            await docRef.set(finalData);
+            // Use { merge: true } to prevent accidentally overwriting/deleting fields
+            // that might not be present in the local `finalData` object.
+            await docRef.set(finalData, { merge: true });
         } else {
             setData(finalData);
         }

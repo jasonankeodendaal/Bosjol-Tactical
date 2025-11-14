@@ -1,3 +1,4 @@
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -286,7 +287,7 @@ const AppContent: React.FC = () => {
             <Footer details={companyDetails} socialLinks={socialLinks} />
 
             <motion.div
-                className="fixed bottom-4 left-4 z-50 hidden md:block"
+                className="fixed bottom-4 left-4 z-50"
                 animate={{
                     rotate: [0, -10, 10, -10, 0, 360],
                     scale: [1, 1.1, 0.9, 1.1, 1, 1],

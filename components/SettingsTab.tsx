@@ -193,13 +193,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ companyDetails, setCom
                 <div className="p-6 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Input label="Minimum Signup Age" type="number" value={formData.minimumSignupAge} onChange={e => setFormData(f => ({...f, minimumSignupAge: Number(e.target.value)}))} />
-                        <FileUploadField
-                            label="Android APK File"
-                            fileUrl={formData.apkUrl}
-                            onUpload={(url) => setFormData(f => ({ ...f, apkUrl: url }))}
-                            onRemove={() => setFormData(f => ({ ...f, apkUrl: '' }))}
-                            accept=".apk"
-                            previewType="apk"
+                        <Input 
+                            label="Android APK Download URL" 
+                            value={formData.apkUrl || ''} 
+                            onChange={e => setFormData(f => ({ ...f, apkUrl: e.target.value }))}
+                            placeholder="Paste public URL to the APK file"
                         />
                     </div>
                     <div>

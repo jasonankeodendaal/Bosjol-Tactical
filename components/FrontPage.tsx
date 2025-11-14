@@ -87,7 +87,7 @@ export const FrontPage: React.FC<{ companyDetails: CompanyDetails, socialLinks: 
                 )}
             </AnimatePresence>
 
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+            <div className="absolute inset-0 bg-black/60"></div>
 
             <div className="relative z-10 text-center p-4">
                  <motion.div

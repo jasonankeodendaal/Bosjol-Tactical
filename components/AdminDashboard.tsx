@@ -189,7 +189,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
             <div className="lg:hidden relative">
                  <button 
                     onClick={() => setMenuOpen(!menuOpen)}
-                    className="flex items-center justify-between w-full px-4 py-3 text-left text-gray-200 bg-zinc-900/50 rounded-md border border-zinc-700"
+                    className="flex items-center justify-between w-full px-4 py-3 text-left text-gray-200 bg-zinc-900/50 backdrop-blur-sm rounded-md border border-zinc-700"
                 >
                     <div className="flex items-center gap-3">
                         {activeTabInfo?.icon}
@@ -203,7 +203,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 mt-2 w-full bg-zinc-900 border border-zinc-700 rounded-md shadow-lg z-50 p-2"
+                        className="absolute top-full left-0 mt-2 w-full bg-zinc-900/80 backdrop-blur-sm border border-zinc-700/50 rounded-md shadow-lg z-50 p-2"
                     >
                         {tabs.map(tab => (
                             <button

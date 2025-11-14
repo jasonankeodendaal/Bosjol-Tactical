@@ -27,25 +27,31 @@ const CreatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <p className="italic text-gray-400 mt-2 mb-6">
                         Need a website, app or custom tool? Contact JSTYP.me
                     </p>
-                    <div className="flex items-center justify-center gap-8 mt-6">
-                        <a 
-                            href="https://wa.me/27695989427?text=Hi!%20I'm%20contacting%20you%20from%20the%20Bosjol%20Tactical%20Dashboard."
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-green-400 hover:text-green-300 transition-transform hover:scale-110"
-                            aria-label="Contact on WhatsApp"
-                        >
-                            <WhatsAppIcon className="w-12 h-12" />
-                        </a>
-                         <a 
-                            href="mailto:jstypme@gmail.com" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-red-400 hover:text-red-300 transition-transform hover:scale-110"
-                            aria-label="Send an email"
-                        >
-                            <AtSymbolIcon className="w-12 h-12" />
-                        </a>
+                    <div className="flex items-start justify-center gap-8 mt-6">
+                        <div className="flex flex-col items-center gap-1">
+                            <a 
+                                href="https://wa.me/27695989427?text=Hi!%20I'm%20contacting%20you%20from%20the%20Bosjol%20Tactical%20Dashboard."
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-green-400 hover:text-green-300 transition-transform hover:scale-110"
+                                aria-label="Contact on WhatsApp"
+                            >
+                                <WhatsAppIcon className="w-12 h-12" />
+                            </a>
+                            <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase">WhatsApp</p>
+                        </div>
+                         <div className="flex flex-col items-center gap-1">
+                             <a 
+                                href="mailto:jstypme@gmail.com" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-red-400 hover:text-red-300 transition-transform hover:scale-110"
+                                aria-label="Send an email"
+                            >
+                                <AtSymbolIcon className="w-12 h-12" />
+                            </a>
+                            <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase">Email</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -200,7 +206,7 @@ const AppContent: React.FC = () => {
                     whileTap={{ scale: 0.9 }}
                 >
                     <img
-                        src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png"
+                        src="https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png"
                         alt="Creators Logo"
                         className="w-14 h-14 object-contain drop-shadow-[0_3px_5px_rgba(0,0,0,0.8)]"
                     />

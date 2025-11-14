@@ -26,7 +26,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
             exit={{ scale: 0.95, opacity: 0, y: 10 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-lg"
+            className="bg-zinc-900/80 backdrop-blur-md border border-zinc-700/50 rounded-xl shadow-2xl w-full max-w-lg"
           >
             <div className="flex justify-between items-center p-5 border-b border-zinc-800">
               <h2 className="text-xl font-bold text-white tracking-wide">{title}</h2>

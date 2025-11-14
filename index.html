@@ -36,6 +36,7 @@
         background-color: #0A0A0A;
         background-image: url('https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png');
         background-attachment: fixed;
+        position: relative; /* Required for pseudo-element z-indexing */
       }
       /* Custom scrollbar for a more tactical feel */
       ::-webkit-scrollbar {
@@ -275,6 +276,36 @@
         }
         .no-print {
             display: none !important;
+        }
+      }
+      /* Rippling background effect */
+      body::after {
+        content: '';
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        width: 100vmin;
+        height: 100vmin;
+        transform: translate(-50%, -50%) scale(0);
+        background: radial-gradient(circle, rgba(185, 28, 28, 0.1) 0%, transparent 60%);
+        border-radius: 50%;
+        opacity: 0;
+        animation: ripple 12s ease-out 5s infinite;
+        z-index: -1;
+        pointer-events: none;
+      }
+
+      @keyframes ripple {
+        0% {
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0.7;
+        }
+        80% {
+            opacity: 0;
+        }
+        100% {
+            transform: translate(-50%, -50%) scale(2.5);
+            opacity: 0;
         }
       }
     </style>

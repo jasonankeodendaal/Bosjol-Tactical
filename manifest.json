@@ -33,18 +33,46 @@
   "orientation": "portrait-primary",
   "screenshots": [
     {
-      "src": "https://i.ibb.co/tpZ29v4H/Whats-App-Image-2025-11-14-at-11-26-43.jpg",
+      "src": "https://i.ibb.co/whxg524c/Whats-App-Image-2025-11-14-at-11-26-19.jpg",
       "type": "image/jpeg",
       "sizes": "720x1600",
       "form_factor": "narrow",
-      "label": "Secure Login Screen"
+      "label": "Configure Progression (Admin)"
     },
     {
-      "src": "https://i.ibb.co/DSN8krs/Whats-App-Image-2025-11-14-at-11-26-40.jpg",
+      "src": "https://i.ibb.co/WWk7BJGY/Whats-App-Image-2025-11-14-at-11-26-20.jpg",
       "type": "image/jpeg",
       "sizes": "720x1600",
       "form_factor": "narrow",
-      "label": "Player Dashboard Overview"
+      "label": "Manage Players (Admin)"
+    },
+    {
+      "src": "https://i.ibb.co/Z1JZhPCZ/Whats-App-Image-2025-11-14-at-11-26-23.jpg",
+      "type": "image/jpeg",
+      "sizes": "720x1600",
+      "form_factor": "narrow",
+      "label": "Manage Events (Admin)"
+    },
+    {
+      "src": "https://i.ibb.co/Q7YBwHq5/Whats-App-Image-2025-11-14-at-11-26-21.jpg",
+      "type": "image/jpeg",
+      "sizes": "720x1600",
+      "form_factor": "narrow",
+      "label": "Customize Your Profile"
+    },
+    {
+      "src": "https://i.ibb.co/Y7xdvrYY/Whats-App-Image-2025-11-14-at-11-26-25.jpg",
+      "type": "image/jpeg",
+      "sizes": "720x1600",
+      "form_factor": "narrow",
+      "label": "Unlock Badges and Commendations"
+    },
+    {
+      "src": "https://i.ibb.co/j9NXjht1/Whats-App-Image-2025-11-14-at-11-26-33.jpg",
+      "type": "image/jpeg",
+      "sizes": "720x1600",
+      "form_factor": "narrow",
+      "label": "Enter Raffles to Win Prizes"
     },
     {
       "src": "https://i.ibb.co/S4HFgvkc/Whats-App-Image-2025-11-14-at-11-26-36.jpg",
@@ -61,53 +89,18 @@
       "label": "Global Player Leaderboard"
     },
     {
-      "src": "https://i.ibb.co/j9NXjht1/Whats-App-Image-2025-11-14-at-11-26-33.jpg",
+      "src": "https://i.ibb.co/tpZ29v4H/Whats-App-Image-2025-11-14-at-11-26-43.jpg",
       "type": "image/jpeg",
       "sizes": "720x1600",
       "form_factor": "narrow",
-      "label": "Enter Raffles to Win Prizes"
+      "label": "Secure Login Screen"
     },
     {
-      "src": "https://i.ibb.co/N2FLTdrB/Whats-App-Image-2025-11-14-at-11-26-28.jpg",
+      "src": "https://i.ibb.co/DSN8krs/Whats-App-Image-2025-11-14-at-11-26-40.jpg",
       "type": "image/jpeg",
       "sizes": "720x1600",
       "form_factor": "narrow",
-      "label": "Track Your Performance"
-    },
-    {
-      "src": "https://i.ibb.co/Y7xdvrYY/Whats-App-Image-2025-11-14-at-11-26-25.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
-      "form_factor": "narrow",
-      "label": "Unlock Badges and Commendations"
-    },
-    {
-      "src": "https://i.ibb.co/Q7YBwHq5/Whats-App-Image-2025-11-14-at-11-26-21.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
-      "form_factor": "narrow",
-      "label": "Customize Your Profile"
-    },
-    {
-      "src": "https://i.ibb.co/Z1JZhPCZ/Whats-App-Image-2025-11-14-at-11-26-23.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
-      "form_factor": "narrow",
-      "label": "Manage Events (Admin)"
-    },
-    {
-      "src": "https://i.ibb.co/WWk7BJGY/Whats-App-Image-2025-11-14-at-11-26-20.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
-      "form_factor": "narrow",
-      "label": "Manage Players (Admin)"
-    },
-    {
-      "src": "https://i.ibb.co/whxg524c/Whats-App-Image-2025-11-14-at-11-26-19.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
-      "form_factor": "narrow",
-      "label": "Configure Progression (Admin)"
+      "label": "Player Dashboard Overview"
     }
   ],
   "shortcuts": [

@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, RentalSignup } from '../types';
+import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, RentalSignup, CarouselMedia } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
-import { UsersIcon, CogIcon, CalendarIcon, TrashIcon, ShieldCheckIcon, PlusIcon, TrophyIcon, BuildingOfficeIcon, SparklesIcon, PencilIcon, XIcon, TicketIcon, AtSymbolIcon, PhoneIcon, GlobeAltIcon, ArrowLeftIcon, ArchiveBoxIcon, CurrencyDollarIcon, TruckIcon, MapPinIcon, MinusIcon, KeyIcon, Bars3Icon, ExclamationTriangleIcon, InformationCircleIcon, CreditCardIcon, CheckCircleIcon, PrinterIcon, PlusCircleIcon } from './icons/Icons';
+import { UsersIcon, CogIcon, CalendarIcon, TrashIcon, ShieldCheckIcon, PlusIcon, TrophyIcon, BuildingOfficeIcon, SparklesIcon, PencilIcon, XIcon, TicketIcon, AtSymbolIcon, PhoneIcon, GlobeAltIcon, ArrowLeftIcon, ArchiveBoxIcon, CurrencyDollarIcon, TruckIcon, MapPinIcon, MinusIcon, KeyIcon, Bars3Icon, ExclamationTriangleIcon, InformationCircleIcon, CreditCardIcon, CheckCircleIcon, PrinterIcon, PlusCircleIcon, CodeBracketIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
 import { Modal } from './Modal';
 import { MOCK_RANKS } from '../constants';
@@ -20,6 +20,8 @@ import { VouchersRafflesTab } from './VouchersRafflesTab';
 import { SponsorsTab } from './SponsorsTab';
 import { Leaderboard } from './Leaderboard';
 import { SettingsTab } from './SettingsTab';
+import { ApiSetupTab } from './ApiSetupTab';
+import { DataContext } from '../data/DataContext';
 
 interface AdminDashboardProps {
     players: Player[];
@@ -38,6 +40,10 @@ interface AdminDashboardProps {
     setSponsors: React.Dispatch<React.SetStateAction<Sponsor[]>>;
     companyDetails: CompanyDetails;
     setCompanyDetails: React.Dispatch<React.SetStateAction<CompanyDetails>>;
+    socialLinks: SocialLink[];
+    setSocialLinks: React.Dispatch<React.SetStateAction<SocialLink[]>>;
+    carouselMedia: CarouselMedia[];
+    setCarouselMedia: React.Dispatch<React.SetStateAction<CarouselMedia[]>>;
     vouchers: Voucher[];
     setVouchers: React.Dispatch<React.SetStateAction<Voucher[]>>;
     inventory: InventoryItem[];
@@ -54,7 +60,7 @@ interface AdminDashboardProps {
     addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<void>;
 }
 
-type Tab = 'Events' | 'Players' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings';
+type Tab = 'Events' | 'Players' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'API Setup';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
 
 const NewPlayerModal: React.FC<{
@@ -172,6 +178,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Sponsors', icon: <SparklesIcon className="w-5 h-5"/>},
         {name: 'Leaderboard', icon: <TrophyIcon className="w-5 h-5"/>},
         {name: 'Settings', icon: <CogIcon className="w-5 h-5"/>},
+        {name: 'API Setup', icon: <CodeBracketIcon className="w-5 h-5"/>},
     ];
 
     const activeTabInfo = tabs.find(t => t.name === activeTab);
@@ -308,12 +315,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
+    const dataContext = useContext(DataContext);
+    if (!dataContext) throw new Error("DataContext not found");
+    const { migrateToApiServer } = dataContext;
+
     const { players, setPlayers, events, setEvents, legendaryBadges, ranks } = props;
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab') as Tab | null;
-        const validTabs: Tab[] = ['Events', 'Players', 'Progression', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings'];
+        const validTabs: Tab[] = ['Events', 'Players', 'Progression', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'API Setup'];
         if (tab && validTabs.includes(tab)) {
             setActiveTab(tab);
         }
@@ -391,7 +402,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             {activeTab === 'Vouchers & Raffles' && <VouchersRafflesTab {...props} />}
             {activeTab === 'Sponsors' && <SponsorsTab {...props} />}
             {activeTab === 'Leaderboard' && <LeaderboardTab players={props.players} />}
-            {activeTab === 'Settings' && <SettingsTab companyDetails={props.companyDetails} setCompanyDetails={props.setCompanyDetails} onDeleteAllData={props.onDeleteAllData} />}
+            {activeTab === 'Settings' && <SettingsTab 
+                companyDetails={props.companyDetails} 
+                setCompanyDetails={props.setCompanyDetails}
+                socialLinks={props.socialLinks}
+                setSocialLinks={props.setSocialLinks}
+                carouselMedia={props.carouselMedia}
+                setCarouselMedia={props.setCarouselMedia}
+                onDeleteAllData={props.onDeleteAllData}
+                migrateToApiServer={migrateToApiServer}
+            />}
+            {activeTab === 'API Setup' && <ApiSetupTab />}
         </div>
     );
 };

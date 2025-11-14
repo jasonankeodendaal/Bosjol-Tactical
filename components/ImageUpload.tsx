@@ -3,91 +3,80 @@ import React, { useState, useRef, useCallback } from 'react';
 import { UploadCloudIcon } from './icons/Icons';
 
 interface FileUploadProps {
-  onUpload: (base64s: string[]) => void;
+  onUpload: (urls: string[]) => void;
   accept: string;
   multiple?: boolean;
   onProgress?: (percent: number) => void;
+  apiServerUrl?: string; // New prop for the custom API server
 }
 
-const compressImage = (file: File, maxSizeKB: number = 950): Promise<string> => {
+const compressImage = (file: File, maxSizeKB: number = 200): Promise<string> => {
     return new Promise((resolve, reject) => {
         const MAX_WIDTH = 1920;
         const reader = new FileReader();
         reader.readAsDataURL(file);
-
         reader.onload = (event) => {
-            if (!event.target?.result) {
-                return reject(new Error("Couldn't read file for compression."));
-            }
+            if (!event.target?.result) return reject(new Error("Couldn't read file."));
             const img = new Image();
             img.src = event.target.result as string;
-
             img.onload = () => {
                 let { width, height } = img;
-
                 if (width > height && width > MAX_WIDTH) {
                     height *= MAX_WIDTH / width;
                     width = MAX_WIDTH;
-                } else if (height > MAX_WIDTH) { // Using MAX_WIDTH for both height and width for simplicity
+                } else if (height > MAX_WIDTH) {
                     width *= MAX_WIDTH / height;
                     height = MAX_WIDTH;
                 }
-
                 const canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
-                if (!ctx) {
-                    return reject(new Error('Could not get canvas context for image compression.'));
-                }
-                
+                if (!ctx) return reject(new Error('Could not get canvas context.'));
                 ctx.drawImage(img, 0, 0, width, height);
-
                 const performCompression = (quality: number): string => {
                     const dataUrl = canvas.toDataURL('image/jpeg', quality);
-                    // Base64 is approx 4/3 the size of the original data.
-                    const sizeInBytes = Math.floor(dataUrl.length * (3/4)); 
-
-                    if (sizeInBytes / 1024 <= maxSizeKB || quality <= 0.1) {
-                        return dataUrl;
-                    }
-                    // Recursively lower quality to meet size target
+                    const sizeInBytes = Math.floor(dataUrl.length * (3/4));
+                    if (sizeInBytes / 1024 <= maxSizeKB || quality <= 0.1) return dataUrl;
                     return performCompression(quality - 0.1);
                 };
-                
-                resolve(performCompression(0.9)); // Start with 90% quality
+                resolve(performCompression(0.9));
             };
-            img.onerror = (err) => reject(new Error(`Image load error for compression: ${err}`));
-        };
-        reader.onerror = (err) => reject(new Error(`File read error for compression: ${err}`));
-    });
-};
-
-
-const readFileAsBase64 = (file: File): Promise<string> => {
-    return new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            if (typeof e.target?.result === 'string') {
-                resolve(e.target.result);
-            } else {
-                reject(new Error('Failed to read file as base64.'));
-            }
+            img.onerror = (err) => reject(new Error(`Image load error: ${err}`));
         };
         reader.onerror = (err) => reject(new Error(`File read error: ${err}`));
-        reader.readAsDataURL(file);
     });
 };
 
-export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, onProgress }) => {
+const uploadToServer = async (file: File, apiServerUrl: string): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${apiServerUrl}/upload`, {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server upload failed: ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+    if (!result.url) {
+        throw new Error('Server response did not include a file URL.');
+    }
+    return result.url;
+};
+
+export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, onProgress, apiServerUrl }) => {
   const [fileName, setFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFilesChange = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-
-    setFileName(multiple ? `${files.length} file(s) selected` : files[0].name);
     onProgress?.(0);
+    setFileName(multiple ? `${files.length} file(s) selected` : files[0].name);
 
     const filesArray = Array.from(files);
     const results: string[] = [];
@@ -95,16 +84,20 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
 
     for (const file of filesArray) {
         try {
-            if (file.type.startsWith('image/')) {
-                results.push(await compressImage(file));
+            if (apiServerUrl) {
+                // API Mode: Upload directly to the server
+                results.push(await uploadToServer(file, apiServerUrl));
             } else {
-                // For non-image files like videos, just read them.
-                results.push(await readFileAsBase64(file));
+                // Fallback Mode: Client-side compression for images only
+                if (!file.type.startsWith('image/')) {
+                    alert(`Cannot upload "${file.name}". Video, audio, and large files require setting up an External API Server in the admin settings to avoid exceeding database limits. This upload will be skipped.`);
+                    continue; // Skip this file
+                }
+                results.push(await compressImage(file));
             }
         } catch (err) {
             console.error(`Failed to process file ${file.name}:`, err);
-            // We can decide to alert the user here or just skip the file.
-            // Skipping is a smoother UX.
+            alert(`Error processing "${file.name}": ${(err as Error).message}`);
         } finally {
             processedCount++;
             const percent = Math.round((processedCount / filesArray.length) * 100);
@@ -114,11 +107,11 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
 
     if (results.length > 0) {
         onUpload(results);
-    } else if (filesArray.length > 0) {
-        // This case handles if all files failed to process
-        alert('Could not process any of the selected files. Please try again with valid files.');
     }
-}, [onUpload, multiple, onProgress]);
+    // Reset file input to allow re-uploading the same file
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    
+}, [onUpload, multiple, onProgress, apiServerUrl]);
 
   const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       handleFilesChange(event.target.files);

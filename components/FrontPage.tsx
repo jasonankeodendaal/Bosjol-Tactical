@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { CompanyDetails } from '../types';
+import type { CompanyDetails, CarouselMedia, SocialLink } from '../types';
 import { Button } from './Button';
 import { Modal } from './Modal';
 import { AtSymbolIcon, PhoneIcon, GlobeAltIcon, InformationCircleIcon } from './icons/Icons';
@@ -33,20 +33,19 @@ const SignUpInfoModal: React.FC<{ companyDetails: CompanyDetails, onContinue: ()
     </Modal>
 );
 
-export const FrontPage: React.FC<{ companyDetails: CompanyDetails, onEnter: () => void }> = ({ companyDetails, onEnter }) => {
+export const FrontPage: React.FC<{ companyDetails: CompanyDetails, socialLinks: SocialLink[], carouselMedia: CarouselMedia[], onEnter: () => void }> = ({ companyDetails, socialLinks, carouselMedia, onEnter }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showInfoModal, setShowInfoModal] = useState(false);
-    const media = companyDetails.carouselMedia || [];
-
+    
     useEffect(() => {
-        if (media.length <= 1) return;
+        if (carouselMedia.length <= 1) return;
 
         const timer = setTimeout(() => {
-            setCurrentIndex((prevIndex) => (prevIndex + 1) % media.length);
+            setCurrentIndex((prevIndex) => (prevIndex + 1) % carouselMedia.length);
         }, 8000); // Change slide every 8 seconds
 
         return () => clearTimeout(timer);
-    }, [currentIndex, media.length]);
+    }, [currentIndex, carouselMedia.length]);
 
     const variants = {
         enter: { opacity: 0 },
@@ -59,7 +58,7 @@ export const FrontPage: React.FC<{ companyDetails: CompanyDetails, onEnter: () =
              {showInfoModal && <SignUpInfoModal companyDetails={companyDetails} onContinue={onEnter} />}
 
             <AnimatePresence initial={false}>
-                {media.length > 0 && (
+                {carouselMedia.length > 0 && (
                      <motion.div
                         key={currentIndex}
                         variants={variants}
@@ -69,9 +68,9 @@ export const FrontPage: React.FC<{ companyDetails: CompanyDetails, onEnter: () =
                         transition={{ opacity: { duration: 1.5 } }}
                         className="absolute inset-0 w-full h-full"
                     >
-                        {media[currentIndex].type === 'video' ? (
+                        {carouselMedia[currentIndex].type === 'video' ? (
                             <video
-                                src={media[currentIndex].url}
+                                src={carouselMedia[currentIndex].url}
                                 autoPlay
                                 loop
                                 muted
@@ -81,7 +80,7 @@ export const FrontPage: React.FC<{ companyDetails: CompanyDetails, onEnter: () =
                         ) : (
                              <div
                                 className="w-full h-full bg-cover bg-center"
-                                style={{ backgroundImage: `url(${media[currentIndex].url})` }}
+                                style={{ backgroundImage: `url(${carouselMedia[currentIndex].url})` }}
                             />
                         )}
                     </motion.div>
@@ -119,7 +118,7 @@ export const FrontPage: React.FC<{ companyDetails: CompanyDetails, onEnter: () =
                 </motion.div>
             </div>
              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-                {media.map((_, index) => (
+                {carouselMedia.map((_, index) => (
                     <button
                         key={index}
                         onClick={() => setCurrentIndex(index)}

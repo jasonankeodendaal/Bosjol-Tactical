@@ -4,14 +4,15 @@ import { motion } from 'framer-motion';
 import { AuthContext } from '../auth/AuthContext';
 import { Button } from './Button';
 import { UserIcon, KeyIcon, ExclamationTriangleIcon, CloudArrowDownIcon } from './icons/Icons';
-import { CompanyDetails } from '../types';
+import { CompanyDetails, SocialLink } from '../types';
 import { Input } from './Input';
 
 interface LoginScreenProps {
   companyDetails: CompanyDetails;
+  socialLinks: SocialLink[];
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, socialLinks }) => {
   const auth = useContext(AuthContext);
   if (!auth) throw new Error("AuthContext not found");
 
@@ -21,24 +22,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const { login } = auth;
-
+  
   useEffect(() => {
-    let audio: HTMLAudioElement | null = null;
-    
     if (companyDetails.loginAudioUrl) {
-      audio = new Audio(companyDetails.loginAudioUrl);
-      audio.loop = true;
-      audio.play().catch(error => {
-        console.warn("Background audio autoplay was prevented by the browser.");
-      });
+        try {
+            const audio = new Audio(companyDetails.loginAudioUrl);
+            audio.loop = true;
+            audio.volume = 0.3;
+            audio.play().catch(e => console.error("Autoplay was prevented:", e));
+            
+            // Cleanup function to stop audio when component unmounts
+            return () => {
+                audio.pause();
+                audio.src = "";
+            };
+        } catch (e) {
+            console.error("Failed to play login audio:", e);
+        }
     }
-
-    return () => {
-      if (audio) {
-        audio.pause();
-        audio.src = '';
-      }
-    };
   }, [companyDetails.loginAudioUrl]);
   
   const handleLogin = async (e: React.FormEvent) => {
@@ -66,7 +67,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails }) => {
     const url = companyDetails.loginBackgroundUrl;
     if (!url) return null;
 
-    const isVideo = url.startsWith('data:video');
+    const isVideo = url.startsWith('data:video') || url.includes('.mp4') || url.includes('.webm');
 
     if (isVideo) {
       return (
@@ -78,7 +79,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails }) => {
           className="absolute z-0 w-auto min-w-full min-h-full max-w-none opacity-20"
           key={url}
         >
-          <source src={url} type={url.substring(5, url.indexOf(';'))} />
+          <source src={url} />
           Your browser does not support the video tag.
         </video>
       );
@@ -169,10 +170,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails }) => {
           </div>
         )}
 
-         {companyDetails.socialLinks.length > 0 && (
+         {socialLinks.length > 0 && (
             <div className="mt-8 pt-6 border-t border-zinc-700/50">
                 <div className="flex items-center justify-center gap-6">
-                    {companyDetails.socialLinks.map(link => (
+                    {socialLinks.map(link => (
                          <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:scale-110 transition-transform">
                             <img src={link.iconUrl} alt={link.name} className="h-7 w-7 object-contain" title={link.name} />
                         </a>

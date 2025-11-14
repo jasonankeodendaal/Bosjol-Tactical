@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { USE_FIREBASE, db } from '../firebase';
 import * as mock from '../constants';
-import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule } from '../types';
+import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia } from '../types';
 
 // Helper to fetch collection data
 function useCollection<T extends {id: string}>(collectionName: string, mockData: T[], dependencies: any[] = []) {
@@ -94,6 +94,8 @@ interface DataContextType {
     gamificationSettings: GamificationSettings; setGamificationSettings: (d: GamificationSettings | ((p: GamificationSettings) => GamificationSettings)) => void;
     sponsors: Sponsor[]; setSponsors: (d: Sponsor[] | ((p: Sponsor[]) => Sponsor[])) => void;
     companyDetails: CompanyDetails; setCompanyDetails: (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => void;
+    socialLinks: SocialLink[]; setSocialLinks: (d: SocialLink[] | ((p: SocialLink[]) => SocialLink[])) => void;
+    carouselMedia: CarouselMedia[]; setCarouselMedia: (d: CarouselMedia[] | ((p: CarouselMedia[]) => CarouselMedia[])) => void;
     vouchers: Voucher[]; setVouchers: (d: Voucher[] | ((p: Voucher[]) => Voucher[])) => void;
     inventory: InventoryItem[]; setInventory: (d: InventoryItem[] | ((p: InventoryItem[]) => InventoryItem[])) => void;
     suppliers: Supplier[]; setSuppliers: (d: Supplier[] | ((p: Supplier[]) => Supplier[])) => void;
@@ -116,7 +118,6 @@ export const DataContext = createContext<DataContextType | null>(null);
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [players, setPlayers, loadingPlayers] = useCollection<Player>('players', mock.MOCK_PLAYERS, []);
     const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', mock.MOCK_EVENTS, []);
-    // FIX: Remove 'as any' cast as MOCK_RANKS now conforms to Rank[] where Rank has an 'id'.
     const [ranks, setRanks, loadingRanks] = useCollection<Rank>('ranks', mock.MOCK_RANKS, []);
     const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', mock.MOCK_BADGES, []);
     const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', mock.MOCK_LEGENDARY_BADGES, []);
@@ -129,9 +130,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [locations, setLocations, loadingLocations] = useCollection<Location>('locations', mock.MOCK_LOCATIONS, []);
     const [raffles, setRaffles, loadingRaffles] = useCollection<Raffle>('raffles', mock.MOCK_RAFFLES, []);
     const [companyDetails, setCompanyDetails, loadingCompanyDetails] = useDocument<CompanyDetails>('settings', 'companyDetails', mock.MOCK_COMPANY_DETAILS);
+    const [socialLinks, setSocialLinks, loadingSocialLinks] = useCollection<SocialLink>('socialLinks', mock.MOCK_SOCIAL_LINKS, []);
+    const [carouselMedia, setCarouselMedia, loadingCarouselMedia] = useCollection<CarouselMedia>('carouselMedia', mock.MOCK_CAROUSEL_MEDIA, []);
+    
     const [isSeeding, setIsSeeding] = useState(false);
 
-    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingCompanyDetails || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles;
+    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingCompanyDetails || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia;
     
     const seedInitialData = async () => {
         if (!USE_FIREBASE || !db) return;
@@ -141,7 +145,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const batch = db.batch();
 
             // System Settings & Config
-            // FIX: Update rank seeding to use the predefined ID from the mock data.
             mock.MOCK_RANKS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('ranks').doc(id), data); });
             mock.MOCK_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('badges').doc(id), data); });
             mock.MOCK_LEGENDARY_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('legendaryBadges').doc(id), data); });
@@ -152,7 +155,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const { id: adminId, ...adminData } = mock.MOCK_ADMIN;
             batch.set(db.collection('admins').doc(adminId), adminData);
 
-            // Transactional Data
+            // Transactional Data & Subcollections
             mock.MOCK_PLAYERS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('players').doc(id), data); });
             mock.MOCK_EVENTS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('events').doc(id), data); });
             mock.MOCK_VOUCHERS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('vouchers').doc(id), data); });
@@ -162,22 +165,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             mock.MOCK_LOCATIONS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('locations').doc(id), data); });
             mock.MOCK_RAFFLES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('raffles').doc(id), data); });
             mock.MOCK_SPONSORS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('sponsors').doc(id), data); });
-
+            mock.MOCK_SOCIAL_LINKS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('socialLinks').doc(id), data); });
+            mock.MOCK_CAROUSEL_MEDIA.forEach(item => { const {id, ...data} = item; batch.set(db.collection('carouselMedia').doc(id), data); });
+            
             await batch.commit();
             console.log('All initial data seeded successfully. Refreshing the page to load new data...');
-            // Force a reload to ensure all components get the fresh data from Firestore listeners
             window.location.reload();
 
         } catch (error) {
             console.error("Error seeding initial data: ", error);
-            setIsSeeding(false); // Stop seeding on error
+            setIsSeeding(false);
         }
     };
     
      useEffect(() => {
         const checkAndSeed = async () => {
             if (USE_FIREBASE && db && !loading) {
-                // Check a core transactional collection to see if data exists.
                 const playersSnapshot = await db.collection('players').limit(1).get();
                 if (playersSnapshot.empty) {
                     await seedInitialData();
@@ -186,20 +189,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
         checkAndSeed();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [loading]); // Run this check after initial loading finishes.
+    }, [loading]);
 
 
     const deleteAllData = async () => {
         if (!USE_FIREBASE || !db) {
-            // Mock mode: reset states to their initial values and clear any old local storage.
             console.log("Resetting all mock transactional data in memory...");
-            if (typeof window !== 'undefined') {
-                Object.keys(window.localStorage).forEach(key => {
-                    if (key.startsWith('mock_')) {
-                        window.localStorage.removeItem(key);
-                    }
-                });
-            }
             setPlayers(mock.MOCK_PLAYERS);
             setEvents(mock.MOCK_EVENTS);
             setVouchers(mock.MOCK_VOUCHERS);
@@ -209,10 +204,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setSuppliers(mock.MOCK_SUPPLIERS);
             setSponsors(mock.MOCK_SPONSORS);
             setLocations(mock.MOCK_LOCATIONS);
+            setSocialLinks(mock.MOCK_SOCIAL_LINKS);
+            setCarouselMedia(mock.MOCK_CAROUSEL_MEDIA);
             return;
         }
         
-        const collectionsToDelete = ['players', 'events', 'vouchers', 'inventory', 'transactions', 'raffles', 'suppliers', 'sponsors', 'locations'];
+        const collectionsToDelete = ['players', 'events', 'vouchers', 'inventory', 'transactions', 'raffles', 'suppliers', 'sponsors', 'locations', 'socialLinks', 'carouselMedia'];
         
         try {
             console.log("Deleting all transactional data...");
@@ -283,6 +280,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         gamificationSettings, setGamificationSettings,
         sponsors, setSponsors,
         companyDetails, setCompanyDetails,
+        socialLinks, setSocialLinks,
+        carouselMedia, setCarouselMedia,
         vouchers, setVouchers,
         inventory, setInventory,
         suppliers, setSuppliers,

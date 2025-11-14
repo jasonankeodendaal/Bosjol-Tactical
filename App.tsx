@@ -4,14 +4,14 @@ import { LoginScreen } from './components/LoginScreen';
 import { PlayerDashboard } from './components/PlayerDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Button } from './components/Button';
-import type { Player, GameEvent, CompanyDetails } from './types';
+import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia } from './types';
 import { BuildingOfficeIcon, ExclamationTriangleIcon } from './components/icons/Icons';
 import { DataProvider, DataContext } from './data/DataContext';
 import { Loader } from './components/Loader';
 import { USE_FIREBASE, isFirebaseConfigured, getEnvVar, firebaseInitializationError } from './firebase';
 import { FrontPage } from './components/FrontPage';
 
-const Footer: React.FC<{ details: CompanyDetails }> = ({ details }) => (
+const Footer: React.FC<{ details: CompanyDetails, socialLinks: SocialLink[] }> = ({ details, socialLinks }) => (
     <footer className="bg-zinc-900/80 backdrop-blur-sm border-t border-zinc-800 p-6 text-center text-sm text-gray-400 mt-auto">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
             <div className="flex items-center">
@@ -23,7 +23,7 @@ const Footer: React.FC<{ details: CompanyDetails }> = ({ details }) => (
                 <p className="font-bold text-gray-300">{details.name}</p>
             </div>
             <div className="flex items-center gap-4">
-                {details.socialLinks.map(link => (
+                {socialLinks.map(link => (
                     <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-colors">
                         <img src={link.iconUrl} alt={link.name} className="h-6 w-6 object-contain"/>
                     </a>
@@ -116,6 +116,8 @@ const AppContent: React.FC = () => {
         gamificationSettings, setGamificationSettings,
         sponsors, setSponsors,
         companyDetails, setCompanyDetails,
+        socialLinks, setSocialLinks,
+        carouselMedia, setCarouselMedia,
         vouchers, setVouchers,
         inventory, setInventory,
         suppliers, setSuppliers,
@@ -189,9 +191,9 @@ const AppContent: React.FC = () => {
 
     if (!isAuthenticated || !user) {
         if (showFrontPage) {
-            return <FrontPage companyDetails={companyDetails} onEnter={() => setShowFrontPage(false)} />;
+            return <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} />;
         }
-        return <LoginScreen companyDetails={companyDetails} />;
+        return <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />;
     }
 
     if (loading) {
@@ -256,6 +258,10 @@ const AppContent: React.FC = () => {
                             setSponsors={setSponsors}
                             companyDetails={companyDetails}
                             setCompanyDetails={setCompanyDetails}
+                            socialLinks={socialLinks}
+                            setSocialLinks={setSocialLinks}
+                            carouselMedia={carouselMedia}
+                            setCarouselMedia={setCarouselMedia}
                             vouchers={vouchers}
                             setVouchers={setVouchers}
                             inventory={inventory}
@@ -274,7 +280,7 @@ const AppContent: React.FC = () => {
                     }
                 </div>
             </main>
-            <Footer details={companyDetails} />
+            <Footer details={companyDetails} socialLinks={socialLinks} />
         </div>
     );
 };

@@ -1,4 +1,4 @@
-import type { Player, Admin, GameEvent, Briefing, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType } from './types';
+import type { Player, Admin, GameEvent, Briefing, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia } from './types';
 
 export const MOCK_BADGES: Badge[] = [
     { id: 'b01', name: 'Sharpshooter', description: 'Achieve 50 headshots', iconUrl: 'https://cdn.pixabay.com/photo/2012/04/13/19/27/target-33391_1280.png', criteria: { type: 'headshots', value: 50 }},
@@ -629,6 +629,18 @@ export const MOCK_LOCATIONS: Location[] = [
     }
 ];
 
+export const MOCK_CAROUSEL_MEDIA: CarouselMedia[] = [
+    { id: 'cm1', type: 'image', url: 'https://images.pexels.com/photos/163822/soldier-airsoft-gun-weapon-163822.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
+    { id: 'cm2', type: 'image', url: 'https://images.pexels.com/photos/7984333/pexels-photo-7984333.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
+    { id: 'cm3', type: 'image', url: 'https://images.pexels.com/photos/8354527/pexels-photo-8354527.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' }
+];
+
+export const MOCK_SOCIAL_LINKS: SocialLink[] = [
+    { id: 'sl1', name: 'Facebook', url: 'https://facebook.com', iconUrl: 'https://img.icons8.com/fluent/48/000000/facebook-new.png' },
+    { id: 'sl2', name: 'Instagram', url: 'https://instagram.com', iconUrl: 'https://img.icons8.com/fluent/48/000000/instagram-new.png' },
+    { id: 'sl3', name: 'YouTube', url: 'https://youtube.com', iconUrl: 'https://img.icons8.com/fluent/48/000000/youtube-play.png' }
+];
+
 export const MOCK_COMPANY_DETAILS: CompanyDetails = {
     name: 'Bosjol Tactical Solutions',
     address: '123 Tactical Way, Fort Bragg, NC 28307',
@@ -639,21 +651,12 @@ export const MOCK_COMPANY_DETAILS: CompanyDetails = {
     vatNumber: '9876543210',
     logoUrl: 'https://i.ibb.co/HL2Lc6Rz/file-0000000043b061f7b655a0077343e063.png',
     loginBackgroundUrl: '', // Default to empty, let user upload
-    loginAudioUrl: '', // Default to empty
+    loginAudioUrl: '',
     playerDashboardBackgroundUrl: '',
     adminDashboardBackgroundUrl: '',
     apkUrl: '',
+    apiServerUrl: '',
     minimumSignupAge: 18,
-    carouselMedia: [
-        { id: 'cm1', type: 'image', url: 'https://images.pexels.com/photos/163822/soldier-airsoft-gun-weapon-163822.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
-        { id: 'cm2', type: 'image', url: 'https://images.pexels.com/photos/7984333/pexels-photo-7984333.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
-        { id: 'cm3', type: 'image', url: 'https://images.pexels.com/photos/8354527/pexels-photo-8354527.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' }
-    ],
-    socialLinks: [
-        { id: 'sl1', name: 'Facebook', url: 'https://facebook.com', iconUrl: 'https://img.icons8.com/fluent/48/000000/facebook-new.png' },
-        { id: 'sl2', name: 'Instagram', url: 'https://instagram.com', iconUrl: 'https://img.icons8.com/fluent/48/000000/instagram-new.png' },
-        { id: 'sl3', name: 'YouTube', url: 'https://youtube.com', iconUrl: 'https://img.icons8.com/fluent/48/000000/youtube-play.png' }
-    ],
     bankInfo: {
         bankName: 'Global Trust Bank',
         accountNumber: '**** **** **** 1234',

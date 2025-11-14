@@ -329,13 +329,12 @@ export interface CompanyDetails {
     playerDashboardBackgroundUrl?: string;
     adminDashboardBackgroundUrl?: string;
     apkUrl?: string;
-    socialLinks: SocialLink[];
+    apiServerUrl?: string;
     bankInfo: {
         bankName: string;
         accountNumber: string;
         routingNumber: string;
     };
     fixedEventRules?: string;
-    carouselMedia: CarouselMedia[];
     minimumSignupAge: number;
 }

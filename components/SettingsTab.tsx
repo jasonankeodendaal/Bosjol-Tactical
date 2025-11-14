@@ -12,11 +12,20 @@ interface SettingsTabProps {
     onDeleteAllData: () => void;
 }
 
+// Helper function to ensure companyDetails object has all required arrays/objects to prevent render errors.
+const normalizeCompanyDetails = (details: CompanyDetails): CompanyDetails => ({
+    ...details,
+    socialLinks: details?.socialLinks ?? [],
+    carouselMedia: details?.carouselMedia ?? [],
+    bankInfo: details?.bankInfo ?? { bankName: '', accountNumber: '', routingNumber: '' },
+});
+
+
 export const SettingsTab: React.FC<SettingsTabProps> = ({ companyDetails, setCompanyDetails, onDeleteAllData }) => {
-    const [formData, setFormData] = useState(companyDetails);
+    const [formData, setFormData] = useState(() => normalizeCompanyDetails(companyDetails));
     
     useEffect(() => {
-        setFormData(companyDetails);
+        setFormData(normalizeCompanyDetails(companyDetails));
     }, [companyDetails]);
 
     const handleSave = () => {

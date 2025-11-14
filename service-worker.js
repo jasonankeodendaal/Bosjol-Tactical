@@ -5,7 +5,7 @@ const STATIC_ASSETS = [
   '/',
   '/index.html',
   'https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png',
-  'manifest.json',
+  '/manifest.json',
   'https://i.ibb.co/HL2Lc6Rz/file-0000000043b061f7b655a0077343e063.png',
   'https://i.ibb.co/v6qtDrT4/maskable-icon.png',
   'https://cdn.tailwindcss.com',

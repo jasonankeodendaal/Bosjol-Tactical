@@ -265,14 +265,14 @@
         animation-delay: -3.5s;
       }
       .hud-bg {
-        background-color: #05080d; /* Very dark blue */
-        background-image:
-            linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
-        background-size: 20px 20px;
+        background-color: #05080d;
+        background-image: url('https://i.ibb.co/dsh2c2hp/unnamed.jpg');
+        background-size: 150%;
+        background-position: center;
         position: relative;
         overflow: hidden;
         border-top: 1px solid rgba(0, 255, 255, 0.3);
+        animation: hud-pan 45s ease-in-out infinite, hud-scanline 6s linear infinite;
       }
 
       .hud-bg::after {
@@ -302,6 +302,56 @@
         50% { left: 85%; }
         100% { top: 100%; left: 15%;}
       }
+      /* --- NEW HUD ANIMATIONS --- */
+      @keyframes hud-pan {
+        0% { background-position: 40% 50%; }
+        50% { background-position: 60% 50%; }
+        100% { background-position: 40% 50%; }
+      }
+
+      @keyframes hud-corner-pulse {
+        0%, 100% {
+          border-color: rgba(0, 255, 255, 0.5);
+          box-shadow: 0 0 3px rgba(0, 255, 255, 0.3);
+        }
+        50% {
+          border-color: rgba(0, 255, 255, 1);
+          box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        }
+      }
+
+      /* --- NEW HUD ELEMENTS --- */
+      .hud-corners {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+        pointer-events: none; /* Don't block clicks */
+      }
+
+      .hud-corners > span {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+      }
+
+      .hud-corners::before,
+      .hud-corners::after,
+      .hud-corners > span::before,
+      .hud-corners > span::after {
+        content: '';
+        position: absolute;
+        width: 25px;
+        height: 25px;
+        border-color: rgba(0, 255, 255, 0.5);
+        border-style: solid;
+        animation: hud-corner-pulse 4s ease-in-out infinite;
+      }
+      .hud-corners::before { top: 0; left: 0; border-width: 2px 0 0 2px; }
+      .hud-corners::after { top: 0; right: 0; border-width: 2px 2px 0 0; animation-delay: -1s; }
+      .hud-corners > span::before { bottom: 0; left: 0; border-width: 0 0 2px 2px; animation-delay: -2s; }
+      .hud-corners > span::after { bottom: 0; right: 0; border-width: 0 0 2px 2px; animation-delay: -3s; }
     </style>
     <style>
       @media print {

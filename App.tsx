@@ -18,6 +18,9 @@ const CreatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return (
         <Modal isOpen={true} onClose={onClose} title="SYSTEM CREATOR">
             <div className="hud-bg -m-6 p-6 rounded-b-xl">
+                <div className="hud-corners">
+                    <span />
+                </div>
                 <div className="relative z-10 flex flex-col items-center text-center text-cyan-200">
                     <a href="https://ibb.co/spB8SDCX" target="_blank" rel="noopener noreferrer">
                         <img 

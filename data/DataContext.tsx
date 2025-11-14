@@ -68,10 +68,15 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
      const updateData = async (newData: T | ((prev: T) => T)) => {
         const finalData = typeof newData === 'function' ? (newData as (prev: T) => T)(data) : newData;
         if (USE_FIREBASE && db) {
-            const docRef = db.collection(collectionName).doc(docId);
-            // Use { merge: true } to prevent accidentally overwriting/deleting fields
-            // that might not be present in the local `finalData` object.
-            await docRef.set(finalData, { merge: true });
+            try {
+                const docRef = db.collection(collectionName).doc(docId);
+                // Use { merge: true } to prevent accidentally overwriting/deleting fields
+                // that might not be present in the local `finalData` object.
+                await docRef.set(finalData, { merge: true });
+            } catch (error: any) {
+                console.error(`Failed to save document ${collectionName}/${docId}:`, error);
+                alert(`Failed to save settings to the database. This can happen if uploaded images or videos are too large (document size limit is 1MB).\n\nError: ${error.message}`);
+            }
         } else {
             setData(finalData);
         }

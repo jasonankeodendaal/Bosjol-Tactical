@@ -4,7 +4,7 @@ import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { ImageUpload } from './ImageUpload';
-import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, DocumentIcon } from './icons/Icons';
+import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon } from './icons/Icons';
 
 interface SettingsTabProps {
     companyDetails: CompanyDetails;
@@ -26,7 +26,7 @@ const FileUploadField: React.FC<{
     onUpload: (url: string) => void;
     onRemove: () => void;
     accept: string;
-    previewType?: 'image' | 'audio' | 'apk';
+    previewType?: 'image' | 'audio';
 }> = ({ label, fileUrl, onUpload, onRemove, accept, previewType = 'image' }) => {
     const previewContent = () => {
         if (!fileUrl) return null;
@@ -37,12 +37,6 @@ const FileUploadField: React.FC<{
                 return (
                     <div className="w-16 h-16 flex items-center justify-center rounded-md bg-zinc-800 p-1">
                         <MusicalNoteIcon className="w-8 h-8 text-gray-400" />
-                    </div>
-                );
-            case 'apk':
-                 return (
-                    <div className="w-16 h-16 flex items-center justify-center rounded-md bg-zinc-800 p-1">
-                        <DocumentIcon className="w-8 h-8 text-gray-400" />
                     </div>
                 );
             default:
@@ -196,11 +190,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ companyDetails, setCom
                 <div className="p-6 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Input label="Minimum Signup Age" type="number" value={formData.minimumSignupAge} onChange={e => setFormData(f => ({...f, minimumSignupAge: Number(e.target.value)}))} />
-                        <Input 
-                            label="Android APK Download URL" 
-                            value={formData.apkUrl || ''} 
-                            onChange={e => setFormData(f => ({ ...f, apkUrl: e.target.value }))}
-                            placeholder="Paste public URL to the APK file"
+                        <Input
+                            label="Android APK URL"
+                            value={formData.apkUrl || ''}
+                            onChange={(e) => setFormData(f => ({ ...f, apkUrl: e.target.value }))}
+                            placeholder="https://.../app.apk"
                         />
                     </div>
                     <div>
@@ -232,15 +226,25 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ companyDetails, setCom
                         <h4 className="font-semibold text-gray-200 mb-4 text-lg">Social Links</h4>
                         <div className="space-y-3">
                         {formData.socialLinks.map(link => (
-                            <div key={link.id} className="grid grid-cols-1 md:grid-cols-3 gap-2 items-end bg-zinc-900/50 p-3 rounded-lg border border-zinc-700/50">
+                            <div key={link.id} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end bg-zinc-900/50 p-3 rounded-lg border border-zinc-700/50">
                                 <Input value={link.name} onChange={(e) => handleSocialLinkChange(link.id, 'name', e.target.value)} placeholder="Name (e.g., Facebook)" label="Name"/>
-                                <Input value={link.iconUrl} onChange={(e) => handleSocialLinkChange(link.id, 'iconUrl', e.target.value)} placeholder="Icon URL" label="Icon URL"/>
-                                <div className="flex gap-2 items-end">
-                                    <div className="flex-grow">
-                                        <Input value={link.url} onChange={(e) => handleSocialLinkChange(link.id, 'url', e.target.value)} placeholder="Full URL" label="URL"/>
-                                    </div>
-                                    <Button variant="danger" size="sm" className="!p-2.5" onClick={() => handleRemoveSocialLink(link.id)}><TrashIcon className="w-5 h-5"/></Button>
+                                <Input value={link.url} onChange={(e) => handleSocialLinkChange(link.id, 'url', e.target.value)} placeholder="Full URL" label="URL"/>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Icon</label>
+                                    {link.iconUrl ? (
+                                        <div className="flex items-center gap-2 bg-zinc-900 p-1 rounded-md">
+                                            <img src={link.iconUrl} alt="icon" className="w-8 h-8 object-contain rounded"/>
+                                            <Button variant="danger" size="sm" className="!p-2 ml-auto" onClick={() => handleSocialLinkChange(link.id, 'iconUrl', '')}>
+                                                <XIcon className="w-4 h-4"/>
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <ImageUpload onUpload={(base64s) => { if (base64s.length > 0) handleSocialLinkChange(link.id, 'iconUrl', base64s[0]) }} accept="image/*" />
+                                    )}
                                 </div>
+                                <Button variant="danger" className="!py-2.5" onClick={() => handleRemoveSocialLink(link.id)}>
+                                    <TrashIcon className="w-5 h-5"/>
+                                </Button>
                             </div>
                         ))}
                         </div>

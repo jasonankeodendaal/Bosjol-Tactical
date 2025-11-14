@@ -14,8 +14,6 @@ const STATIC_ASSETS = [
   // but they will be cached on first use by the fetch handler.
 ];
 
-const API_HOSTS = ['firestore.googleapis.com', 'identitytoolkit.googleapis.com'];
-
 // INSTALL: Cache static assets
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -47,44 +45,33 @@ self.addEventListener('activate', event => {
   );
 });
 
-// FETCH: Intercept network requests
+// FETCH: Network-first strategy with no offline fallback.
 self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
+  event.respondWith(
+    fetch(event.request)
+      .then(networkResponse => {
+        // If the network request is successful, cache the response for potential future performance improvements during ONLINE sessions.
+        // This does not provide an offline fallback.
+        const responseToCache = networkResponse.clone();
+        
+        // Decide which cache to use.
+        const url = new URL(event.request.url);
+        // A simple way to check if it's a static asset from our predefined list.
+        // We check both full URL and just pathname for flexibility.
+        const isStaticAsset = STATIC_ASSETS.includes(url.href) || STATIC_ASSETS.includes(url.pathname);
+        const cacheName = isStaticAsset ? STATIC_CACHE_NAME : DYNAMIC_CACHE_NAME;
 
-  // Strategy 1: Network Falling Back to Cache (for APIs and CDN scripts)
-  // This ensures data is as fresh as possible, but provides an offline fallback.
-  if (API_HOSTS.includes(url.hostname) || url.hostname.includes('aistudiocdn.com') || url.hostname.includes('gstatic.com') && !url.pathname.includes('googleapis')) {
-    event.respondWith(
-      caches.open(DYNAMIC_CACHE_NAME).then(cache => {
-        return fetch(event.request).then(networkResponse => {
-          // If we get a valid response, cache it and return it
-          // Only cache successful GET requests
-          if(networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
-            cache.put(event.request, networkResponse.clone());
-          }
-          return networkResponse;
-        }).catch(() => {
-          // If the network fails, try to serve from the cache
-          return cache.match(event.request);
-        });
+        // Only cache successful GET requests.
+        if (networkResponse.ok && event.request.method === 'GET') {
+          caches.open(cacheName).then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        
+        return networkResponse;
       })
-    );
-  } 
-  // Strategy 2: Cache First, then Network (for static app shell assets)
-  // This is fast and reliable for assets that don't change often.
-  else {
-     event.respondWith(
-        caches.match(event.request).then(response => {
-            return response || fetch(event.request).then(networkResponse => {
-                 // Also cache assets that might have been missed in the install step, like fonts or images
-                return caches.open(STATIC_CACHE_NAME).then(cache => {
-                    if(networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
-                        cache.put(event.request, networkResponse.clone());
-                    }
-                    return networkResponse;
-                })
-            });
-        })
-    );
-  }
+      // By omitting the .catch() block that would serve from cache,
+      // any network failure will result in the browser's default offline error page.
+      // This satisfies the "no offline" requirement.
+  );
 });

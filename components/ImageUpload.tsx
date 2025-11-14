@@ -8,6 +8,71 @@ interface FileUploadProps {
   multiple?: boolean;
 }
 
+const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const MAX_WIDTH = 1920;
+        const MAX_HEIGHT = 1080;
+        const JPEG_QUALITY = 0.8; // Using 80% quality for a good balance
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            if (!event.target?.result) {
+                return reject(new Error("Couldn't read file for compression."));
+            }
+            const img = new Image();
+            img.src = event.target.result as string;
+            img.onload = () => {
+                let { width, height } = img;
+
+                // Calculate new dimensions while maintaining aspect ratio
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    return reject(new Error('Could not get canvas context for image compression.'));
+                }
+                
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Convert to JPEG for significant size reduction, which is the main goal
+                const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+                resolve(dataUrl);
+            };
+            img.onerror = (err) => reject(new Error(`Image load error for compression: ${err}`));
+        };
+        reader.onerror = (err) => reject(new Error(`File read error for compression: ${err}`));
+    });
+};
+
+const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (typeof e.target?.result === 'string') {
+                resolve(e.target.result);
+            } else {
+                reject(new Error('Failed to read file as base64.'));
+            }
+        };
+        reader.onerror = (err) => reject(new Error(`File read error: ${err}`));
+        reader.readAsDataURL(file);
+    });
+};
+
 export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false }) => {
   const [fileName, setFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -16,23 +81,19 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
     if (files && files.length > 0) {
       setFileName(multiple ? `${files.length} file(s) selected` : files[0].name);
       const promises = Array.from(files).map(file => {
-        return new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            if (typeof e.target?.result === 'string') {
-              resolve(e.target.result);
-            } else {
-              reject(new Error('Failed to read file.'));
-            }
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
+        // Automatically compress files that are images. Other files (video, audio, etc.) are passed through.
+        if (file.type.startsWith('image/')) {
+            return compressImage(file);
+        }
+        return readFileAsBase64(file);
       });
       
       Promise.all(promises).then(base64s => {
         onUpload(base64s);
-      }).catch(err => console.error("Error reading files:", err));
+      }).catch(err => {
+        console.error("Error processing files:", err);
+        alert(`An error occurred while processing the files: ${err.message}`);
+      });
     }
   }, [onUpload, multiple]);
 

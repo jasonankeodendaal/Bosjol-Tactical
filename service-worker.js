@@ -21,14 +21,11 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME).then(cache => {
       console.log('Service Worker: Caching App Shell');
-      // Use addAll for atomic operation. Use { cache: 'reload' } to bypass browser cache.
-      return Promise.all(
-        STATIC_ASSETS.map(url =>
-          fetch(new Request(url, { cache: 'reload' }))
-            .then(response => cache.put(url, response))
-            .catch(err => console.warn(`Failed to cache ${url}: ${err}`))
-        )
-      );
+      // Use cache.addAll() for an atomic operation.
+      // It fetches and caches in one step. If any file fails, the whole operation fails.
+      return cache.addAll(STATIC_ASSETS);
+    }).catch(error => {
+        console.error('Service Worker: App Shell caching failed', error);
     })
   );
 });

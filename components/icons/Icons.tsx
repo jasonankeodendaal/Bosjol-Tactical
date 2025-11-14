@@ -259,3 +259,29 @@ export const CodeBracketIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) 
         <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
     </svg>
 );
+
+export const HelmetPhoneIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props} stroke="currentColor" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    {/* Helmet shape */}
+    <path d="M12 2a10 10 0 00-10 10v1.5a3.5 3.5 0 003.5 3.5h13A3.5 3.5 0 0022 13.5V12a10 10 0 00-10-10z" />
+    <path d="M18 17a6 6 0 01-12 0" />
+    {/* Phone icon inside, scaled and moved */}
+    <g transform="translate(6.5 8) scale(0.45)" strokeWidth="2.5">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+    </g>
+  </svg>
+);
+
+export const VestEmailIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props} stroke="currentColor" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    {/* Vest shape */}
+    <path d="M6 3h12l-2 4H8L6 3z" />
+    <path d="M4 7h16v13a1 1 0 01-1 1H5a1 1 0 01-1-1V7z" />
+    <line x1="12" y1="7" x2="12" y2="21"></line>
+    {/* Email/Envelope icon inside */}
+    <g transform="translate(7 11.5) scale(0.4)" strokeWidth="2.5">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+        <polyline points="22,6 12,13 2,6" />
+    </g>
+  </svg>
+);

@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
 import { LoginScreen } from './components/LoginScreen';
 import { PlayerDashboard } from './components/PlayerDashboard';
@@ -208,7 +209,9 @@ const AppContent: React.FC = () => {
         <div className="min-h-screen flex flex-col bg-transparent text-white">
             <header className="bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-800 p-4 flex justify-between items-center sticky top-0 z-40">
                  <div className="flex items-center">
-                    <img src={companyDetails.logoUrl} alt="Logo" className="h-8 w-8 mr-3 rounded-md"/>
+                    <div className="mr-3">
+                        <img src={companyDetails.logoUrl} alt="Logo" className="h-8 w-8 rounded-md"/>
+                    </div>
                     <h1 className="text-xl font-black text-red-500 tracking-wider uppercase">
                         BOSJOL TACTICAL
                     </h1>
@@ -281,6 +284,27 @@ const AppContent: React.FC = () => {
                 </div>
             </main>
             <Footer details={companyDetails} socialLinks={socialLinks} />
+
+            <motion.div
+                className="fixed bottom-4 left-4 z-50 hidden md:block"
+                animate={{
+                    rotate: [0, -10, 10, -10, 0, 360],
+                    scale: [1, 1.1, 0.9, 1.1, 1, 1],
+                    y: [0, -10, 5, -10, 0, 0],
+                    x: [0, 5, -5, 5, 0, 0]
+                }}
+                transition={{
+                    duration: 5,
+                    ease: "easeInOut",
+                    repeat: Infinity,
+                    repeatType: "loop",
+                    repeatDelay: 8
+                }}
+                whileHover={{ scale: 1.3, rotate: 20 }}
+                title="Bosjol Tactical"
+            >
+                <img src={companyDetails.logoUrl} alt="Animated Logo" className="h-12 w-12 rounded-lg shadow-lg shadow-red-900/50" />
+            </motion.div>
         </div>
     );
 };

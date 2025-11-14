@@ -259,7 +259,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                             <Button variant="danger" size="sm" onClick={() => setFormData(f => ({ ...f, imageUrl: '' }))}>Remove</Button>
                                         </div>
                                     ) : (
-                                        <ImageUpload onUpload={(url) => setFormData(f => ({ ...f, imageUrl: url }))} accept="image/*" />
+                                        <ImageUpload onUpload={(urls) => { if (urls.length > 0) setFormData(f => ({ ...f, imageUrl: urls[0] })); }} accept="image/*" />
                                     )}
                                 </div>
                             </div>

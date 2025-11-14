@@ -43,7 +43,7 @@ const SponsorEditorModal: React.FC<{ sponsor: Sponsor | {}, onClose: () => void,
                             <Button variant="danger" size="sm" onClick={() => setFormData(f => ({ ...f, logoUrl: '' }))}>Remove</Button>
                         </div>
                     ) : (
-                        <ImageUpload onUpload={(url) => setFormData(f => ({ ...f, logoUrl: url }))} accept="image/*" />
+                        <ImageUpload onUpload={(urls) => { if (urls.length > 0) setFormData(f => ({ ...f, logoUrl: urls[0] })); }} accept="image/*" />
                     )}
                 </div>
             </div>

@@ -62,7 +62,7 @@ const FileUploadField: React.FC<{
                     </Button>
                 </div>
             ) : (
-                <ImageUpload onUpload={onUpload} accept={accept} />
+                <ImageUpload onUpload={(urls) => { if(urls.length > 0) onUpload(urls[0]); }} accept={accept} />
             )}
         </div>
     );
@@ -102,11 +102,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ companyDetails, setCom
         }));
     };
 
-    const handleCarouselMediaUpload = (base64: string) => {
-        const type = base64.startsWith('data:image') ? 'image' : 'video';
+    const handleCarouselMediaUpload = (base64s: string[]) => {
+        const newMedia = base64s.map(base64 => {
+            const type = base64.startsWith('data:image') ? 'image' : 'video';
+            return { id: `cm${Date.now()}-${Math.random()}`, type, url: base64 };
+        });
         setFormData(prev => ({
             ...prev,
-            carouselMedia: [...prev.carouselMedia, { id: `cm${Date.now()}`, type, url: base64 }]
+            carouselMedia: [...prev.carouselMedia, ...newMedia]
         }))
     };
 
@@ -223,7 +226,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ companyDetails, setCom
                                 </div>
                             ))}
                         </div>
-                        <ImageUpload onUpload={handleCarouselMediaUpload} accept="image/*,video/*" />
+                        <ImageUpload onUpload={handleCarouselMediaUpload} accept="image/*,video/*" multiple />
                     </div>
                      <div className="pt-6 border-t border-zinc-800">
                         <h4 className="font-semibold text-gray-200 mb-4 text-lg">Social Links</h4>

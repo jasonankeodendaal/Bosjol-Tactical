@@ -77,7 +77,7 @@ const StandardBadgeEditorModal: React.FC<{ badge: Partial<Badge> | null, onClose
                             <Button variant="danger" size="sm" onClick={() => setFormData(f => ({...f, iconUrl: ''}))}>Remove</Button>
                         </div>
                     ) : (
-                        <ImageUpload onUpload={(url) => setFormData(f => ({...f, iconUrl: url}))} accept="image/*" />
+                        <ImageUpload onUpload={(urls) => { if (urls.length > 0) setFormData(f => ({...f, iconUrl: urls[0]})); }} accept="image/*" />
                     )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -136,7 +136,7 @@ const LegendaryBadgeEditorModal: React.FC<{ badge: Partial<LegendaryBadge> | nul
                             <Button variant="danger" size="sm" onClick={() => setFormData(f => ({...f, iconUrl: ''}))}>Remove</Button>
                         </div>
                     ) : (
-                        <ImageUpload onUpload={(url) => setFormData(f => ({...f, iconUrl: url}))} accept="image/*" />
+                        <ImageUpload onUpload={(urls) => { if (urls.length > 0) setFormData(f => ({...f, iconUrl: urls[0]})); }} accept="image/*" />
                     )}
                 </div>
             </div>

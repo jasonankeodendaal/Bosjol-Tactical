@@ -3,48 +3,59 @@ import React, { useState, useRef, useCallback } from 'react';
 import { UploadCloudIcon } from './icons/Icons';
 
 interface FileUploadProps {
-  onUpload: (base64: string) => void;
-  accept: string; // e.g., 'image/*', 'audio/mp3', 'video/mp4'
+  onUpload: (base64s: string[]) => void;
+  accept: string;
+  multiple?: boolean;
 }
 
-export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept }) => {
+export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false }) => {
   const [fileName, setFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (file: File | null) => {
-    if (file) {
-      setFileName(file.name);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (typeof e.target?.result === 'string') {
-          onUpload(e.target.result);
-        }
-      };
-      reader.readAsDataURL(file);
+  const handleFilesChange = useCallback((files: FileList | null) => {
+    if (files && files.length > 0) {
+      setFileName(multiple ? `${files.length} file(s) selected` : files[0].name);
+      const promises = Array.from(files).map(file => {
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            if (typeof e.target?.result === 'string') {
+              resolve(e.target.result);
+            } else {
+              reject(new Error('Failed to read file.'));
+            }
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      });
+      
+      Promise.all(promises).then(base64s => {
+        onUpload(base64s);
+      }).catch(err => console.error("Error reading files:", err));
     }
-  };
-  
+  }, [onUpload, multiple]);
+
   const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      handleFileChange(event.target.files?.[0] ?? null);
+      handleFilesChange(event.target.files);
+  };
+
+  const onDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      handleFilesChange(event.dataTransfer.files);
+  }, [handleFilesChange]);
+  
+  const onDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
   }
 
   const handleClick = () => {
     fileInputRef.current?.click();
   };
-  
-  const onDrop = useCallback((event: React.DragEvent<HTMLLabelElement>) => {
-      event.preventDefault();
-      handleFileChange(event.dataTransfer.files?.[0] ?? null);
-  }, []);
-  
-  const onDragOver = (event: React.DragEvent<HTMLLabelElement>) => {
-      event.preventDefault();
-  }
 
   return (
     <div className="flex flex-col items-center justify-center w-full">
-      <label
-        htmlFor={`dropzone-file-${accept}`}
+      <div
         className="flex flex-col items-center justify-center w-full min-h-32 border-2 border-zinc-700 border-dashed rounded-lg cursor-pointer bg-zinc-800 hover:bg-zinc-700/50 transition-colors"
         onClick={handleClick}
         onDrop={onDrop}
@@ -56,14 +67,14 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept }) => 
             <p className="text-xs text-gray-500 truncate max-w-full px-2">{fileName || `Accepted: ${accept}`}</p>
         </div>
         <input 
-            id={`dropzone-file-${accept}`}
             ref={fileInputRef} 
             type="file" 
             className="hidden" 
             onChange={onFileChange}
-            accept={accept} 
+            accept={accept}
+            multiple={multiple}
         />
-      </label>
+      </div>
     </div>
   );
 };

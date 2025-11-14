@@ -5,7 +5,7 @@ import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, Com
 
 // Helper to fetch collection data
 function useCollection<T extends {id: string}>(collectionName: string, mockData: T[], dependencies: any[] = []) {
-    const [data, setData] = useState<T[]>(mockData);
+    const [data, setData] = useState<T[]>(USE_FIREBASE ? [] : mockData);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -109,20 +109,20 @@ interface DataContextType {
 export const DataContext = createContext<DataContextType | null>(null);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [players, setPlayers, loadingPlayers] = useCollection<Player>('players', mock.MOCK_PLAYERS);
-    const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', mock.MOCK_EVENTS);
+    const [players, setPlayers, loadingPlayers] = useCollection<Player>('players', mock.MOCK_PLAYERS, []);
+    const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', mock.MOCK_EVENTS, []);
     // FIX: Remove 'as any' cast as MOCK_RANKS now conforms to Rank[] where Rank has an 'id'.
-    const [ranks, setRanks, loadingRanks] = useCollection<Rank>('ranks', mock.MOCK_RANKS);
-    const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', mock.MOCK_BADGES);
-    const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', mock.MOCK_LEGENDARY_BADGES);
-    const [gamificationSettings, setGamificationSettings, loadingGamification] = useCollection<GamificationRule>('gamificationSettings', mock.MOCK_GAMIFICATION_SETTINGS);
-    const [sponsors, setSponsors, loadingSponsors] = useCollection<Sponsor>('sponsors', mock.MOCK_SPONSORS);
-    const [vouchers, setVouchers, loadingVouchers] = useCollection<Voucher>('vouchers', mock.MOCK_VOUCHERS);
-    const [inventory, setInventory, loadingInventory] = useCollection<InventoryItem>('inventory', mock.MOCK_INVENTORY);
-    const [suppliers, setSuppliers, loadingSuppliers] = useCollection<Supplier>('suppliers', mock.MOCK_SUPPLIERS);
-    const [transactions, setTransactions, loadingTransactions] = useCollection<Transaction>('transactions', mock.MOCK_TRANSACTIONS);
-    const [locations, setLocations, loadingLocations] = useCollection<Location>('locations', mock.MOCK_LOCATIONS);
-    const [raffles, setRaffles, loadingRaffles] = useCollection<Raffle>('raffles', mock.MOCK_RAFFLES);
+    const [ranks, setRanks, loadingRanks] = useCollection<Rank>('ranks', mock.MOCK_RANKS, []);
+    const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', mock.MOCK_BADGES, []);
+    const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', mock.MOCK_LEGENDARY_BADGES, []);
+    const [gamificationSettings, setGamificationSettings, loadingGamification] = useCollection<GamificationRule>('gamificationSettings', mock.MOCK_GAMIFICATION_SETTINGS, []);
+    const [sponsors, setSponsors, loadingSponsors] = useCollection<Sponsor>('sponsors', mock.MOCK_SPONSORS, []);
+    const [vouchers, setVouchers, loadingVouchers] = useCollection<Voucher>('vouchers', mock.MOCK_VOUCHERS, []);
+    const [inventory, setInventory, loadingInventory] = useCollection<InventoryItem>('inventory', mock.MOCK_INVENTORY, []);
+    const [suppliers, setSuppliers, loadingSuppliers] = useCollection<Supplier>('suppliers', mock.MOCK_SUPPLIERS, []);
+    const [transactions, setTransactions, loadingTransactions] = useCollection<Transaction>('transactions', mock.MOCK_TRANSACTIONS, []);
+    const [locations, setLocations, loadingLocations] = useCollection<Location>('locations', mock.MOCK_LOCATIONS, []);
+    const [raffles, setRaffles, loadingRaffles] = useCollection<Raffle>('raffles', mock.MOCK_RAFFLES, []);
     const [companyDetails, setCompanyDetails, loadingCompanyDetails] = useDocument<CompanyDetails>('settings', 'companyDetails', mock.MOCK_COMPANY_DETAILS);
     const [isSeeding, setIsSeeding] = useState(false);
 
@@ -185,9 +185,29 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
     const deleteAllData = async () => {
-        if (!USE_FIREBASE || !db) return;
+        if (!USE_FIREBASE || !db) {
+            // Mock mode: reset states to their initial values and clear any old local storage.
+            console.log("Resetting all mock transactional data in memory...");
+            if (typeof window !== 'undefined') {
+                Object.keys(window.localStorage).forEach(key => {
+                    if (key.startsWith('mock_')) {
+                        window.localStorage.removeItem(key);
+                    }
+                });
+            }
+            setPlayers(mock.MOCK_PLAYERS);
+            setEvents(mock.MOCK_EVENTS);
+            setVouchers(mock.MOCK_VOUCHERS);
+            setInventory(mock.MOCK_INVENTORY);
+            setTransactions(mock.MOCK_TRANSACTIONS);
+            setRaffles(mock.MOCK_RAFFLES);
+            setSuppliers(mock.MOCK_SUPPLIERS);
+            setSponsors(mock.MOCK_SPONSORS);
+            setLocations(mock.MOCK_LOCATIONS);
+            return;
+        }
         
-        const collectionsToDelete = ['players', 'events', 'vouchers', 'inventory', 'transactions', 'raffles', 'suppliers'];
+        const collectionsToDelete = ['players', 'events', 'vouchers', 'inventory', 'transactions', 'raffles', 'suppliers', 'sponsors', 'locations'];
         
         try {
             console.log("Deleting all transactional data...");

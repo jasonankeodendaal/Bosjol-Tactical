@@ -109,9 +109,9 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
         setIsEditing(false);
     };
     
-    const handleAvatarUpload = (base64s: string[]) => {
-        if (base64s.length > 0) {
-            setFormData(f => ({ ...f, avatarUrl: base64s[0] }));
+    const handleAvatarUpload = (urls: string[]) => {
+        if (urls.length > 0) {
+            setFormData(f => ({ ...f, avatarUrl: urls[0] }));
         }
     };
 

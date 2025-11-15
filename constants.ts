@@ -655,7 +655,6 @@ export const MOCK_COMPANY_DETAILS: CompanyDetails = {
     playerDashboardBackgroundUrl: '',
     adminDashboardBackgroundUrl: '',
     apkUrl: '',
-    apiServerUrl: '',
     minimumSignupAge: 18,
     bankInfo: {
         bankName: 'Global Trust Bank',

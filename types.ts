@@ -329,7 +329,6 @@ export interface CompanyDetails {
     playerDashboardBackgroundUrl?: string;
     adminDashboardBackgroundUrl?: string;
     apkUrl?: string;
-    apiServerUrl?: string;
     bankInfo: {
         bankName: string;
         accountNumber: string;

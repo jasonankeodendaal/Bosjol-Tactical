@@ -663,9 +663,9 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
         setIsDirty(hasChanged);
     }, [formData, player]);
 
-    const handleAvatarUpload = (base64s: string[]) => {
-        if (base64s.length > 0) {
-            onPlayerUpdate({ ...player, avatarUrl: base64s[0] });
+    const handleAvatarUpload = (urls: string[]) => {
+        if (urls.length > 0) {
+            onPlayerUpdate({ ...player, avatarUrl: urls[0] });
         }
         setIsUploading(false);
     };

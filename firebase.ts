@@ -1,6 +1,7 @@
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
+import 'firebase/compat/storage';
 
 // Helper to get environment variables from either Vite's `import.meta.env` or a Node-like `process.env`.
 // This provides compatibility for both the AI Studio preview environment and a standard Vite deployment.
@@ -41,7 +42,8 @@ export const isFirebaseConfigured = () => {
     return !!(
         firebaseConfig.apiKey &&
         firebaseConfig.authDomain &&
-        firebaseConfig.projectId
+        firebaseConfig.projectId &&
+        firebaseConfig.storageBucket
     );
 };
 
@@ -67,5 +69,20 @@ try {
 
 export const auth = app ? firebase.auth() : null;
 export const db = app ? firebase.firestore() : null;
+export const storage = app ? firebase.storage() : null;
+
+export const uploadFile = async (file: Blob, originalName: string, path: string = 'uploads'): Promise<string> => {
+    if (!storage) {
+        throw new Error("Firebase Storage is not initialized.");
+    }
+    const fileExtension = originalName.split('.').pop() || 'bin';
+    const randomString = Math.random().toString(36).substring(2);
+    const fileName = `${Date.now()}-${randomString}.${fileExtension}`;
+    
+    const storageRef = storage.ref(`${path}/${fileName}`);
+    const snapshot = await storageRef.put(file);
+    const downloadURL = await snapshot.ref.getDownloadURL();
+    return downloadURL;
+};
 
 export { firebase };

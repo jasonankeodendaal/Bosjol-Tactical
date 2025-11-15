@@ -1,16 +1,16 @@
 /** @jsxImportSource react */
 import React, { useState, useRef, useCallback } from 'react';
 import { UploadCloudIcon } from './icons/Icons';
+import { uploadFile } from '../firebase';
 
 interface FileUploadProps {
   onUpload: (urls: string[]) => void;
   accept: string;
   multiple?: boolean;
   onProgress?: (percent: number) => void;
-  apiServerUrl?: string; // New prop for the custom API server
 }
 
-const compressImage = (file: File, maxSizeKB: number = 200): Promise<string> => {
+const compressImage = (file: File, maxSizeKB: number = 200): Promise<Blob> => {
     return new Promise((resolve, reject) => {
         const MAX_WIDTH = 1920;
         const reader = new FileReader();
@@ -34,13 +34,18 @@ const compressImage = (file: File, maxSizeKB: number = 200): Promise<string> => 
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return reject(new Error('Could not get canvas context.'));
                 ctx.drawImage(img, 0, 0, width, height);
-                const performCompression = (quality: number): string => {
-                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
-                    const sizeInBytes = Math.floor(dataUrl.length * (3/4));
-                    if (sizeInBytes / 1024 <= maxSizeKB || quality <= 0.1) return dataUrl;
-                    return performCompression(quality - 0.1);
+                
+                const performCompression = (quality: number) => {
+                    canvas.toBlob((blob) => {
+                        if (!blob) return reject(new Error('Canvas to Blob failed.'));
+                        if (blob.size / 1024 <= maxSizeKB || quality <= 0.1) {
+                            resolve(blob);
+                        } else {
+                            performCompression(quality - 0.1);
+                        }
+                    }, 'image/jpeg', quality);
                 };
-                resolve(performCompression(0.9));
+                performCompression(0.9);
             };
             img.onerror = (err) => reject(new Error(`Image load error: ${err}`));
         };
@@ -48,17 +53,7 @@ const compressImage = (file: File, maxSizeKB: number = 200): Promise<string> => 
     });
 };
 
-// FIX: Changed the type of the 'file' parameter from 'File' to 'Blob' to correctly handle the compressed audio blob.
-const fileToBase64 = (file: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = error => reject(error);
-    });
-};
-
-const compressAudio = (file: File, targetBitrate: number = 64000): Promise<string> => {
+const compressAudio = (file: File, targetBitrate: number = 64000): Promise<Blob> => {
     return new Promise(async (resolve, reject) => {
         try {
             // @ts-ignore
@@ -73,11 +68,11 @@ const compressAudio = (file: File, targetBitrate: number = 64000): Promise<strin
             
             const mimeType = 'audio/webm;codecs=opus';
             if (!MediaRecorder.isTypeSupported(mimeType)) {
-                console.warn(`${mimeType} is not supported. Falling back to base64 encoding without compression.`);
+                console.warn(`${mimeType} is not supported. Falling back to original file.`);
                 if (file.size > 500 * 1024) {
                     return reject(new Error(`Audio file is too large (${(file.size / 1024).toFixed(0)}KB) and your browser doesn't support compression. Please keep audio under 500KB.`));
                 }
-                return resolve(await fileToBase64(file));
+                return resolve(file);
             }
 
             const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream, {
@@ -98,9 +93,7 @@ const compressAudio = (file: File, targetBitrate: number = 64000): Promise<strin
                 if (compressedBlob.size > 500 * 1024) {
                      return reject(new Error(`Even after compression, the audio file is too large (${(compressedBlob.size / 1024).toFixed(0)}KB). Please upload a shorter audio clip.`));
                 }
-
-                const base64String = await fileToBase64(compressedBlob);
-                resolve(base64String);
+                resolve(compressedBlob);
                 await audioCtx.close();
             };
 
@@ -113,38 +106,16 @@ const compressAudio = (file: File, targetBitrate: number = 64000): Promise<strin
 
         } catch (error) {
             console.error("Audio compression failed:", error);
-            console.warn("Falling back to base64 encoding without compression due to an error.");
+            console.warn("Falling back to original file due to an error.");
             if (file.size > 500 * 1024) {
                 return reject(new Error(`Audio processing failed. The original file is too large (${(file.size / 1024).toFixed(0)}KB). Please keep audio under 500KB.`));
             }
-            resolve(await fileToBase64(file));
+            resolve(file);
         }
     });
 };
 
-
-const uploadToServer = async (file: File, apiServerUrl: string): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch(`${apiServerUrl}/upload`, {
-        method: 'POST',
-        body: formData,
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server upload failed: ${response.status} ${errorText}`);
-    }
-
-    const result = await response.json();
-    if (!result.url) {
-        throw new Error('Server response did not include a file URL.');
-    }
-    return result.url;
-};
-
-export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, onProgress, apiServerUrl }) => {
+export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, onProgress }) => {
   const [fileName, setFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -159,23 +130,20 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
 
     for (const file of filesArray) {
         try {
-            if (apiServerUrl) {
-                // API Mode: Upload directly to the server
-                results.push(await uploadToServer(file, apiServerUrl));
-            } else {
-                // Fallback Mode: Client-side processing
-                if (file.type.startsWith('image/')) {
-                    // Compress images to save space
-                    results.push(await compressImage(file));
-                } else if (file.type.startsWith('audio/')) {
-                    // Compress audio to a smaller size before converting to base64
-                    results.push(await compressAudio(file));
-                } else {
-                    // Block other file types like video
-                    alert(`Cannot upload "${file.name}". Video and other large file types require setting up an External API Server to avoid exceeding database limits. This upload will be skipped.`);
-                    continue; // Skip this file
-                }
+            let fileToUpload: Blob = file;
+
+            if (file.type.startsWith('image/')) {
+                fileToUpload = await compressImage(file);
+            } else if (file.type.startsWith('audio/')) {
+                fileToUpload = await compressAudio(file);
+            } else if (file.size > 25 * 1024 * 1024) { // 25MB limit for other files like video
+                 alert(`Cannot upload "${file.name}". Files larger than 25MB are not supported for direct upload.`);
+                 continue;
             }
+            
+            const url = await uploadFile(fileToUpload, file.name);
+            results.push(url);
+
         } catch (err) {
             console.error(`Failed to process file ${file.name}:`, err);
             alert(`Error processing "${file.name}": ${(err as Error).message}`);
@@ -192,7 +160,7 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
     // Reset file input to allow re-uploading the same file
     if (fileInputRef.current) fileInputRef.current.value = "";
     
-}, [onUpload, multiple, onProgress, apiServerUrl]);
+}, [onUpload, multiple, onProgress]);
 
   const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       handleFilesChange(event.target.files);

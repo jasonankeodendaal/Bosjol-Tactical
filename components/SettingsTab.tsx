@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import type { CompanyDetails, SocialLink, CarouselMedia } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -49,8 +50,7 @@ const FileUploadField: React.FC<{
     onRemove: () => void;
     accept: string;
     previewType?: 'image' | 'audio';
-    apiServerUrl?: string;
-}> = ({ label, fileUrl, onUpload, onRemove, accept, previewType = 'image', apiServerUrl }) => {
+}> = ({ label, fileUrl, onUpload, onRemove, accept, previewType = 'image' }) => {
     const previewContent = () => {
         if (!fileUrl) return null;
         switch (previewType) {
@@ -79,7 +79,7 @@ const FileUploadField: React.FC<{
                     </Button>
                 </div>
             ) : (
-                <ImageUpload onUpload={(urls) => { if(urls.length > 0) onUpload(urls[0]); }} accept={accept} apiServerUrl={apiServerUrl} />
+                <ImageUpload onUpload={(urls) => { if(urls.length > 0) onUpload(urls[0]); }} accept={accept} />
             )}
         </div>
     );
@@ -174,7 +174,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const handleCarouselMediaUpload = (urls: string[]) => {
         const newMedia = urls.map(url => ({
             id: `temp_${Date.now()}-${Math.random()}`,
-            type: url.startsWith('data:video') ? 'video' as const : 'image' as const,
+            type: url.includes('.mp4') || url.includes('.webm') ? 'video' as const : 'image' as const, // Simple check based on extension in url
             url: url
         }));
         setCarouselMediaData(prev => [...prev, ...newMedia]);

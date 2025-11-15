@@ -147,12 +147,6 @@ export interface RentalSignup {
     note?: string;
 }
 
-export interface CustomEventXpRule {
-    id: string;
-    name: string;
-    xp: number;
-}
-
 export interface GameEvent {
   id: string;
   title: string;
@@ -176,14 +170,6 @@ export interface GameEvent {
     bravo: string[];
   };
   xpOverrides?: Partial<Record<string, number>>; // { [ruleId]: newXpValue }
-  customXpRules?: CustomEventXpRule[];
-  awardedCustomXp?: {
-      [playerId: string]: {
-          ruleId: string;
-          ruleName: string;
-          xp: number;
-      }[];
-  };
   rentalSignups?: RentalSignup[];
   liveStats?: Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>>;
   gameDurationSeconds?: number;

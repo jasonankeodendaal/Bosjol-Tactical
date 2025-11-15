@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Rank, Badge, LegendaryBadge, Raffle } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -37,9 +37,6 @@ interface PlayerDashboardProps {
 }
 
 type Tab = 'Overview' | 'Events' | 'Raffles' | 'Stats' | 'Achievements' | 'Leaderboard' | 'Settings';
-
-const TABS: Tab[] = ['Overview', 'Events', 'Raffles', 'Stats', 'Achievements', 'Leaderboard', 'Settings'];
-
 
 const ProgressBar: React.FC<{ value: number; max: number; isThin?: boolean }> = ({ value, max, isThin=false }) => {
     const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -823,9 +820,7 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'raffles' | 'pl
                                 <h4 className="font-bold text-lg text-white">{raffle.name}</h4>
                                 <p className="text-xs text-gray-500 mb-3">Drawn on {new Date(raffle.drawDate).toLocaleDateString()}</p>
                                 <div className="space-y-2">
-{/* FIX: Replaced `r` with `raffle` to reference the correct variable in the map loop. */}
                                     {raffle.winners.length > 0 ? raffle.prizes.sort((a, b) => a.place - b.place).map(prize => {
-{/* FIX: Replaced `r` with `raffle` to reference the correct variable in the map loop. */}
                                         const winner = raffle.winners.find(w => w.prizeId === prize.id);
                                         const winnerPlayer = winner ? players.find(p => p.id === winner.playerId) : null;
                                         return (
@@ -849,66 +844,30 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'raffles' | 'pl
 
 export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, players, sponsors, onPlayerUpdate, events, onEventSignUp, legendaryBadges, raffles, ranks }) => {
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
-    const [direction, setDirection] = useState(0);
-    const prevTabRef = useRef<Tab>('Overview');
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab') as Tab | null;
-        if (tab && TABS.includes(tab)) {
+        const validTabs: Tab[] = ['Overview', 'Events', 'Raffles', 'Stats', 'Achievements', 'Leaderboard', 'Settings'];
+        if (tab && validTabs.includes(tab)) {
             setActiveTab(tab);
         }
     }, []);
 
-    useEffect(() => {
-        const oldIndex = TABS.indexOf(prevTabRef.current);
-        const newIndex = TABS.indexOf(activeTab);
-        setDirection(newIndex > oldIndex ? 1 : -1);
-        prevTabRef.current = activeTab;
-    }, [activeTab]);
-
     const helpTopic = `player-dashboard-${activeTab.toLowerCase()}`;
-
-    const variants = {
-        enter: (direction: number) => ({ x: direction > 0 ? '100%' : '-100%', opacity: 0 }),
-        center: { x: 0, opacity: 1 },
-        exit: (direction: number) => ({ x: direction < 0 ? '100%' : '-100%', opacity: 0 }),
-    };
-
-
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'Overview': return <OverviewTab player={player} events={events} sponsors={sponsors} ranks={ranks} />;
-            case 'Events': return <EventsTab player={player} events={events} onEventSignUp={onEventSignUp} />;
-            case 'Raffles': return <RafflesTab player={player} raffles={raffles} players={players} />;
-            case 'Stats': return <StatsTab player={player} events={events} />;
-            case 'Achievements': return <AchievementsTab player={player} ranks={ranks} />;
-            case 'Leaderboard': return <LeaderboardTab player={player} players={players} />;
-            case 'Settings': return <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />;
-            default: return null;
-        }
-    };
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             <HelpSystem topic={helpTopic} />
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             
-            <div className="relative overflow-x-hidden">
-                <AnimatePresence initial={false} custom={direction} mode="wait">
-                    <motion.div
-                        key={activeTab}
-                        custom={direction}
-                        variants={variants}
-                        initial="enter"
-                        animate="center"
-                        exit="exit"
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    >
-                        {renderContent()}
-                    </motion.div>
-                </AnimatePresence>
-            </div>
+            {activeTab === 'Overview' && <OverviewTab player={player} events={events} sponsors={sponsors} ranks={ranks} />}
+            {activeTab === 'Events' && <EventsTab player={player} events={events} onEventSignUp={onEventSignUp} />}
+            {activeTab === 'Raffles' && <RafflesTab player={player} raffles={raffles} players={players} />}
+            {activeTab === 'Stats' && <StatsTab player={player} events={events} />}
+            {activeTab === 'Achievements' && <AchievementsTab player={player} ranks={ranks} />}
+            {activeTab === 'Leaderboard' && <LeaderboardTab player={player} players={players} />}
+            {activeTab === 'Settings' && <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />}
         </div>
     );
 };

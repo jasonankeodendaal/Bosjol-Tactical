@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 // FIX: Add EventAttendee to the type imports to resolve error on line 76.
-import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee, XpAdjustment, CustomEventXpRule } from '../types';
+import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 // FIX: Add CurrencyDollarIcon to the icon imports to resolve error on line 333.
-import { ArrowLeftIcon, CalendarIcon, UserIcon, TrashIcon, CheckCircleIcon, CreditCardIcon, PlusIcon, ChartBarIcon, ExclamationTriangleIcon, TrophyIcon, MinusIcon, CurrencyDollarIcon, PlusCircleIcon, PencilIcon, XIcon } from './icons/Icons';
+import { ArrowLeftIcon, CalendarIcon, UserIcon, TrashIcon, CheckCircleIcon, CreditCardIcon, PlusIcon, ChartBarIcon, ExclamationTriangleIcon, TrophyIcon, MinusIcon, CurrencyDollarIcon } from './icons/Icons';
 import { MOCK_EVENT_THEMES, EVENT_STATUSES, EVENT_TYPES } from '../constants';
 import { ImageUpload } from './ImageUpload';
 import { BadgePill } from './BadgePill';
 import { InfoTooltip } from './InfoTooltip';
 import { HelpSystem } from './Help';
-import { Modal } from './Modal';
 
 interface ManageEventPageProps {
     event?: GameEvent;
@@ -43,8 +42,6 @@ const defaultEvent: Omit<GameEvent, 'id'> = {
     gearForRent: [],
     rentalSignups: [],
     liveStats: {},
-    customXpRules: [],
-    awardedCustomXp: {},
 };
 
 export const ManageEventPage: React.FC<ManageEventPageProps> = ({
@@ -54,13 +51,10 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
         if (!event) return defaultEvent;
         // Ensure date is in 'YYYY-MM-DD' format for the input
         const date = new Date(event.date).toISOString().split('T')[0];
-        return { ...defaultEvent, ...event, date };
+        return { ...event, date };
     });
     
     const [liveStats, setLiveStats] = useState<Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>>>(event?.liveStats || {});
-    const [editingCustomRule, setEditingCustomRule] = useState<Partial<CustomEventXpRule> | null>(null);
-    const [awardingXpToPlayer, setAwardingXpToPlayer] = useState<Player | null>(null);
-
 
     const signedUpPlayersDetails = useMemo(() =>
         players.filter(p => formData.signedUpPlayers.includes(p.id)),
@@ -130,11 +124,6 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             xpGained += (playerLiveStats.kills || 0) * getXp('g_kill');
             xpGained += (playerLiveStats.headshots || 0) * getXp('g_headshot');
             xpGained += (playerLiveStats.deaths || 0) * getXp('g_death'); // Usually negative
-
-            // Add custom XP
-            const awardedXpForPlayer = formData.awardedCustomXp?.[player.id] || [];
-            const customXpTotal = awardedXpForPlayer.reduce((sum, award) => sum + award.xp, 0);
-            xpGained += customXpTotal;
             
             // Add financial transactions for this player
             if (attendeeInfo.paymentStatus.startsWith('Paid')) {
@@ -176,12 +165,6 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                     headshots: playerLiveStats.headshots || 0,
                 }
             };
-             // Add xpAdjustments for custom awards
-            const customXpAdjustments: XpAdjustment[] = awardedXpForPlayer.map(award => ({
-                amount: award.xp,
-                reason: `"${award.ruleName}" objective in "${formData.title}"`,
-                date: new Date().toISOString(),
-            }));
             
             return {
                 ...player,
@@ -193,7 +176,6 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                     headshots: player.stats.headshots + (playerLiveStats.headshots || 0),
                     gamesPlayed: player.stats.gamesPlayed + 1,
                 },
-                xpAdjustments: [...player.xpAdjustments, ...customXpAdjustments],
                 matchHistory: [...player.matchHistory, newMatchRecord]
             };
         });
@@ -223,73 +205,9 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
         onSave(eventData);
     };
 
-     const handleSaveCustomRule = (rule: CustomEventXpRule) => {
-        setFormData(prev => {
-            const existingRules = prev.customXpRules || [];
-            const index = existingRules.findIndex(r => r.id === rule.id);
-            if (index > -1) {
-                const newRules = [...existingRules];
-                newRules[index] = rule;
-                return { ...prev, customXpRules: newRules };
-            }
-            return { ...prev, customXpRules: [...existingRules, rule] };
-        });
-        setEditingCustomRule(null);
-    };
-
-    const handleDeleteCustomRule = (ruleId: string) => {
-        if (confirm('Are you sure you want to delete this custom rule?')) {
-            setFormData(prev => ({
-                ...prev,
-                customXpRules: (prev.customXpRules || []).filter(r => r.id !== ruleId)
-            }));
-        }
-    };
-
-    const handleAwardRule = (player: Player, rule: CustomEventXpRule) => {
-        setFormData(prev => {
-            const newAwards = { ...(prev.awardedCustomXp || {}) };
-            const playerAwards = newAwards[player.id] || [];
-            newAwards[player.id] = [...playerAwards, { ruleId: rule.id, ruleName: rule.name, xp: rule.xp }];
-            return { ...prev, awardedCustomXp: newAwards };
-        });
-    };
-    
-    const handleRemoveAwardedXp = (playerId: string, awardIndex: number) => {
-        setFormData(prev => {
-            const newAwardedCustomXp = { ...prev.awardedCustomXp };
-            if (newAwardedCustomXp[playerId]) {
-                newAwardedCustomXp[playerId] = newAwardedCustomXp[playerId].filter((_, index) => index !== awardIndex);
-            }
-            return { ...prev, awardedCustomXp: newAwardedCustomXp };
-        });
-    };
-
-
-    const handleAwardManualXp = (player: Player, amount: number, reason: string) => {
-        const newAdjustment: XpAdjustment = {
-            amount,
-            reason: `Manual award during "${formData.title}": ${reason}`,
-            date: new Date().toISOString(),
-        };
-        const updatedPlayer: Player = {
-            ...player,
-            stats: {
-                ...player.stats,
-                xp: player.stats.xp + amount,
-            },
-            xpAdjustments: [...(player.xpAdjustments || []), newAdjustment],
-        };
-        setPlayers(prevPlayers => prevPlayers.map(p => p.id === updatedPlayer.id ? updatedPlayer : p));
-        setAwardingXpToPlayer(null);
-    };
-
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             <HelpSystem topic="admin-manage-event" />
-             {editingCustomRule && <CustomRuleEditorModal rule={editingCustomRule} onClose={() => setEditingCustomRule(null)} onSave={handleSaveCustomRule} />}
-             {awardingXpToPlayer && <AwardXpToPlayerModal player={awardingXpToPlayer} customRules={formData.customXpRules || []} onClose={() => setAwardingXpToPlayer(null)} onAwardRule={(rule) => handleAwardRule(awardingXpToPlayer, rule)} onAwardManual={handleAwardManualXp} />}
-
             <header className="flex items-center mb-6">
                 <Button onClick={onBack} variant="secondary" size="sm" className="mr-4">
                     <ArrowLeftIcon className="w-5 h-5" />
@@ -349,59 +267,20 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             </div>
                         </div>
                     </DashboardCard>
-                    
-                    <DashboardCard title="Custom XP Rules" icon={<PlusCircleIcon className="w-6 h-6" />}>
-                        <div className="p-6 space-y-3">
-                            <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                                {(formData.customXpRules || []).map(rule => (
-                                    <div key={rule.id} className="flex items-center justify-between gap-4 bg-zinc-800/50 p-3 rounded-lg">
-                                        <div>
-                                            <p className="font-bold text-white">{rule.name}</p>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <p className={`font-bold text-lg ${rule.xp >= 0 ? 'text-green-400' : 'text-red-400'}`}>{rule.xp >= 0 ? '+' : ''}{rule.xp} XP</p>
-                                            <Button size="sm" variant="secondary" onClick={() => setEditingCustomRule(rule)} className="!p-2"><PencilIcon className="w-4 h-4" /></Button>
-                                            <Button size="sm" variant="danger" onClick={() => handleDeleteCustomRule(rule.id)} className="!p-2"><TrashIcon className="w-4 h-4" /></Button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <Button onClick={() => setEditingCustomRule({})} size="sm" variant="secondary" className="w-full">
-                                <PlusIcon className="w-4 h-4 mr-2" />Add Custom Rule
-                            </Button>
-                        </div>
-                    </DashboardCard>
 
                     {event && formData.status === 'In Progress' && (
                          <DashboardCard title="Live Game Stats" icon={<ChartBarIcon className="w-6 h-6"/>}>
                              <div className="p-4 max-h-96 overflow-y-auto">
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     {attendeesDetails.map(player => (
-                                        <div key={player.id} className="bg-zinc-800/50 p-3 rounded-lg">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <img src={player.avatarUrl} alt={player.name} className="w-10 h-10 rounded-full object-cover"/>
-                                                <p className="font-semibold text-white flex-grow">{player.name}</p>
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <Input type="number" value={liveStats[player.id]?.kills || 0} onChange={e => handleStatChange(player.id, 'kills', Number(e.target.value))} className="w-20 text-center" label="Kills"/>
-                                                    <Input type="number" value={liveStats[player.id]?.deaths || 0} onChange={e => handleStatChange(player.id, 'deaths', Number(e.target.value))} className="w-20 text-center" label="Deaths"/>
-                                                    <Input type="number" value={liveStats[player.id]?.headshots || 0} onChange={e => handleStatChange(player.id, 'headshots', Number(e.target.value))} className="w-20 text-center" label="HS"/>
-                                                    <Button size="sm" variant="secondary" onClick={() => setAwardingXpToPlayer(player)}>+ Award XP</Button>
-                                                </div>
+                                        <div key={player.id} className="bg-zinc-800/50 p-3 rounded-lg flex items-center gap-4">
+                                            <img src={player.avatarUrl} alt={player.name} className="w-10 h-10 rounded-full object-cover"/>
+                                            <p className="font-semibold text-white flex-grow">{player.name}</p>
+                                            <div className="flex items-center gap-2">
+                                                <Input type="number" value={liveStats[player.id]?.kills || 0} onChange={e => handleStatChange(player.id, 'kills', Number(e.target.value))} className="w-20 text-center" label="Kills"/>
+                                                <Input type="number" value={liveStats[player.id]?.deaths || 0} onChange={e => handleStatChange(player.id, 'deaths', Number(e.target.value))} className="w-20 text-center" label="Deaths"/>
+                                                <Input type="number" value={liveStats[player.id]?.headshots || 0} onChange={e => handleStatChange(player.id, 'headshots', Number(e.target.value))} className="w-20 text-center" label="HS"/>
                                             </div>
-                                             {(formData.awardedCustomXp?.[player.id] || []).length > 0 && (
-                                                <div className="mt-2 pt-2 border-t border-zinc-700/50">
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {formData.awardedCustomXp![player.id].map((award, index) => (
-                                                            <div key={index} className="relative group">
-                                                                <BadgePill color="blue">{award.ruleName} (+{award.xp} XP)</BadgePill>
-                                                                <button onClick={() => handleRemoveAwardedXp(player.id, index)} className="absolute -top-1 -right-1 bg-red-600 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <XIcon className="w-3 h-3 text-white"/>
-                                                                </button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -488,68 +367,5 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                 </Button>
             </div>
         </div>
-    );
-};
-
-const CustomRuleEditorModal: React.FC<{ rule: Partial<CustomEventXpRule>, onClose: () => void, onSave: (rule: CustomEventXpRule) => void }> = ({ rule, onClose, onSave }) => {
-    const [formData, setFormData] = useState({
-        name: rule.name || '',
-        xp: rule.xp === undefined ? 0 : rule.xp,
-    });
-
-    const handleSave = () => {
-        onSave({ id: rule.id || `cr${Date.now()}`, ...formData });
-    };
-
-    return (
-        <Modal isOpen={true} onClose={onClose} title={rule.id ? 'Edit Rule' : 'Add Rule'}>
-            <div className="space-y-4">
-                <Input label="Rule Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} placeholder="e.g., Capture the Flag" />
-                <Input label="XP Value" type="number" value={formData.xp} onChange={e => setFormData(f => ({ ...f, xp: Number(e.target.value) }))} />
-            </div>
-            <div className="mt-6">
-                <Button onClick={handleSave} className="w-full">Save Rule</Button>
-            </div>
-        </Modal>
-    );
-};
-
-const AwardXpToPlayerModal: React.FC<{ player: Player, customRules: CustomEventXpRule[], onClose: () => void, onAwardRule: (rule: CustomEventXpRule) => void, onAwardManual: (player: Player, amount: number, reason: string) => void }> = ({ player, customRules, onClose, onAwardRule, onAwardManual }) => {
-    const [manualAmount, setManualAmount] = useState<number | ''>('');
-    const [manualReason, setManualReason] = useState('');
-
-    const handleManualSave = () => {
-        if (typeof manualAmount === 'number' && manualReason.trim()) {
-            onAwardManual(player, manualAmount, manualReason);
-        } else {
-            alert('Please enter an amount and a reason for the manual award.');
-        }
-    };
-
-    return (
-        <Modal isOpen={true} onClose={onClose} title={`Award XP to ${player.name}`}>
-            <div className="space-y-6">
-                <div>
-                    <h4 className="font-semibold text-gray-200 mb-2 text-lg">Award Objective</h4>
-                    <div className="flex flex-wrap gap-2">
-                        {customRules.map(rule => (
-                            <Button key={rule.id} variant="secondary" size="sm" onClick={() => onAwardRule(rule)}>
-                                {rule.name} <span className={`ml-2 font-bold ${rule.xp >= 0 ? 'text-green-400' : 'text-red-400'}`}>{rule.xp >= 0 ? '+' : ''}{rule.xp}</span>
-                            </Button>
-                        ))}
-                         {customRules.length === 0 && <p className="text-sm text-gray-500">No custom rules defined for this event.</p>}
-                    </div>
-                </div>
-                <div className="pt-6 border-t border-zinc-700/50">
-                     <h4 className="font-semibold text-gray-200 mb-2 text-lg">Manual Adjustment</h4>
-                     <p className="text-sm text-gray-400 mb-3">Use this for on-the-spot bonuses or penalties. This adjustment is applied immediately.</p>
-                     <div className="space-y-4">
-                        <Input label="XP Amount" type="number" value={manualAmount} onChange={e => setManualAmount(e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g. 50 or -20"/>
-                        <Input label="Reason" value={manualReason} onChange={e => setManualReason(e.target.value)} placeholder="e.g. Good sportsmanship"/>
-                        <Button onClick={handleManualSave} className="w-full">Save Manual Award</Button>
-                     </div>
-                </div>
-            </div>
-        </Modal>
     );
 };

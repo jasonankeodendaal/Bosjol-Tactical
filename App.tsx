@@ -353,15 +353,15 @@ const AppContent: React.FC = () => {
         );
     }
 
+    if (loading) {
+        return <Loader />;
+    }
+
     if (!isAuthenticated || !user) {
         if (showFrontPage) {
             return <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} />;
         }
         return <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />;
-    }
-
-    if (loading) {
-        return <Loader />;
     }
 
     const dashboardBackground = user.role === 'admin' 

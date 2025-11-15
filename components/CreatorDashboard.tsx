@@ -6,6 +6,7 @@ import { Input } from './Input';
 import { ImageUpload } from './ImageUpload';
 import { UserCircleIcon, AtSymbolIcon, CodeBracketIcon } from './icons/Icons';
 import { DataContext } from '../data/DataContext';
+import { SystemScanner } from './SystemScanner';
 
 export const CreatorDashboard: React.FC = () => {
     const dataContext = useContext(DataContext);
@@ -74,6 +75,8 @@ export const CreatorDashboard: React.FC = () => {
                          <p className="text-xs text-gray-400 mt-2">This link will be displayed on the Admin's API Setup page to allow them to download the server source code.</p>
                     </div>
                 </DashboardCard>
+
+                <SystemScanner />
 
                 <div className="mt-6">
                     <Button onClick={handleSave} disabled={!isDirty || isSaving} className="w-full py-3 text-lg">

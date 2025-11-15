@@ -115,9 +115,8 @@ export const FrontPage: React.FC<{
     companyDetails: CompanyDetails,
     socialLinks: SocialLink[],
     carouselMedia: CarouselMedia[],
-    onEnter: () => void,
-    onCreatorClick: () => void
-}> = ({ companyDetails, socialLinks, carouselMedia, onEnter, onCreatorClick }) => {
+    onEnter: () => void
+}> = ({ companyDetails, socialLinks, carouselMedia, onEnter }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showInfoModal, setShowInfoModal] = useState(false);
     
@@ -211,19 +210,6 @@ export const FrontPage: React.FC<{
                     />
                 ))}
             </div>
-            <motion.button
-                onClick={onCreatorClick}
-                initial={{ opacity: 0, y: 50, scale: 0.5 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.5, delay: 1.5, type: 'spring' }}
-                whileHover={{ scale: 1.1, rotate: 15 }}
-                whileTap={{ scale: 0.9 }}
-                className="fixed bottom-5 right-5 z-20 bg-zinc-900/80 backdrop-blur-sm p-2 rounded-full shadow-lg border border-zinc-700"
-                title="Creator Information"
-                aria-label="Open creator information"
-            >
-                <img src="https://i.ibb.co/0phm4WG/image-removebg-preview.png" alt="Creator Icon" className="w-10 h-10" />
-            </motion.button>
         </div>
     );
 };

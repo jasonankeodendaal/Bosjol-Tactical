@@ -1,5 +1,6 @@
 
 
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -114,46 +115,77 @@ const CreatorPopup: React.FC<{
         </motion.div>
     );
 };
-// --- END Creator Popup ---
 
-const Footer: React.FC<{ 
-    details: CompanyDetails, 
+const PublicPageFloatingIcons: React.FC<{
     socialLinks: SocialLink[],
-    creatorDetails: CreatorDetails,
     onHelpClick: () => void,
     onCreatorClick: () => void,
-}> = ({ details, socialLinks, creatorDetails, onHelpClick, onCreatorClick }) => (
-    <footer className="fixed bottom-0 left-0 right-0 bg-zinc-950/80 backdrop-blur-sm border-t border-zinc-800 py-2 px-4 text-center text-xs text-gray-500 z-40">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <motion.button
-                onClick={onHelpClick}
-                whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.95 }}
-                className="p-2" title="Help" aria-label="Open help menu"
-            >
-                <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Help Icon" className="w-8 h-8 object-contain" />
-            </motion.button>
+}> = ({ socialLinks, onHelpClick, onCreatorClick }) => (
+    <>
+        {/* Help Icon */}
+        <motion.button
+            onClick={onHelpClick}
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 1, type: 'spring' }}
+            whileHover={{ scale: 1.1, rotate: -15 }}
+            whileTap={{ scale: 0.9 }}
+            className="fixed bottom-5 left-5 z-20 bg-zinc-900/80 backdrop-blur-sm p-2 rounded-full shadow-lg border border-zinc-700"
+            title="Help"
+            aria-label="Open help menu"
+        >
+            <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Help Icon" className="w-10 h-10" />
+        </motion.button>
 
-            <div className="hidden sm:flex items-center gap-4">
-                 {socialLinks.map(link => (
-                    <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-colors">
-                        <img src={link.iconUrl} alt={link.name} className="h-5 w-5 object-contain"/>
+        {/* Social Icons */}
+        {socialLinks.length > 0 && (
+            <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 1.2, type: 'spring' }}
+                className="fixed bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4 bg-zinc-900/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-zinc-700"
+            >
+                {socialLinks.map(link => (
+                    <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-transform transform hover:scale-110">
+                        <img src={link.iconUrl} alt={link.name} className="h-6 w-6 object-contain"/>
                     </a>
                 ))}
-            </div>
+            </motion.div>
+        )}
 
-            <div className="flex items-center gap-3">
-                 <StorageStatusIndicator apiServerUrl={details.apiServerUrl} />
-                 <motion.button
-                    onClick={onCreatorClick}
-                    whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.95 }}
-                    className="p-1" title="Creator Information" aria-label="Open creator information"
-                >
-                    <img src="https://i.ibb.co/0phm4WG/image-removebg-preview.png" alt="Creator Icon" className="w-8 h-8 rounded-full" />
-                </motion.button>
+        {/* Creator Icon */}
+        <motion.button
+            onClick={onCreatorClick}
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 1, type: 'spring' }}
+            whileHover={{ scale: 1.1, rotate: 15 }}
+            whileTap={{ scale: 0.9 }}
+            className="fixed bottom-5 right-5 z-20 bg-zinc-900/80 backdrop-blur-sm p-2 rounded-full shadow-lg border border-zinc-700"
+            title="Creator Information"
+            aria-label="Open creator information"
+        >
+            <img src="https://i.ibb.co/0phm4WG/image-removebg-preview.png" alt="Creator Icon" className="w-10 h-10" />
+        </motion.button>
+    </>
+);
+
+
+// --- END Creator Popup ---
+
+const Footer: React.FC<{ details: CompanyDetails }> = ({ details }) => (
+    <footer className="bg-zinc-950/80 backdrop-blur-sm border-t border-zinc-800 py-3 px-4 text-xs text-gray-500 z-40">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+                <img src={details.logoUrl} alt={details.name} className="h-8 w-auto rounded"/>
+                <p className="hidden sm:block">© 2025 Bosjol Tactical Nelspruit Airsoft. All rights reserved.</p>
             </div>
+            <StorageStatusIndicator apiServerUrl={details.apiServerUrl} />
         </div>
+        <p className="sm:hidden text-center mt-2">© 2025 Bosjol Tactical Nelspruit Airsoft. All rights reserved.</p>
     </footer>
 );
+
 
 const AppContent: React.FC = () => {
     const auth = useContext(AuthContext);
@@ -354,9 +386,9 @@ const AppContent: React.FC = () => {
     const renderPublicContent = () => (
         <>
             {showFrontPage ? (
-                <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} onCreatorClick={() => setShowCreatorPopup(true)} />
+                <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} />
             ) : (
-                <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} onCreatorClick={() => setShowCreatorPopup(true)} />
+                <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />
             )}
         </>
     );
@@ -389,7 +421,14 @@ const AppContent: React.FC = () => {
             <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
 
             {!isAuthenticated || !user ? (
-                renderPublicContent()
+                <>
+                    {renderPublicContent()}
+                    <PublicPageFloatingIcons 
+                        socialLinks={socialLinks} 
+                        onHelpClick={() => setShowHelp(true)} 
+                        onCreatorClick={() => setShowCreatorPopup(true)} 
+                    />
+                </>
             ) : (
                 <>
                     <header className="bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-800 p-4 flex justify-between items-center sticky top-0 z-30">
@@ -401,8 +440,25 @@ const AppContent: React.FC = () => {
                                 BOSJOL TACTICAL
                             </h1>
                         </div>
-                        <div className="flex items-center">
-                            <p className="text-sm text-gray-300 mr-4 hidden sm:block">Welcome, <span className="font-bold">{user.name}</span></p>
+                        <div className="flex items-center gap-2">
+                            <p className="text-sm text-gray-300 mr-2 hidden sm:block">Welcome, <span className="font-bold">{user.name}</span></p>
+                            
+                             <motion.button
+                                onClick={() => setShowHelp(true)}
+                                whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.95 }}
+                                className="p-1 rounded-full hover:bg-zinc-700" title="Help" aria-label="Open help menu"
+                            >
+                                <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Help Icon" className="w-6 h-6 object-contain" />
+                            </motion.button>
+                            
+                            <motion.button
+                                onClick={() => setShowCreatorPopup(true)}
+                                whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.95 }}
+                                className="p-1 rounded-full hover:bg-zinc-700" title="Creator Information" aria-label="Open creator information"
+                            >
+                                <img src="https://i.ibb.co/0phm4WG/image-removebg-preview.png" alt="Creator Icon" className="w-6 h-6 rounded-full" />
+                            </motion.button>
+
                             <Button onClick={logout} size="sm" variant="secondary">Logout</Button>
                         </div>
                     </header>
@@ -440,16 +496,10 @@ const AppContent: React.FC = () => {
                             }
                         </div>
                     </main>
+                    <Footer details={companyDetails} />
                 </>
             )}
             
-            <Footer 
-                details={companyDetails} 
-                socialLinks={socialLinks} 
-                creatorDetails={creatorDetails}
-                onHelpClick={() => setShowHelp(true)}
-                onCreatorClick={() => setShowCreatorPopup(true)}
-            />
             {!IS_LIVE_DATA && <MockDataWatermark />}
         </div>
     );

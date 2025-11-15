@@ -10,10 +10,9 @@ import { Input } from './Input';
 interface LoginScreenProps {
   companyDetails: CompanyDetails;
   socialLinks: SocialLink[];
-  onCreatorClick: () => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, socialLinks, onCreatorClick }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, socialLinks }) => {
   const auth = useContext(AuthContext);
   if (!auth) throw new Error("AuthContext not found");
 
@@ -164,19 +163,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
             </div>
         )}
       </motion.div>
-        <motion.button
-            onClick={onCreatorClick}
-            initial={{ opacity: 0, y: 50, scale: 0.5 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.5, delay: 1, type: 'spring' }}
-            whileHover={{ scale: 1.1, rotate: 15 }}
-            whileTap={{ scale: 0.9 }}
-            className="fixed bottom-5 right-5 z-20 bg-zinc-900/80 backdrop-blur-sm p-2 rounded-full shadow-lg border border-zinc-700"
-            title="Creator Information"
-            aria-label="Open creator information"
-        >
-            <img src="https://i.ibb.co/0phm4WG/image-removebg-preview.png" alt="Creator Icon" className="w-10 h-10" />
-        </motion.button>
     </div>
   );
 };

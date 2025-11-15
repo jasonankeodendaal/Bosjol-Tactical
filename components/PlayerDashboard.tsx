@@ -359,7 +359,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sp
                  <DashboardCard 
                     title="Rank & Progression" 
                     icon={<ShieldCheckIcon className="w-6 h-6" />}
-                    titleAddon={<InfoTooltip text="Your rank is determined by your total Rank Points (XP). You must also play at least 10 games to be ranked. Earn XP by playing matches, getting kills, and completing objectives." />}
+                    titleAddon={<InfoTooltip text="Your rank is a measure of your experience and achievements. It's determined by your total accumulated Rank Points (XP). To receive an official rank, you must participate in at least 10 matches. XP is awarded for completing matches, eliminating opponents (with bonuses for headshots), and achieving objectives specific to certain game modes. Higher ranks unlock new gear, perks, and prestige within the community." />}
                   >
                     <div className="p-6 space-y-4">
                         <div className="text-center">
@@ -373,7 +373,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sp
                                     <span>Progress to {nextRank.name}</span>
                                      <div className="flex items-center gap-1">
                                         <span>{xpProgressInTier.toLocaleString()} / {xpNeededForNextRank.toLocaleString()}</span>
-                                        <InfoTooltip text="This is the XP you have earned within your current rank tier. Fill the bar to rank up!" />
+                                        <InfoTooltip text="This bar shows your XP progress within your current rank. It visualizes the Rank Points you've earned since your last promotion relative to the amount needed to reach the next rank. Fill the bar completely to achieve your next promotion and unlock its associated rewards." />
                                     </div>
                                 </div>
                                 <ProgressBar value={xpProgressInTier} max={xpNeededForNextRank} />
@@ -531,21 +531,21 @@ const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ p
                  <DashboardCard 
                     title="Lifetime Stats" 
                     icon={<ChartBarIcon className="w-6 h-6" />}
-                    titleAddon={<InfoTooltip text="Your complete performance statistics across all matches played." />}
+                    titleAddon={<InfoTooltip text="Your complete performance statistics across all matches played, providing a comprehensive overview of your entire career." />}
                  >
                     <div className="p-6 grid grid-cols-2 sm:grid-cols-3 gap-y-6">
                         <StatDisplay value={kdr} label="K/D Ratio" tooltip="Kill/Death Ratio. Calculated as Total Kills divided by Total Deaths. A higher number is better."/>
-                        <StatDisplay value={stats.kills.toLocaleString()} label="Total Kills" tooltip="Total number of opponents eliminated."/>
-                        <StatDisplay value={stats.deaths.toLocaleString()} label="Total Deaths" tooltip="Total number of times you've been eliminated."/>
-                        <StatDisplay value={stats.headshots.toLocaleString()} label="Total Headshots" tooltip="Eliminations made with a shot to the head, which often awards bonus XP."/>
-                        <StatDisplay value={stats.gamesPlayed.toLocaleString()} label="Matches Played" tooltip="Total number of official matches you have participated in."/>
-                        <StatDisplay value={stats.xp.toLocaleString()} label="Total Rank Points" tooltip="Your lifetime accumulation of experience points (XP), which determines your rank."/>
+                        <StatDisplay value={stats.kills.toLocaleString()} label="Total Kills" tooltip="Total number of opponents eliminated across all your matches."/>
+                        <StatDisplay value={stats.deaths.toLocaleString()} label="Total Deaths" tooltip="Total number of times you've been eliminated across all your matches."/>
+                        <StatDisplay value={stats.headshots.toLocaleString()} label="Total Headshots" tooltip="Total number of eliminations made with a shot to the head. Headshots often award bonus XP."/>
+                        <StatDisplay value={stats.gamesPlayed.toLocaleString()} label="Matches Played" tooltip="The total number of official matches you have participated in and completed."/>
+                        <StatDisplay value={stats.xp.toLocaleString()} label="Total Rank Points" tooltip="Your lifetime accumulation of experience points (XP). This value determines your rank and position on the leaderboard."/>
                     </div>
                 </DashboardCard>
                 <DashboardCard 
                     title="Match History" 
                     icon={<CalendarIcon className="w-6 h-6" />}
-                    titleAddon={<InfoTooltip text="A detailed log of your performance in every past match." />}
+                    titleAddon={<InfoTooltip text="A detailed log of your performance in every past match. This allows you to review your kills, deaths, and headshots for specific games to analyze your performance over time." />}
                 >
                     <div className="p-6 space-y-4 max-h-[40rem] overflow-y-auto">
                         {player.matchHistory.length > 0 ? (
@@ -574,7 +574,7 @@ const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ p
                     <DashboardCard 
                         title="Best Match" 
                         icon={<TrophyIcon className="w-6 h-6"/>}
-                        titleAddon={<InfoTooltip text="This highlights your single best performance on record, based on the number of kills in a single match." />}
+                        titleAddon={<InfoTooltip text="This highlights your single best performance on record, based on the number of kills achieved in a single match. It's a snapshot of you at your most effective." />}
                     >
                         <div className="p-2">
                              <EventCard event={bestMatchEvent} />
@@ -597,7 +597,7 @@ const AchievementsTab: React.FC<{ player: Player, ranks: Rank[] }> = ({ player, 
             <DashboardCard 
                 title="Badge Progress" 
                 icon={<TrophyIcon className="w-6 h-6" />}
-                titleAddon={<InfoTooltip text="Badges are special achievements awarded for completing specific in-game challenges. Track your progress here." />}
+                titleAddon={<InfoTooltip text="Badges are digital commendations awarded for completing specific in-game challenges. This section shows your progress towards unlocking each one. Once a badge's criteria are met, it will be automatically awarded to your profile for everyone to see." />}
             >
                 <div className="p-6 space-y-3 max-h-[30rem] overflow-y-auto">
                     {MOCK_BADGES.map(badge => (
@@ -699,7 +699,7 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
                             <Button size="sm" variant="secondary" onClick={handleRemoveAvatar} className="!text-xs">Reset to default</Button>
                              <div className="flex items-center gap-2 mt-4">
                                 <h4 className="font-bold text-gray-200">Player Code</h4>
-                                <InfoTooltip text="Your unique identification code. Admins use this to check you into events and record your stats during a game." />
+                                <InfoTooltip text="This is your unique Operator ID within the Bosjol Tactical system. Admins will use this code to quickly check you into events and to manually assign kills or other stats to you during live games. Keep it handy on game day!" />
                              </div>
                              <div className="bg-zinc-800 text-red-400 font-mono text-lg tracking-widest px-4 py-2 rounded-md border border-zinc-700 mt-2">
                                 {player.playerCode}
@@ -711,8 +711,8 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
                                 <Input label="First Name" value={formData.name} onChange={(e) => setFormData(p => ({...p, name: e.target.value}))} />
                                 <Input label="Last Name" value={formData.surname} onChange={(e) => setFormData(p => ({...p, surname: e.target.value}))} />
                             </div>
-                             <Input label="Callsign" value={formData.callsign} onChange={(e) => setFormData(p => ({...p, callsign: e.target.value}))} tooltip="Your in-game name." />
-                             <Input label="Email Address" type="email" value={formData.email} onChange={(e) => setFormData(p => ({...p, email: e.target.value}))} tooltip="Used for official communication and notifications."/>
+                             <Input label="Callsign" value={formData.callsign} onChange={(e) => setFormData(p => ({...p, callsign: e.target.value}))} tooltip="Your callsign is your in-game nickname, how other players will know you on the field. Choose something unique and memorable!" />
+                             <Input label="Email Address" type="email" value={formData.email} onChange={(e) => setFormData(p => ({...p, email: e.target.value}))} tooltip="Your email address is used for official communications from Bosjol Tactical, including event confirmations, important announcements, and account-related notifications. We will never share your email with third parties."/>
                               <Input label="Phone Number" type="tel" value={formData.phone} onChange={(e) => setFormData(p => ({...p, phone: e.target.value}))} />
                         </div>
                     </div>

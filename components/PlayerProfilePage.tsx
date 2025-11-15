@@ -58,12 +58,12 @@ const AwardXpModal: React.FC<{ onClose: () => void, onSave: (amount: number, rea
                     value={amount}
                     onChange={e => setAmount(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
                     placeholder="e.g., 100 for a bonus, -50 for a penalty"
-                    tooltip="Enter a positive number to award XP or a negative number to deduct it."
+                    tooltip="Enter the amount of Rank Points (XP) to adjust. Use a positive number (e.g., 100) to award a bonus for good sportsmanship, or a negative number (e.g., -50) to issue a penalty for rule violations. This adjustment will be logged."
                 />
                 <div>
                      <div className="flex items-center mb-1.5">
                         <label className="block text-sm font-medium text-gray-400">Reason for Adjustment</label>
-                        <div className="ml-1.5"><InfoTooltip text="This reason will be visible to the player in their XP History." /></div>
+                        <div className="ml-1.5"><InfoTooltip text="You must provide a clear and concise reason for this XP adjustment. This reason will be permanently logged and will be visible to the player on their dashboard, so be professional. Examples: 'Bonus for exceptional teamwork', 'Penalty for repeated rule violations'." /></div>
                     </div>
                     <textarea
                         value={reason}
@@ -298,7 +298,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                                 </>
                             ) : (
                                 <>
-                                    <p><strong className="text-gray-400">Code:</strong> <span className="font-mono text-red-400">{player.playerCode}</span> <InfoTooltip text="Unique code for event check-in and live stat tracking." /></p>
+                                    <p><strong className="text-gray-400">Code:</strong> <span className="font-mono text-red-400">{player.playerCode}</span> <InfoTooltip text="This is the player's unique identification code. Use this code to quickly find and check them into events. It is also used on any manual stat-tracking sheets during live games to ensure XP and stats are assigned correctly." /></p>
                                     <p><strong className="text-gray-400">Age:</strong> {player.age}</p>
                                     <p><strong className="text-gray-400">ID Number:</strong> {player.idNumber}</p>
                                     <div className="bg-zinc-800/50 p-3 rounded-md border border-zinc-700/50">
@@ -355,7 +355,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                             </div>
                         </div>
                     </DashboardCard>
-                    <DashboardCard title="XP History" icon={<PlusCircleIcon className="w-6 h-6" />} titleAddon={<InfoTooltip text="Log of all manual XP adjustments, both positive (bonuses) and negative (penalties)." />}>
+                    <DashboardCard title="XP History" icon={<PlusCircleIcon className="w-6 h-6" />} titleAddon={<InfoTooltip text="This section displays a complete history of all manual Rank Point (XP) adjustments made to this player's account by an administrator. It does not include XP earned automatically from playing matches. Each entry shows the amount, the reason provided by the admin, and the date of the adjustment." />}>
                         <div className="p-6 space-y-3 max-h-60 overflow-y-auto">
                            {player.xpAdjustments.length > 0 ? [...player.xpAdjustments].reverse().map((adj, i) => (
                                <div key={i} className="bg-zinc-800/50 p-2.5 rounded-md">

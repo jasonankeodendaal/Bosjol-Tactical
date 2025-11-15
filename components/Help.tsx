@@ -47,17 +47,28 @@ const HelpModal: React.FC<{ topic: string, onClose: () => void }> = ({ topic, on
 export const HelpSystem: React.FC<HelpSystemProps> = ({ topic }) => {
     const [isOpen, setIsOpen] = useState(false);
 
+    // We make sure this code only runs on the client where `window` is available.
+    const dragConstraints = typeof window !== 'undefined' ? {
+        top: 10,
+        left: 10,
+        right: window.innerWidth - 60, // button width + padding
+        bottom: window.innerHeight - 60, // button height + padding
+    } : {};
+
     return (
         <>
             <motion.button
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-16 right-6 z-50 w-10 h-10 rounded-full flex items-center justify-center help-icon-pulse"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                className="fixed bottom-20 right-6 z-50 w-12 h-12 rounded-full flex items-center justify-center cursor-grab bg-zinc-900/50 border border-zinc-700 shadow-lg"
+                whileHover={{ scale: 1.1, rotate: 10 }}
+                whileTap={{ scale: 0.95, cursor: 'grabbing' }}
                 title="Help"
                 aria-label="Open help modal"
+                drag
+                dragConstraints={dragConstraints}
+                dragMomentum={false}
             >
-                <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Help Icon" className="w-full h-full object-contain" />
+                <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Help Icon" className="w-10 h-10 object-contain" />
             </motion.button>
 
             <AnimatePresence>

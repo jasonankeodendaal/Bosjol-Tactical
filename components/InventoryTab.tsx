@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { InventoryItem, Supplier } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
@@ -6,6 +6,7 @@ import { Input } from './Input';
 import { Modal } from './Modal';
 import { ArchiveBoxIcon, PlusIcon, PencilIcon, TrashIcon } from './icons/Icons';
 import { INVENTORY_CATEGORIES, INVENTORY_CONDITIONS } from '../constants';
+import { BadgePill } from './BadgePill';
 
 interface InventoryTabProps {
     inventory: InventoryItem[];
@@ -81,11 +82,51 @@ const InventoryEditorModal: React.FC<{ item: InventoryItem | {}, onClose: () => 
             </div>
         </Modal>
     )
-}
+};
+
+const InventoryItemCard: React.FC<{ item: InventoryItem, onEdit: (i: InventoryItem) => void, onDelete: (i: InventoryItem) => void }> = ({ item, onEdit, onDelete }) => (
+    <div className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700 flex flex-col justify-between">
+        <div>
+            <div className="flex justify-between items-start mb-2">
+                <h4 className="font-bold text-lg text-white pr-4">{item.name}</h4>
+                <div className="flex gap-2 flex-shrink-0">
+                    <Button size="sm" variant="secondary" onClick={() => onEdit(item)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
+                    <Button size="sm" variant="danger" onClick={() => onDelete(item)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
+                </div>
+            </div>
+            <p className="text-xs text-gray-400 mb-3">{item.category}</p>
+            {item.description && <p className="text-sm text-gray-300 line-clamp-2 mb-3">{item.description}</p>}
+        </div>
+        <div className="mt-auto pt-3 border-t border-zinc-700/50">
+            <div className="flex justify-between items-center mb-2">
+                <p className="text-sm text-gray-400">Stock:</p>
+                <p className={`font-bold text-lg ${item.stock <= (item.reorderLevel || 0) ? 'text-red-400' : 'text-white'}`}>{item.stock}</p>
+            </div>
+             <div className="flex justify-between items-center">
+                <p className="text-sm text-gray-400">Price:</p>
+                <p className="font-mono font-bold text-green-400">R{item.salePrice.toFixed(2)}</p>
+            </div>
+             <div className="flex gap-2 mt-3">
+                {item.isRental && <BadgePill color="blue">Rental</BadgePill>}
+                {!item.isRental && <BadgePill color="green">For Sale</BadgePill>}
+                <BadgePill color="amber">{item.condition}</BadgePill>
+            </div>
+        </div>
+    </div>
+);
+
 
 export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInventory, suppliers }) => {
     const [isEditing, setIsEditing] = useState<InventoryItem | {} | null>(null);
     const [deletingItem, setDeletingItem] = useState<InventoryItem | null>(null);
+    const [filter, setFilter] = useState<'all' | 'rental' | 'sale'>('all');
+
+    const filteredInventory = useMemo(() => {
+        if (filter === 'rental') return inventory.filter(i => i.isRental);
+        if (filter === 'sale') return inventory.filter(i => !i.isRental);
+        return inventory;
+    }, [inventory, filter]);
+
 
     const handleSave = (item: InventoryItem) => {
         if (item.id) {
@@ -116,39 +157,20 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInvent
             )}
             <DashboardCard title="Inventory Management" icon={<ArchiveBoxIcon className="w-6 h-6"/>}>
                 <div className="p-4">
-                    <div className="flex justify-end mb-4">
-                        <Button onClick={() => setIsEditing({})}><PlusIcon className="w-5 h-5 mr-2"/>Add Item</Button>
+                     <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+                        <div className="flex space-x-1 p-1 bg-zinc-900 rounded-lg border border-zinc-700">
+                            <Button size="sm" variant={filter === 'all' ? 'primary' : 'secondary'} onClick={() => setFilter('all')}>All</Button>
+                            <Button size="sm" variant={filter === 'rental' ? 'primary' : 'secondary'} onClick={() => setFilter('rental')}>Rental</Button>
+                            <Button size="sm" variant={filter === 'sale' ? 'primary' : 'secondary'} onClick={() => setFilter('sale')}>For Sale</Button>
+                        </div>
+                        <Button onClick={() => setIsEditing({})} className="w-full sm:w-auto">
+                            <PlusIcon className="w-5 h-5 mr-2"/>Add New Item
+                        </Button>
                     </div>
-                    <div className="overflow-x-auto max-h-[60vh]">
-                        <table className="w-full text-sm text-left text-gray-400">
-                            <thead className="text-xs text-gray-400 uppercase bg-zinc-800/50 sticky top-0">
-                                <tr>
-                                    <th scope="col" className="px-6 py-3">Name</th>
-                                    <th scope="col" className="px-6 py-3">Category</th>
-                                    <th scope="col" className="px-6 py-3 text-center">Stock</th>
-                                    <th scope="col" className="px-6 py-3 text-right">Price</th>
-                                    <th scope="col" className="px-6 py-3 text-center">Rental</th>
-                                    <th scope="col" className="px-6 py-3 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {inventory.map(item => (
-                                    <tr key={item.id} className="border-b border-zinc-800 hover:bg-zinc-800/50">
-                                        <td className="px-6 py-4 font-medium text-white">{item.name}</td>
-                                        <td className="px-6 py-4">{item.category}</td>
-                                        <td className={`px-6 py-4 text-center font-bold ${item.stock <= (item.reorderLevel || 0) ? 'text-red-400' : 'text-white'}`}>{item.stock}</td>
-                                        <td className="px-6 py-4 text-right font-mono text-green-400">R{item.salePrice.toFixed(2)}</td>
-                                        <td className="px-6 py-4 text-center">{item.isRental ? '✔️' : '❌'}</td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button size="sm" variant="secondary" onClick={() => setIsEditing(item)}><PencilIcon className="w-4 h-4"/></Button>
-                                                <Button size="sm" variant="danger" onClick={() => setDeletingItem(item)}><TrashIcon className="w-4 h-4"/></Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto pr-2">
+                        {filteredInventory.map(item => (
+                            <InventoryItemCard key={item.id} item={item} onEdit={setIsEditing} onDelete={setDeletingItem} />
+                        ))}
                     </div>
                 </div>
             </DashboardCard>

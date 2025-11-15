@@ -3,11 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { CompanyDetails, CarouselMedia, SocialLink } from '../types';
 import { Button } from './Button';
 import { Modal } from './Modal';
-import { AtSymbolIcon, PhoneIcon, GlobeAltIcon, InformationCircleIcon, DocumentIcon, ClipboardListIcon, CheckCircleIcon, HelmetPhoneIcon, VestEmailIcon } from './icons/Icons';
+import { DocumentIcon } from './icons/Icons';
 
 const SignUpInfoModal: React.FC<{ companyDetails: CompanyDetails, onContinue: () => void }> = ({ companyDetails, onContinue }) => {
-    const [copied, setCopied] = useState<'email' | 'phone' | null>(null);
-
     const signupMessageTemplate = `Hello Bosjol Tactical Command,
 
 I am interested in enlisting. Please find my details for registration below:
@@ -23,13 +21,6 @@ I have read and understood the Standard Operating Procedures and meet the minimu
 
 Thank you.
 `;
-
-    const handleCopy = (text: string, type: 'email' | 'phone') => {
-        if (!text) return;
-        navigator.clipboard.writeText(text);
-        setCopied(type);
-        setTimeout(() => setCopied(null), 2000);
-    };
 
     const emailHref = `mailto:${companyDetails.email}?subject=${encodeURIComponent('New Recruit Enlistment Request')}&body=${encodeURIComponent(signupMessageTemplate)}`;
     
@@ -71,34 +62,19 @@ Thank you.
 
                     <div>
                         <h4 className="font-bold text-lg text-red-400 mb-2">CONTACT PROTOCOLS</h4>
-                        <div className="space-y-3">
+                        <p className="text-gray-300 text-sm mb-4">
+                            Click an icon below to open your Email or WhatsApp with a pre-filled template to begin registration.
+                        </p>
+                        <div className="flex justify-center gap-8 py-4">
                             {companyDetails.email && (
-                                <div className="bg-zinc-800/50 p-3 rounded-md border border-zinc-700/50 flex items-center gap-4">
-                                    <a href={emailHref} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 flex-grow min-w-0 group">
-                                        <VestEmailIcon className="w-10 h-10 text-red-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                                        <div className="flex-grow min-w-0">
-                                            <p className="text-gray-200 font-mono truncate group-hover:text-red-300 transition-colors">{companyDetails.email}</p>
-                                            <label className="text-xs text-gray-500 uppercase">Primary Channel (Click to Email)</label>
-                                        </div>
-                                    </a>
-                                    <button onClick={() => handleCopy(companyDetails.email, 'email')} className="text-gray-400 hover:text-white transition-colors flex-shrink-0">
-                                        {copied === 'email' ? <CheckCircleIcon className="w-5 h-5 text-green-400" /> : <ClipboardListIcon className="w-5 h-5" />}
-                                    </button>
-                                </div>
+                                <a href={emailHref} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-transform transform hover:scale-110" title="Send an Email">
+                                    <img src="https://i.ibb.co/r2HkbjLj/image-removebg-preview-2.png" alt="Email" className="w-16 h-16" />
+                                </a>
                             )}
                             {companyDetails.phone && whatsappNumber && (
-                                 <div className="bg-zinc-800/50 p-3 rounded-md border border-zinc-700/50 flex items-center gap-4">
-                                     <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 flex-grow min-w-0 group">
-                                        <HelmetPhoneIcon className="w-10 h-10 text-red-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                                        <div className="flex-grow min-w-0">
-                                            <p className="text-gray-200 font-mono truncate group-hover:text-red-300 transition-colors">{companyDetails.phone}</p>
-                                            <label className="text-xs text-gray-500 uppercase">Secondary Channel (Click for WhatsApp)</label>
-                                        </div>
-                                     </a>
-                                    <button onClick={() => handleCopy(companyDetails.phone, 'phone')} className="text-gray-400 hover:text-white transition-colors flex-shrink-0">
-                                        {copied === 'phone' ? <CheckCircleIcon className="w-5 h-5 text-green-400" /> : <ClipboardListIcon className="w-5 h-5" />}
-                                    </button>
-                                </div>
+                                <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-transform transform hover:scale-110" title="Message on WhatsApp">
+                                    <img src="https://i.ibb.co/Z1YHvjgT/image-removebg-preview-1.png" alt="WhatsApp" className="w-16 h-16" />
+                                </a>
                             )}
                         </div>
                     </div>

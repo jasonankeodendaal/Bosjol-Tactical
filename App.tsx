@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -19,12 +15,6 @@ import { Modal } from './components/Modal';
 
 
 // --- Creator Popup Component and Icons ---
-const WhatsAppIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
-        <path d="M12.04 2C6.58 2 2.13 6.45 2.13 12c0 1.77.46 3.45 1.28 4.92L2 22l5.25-1.38c1.41.78 3.02 1.25 4.79 1.25h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zM17.48 15.39c-.2-.11-1.18-.58-1.36-.65-.18-.07-.31-.07-.44.07-.13.13-.51.65-.63.78-.12.13-.24.14-.44.05-.2-.1-.85-.31-1.61-.99-.59-.53-1.02-1.18-1.14-1.38-.12-.2 0-.31.09-.41.08-.09.2-.24.3-.35.1-.12.13-.2.2-.34.06-.14.03-.27-.01-.37-.05-.1-.44-1.06-.6-1.45-.16-.39-.32-.33-.44-.34h-.24c-.13 0-.26.03-.39.16-.13.13-.51.51-.51 1.24 0 .73.53 1.44.6 1.54s1.02 1.57 2.47 2.17c1.45.6 1.45.4 1.71.38.26-.02.83-.34.95-.67.12-.33.12-.61.08-.67-.03-.06-.12-.1-.22-.16z" />
-    </svg>
-);
-
 const CreatorPopup: React.FC<{ onClose: () => void; }> = ({ onClose }) => {
     // Upgraded, more detailed pre-built messages
     const emailSubject = "Project Inquiry via Bosjol Tactical Dashboard - [Your Name/Company Name]";
@@ -125,13 +115,11 @@ Please let me know when would be a good time to discuss this further. Thank you!
                     </p>
                     
                     <div className="mt-8 pt-6 border-t border-zinc-700/50 w-full flex justify-center gap-8">
-                        <a href={emailHref} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-colors flex flex-col items-center gap-1.5 transform hover:scale-110">
-                            <AtSymbolIcon className="w-9 h-9" />
-                            <span className="text-xs font-semibold">Email</span>
+                        <a href={emailHref} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-transform transform hover:scale-110" title="Send an Email">
+                            <img src="https://i.ibb.co/r2HkbjLj/image-removebg-preview-2.png" alt="Email" className="w-12 h-12" />
                         </a>
-                        <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-colors flex flex-col items-center gap-1.5 transform hover:scale-110">
-                            <WhatsAppIcon className="w-9 h-9" />
-                            <span className="text-xs font-semibold">WhatsApp</span>
+                        <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-transform transform hover:scale-110" title="Message on WhatsApp">
+                             <img src="https://i.ibb.co/Z1YHvjgT/image-removebg-preview-1.png" alt="WhatsApp" className="w-12 h-12" />
                         </a>
                     </div>
                 </div>

@@ -1,5 +1,5 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
-import type { User, AuthContextType, Player, Admin } from '../types';
+import type { User, AuthContextType, Player, Admin, CreatorDetails } from '../types';
 import { MOCK_PLAYERS, MOCK_ADMIN } from '../constants';
 import { auth, db, USE_FIREBASE, firebase } from '../firebase';
 
@@ -9,14 +9,13 @@ interface AuthProviderProps {
     children: ReactNode;
 }
 
-// In a real production app, this should come from an environment variable for security.
 const ADMIN_EMAIL = 'bosjoltactical@gmail.com';
-const CREATOR_EMAIL = 'creator@bosjol.dev';
-
+const CREATOR_EMAIL = 'jstypme@gmail.com';
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | Player | Admin | null>(null);
     const [loading, setLoading] = useState(true);
+    const [helpTopic, setHelpTopic] = useState('front-page');
 
     useEffect(() => {
         if (!USE_FIREBASE || !auth || !db) {
@@ -25,52 +24,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: firebase.User | null) => {
-            if (firebaseUser && firebaseUser.email?.toLowerCase() === ADMIN_EMAIL) {
-                // Firebase user is the admin, fetch their profile from Firestore 'admins' collection.
-                try {
-                    const adminsRef = db.collection("admins");
-                    // Assuming there's only one admin document or we can find it by email
-                    const q = adminsRef.where("email", "==", firebaseUser.email).limit(1);
-                    const querySnapshot = await q.get();
-                    
-                    if (!querySnapshot.empty) {
-                        const adminDoc = querySnapshot.docs[0];
-                        setUser({ id: adminDoc.id, ...adminDoc.data() } as Admin);
-                    } else {
-                        // Admin authenticated but no profile. Let's create one.
-                        console.warn("Admin profile not found in Firestore. Creating a default profile.");
-                        const { id, ...newAdminData } = MOCK_ADMIN;
-                        newAdminData.email = firebaseUser.email!; // Ensure email matches for consistency
-                        
-                        try {
+            if (firebaseUser) {
+                 const email = firebaseUser.email?.toLowerCase();
+
+                if (email === ADMIN_EMAIL) {
+                    try {
+                        const adminSnapshot = await db.collection("admins").where("email", "==", email).limit(1).get();
+                        if (!adminSnapshot.empty) {
+                            const adminDoc = adminSnapshot.docs[0];
+                            setUser({ id: adminDoc.id, ...adminDoc.data() } as Admin);
+                        } else {
+                            console.warn("Admin profile not found, creating default.");
+                            const { id, ...newAdminData } = { ...MOCK_ADMIN, email };
                             const docRef = await db.collection("admins").add(newAdminData);
                             setUser({ ...newAdminData, id: docRef.id });
-                        } catch (creationError) {
-                            console.error("Failed to create default admin profile:", creationError);
-                            await auth.signOut();
-                            setUser(null);
                         }
+                    } catch (error) {
+                        console.error("Error fetching admin profile:", error);
+                        await auth.signOut();
+                        setUser(null);
                     }
-                } catch (error) {
-                    console.error("Error fetching admin profile from Firestore:", error);
+                } else if (email === CREATOR_EMAIL) {
+                    try {
+                        const creatorDoc = await db.collection('settings').doc('creatorDetails').get();
+                        const creatorName = creatorDoc.exists ? (creatorDoc.data() as CreatorDetails).name : 'Creator';
+                        setUser({ id: 'creator', name: creatorName, role: 'creator' });
+                    } catch (error) {
+                        console.error("Error fetching creator details:", error);
+                        setUser({ id: 'creator', name: 'Creator', role: 'creator' });
+                    }
+                } else {
+                    // Non-admin/creator Firebase user, sign them out
                     await auth.signOut();
                     setUser(null);
                 }
-            } else if (firebaseUser) {
-                // If a non-admin Firebase user is somehow logged in, sign them out.
-                await auth.signOut();
-                setUser(null);
             } else {
-                // No Firebase user is signed in. This callback can fire on initial load, or when an admin signs out.
-                // We only want to modify state if an admin was signed in and now isn't.
-                // We must not disturb a non-Firebase player session.
+                // No Firebase user, clear admin/creator state but not player state
                 setUser(currentUser => {
-                    // If the user currently in state is an admin, that admin has now signed out via Firebase.
-                    // Clear the state.
                     if (currentUser?.role === 'admin' || currentUser?.role === 'creator') {
                         return null;
                     }
-                    // Otherwise, the user is either a player or null. Don't change anything.
                     return currentUser;
                 });
             }
@@ -83,45 +76,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const login = async (username: string, password: string): Promise<boolean> => {
         const cleanUsername = username.trim();
         const cleanPassword = password.trim();
+        const isSpecialLogin = [ADMIN_EMAIL, CREATOR_EMAIL].includes(cleanUsername.toLowerCase());
 
-        if (cleanUsername.toLowerCase() === CREATOR_EMAIL) {
-            if (cleanPassword === 'creatorpass') {
-                setUser({ id: 'creator', name: 'Creator', role: 'creator' });
-                return true;
-            }
-            return false;
-        }
-
-        if (cleanUsername.toLowerCase() === ADMIN_EMAIL) {
-            // --- ADMIN LOGIN LOGIC ---
+        if (isSpecialLogin) {
             if (USE_FIREBASE && auth) {
                 try {
                     await auth.signInWithEmailAndPassword(cleanUsername, cleanPassword);
-                    // onAuthStateChanged will fetch the profile and set the user state.
+                    // onAuthStateChanged will set user state
                     return true;
                 } catch (error) {
-                    console.error("Admin Firebase login failed:", error);
+                    console.error("Firebase login failed:", error);
                     return false;
                 }
-            } else { // Mock admin login
-                if (cleanPassword === '1234') {
+            } else { // Mock login for admin/creator
+                if (cleanUsername === ADMIN_EMAIL && cleanPassword === '1234') {
                     setUser(MOCK_ADMIN);
                     return true;
+                }
+                if (cleanUsername === CREATOR_EMAIL && cleanPassword === 'creatorpass') {
+                     setUser({ id: 'creator', name: 'Creator', role: 'creator' });
+                     return true;
                 }
                 return false;
             }
         } else {
-            // --- PLAYER LOGIN LOGIC ---
+            // Player login logic
             if (USE_FIREBASE && db) {
-                 try {
+                try {
                     const playersRef = db.collection("players");
-                    const q = playersRef.where("playerCode", "==", cleanUsername.toUpperCase());
+                    const q = playersRef.where("playerCode", "==", cleanUsername.toUpperCase()).limit(1);
                     const querySnapshot = await q.get();
-                    
-                    if (querySnapshot.empty) {
-                        console.log('No player found with that player code.');
-                        return false;
-                    }
+
+                    if (querySnapshot.empty) return false;
 
                     const playerDoc = querySnapshot.docs[0];
                     const playerData = { id: playerDoc.id, ...playerDoc.data() } as Player;
@@ -129,10 +115,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     if (playerData.pin === cleanPassword) {
                         setUser(playerData);
                         return true;
-                    } else {
-                        console.log('Incorrect PIN for player.');
-                        return false;
                     }
+                    return false;
                 } catch (error) {
                     console.error("Player Firestore login failed:", error);
                     return false;
@@ -162,11 +146,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     if (loading && USE_FIREBASE) {
-        return null; // Or a loading spinner while checking auth state
+        return null; // Or a loading spinner
     }
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, updateUser }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, updateUser, helpTopic, setHelpTopic }}>
             {children}
         </AuthContext.Provider>
     );

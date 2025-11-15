@@ -1,16 +1,19 @@
 
+
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { USE_FIREBASE, db } from '../firebase';
+import { USE_FIREBASE, db, firebaseInitializationError } from '../firebase';
 import * as mock from '../constants';
-import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia } from '../types';
+import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails } from '../types';
+
+export const IS_LIVE_DATA = USE_FIREBASE && !!db && !firebaseInitializationError;
 
 // Helper to fetch collection data
 function useCollection<T extends {id: string}>(collectionName: string, mockData: T[], dependencies: any[] = []) {
-    const [data, setData] = useState<T[]>(USE_FIREBASE ? [] : mockData);
+    const [data, setData] = useState<T[]>(IS_LIVE_DATA ? [] : mockData);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (USE_FIREBASE && db) {
+        if (IS_LIVE_DATA) {
             setLoading(true);
             const q = db.collection(collectionName);
             const unsubscribe = q.onSnapshot((querySnapshot) => {
@@ -41,16 +44,14 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
     const [loading, setLoading] = useState(true);
     
     useEffect(() => {
-        if (USE_FIREBASE && db) {
+        if (IS_LIVE_DATA) {
             setLoading(true);
             const docRef = db.collection(collectionName).doc(docId);
             const unsubscribe = docRef.onSnapshot((docSnap) => {
                 if (docSnap.exists) {
                     const firestoreData = docSnap.data() || {};
-                    // Merge Firestore data with mock data to ensure a complete object and prevent data loss on subsequent writes.
                     setData({ ...mockData, ...firestoreData } as T);
                 } else {
-                    // This will be handled by the global seeder now
                     console.warn(`Document ${docId} not found in ${collectionName}. Waiting for seed.`);
                 }
                 setLoading(false);
@@ -68,18 +69,16 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
 
      const updateData = async (newData: T | ((prev: T) => T)) => {
         const finalData = typeof newData === 'function' ? (newData as (prev: T) => T)(data) : newData;
-        if (USE_FIREBASE && db) {
+        if (IS_LIVE_DATA) {
             try {
                 const docRef = db.collection(collectionName).doc(docId);
-                // Use { merge: true } to prevent accidentally overwriting/deleting fields
-                // that might not be present in the local `finalData` object.
                 await docRef.set(finalData, { merge: true });
             } catch (error: any) {
                 console.error(`Failed to save document ${collectionName}/${docId}:`, error);
-                alert(`Failed to save settings to the database. This can happen if uploaded images or videos are too large (document size limit is 1MB).\n\nError: ${error.message}`);
+                alert(`Failed to save settings: ${error.message}`);
             }
         }
-        setData(finalData); // Update local state for both firebase and mock
+        setData(finalData);
     };
     
     return [data, updateData, loading] as const;
@@ -95,6 +94,7 @@ export interface DataContextType {
     gamificationSettings: GamificationSettings; setGamificationSettings: (d: GamificationSettings | ((p: GamificationSettings) => GamificationSettings)) => void;
     sponsors: Sponsor[]; setSponsors: (d: Sponsor[] | ((p: Sponsor[]) => Sponsor[])) => void;
     companyDetails: CompanyDetails; setCompanyDetails: (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => Promise<void>;
+    creatorDetails: CreatorDetails; setCreatorDetails: (d: CreatorDetails | ((p: CreatorDetails) => CreatorDetails)) => Promise<void>;
     socialLinks: SocialLink[]; setSocialLinks: (d: SocialLink[] | ((p: SocialLink[]) => SocialLink[])) => void;
     carouselMedia: CarouselMedia[]; setCarouselMedia: (d: CarouselMedia[] | ((p: CarouselMedia[]) => CarouselMedia[])) => void;
     vouchers: Voucher[]; setVouchers: (d: Voucher[] | ((p: Voucher[]) => Voucher[])) => void;
@@ -134,16 +134,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [locations, setLocations, loadingLocations] = useCollection<Location>('locations', mock.MOCK_LOCATIONS, []);
     const [raffles, setRaffles, loadingRaffles] = useCollection<Raffle>('raffles', mock.MOCK_RAFFLES, []);
     const [companyDetails, setCompanyDetails, loadingCompanyDetails] = useDocument<CompanyDetails>('settings', 'companyDetails', mock.MOCK_COMPANY_DETAILS);
+    const [creatorDetails, setCreatorDetails, loadingCreatorDetails] = useDocument<CreatorDetails>('settings', 'creatorDetails', mock.MOCK_CREATOR_DETAILS);
     const [socialLinks, setSocialLinks, loadingSocialLinks] = useCollection<SocialLink>('socialLinks', mock.MOCK_SOCIAL_LINKS, []);
     const [carouselMedia, setCarouselMedia, loadingCarouselMedia] = useCollection<CarouselMedia>('carouselMedia', mock.MOCK_CAROUSEL_MEDIA, []);
     
     const [isSeeding, setIsSeeding] = useState(false);
 
-    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingCompanyDetails || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia;
+    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingCompanyDetails || loadingCreatorDetails || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia;
     
     // --- GENERIC CRUD FUNCTIONS ---
     const addDoc = async <T extends {}>(collectionName: string, data: T) => {
-        if (USE_FIREBASE && db) {
+        if (IS_LIVE_DATA) {
             await db.collection(collectionName).add(data);
         } else {
             const mockSetter = `set${collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}`;
@@ -152,7 +153,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const updateDoc = async <T extends {id: string}>(collectionName: string, doc: T) => {
-        if (USE_FIREBASE && db) {
+        if (IS_LIVE_DATA) {
             const { id, ...data } = doc;
             await db.collection(collectionName).doc(id).set(data, { merge: true });
         } else {
@@ -162,7 +163,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const deleteDoc = async (collectionName: string, docId: string) => {
-        if (USE_FIREBASE && db) {
+        if (IS_LIVE_DATA) {
             await db.collection(collectionName).doc(docId).delete();
         } else {
             const mockSetter = `set${collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}`;
@@ -172,7 +173,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // --- END GENERIC CRUD ---
 
     const seedInitialData = async () => {
-        if (!USE_FIREBASE || !db) return;
+        if (!IS_LIVE_DATA) return;
         setIsSeeding(true);
         console.log("FRESH DATABASE DETECTED: Seeding all initial data...");
         try {
@@ -184,6 +185,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             mock.MOCK_LEGENDARY_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('legendaryBadges').doc(id), data); });
             mock.MOCK_GAMIFICATION_SETTINGS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('gamificationSettings').doc(id), data); });
             batch.set(db.collection('settings').doc('companyDetails'), mock.MOCK_COMPANY_DETAILS);
+            batch.set(db.collection('settings').doc('creatorDetails'), mock.MOCK_CREATOR_DETAILS);
             
             // Admin User
             const { id: adminId, ...adminData } = mock.MOCK_ADMIN;
@@ -214,9 +216,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
      useEffect(() => {
         const checkAndSeed = async () => {
-            if (USE_FIREBASE && db && !loading) {
-                const playersSnapshot = await db.collection('players').limit(1).get();
-                if (playersSnapshot.empty) {
+            if (IS_LIVE_DATA && !loading) {
+                const settingsCheck = await db.collection('settings').doc('companyDetails').get();
+                if (!settingsCheck.exists) {
                     await seedInitialData();
                 }
             }
@@ -227,7 +229,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
     const deleteAllData = async () => {
-        if (!USE_FIREBASE || !db) {
+        if (!IS_LIVE_DATA) {
             console.log("Resetting all mock transactional data in memory...");
             setPlayers(mock.MOCK_PLAYERS);
             setEvents(mock.MOCK_EVENTS);
@@ -271,6 +273,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         gamificationSettings, setGamificationSettings,
         sponsors, setSponsors,
         companyDetails, setCompanyDetails,
+        creatorDetails, setCreatorDetails,
         socialLinks, setSocialLinks,
         carouselMedia, setCarouselMedia,
         vouchers, setVouchers,

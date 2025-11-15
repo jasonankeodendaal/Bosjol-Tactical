@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -10,12 +11,15 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { Button } from './components/Button';
 import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia } from './types';
 import { BuildingOfficeIcon, ExclamationTriangleIcon, AtSymbolIcon, XIcon } from './components/icons/Icons';
-import { DataProvider, DataContext } from './data/DataContext';
+import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
 import { Loader } from './components/Loader';
 import { USE_FIREBASE, isFirebaseConfigured, getEnvVar, firebaseInitializationError } from './firebase';
 import { FrontPage } from './components/FrontPage';
 import { Modal } from './components/Modal';
 import { HelpSystem } from './components/Help';
+import { CreatorDashboard } from './components/CreatorDashboard';
+import { StorageStatusIndicator } from './components/StorageStatusIndicator';
+import { MockDataWatermark } from './components/MockDataWatermark';
 
 
 // --- Creator Popup Component and Icons ---
@@ -133,28 +137,41 @@ Please let me know when would be a good time to discuss this further. Thank you!
 };
 // --- END Creator Popup ---
 
+const Footer: React.FC<{ 
+    details: CompanyDetails, 
+    socialLinks: SocialLink[],
+    onCreatorClick: () => void,
+    onHelpClick: () => void,
+}> = ({ details, socialLinks, onCreatorClick, onHelpClick }) => (
+    <footer className="fixed bottom-0 left-0 right-0 bg-zinc-950/80 backdrop-blur-sm border-t border-zinc-800 py-2 px-4 text-center text-xs text-gray-500 z-40">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <motion.button
+                onClick={onHelpClick}
+                whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.95 }}
+                className="p-2" title="Help" aria-label="Open help menu"
+            >
+                <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Help Icon" className="w-8 h-8 object-contain" />
+            </motion.button>
 
-const Footer: React.FC<{ details: CompanyDetails, socialLinks: SocialLink[] }> = ({ details, socialLinks }) => (
-    <footer className="bg-zinc-900/80 backdrop-blur-sm border-t border-zinc-800 py-3 px-6 text-center text-sm text-gray-400 mt-auto">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-2">
-            <div className="flex items-center">
-                 {details.logoUrl ? (
-                    <img src={details.logoUrl} alt={details.name} className="h-8 mr-3" />
-                ) : (
-                    <BuildingOfficeIcon className="h-8 w-8 mr-3" />
-                )}
-                <p className="font-bold text-gray-300">{details.name}</p>
-            </div>
-            <div className="flex items-center gap-4">
-                {socialLinks.map(link => (
+            <div className="hidden sm:flex items-center gap-4">
+                 {socialLinks.map(link => (
                     <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-colors">
-                        <img src={link.iconUrl} alt={link.name} className="h-6 w-6 object-contain"/>
+                        <img src={link.iconUrl} alt={link.name} className="h-5 w-5 object-contain"/>
                     </a>
                 ))}
             </div>
+
+            <div className="flex items-center gap-3">
+                 <StorageStatusIndicator apiServerUrl={details.apiServerUrl} />
+                 <motion.button
+                    onClick={onCreatorClick}
+                    whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.95 }}
+                    className="p-2" title="Creator Information" aria-label="Open Creator Information"
+                >
+                    <img src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png" alt="Creator Icon" className="h-8 w-8" />
+                </motion.button>
+            </div>
         </div>
-        <p>{details.address} | {details.phone}</p>
-        <p>&copy; {new Date().getFullYear()} {details.name}. All Rights Reserved.</p>
     </footer>
 );
 
@@ -162,25 +179,30 @@ const AppContent: React.FC = () => {
     const auth = useContext(AuthContext);
     const data = useContext(DataContext);
     const [showFrontPage, setShowFrontPage] = useState(true);
+    const [showCreatorPopup, setShowCreatorPopup] = useState(false);
+    const [showHelp, setShowHelp] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    const helpTopic = auth?.helpTopic || 'front-page';
+
+    if (USE_FIREBASE && !isFirebaseConfigured()) {
+        return (
+             <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center p-8 text-center">
+                <div className="bg-red-900/50 border border-red-700 text-red-200 p-8 rounded-lg max-w-2xl">
+                    <ExclamationTriangleIcon className="w-12 h-12 mx-auto mb-4 text-red-400" />
+                    <h1 className="text-2xl font-bold mb-2 text-white">Firebase Not Configured</h1>
+                    <p className="text-base">
+                        The application is set to use Firebase (<code className="bg-black/20 px-1 rounded">VITE_USE_FIREBASE=true</code>), but the necessary Firebase configuration variables are missing. Please set them up in your environment.
+                    </p>
+                </div>
+            </div>
+        )
+    }
 
 
     if (firebaseInitializationError) {
-        return (
-            <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center p-8 text-center">
-                <div className="bg-red-900/50 border border-red-700 text-red-200 p-8 rounded-lg max-w-2xl">
-                    <ExclamationTriangleIcon className="w-12 h-12 mx-auto mb-4 text-red-400" />
-                    <h1 className="text-2xl font-bold mb-2 text-white">Firebase Initialization Error</h1>
-                    <p className="text-base mb-4">
-                        The application could not connect to Firebase. This usually happens if the environment variables are set, but contain incorrect values (e.g., a typo in the Project ID).
-                    </p>
-                    <div className="text-sm mt-6 text-left bg-black/20 p-4 rounded-md font-mono text-xs text-red-300">
-                        <h2 className="text-lg font-bold mb-2 text-white">Error Details:</h2>
-                        <pre className="whitespace-pre-wrap">{firebaseInitializationError.message}</pre>
-                    </div>
-                </div>
-            </div>
-        );
+        // Fallback to mock data is handled by DataContext, just show the UI
+        console.error("Firebase Initialization Error:", firebaseInitializationError.message);
     }
     
     if (!auth) throw new Error("AuthContext not found.");
@@ -242,6 +264,8 @@ const AppContent: React.FC = () => {
         isSeeding,
         updateDoc,
         addDoc,
+        creatorDetails,
+        setCreatorDetails
     } = data;
     
     // Centralized background audio management
@@ -350,14 +374,30 @@ const AppContent: React.FC = () => {
     if (loading) {
         return <Loader />;
     }
+    
+    let dashboardBackground: string | undefined;
+    let creatorBackgroundStyle = {};
 
-    const dashboardBackground = user.role === 'admin' 
+    if(user.role === 'creator') {
+        creatorBackgroundStyle = {
+             backgroundImage: "linear-gradient(rgba(10, 10, 10, 0.85), rgba(10, 10, 10, 0.85)), url('https://i.ibb.co/dsh2c2hp/unnamed.jpg')",
+             backgroundSize: 'cover',
+             backgroundPosition: 'center',
+             backgroundAttachment: 'fixed',
+        };
+    } else {
+        dashboardBackground = user.role === 'admin' 
         ? companyDetails.adminDashboardBackgroundUrl 
         : companyDetails.playerDashboardBackgroundUrl;
+    }
+
 
     return (
-        <div className="min-h-screen flex flex-col bg-transparent text-white">
-            <header className="bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-800 p-4 flex justify-between items-center sticky top-0 z-40">
+        <div className="min-h-screen flex flex-col bg-transparent text-white" style={creatorBackgroundStyle}>
+            {showCreatorPopup && <CreatorPopup onClose={() => setShowCreatorPopup(false)} />}
+            <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
+
+            <header className="bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-800 p-4 flex justify-between items-center sticky top-0 z-30">
                  <div className="flex items-center">
                     <div className="mr-3">
                         <img src={companyDetails.logoUrl} alt="Logo" className="h-8 w-8 rounded-md"/>
@@ -372,7 +412,7 @@ const AppContent: React.FC = () => {
                 </div>
             </header>
             <main 
-                className="flex-grow relative"
+                className="flex-grow relative pb-20" // Padding bottom to avoid footer overlap
                 style={{
                     backgroundImage: dashboardBackground ? `url(${dashboardBackground})` : 'none',
                     backgroundSize: 'cover',
@@ -393,53 +433,35 @@ const AppContent: React.FC = () => {
                             legendaryBadges={data.legendaryBadges}
                             raffles={data.raffles}
                             ranks={data.ranks}
-                        /> : 
+                        /> : user.role === 'admin' ?
                         <AdminDashboard 
                             // Pass all data and functions from context to AdminDashboard
                             {...data}
                             addPlayerDoc={(playerData) => addDoc('players', playerData)}
                             onDeleteAllData={handleDeleteAllData}
-                        />
+                        /> : user.role === 'creator' ?
+                        <CreatorDashboard />
+                        : null
                     }
                 </div>
             </main>
-            <Footer details={companyDetails} socialLinks={socialLinks} />
+            <Footer 
+                details={companyDetails} 
+                socialLinks={socialLinks} 
+                onCreatorClick={() => setShowCreatorPopup(true)} 
+                onHelpClick={() => setShowHelp(true)}
+            />
+            {!IS_LIVE_DATA && <MockDataWatermark />}
 
         </div>
     );
 };
 
 const App: React.FC = () => {
-    const [showCreatorPopup, setShowCreatorPopup] = useState(false);
-    const auth = useContext(AuthContext); // We need auth context to know which page we're on.
-
     return (
         <AuthProvider>
             <DataProvider>
                 <AppContent />
-                {showCreatorPopup && <CreatorPopup onClose={() => setShowCreatorPopup(false)} />}
-                 <motion.button
-                    className="fixed bottom-4 left-4 z-50 p-0 bg-transparent border-none cursor-pointer"
-                    onClick={() => setShowCreatorPopup(true)}
-                    animate={{
-                        rotate: [0, -10, 10, -10, 0, 360],
-                        scale: [1, 1.1, 0.9, 1.1, 1, 1],
-                        y: [0, -10, 5, -10, 0, 0],
-                        x: [0, 5, -5, 5, 0, 0]
-                    }}
-                    transition={{
-                        duration: 5,
-                        ease: "easeInOut",
-                        repeat: Infinity,
-                        repeatType: "loop",
-                        repeatDelay: 8
-                    }}
-                    whileHover={{ scale: 1.3, rotate: 20 }}
-                    title="Creator Icon"
-                    aria-label="Open Creator Information"
-                >
-                    <img src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png" alt="Creator Icon" className="h-12 w-12" />
-                </motion.button>
             </DataProvider>
         </AuthProvider>
     );

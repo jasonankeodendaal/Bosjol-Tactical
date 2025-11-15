@@ -1,3 +1,4 @@
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -132,8 +133,8 @@ Please let me know when would be a good time to discuss this further. Thank you!
 
 
 const Footer: React.FC<{ details: CompanyDetails, socialLinks: SocialLink[] }> = ({ details, socialLinks }) => (
-    <footer className="bg-zinc-900/80 backdrop-blur-sm border-t border-zinc-800 p-6 text-center text-sm text-gray-400 mt-auto">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
+    <footer className="bg-zinc-900/80 backdrop-blur-sm border-t border-zinc-800 py-3 px-6 text-center text-sm text-gray-400 mt-auto">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-2">
             <div className="flex items-center">
                  {details.logoUrl ? (
                     <img src={details.logoUrl} alt={details.name} className="h-8 mr-3" />

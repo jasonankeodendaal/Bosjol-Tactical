@@ -81,7 +81,7 @@ export const SuppliersTab: React.FC<SuppliersTabProps> = ({ suppliers, setSuppli
             <DashboardCard title="Manage Suppliers" icon={<TruckIcon className="w-6 h-6" />}>
                 <div className="p-4">
                     <div className="flex justify-end mb-4">
-                        <Button onClick={() => setIsEditing({})}>
+                        <Button onClick={() => setIsEditing({})} size="sm">
                             <PlusIcon className="w-5 h-5 mr-2" />
                             Add Supplier
                         </Button>

@@ -88,7 +88,7 @@ export const SponsorsTab: React.FC<SponsorsTabProps> = ({ sponsors, setSponsors 
             <DashboardCard title="Manage Sponsors" icon={<SparklesIcon className="w-6 h-6"/>}>
                  <div className="p-4">
                     <div className="flex justify-end mb-4">
-                        <Button onClick={() => setIsEditing({})}><PlusIcon className="w-5 h-5 mr-2"/>Add Sponsor</Button>
+                        <Button onClick={() => setIsEditing({})} size="sm"><PlusIcon className="w-5 h-5 mr-2"/>Add Sponsor</Button>
                     </div>
                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {sponsors.map(sponsor => (

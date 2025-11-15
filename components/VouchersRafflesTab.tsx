@@ -182,7 +182,7 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
             <DashboardCard title="Vouchers" icon={<TicketIcon className="w-6 h-6"/>}>
                 <div className="p-4">
                     <div className="flex justify-end mb-4">
-                        <Button onClick={() => setIsEditingVoucher({})}><PlusIcon className="w-5 h-5 mr-2"/>Create Voucher</Button>
+                        <Button onClick={() => setIsEditingVoucher({})} size="sm"><PlusIcon className="w-5 h-5 mr-2"/>Create Voucher</Button>
                     </div>
                     <div className="space-y-2 max-h-96 overflow-y-auto">
                         {vouchers.map(v => (
@@ -204,7 +204,7 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
             <DashboardCard title="Raffles" icon={<TicketIcon className="w-6 h-6"/>}>
                  <div className="p-4">
                     <div className="flex justify-end mb-4">
-                        <Button onClick={() => setIsEditingRaffle({})}><PlusIcon className="w-5 h-5 mr-2"/>Create Raffle</Button>
+                        <Button onClick={() => setIsEditingRaffle({})} size="sm"><PlusIcon className="w-5 h-5 mr-2"/>Create Raffle</Button>
                     </div>
                      <div className="space-y-4 max-h-96 overflow-y-auto">
                         {raffles.map(r => (

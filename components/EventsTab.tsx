@@ -31,7 +31,7 @@ export const EventsTab: React.FC<EventsTabProps> = ({ events, onManageEvent }) =
                         <Button size="sm" variant={filter === 'upcoming' ? 'primary' : 'secondary'} onClick={() => setFilter('upcoming')}>Upcoming ({upcomingEvents.length})</Button>
                         <Button size="sm" variant={filter === 'past' ? 'primary' : 'secondary'} onClick={() => setFilter('past')}>Past ({pastEvents.length})</Button>
                     </div>
-                     <Button onClick={() => onManageEvent(null)} className="w-full sm:w-auto">
+                     <Button onClick={() => onManageEvent(null)} size="sm" className="w-full sm:w-auto">
                         <PlusIcon className="w-5 h-5 mr-2" />
                         Create New Event
                     </Button>

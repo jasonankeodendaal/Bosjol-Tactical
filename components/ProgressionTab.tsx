@@ -217,7 +217,7 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({ ranks, setRanks,
                  <DashboardCard title="Standard Badges" icon={<TrophyIcon className="w-6 h-6"/>}>
                      <div className="p-4">
                         <div className="flex justify-end mb-4">
-                            <Button onClick={() => setEditingStandardBadge({})}><PlusIcon className="w-5 h-5 mr-2" />Add Badge</Button>
+                            <Button onClick={() => setEditingStandardBadge({})} size="sm"><PlusIcon className="w-5 h-5 mr-2" />Add Badge</Button>
                         </div>
                         <div className="space-y-2 max-h-96 overflow-y-auto">
                             {badges.map(badge => (
@@ -239,7 +239,7 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({ ranks, setRanks,
                 <DashboardCard title="Legendary Badges" icon={<TrophyIcon className="w-6 h-6 text-amber-400"/>}>
                      <div className="p-4">
                         <div className="flex justify-end mb-4">
-                            <Button onClick={() => setEditingLegendaryBadge({})}><PlusIcon className="w-5 h-5 mr-2" />Add Badge</Button>
+                            <Button onClick={() => setEditingLegendaryBadge({})} size="sm"><PlusIcon className="w-5 h-5 mr-2" />Add Badge</Button>
                         </div>
                         <div className="space-y-2 max-h-96 overflow-y-auto">
                             {legendaryBadges.map(badge => (

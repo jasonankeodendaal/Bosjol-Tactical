@@ -265,7 +265,7 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
                             onChange={e => setSearchTerm(e.target.value)}
                             className="w-full sm:w-72"
                         />
-                        <Button onClick={() => setShowNewPlayerModal(true)} className="w-full sm:w-auto">
+                        <Button onClick={() => setShowNewPlayerModal(true)} size="sm" className="w-full sm:w-auto">
                             <PlusIcon className="w-5 h-5 mr-2" />
                             Add New Player
                         </Button>

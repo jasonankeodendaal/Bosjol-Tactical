@@ -163,7 +163,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInvent
                             <Button size="sm" variant={filter === 'rental' ? 'primary' : 'secondary'} onClick={() => setFilter('rental')}>Rental</Button>
                             <Button size="sm" variant={filter === 'sale' ? 'primary' : 'secondary'} onClick={() => setFilter('sale')}>For Sale</Button>
                         </div>
-                        <Button onClick={() => setIsEditing({})} className="w-full sm:w-auto">
+                        <Button onClick={() => setIsEditing({})} size="sm" className="w-full sm:w-auto">
                             <PlusIcon className="w-5 h-5 mr-2"/>Add New Item
                         </Button>
                     </div>

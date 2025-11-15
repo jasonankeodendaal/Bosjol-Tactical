@@ -122,7 +122,7 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ locations, setLocati
             <DashboardCard title="Manage Locations" icon={<MapPinIcon className="w-6 h-6" />}>
                 <div className="p-4">
                     <div className="flex justify-end mb-4">
-                        <Button onClick={() => setIsEditing({})}>
+                        <Button onClick={() => setIsEditing({})} size="sm">
                             <PlusIcon className="w-5 h-5 mr-2" />
                             Add Location
                         </Button>

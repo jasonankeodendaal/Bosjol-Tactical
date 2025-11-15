@@ -868,17 +868,6 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, player
     }, [activeTab]);
 
     const helpTopic = `player-dashboard-${activeTab.toLowerCase()}`;
-    
-    const paginate = (newDirection: number) => {
-        const currentIndex = TABS.indexOf(activeTab);
-        let newIndex = currentIndex + newDirection;
-        if (newIndex < 0) newIndex = TABS.length - 1;
-        else if (newIndex >= TABS.length) newIndex = 0;
-        setActiveTab(TABS[newIndex]);
-    };
-
-    const swipeConfidenceThreshold = 10000;
-    const swipePower = (offset: number, velocity: number) => Math.abs(offset) * velocity;
 
     const variants = {
         enter: (direction: number) => ({ x: direction > 0 ? '100%' : '-100%', opacity: 0 }),
@@ -915,17 +904,6 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, player
                         animate="center"
                         exit="exit"
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        drag="x"
-                        dragConstraints={{ left: 0, right: 0 }}
-                        dragElastic={0.2}
-                        onDragEnd={(e, { offset, velocity }) => {
-                            const swipe = swipePower(offset.x, velocity.x);
-                            if (swipe < -swipeConfidenceThreshold) {
-                                paginate(1); // Next
-                            } else if (swipe > swipeConfidenceThreshold) {
-                                paginate(-1); // Previous
-                            }
-                        }}
                     >
                         {renderContent()}
                     </motion.div>

@@ -1,6 +1,6 @@
 import { IconProps } from "@phosphor-icons/react";
 
-export type Role = 'player' | 'admin';
+export type Role = 'player' | 'admin' | 'creator';
 
 export interface User {
   id: string;
@@ -328,6 +328,7 @@ export interface CompanyDetails {
     loginAudioUrl?: string;
     playerDashboardBackgroundUrl?: string;
     adminDashboardBackgroundUrl?: string;
+    apiServerUrl?: string;
     apkUrl?: string;
     bankInfo: {
         bankName: string;
@@ -336,4 +337,15 @@ export interface CompanyDetails {
     };
     fixedEventRules?: string;
     minimumSignupAge: number;
+}
+
+export interface CreatorDetails {
+    id: string;
+    name: string;
+    email: string;
+    whatsapp: string;
+    tagline: string;
+    bio: string;
+    logoUrl: string;
+    githubUrl: string;
 }

@@ -260,6 +260,13 @@ export const CodeBracketIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) 
     </svg>
 );
 
+export const ChatBubbleLeftRightIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193l-3.722.266c-.53.038-.984.224-1.32.506l-3.626 2.901c-.36.289-.865.289-1.225 0l-3.626-2.901c-.336-.282-.79-.468-1.32-.506l-3.722-.266A2.122 2.122 0 013 15.894v-4.286c0-.97.616-1.813 1.5-2.097m16.5 0a2.121 2.121 0 00-1.5-2.097L16.5 6.25c-1.002-.21-1.813.616-2.097 1.5l-.284.884-2.848.884-2.848-.884-.284-.884a2.121 2.121 0 00-2.097-1.5L4.5 6.25a2.121 2.121 0 00-2.097 1.5m16.5 0l.284.884M4.5 8.511l.284.884" />
+    </svg>
+);
+
+
 export const HelmetPhoneIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props} stroke="currentColor" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     {/* Helmet shape */}

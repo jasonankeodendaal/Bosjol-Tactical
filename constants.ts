@@ -1,4 +1,4 @@
-import type { Player, Admin, GameEvent, Briefing, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia } from './types';
+import type { Player, Admin, GameEvent, Briefing, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails } from './types';
 
 export const MOCK_BADGES: Badge[] = [
     { id: 'b01', name: 'Sharpshooter', description: 'Achieve 50 headshots', iconUrl: 'https://cdn.pixabay.com/photo/2012/04/13/19/27/target-33391_1280.png', criteria: { type: 'headshots', value: 50 }},
@@ -654,6 +654,7 @@ export const MOCK_COMPANY_DETAILS: CompanyDetails = {
     loginAudioUrl: '',
     playerDashboardBackgroundUrl: '',
     adminDashboardBackgroundUrl: '',
+    apiServerUrl: '',
     apkUrl: '',
     minimumSignupAge: 18,
     bankInfo: {
@@ -663,6 +664,18 @@ export const MOCK_COMPANY_DETAILS: CompanyDetails = {
     },
     fixedEventRules: "1. All players must have approved eye protection (ANSI Z87.1 rated) worn at all times in designated areas.\n2. All weapons will be chronographed before play. Field limits will be strictly enforced.\n3. Do not blind fire. You must be able to see your target.\n4. Call your hits. Cheating will not be tolerated.\n5. Observe minimum engagement distances (MEDs) for high-powered replicas.\n6. No physical contact or verbal abuse between players.",
 };
+
+export const MOCK_CREATOR_DETAILS: CreatorDetails = {
+    id: 'creatorDetails',
+    name: 'JSTYP.me',
+    email: 'jstypme@gmail.com',
+    whatsapp: '27695989427',
+    tagline: "Jason's solution to your problems, Yes me!",
+    bio: "Need a website, mobile app or custom tool get in touch today.. At Jstyp.me nothing is impossible, innovation is key and the mind is a open learning space. Here we build on what can not be done!",
+    logoUrl: 'https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png',
+    githubUrl: 'https://github.com/jstyp/bosjol-tactical-dashboard'
+};
+
 
 // Generate detailed transactions from mock data
 const generateMockTransactions = (): Transaction[] => {

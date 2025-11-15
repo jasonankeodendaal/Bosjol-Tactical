@@ -8,6 +8,7 @@ interface FileUploadProps {
   accept: string;
   multiple?: boolean;
   onProgress?: (percent: number) => void;
+  apiServerUrl?: string;
 }
 
 const compressImage = (file: File, maxSizeKB: number = 200): Promise<Blob> => {
@@ -115,9 +116,25 @@ const compressAudio = (file: File, targetBitrate: number = 64000): Promise<Blob>
     });
 };
 
-export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, onProgress }) => {
+export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, onProgress, apiServerUrl }) => {
   const [fileName, setFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCustomUpload = async (file: Blob, name: string): Promise<string> => {
+    if (!apiServerUrl) throw new Error("API Server URL is not configured.");
+    const formData = new FormData();
+    formData.append('file', file, name);
+    const response = await fetch(`${apiServerUrl}/upload`, {
+        method: 'POST',
+        body: formData,
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`API server upload failed: ${errorData.error || response.statusText}`);
+    }
+    const { url } = await response.json();
+    return url;
+};
 
   const handleFilesChange = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -128,20 +145,29 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
     const results: string[] = [];
     let processedCount = 0;
 
+    const uploader = apiServerUrl ? handleCustomUpload : uploadFile;
+
     for (const file of filesArray) {
         try {
             let fileToUpload: Blob = file;
 
-            if (file.type.startsWith('image/')) {
-                fileToUpload = await compressImage(file);
-            } else if (file.type.startsWith('audio/')) {
-                fileToUpload = await compressAudio(file);
-            } else if (file.size > 25 * 1024 * 1024) { // 25MB limit for other files like video
+            // Only compress images and audio if we are using Firebase storage to save space.
+            // A self-hosted server might have different storage constraints.
+            if (!apiServerUrl) {
+                if (file.type.startsWith('image/')) {
+                    fileToUpload = await compressImage(file);
+                } else if (file.type.startsWith('audio/')) {
+                    fileToUpload = await compressAudio(file);
+                }
+            }
+            
+            // Limit for non-image/audio files on Firebase, or any file on custom server
+            if (fileToUpload.size > 25 * 1024 * 1024) { // 25MB limit
                  alert(`Cannot upload "${file.name}". Files larger than 25MB are not supported for direct upload.`);
                  continue;
             }
             
-            const url = await uploadFile(fileToUpload, file.name);
+            const url = await uploader(fileToUpload, file.name);
             results.push(url);
 
         } catch (err) {
@@ -160,7 +186,7 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
     // Reset file input to allow re-uploading the same file
     if (fileInputRef.current) fileInputRef.current.value = "";
     
-}, [onUpload, multiple, onProgress]);
+}, [onUpload, multiple, onProgress, apiServerUrl]);
 
   const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       handleFilesChange(event.target.files);

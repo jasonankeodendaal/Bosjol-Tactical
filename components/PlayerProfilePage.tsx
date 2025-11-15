@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useContext } from 'react';
 import type { Player, GameEvent, Rank, XpAdjustment, LegendaryBadge, PlayerRole } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
@@ -11,6 +11,7 @@ import { ImageUpload } from './ImageUpload';
 import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
 import { HelpSystem } from './Help';
+import { DataContext } from '../data/DataContext';
 
 const getRankForPlayer = (player: Player, ranks: Rank[]): Rank => {
     if (player.stats.gamesPlayed < 10) return UNRANKED_RANK;
@@ -90,6 +91,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
     const [selectedLegendaryBadge, setSelectedLegendaryBadge] = useState('');
     const [showPin, setShowPin] = useState(false);
     const [isResettingPin, setIsResettingPin] = useState(false);
+    const dataContext = useContext(DataContext);
     
     useEffect(() => {
         setFormData(player);
@@ -247,7 +249,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                                 <>
                                     <div className="flex flex-col items-center">
                                         <img src={formData.avatarUrl} alt="Avatar Preview" className="w-24 h-24 rounded-full object-cover mb-2"/>
-                                        <ImageUpload onUpload={handleAvatarUpload} accept="image/*" />
+                                        <ImageUpload onUpload={handleAvatarUpload} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
                                         <Button size="sm" variant="secondary" className="!text-xs mt-2" onClick={handleRemoveAvatar}>Reset to default</Button>
                                     </div>
                                     <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))}/>

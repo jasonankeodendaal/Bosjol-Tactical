@@ -11,6 +11,8 @@ interface AuthProviderProps {
 
 // In a real production app, this should come from an environment variable for security.
 const ADMIN_EMAIL = 'bosjoltactical@gmail.com';
+const CREATOR_EMAIL = 'creator@bosjol.dev';
+
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | Player | Admin | null>(null);
@@ -65,7 +67,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 setUser(currentUser => {
                     // If the user currently in state is an admin, that admin has now signed out via Firebase.
                     // Clear the state.
-                    if (currentUser?.role === 'admin') {
+                    if (currentUser?.role === 'admin' || currentUser?.role === 'creator') {
                         return null;
                     }
                     // Otherwise, the user is either a player or null. Don't change anything.
@@ -81,6 +83,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const login = async (username: string, password: string): Promise<boolean> => {
         const cleanUsername = username.trim();
         const cleanPassword = password.trim();
+
+        if (cleanUsername.toLowerCase() === CREATOR_EMAIL) {
+            if (cleanPassword === 'creatorpass') {
+                setUser({ id: 'creator', name: 'Creator', role: 'creator' });
+                return true;
+            }
+            return false;
+        }
 
         if (cleanUsername.toLowerCase() === ADMIN_EMAIL) {
             // --- ADMIN LOGIN LOGIC ---

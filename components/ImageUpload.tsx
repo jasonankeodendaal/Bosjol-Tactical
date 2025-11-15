@@ -48,12 +48,77 @@ const compressImage = (file: File, maxSizeKB: number = 200): Promise<string> => 
     });
 };
 
-const fileToBase64 = (file: File): Promise<string> => {
+// FIX: Changed the type of the 'file' parameter from 'File' to 'Blob' to correctly handle the compressed audio blob.
+const fileToBase64 = (file: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = error => reject(error);
+    });
+};
+
+const compressAudio = (file: File, targetBitrate: number = 64000): Promise<string> => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            // @ts-ignore
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const arrayBuffer = await file.arrayBuffer();
+            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+            const mediaStreamDestination = audioCtx.createMediaStreamDestination();
+            const source = audioCtx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(mediaStreamDestination);
+            
+            const mimeType = 'audio/webm;codecs=opus';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                console.warn(`${mimeType} is not supported. Falling back to base64 encoding without compression.`);
+                if (file.size > 500 * 1024) {
+                    return reject(new Error(`Audio file is too large (${(file.size / 1024).toFixed(0)}KB) and your browser doesn't support compression. Please keep audio under 500KB.`));
+                }
+                return resolve(await fileToBase64(file));
+            }
+
+            const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream, {
+                mimeType,
+                audioBitsPerSecond: targetBitrate,
+            });
+
+            const chunks: Blob[] = [];
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    chunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                const compressedBlob = new Blob(chunks, { type: mimeType });
+                
+                if (compressedBlob.size > 500 * 1024) {
+                     return reject(new Error(`Even after compression, the audio file is too large (${(compressedBlob.size / 1024).toFixed(0)}KB). Please upload a shorter audio clip.`));
+                }
+
+                const base64String = await fileToBase64(compressedBlob);
+                resolve(base64String);
+                await audioCtx.close();
+            };
+
+            source.onended = () => {
+                mediaRecorder.stop();
+            };
+            
+            mediaRecorder.start();
+            source.start();
+
+        } catch (error) {
+            console.error("Audio compression failed:", error);
+            console.warn("Falling back to base64 encoding without compression due to an error.");
+            if (file.size > 500 * 1024) {
+                return reject(new Error(`Audio processing failed. The original file is too large (${(file.size / 1024).toFixed(0)}KB). Please keep audio under 500KB.`));
+            }
+            resolve(await fileToBase64(file));
+        }
     });
 };
 
@@ -103,13 +168,8 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
                     // Compress images to save space
                     results.push(await compressImage(file));
                 } else if (file.type.startsWith('audio/')) {
-                    // Convert small audio files to base64
-                    // Firestore documents have a 1MB limit. A 500KB audio file becomes ~667KB as base64.
-                    if (file.size > 500 * 1024) { 
-                        alert(`Audio file "${file.name}" is too large (${(file.size / 1024).toFixed(0)}KB). Please keep audio files under 500KB or use an external API server. This upload will be skipped.`);
-                        continue;
-                    }
-                    results.push(await fileToBase64(file));
+                    // Compress audio to a smaller size before converting to base64
+                    results.push(await compressAudio(file));
                 } else {
                     // Block other file types like video
                     alert(`Cannot upload "${file.name}". Video and other large file types require setting up an External API Server to avoid exceeding database limits. This upload will be skipped.`);

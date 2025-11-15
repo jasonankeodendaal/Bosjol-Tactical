@@ -12,6 +12,7 @@ import { Loader } from './components/Loader';
 import { USE_FIREBASE, isFirebaseConfigured, getEnvVar, firebaseInitializationError } from './firebase';
 import { FrontPage } from './components/FrontPage';
 import { Modal } from './components/Modal';
+import { HelpSystem } from './components/Help';
 
 
 // --- Creator Popup Component and Icons ---
@@ -409,6 +410,7 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
     const [showCreatorPopup, setShowCreatorPopup] = useState(false);
+    const auth = useContext(AuthContext); // We need auth context to know which page we're on.
 
     return (
         <AuthProvider>

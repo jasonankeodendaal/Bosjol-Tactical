@@ -6,6 +6,7 @@ import { Button } from './Button';
 import { UserIcon, KeyIcon, ExclamationTriangleIcon, CloudArrowDownIcon } from './icons/Icons';
 import { CompanyDetails, SocialLink } from '../types';
 import { Input } from './Input';
+import { HelpSystem } from './Help';
 
 interface LoginScreenProps {
   companyDetails: CompanyDetails;
@@ -97,6 +98,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
     <div className="relative min-h-screen flex items-center justify-center bg-transparent p-4 overflow-hidden">
        {renderBackground()}
        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent z-1"></div>
+       <HelpSystem topic="login-screen" />
 
       <motion.div
         initial={{ opacity: 0, y: -30 }}

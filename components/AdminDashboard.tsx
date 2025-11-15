@@ -22,6 +22,7 @@ import { Leaderboard } from './Leaderboard';
 import { SettingsTab } from './SettingsTab';
 import { ApiSetupTab } from './ApiSetupTab';
 import { DataContext } from '../data/DataContext';
+import { HelpSystem } from './Help';
 
 interface AdminDashboardProps {
     players: Player[];
@@ -363,34 +364,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     
     const selectedPlayer = players.find(p => p.id === selectedPlayerId);
 
+    const getHelpTopic = () => {
+        if (view === 'player_profile') return 'admin-player-profile';
+        if (view === 'manage_event') return 'admin-manage-event';
+        // Format tab name for help content key
+        const formattedTab = activeTab.toLowerCase().replace(' & ', '-').replace(' ', '-');
+        return `admin-dashboard-${formattedTab}`;
+    };
+
     if (view === 'player_profile' && selectedPlayer) {
-        return <PlayerProfilePage 
-            player={selectedPlayer} 
-            events={events} 
-            legendaryBadges={legendaryBadges}
-            onBack={() => setView('dashboard')}
-            onUpdatePlayer={handleUpdatePlayer}
-            ranks={ranks}
-        />;
+        return (
+            <>
+                <PlayerProfilePage 
+                    player={selectedPlayer} 
+                    events={events} 
+                    legendaryBadges={legendaryBadges}
+                    onBack={() => setView('dashboard')}
+                    onUpdatePlayer={handleUpdatePlayer}
+                    ranks={ranks}
+                />
+                <HelpSystem topic={getHelpTopic()} />
+            </>
+        );
     }
 
     if (view === 'manage_event') {
         const eventToManage = selectedEventId ? events.find(e => e.id === selectedEventId) : undefined;
-        return <ManageEventPage 
-            event={eventToManage}
-            players={props.players}
-            inventory={props.inventory}
-            gamificationSettings={props.gamificationSettings}
-            onBack={() => setView('dashboard')}
-            onSave={handleSaveEvent}
-            onDelete={handleDeleteEvent}
-            setPlayers={props.setPlayers}
-            setTransactions={props.setTransactions}
-        />
+        return (
+            <>
+                <ManageEventPage 
+                    event={eventToManage}
+                    players={props.players}
+                    inventory={props.inventory}
+                    gamificationSettings={props.gamificationSettings}
+                    onBack={() => setView('dashboard')}
+                    onSave={handleSaveEvent}
+                    onDelete={handleDeleteEvent}
+                    setPlayers={props.setPlayers}
+                    setTransactions={props.setTransactions}
+                />
+                <HelpSystem topic={getHelpTopic()} />
+            </>
+        )
     }
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
+            <HelpSystem topic={getHelpTopic()} />
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
             {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}

@@ -4,6 +4,7 @@ import type { CompanyDetails, CarouselMedia, SocialLink } from '../types';
 import { Button } from './Button';
 import { Modal } from './Modal';
 import { DocumentIcon } from './icons/Icons';
+import { HelpSystem } from './Help';
 
 const SignUpInfoModal: React.FC<{ companyDetails: CompanyDetails, onContinue: () => void }> = ({ companyDetails, onContinue }) => {
     const signupMessageTemplate = `Hello Bosjol Tactical Command,
@@ -134,6 +135,7 @@ export const FrontPage: React.FC<{ companyDetails: CompanyDetails, socialLinks: 
     return (
         <div className="relative min-h-screen w-full bg-black flex items-center justify-center overflow-hidden">
              {showInfoModal && <SignUpInfoModal companyDetails={companyDetails} onContinue={onEnter} />}
+             <HelpSystem topic="front-page" />
 
             <AnimatePresence initial={false}>
                 {carouselMedia.length > 0 && (

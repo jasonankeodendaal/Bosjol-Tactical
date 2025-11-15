@@ -12,6 +12,7 @@ import { Input } from './Input';
 import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
 import { Leaderboard } from './Leaderboard';
+import { HelpSystem } from './Help';
 
 
 const getRankForPlayer = (player: Player, ranks: Rank[]): Rank => {
@@ -853,8 +854,11 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, player
         }
     }, []);
 
+    const helpTopic = `player-dashboard-${activeTab.toLowerCase()}`;
+
     return (
         <div className="p-4 sm:p-6 lg:p-8">
+            <HelpSystem topic={helpTopic} />
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             
             {activeTab === 'Overview' && <OverviewTab player={player} events={events} sponsors={sponsors} ranks={ranks} />}

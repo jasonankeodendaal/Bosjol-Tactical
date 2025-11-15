@@ -10,7 +10,6 @@ import { ArrowLeftIcon, UserIcon, ChartBarIcon, CalendarIcon, TrophyIcon, Crossh
 import { ImageUpload } from './ImageUpload';
 import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
-import { HelpSystem } from './Help';
 import { DataContext } from '../data/DataContext';
 
 const getRankForPlayer = (player: Player, ranks: Rank[]): Rank => {
@@ -222,7 +221,6 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
-            <HelpSystem topic="admin-player-profile" />
             {isAwardingXp && <AwardXpModal onClose={() => setIsAwardingXp(false)} onSave={handleAwardXp} />}
             {isResettingPin && <ResetPinModal onClose={() => setIsResettingPin(false)} onSave={handleResetPin} />}
             <header className="flex items-center mb-6">

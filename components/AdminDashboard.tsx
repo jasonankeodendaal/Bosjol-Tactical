@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useRef, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, RentalSignup, CarouselMedia } from '../types';
@@ -24,7 +22,7 @@ import { Leaderboard } from './Leaderboard';
 import { SettingsTab } from './SettingsTab';
 import { ApiSetupTab } from './ApiSetupTab';
 import { DataContext, DataContextType } from '../data/DataContext';
-import { HelpSystem } from './Help';
+import { AuthContext } from '../auth/AuthContext';
 
 export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' | 'seedInitialData' | 'updatePlayerDoc' | 'addEventDoc' | 'deleteEventDoc' | 'updateEventDoc'> & {
     onDeleteAllData: () => void;
@@ -288,6 +286,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
 
     const dataContext = useContext(DataContext);
     if (!dataContext) throw new Error("DataContext not found");
+    const auth = useContext(AuthContext);
 
     const { players, setPlayers, events, setEvents, legendaryBadges, ranks, updateDoc, addDoc, deleteDoc } = props;
 
@@ -299,6 +298,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             setActiveTab(tab);
         }
     }, []);
+
+    const getHelpTopic = () => {
+        if (view === 'player_profile') return 'admin-player-profile';
+        if (view === 'manage_event') return 'admin-manage-event';
+        // Format tab name for help content key
+        const formattedTab = activeTab.toLowerCase().replace(' & ', '-').replace(' ', '-');
+        return `admin-dashboard-${formattedTab}`;
+    };
+
+    useEffect(() => {
+        if(auth) {
+            auth.setHelpTopic(getHelpTopic());
+        }
+    }, [activeTab, view, auth]);
 
     const handleViewPlayer = (id: string) => {
         setSelectedPlayerId(id);
@@ -334,53 +347,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     
     const selectedPlayer = players.find(p => p.id === selectedPlayerId);
 
-    const getHelpTopic = () => {
-        if (view === 'player_profile') return 'admin-player-profile';
-        if (view === 'manage_event') return 'admin-manage-event';
-        // Format tab name for help content key
-        const formattedTab = activeTab.toLowerCase().replace(' & ', '-').replace(' ', '-');
-        return `admin-dashboard-${formattedTab}`;
-    };
-
     if (view === 'player_profile' && selectedPlayer) {
         return (
-            <>
-                <PlayerProfilePage 
-                    player={selectedPlayer} 
-                    events={events} 
-                    legendaryBadges={legendaryBadges}
-                    onBack={() => setView('dashboard')}
-                    onUpdatePlayer={handleUpdatePlayer}
-                    ranks={ranks}
-                />
-                <HelpSystem topic={getHelpTopic()} />
-            </>
+            <PlayerProfilePage 
+                player={selectedPlayer} 
+                events={events} 
+                legendaryBadges={legendaryBadges}
+                onBack={() => setView('dashboard')}
+                onUpdatePlayer={handleUpdatePlayer}
+                ranks={ranks}
+            />
         );
     }
 
     if (view === 'manage_event') {
         const eventToManage = selectedEventId ? events.find(e => e.id === selectedEventId) : undefined;
         return (
-            <>
-                <ManageEventPage 
-                    event={eventToManage}
-                    players={props.players}
-                    inventory={props.inventory}
-                    gamificationSettings={props.gamificationSettings}
-                    onBack={() => setView('dashboard')}
-                    onSave={handleSaveEvent}
-                    onDelete={handleDeleteEvent}
-                    setPlayers={props.setPlayers}
-                    setTransactions={props.setTransactions}
-                />
-                <HelpSystem topic={getHelpTopic()} />
-            </>
+            <ManageEventPage 
+                event={eventToManage}
+                players={props.players}
+                inventory={props.inventory}
+                gamificationSettings={props.gamificationSettings}
+                onBack={() => setView('dashboard')}
+                onSave={handleSaveEvent}
+                onDelete={handleDeleteEvent}
+                setPlayers={props.setPlayers}
+                setTransactions={props.setTransactions}
+            />
         )
     }
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
-            <HelpSystem topic={getHelpTopic()} />
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
             {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}

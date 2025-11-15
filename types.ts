@@ -1,4 +1,6 @@
 import { IconProps } from "@phosphor-icons/react";
+// FIX: Import Dispatch and SetStateAction from React to resolve missing React namespace errors.
+import type { Dispatch, SetStateAction } from 'react';
 
 export type Role = 'player' | 'admin' | 'creator';
 
@@ -100,6 +102,9 @@ export interface AuthContextType {
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (user: User | Player | Admin) => void; 
+  helpTopic: string;
+  // FIX: Use the imported Dispatch and SetStateAction types, removing the need for the React namespace.
+  setHelpTopic: Dispatch<SetStateAction<string>>;
 }
 
 export type EventType = 'Training' | 'Mission' | 'Briefing' | 'Maintenance';

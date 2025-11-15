@@ -1,9 +1,5 @@
-
-
-
-
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
 import { LoginScreen } from './components/LoginScreen';
 import { PlayerDashboard } from './components/PlayerDashboard';
@@ -137,12 +133,26 @@ Please let me know when would be a good time to discuss this further. Thank you!
 };
 // --- END Creator Popup ---
 
+const FloatingCreatorButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+    <motion.button
+        onClick={onClick}
+        whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.95 }}
+        className="fixed bottom-6 right-6 z-50 p-2 bg-zinc-900/60 backdrop-blur-sm border border-zinc-700 rounded-full shadow-lg"
+        title="Creator Information"
+        aria-label="Open Creator Information"
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 1, type: 'spring' }}
+    >
+        <img src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png" alt="Creator Icon" className="h-10 w-10" />
+    </motion.button>
+);
+
 const Footer: React.FC<{ 
     details: CompanyDetails, 
     socialLinks: SocialLink[],
-    onCreatorClick: () => void,
     onHelpClick: () => void,
-}> = ({ details, socialLinks, onCreatorClick, onHelpClick }) => (
+}> = ({ details, socialLinks, onHelpClick }) => (
     <footer className="fixed bottom-0 left-0 right-0 bg-zinc-950/80 backdrop-blur-sm border-t border-zinc-800 py-2 px-4 text-center text-xs text-gray-500 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
             <motion.button
@@ -163,13 +173,7 @@ const Footer: React.FC<{
 
             <div className="flex items-center gap-3">
                  <StorageStatusIndicator apiServerUrl={details.apiServerUrl} />
-                 <motion.button
-                    onClick={onCreatorClick}
-                    whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.95 }}
-                    className="p-2" title="Creator Information" aria-label="Open Creator Information"
-                >
-                    <img src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png" alt="Creator Icon" className="h-8 w-8" />
-                </motion.button>
+                 <div className="w-8 h-8" />
             </div>
         </div>
     </footer>
@@ -183,7 +187,18 @@ const AppContent: React.FC = () => {
     const [showHelp, setShowHelp] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
-    const helpTopic = auth?.helpTopic || 'front-page';
+    if (!auth) throw new Error("AuthContext not found.");
+    if (!data) throw new Error("DataContext not found.");
+    
+    const { isAuthenticated, user, logout, helpTopic, setHelpTopic } = auth;
+
+    useEffect(() => {
+        if (showFrontPage) {
+            setHelpTopic('front-page');
+        } else if (!isAuthenticated) {
+            setHelpTopic('login-screen');
+        }
+    }, [showFrontPage, isAuthenticated, setHelpTopic]);
 
     if (USE_FIREBASE && !isFirebaseConfigured()) {
         return (
@@ -205,10 +220,6 @@ const AppContent: React.FC = () => {
         console.error("Firebase Initialization Error:", firebaseInitializationError.message);
     }
     
-    if (!auth) throw new Error("AuthContext not found.");
-    if (!data) throw new Error("DataContext not found.");
-
-    const { isAuthenticated, user, logout } = auth;
 
     useEffect(() => {
       // Per user request, always log out on refresh to ensure the session starts
@@ -364,11 +375,24 @@ const AppContent: React.FC = () => {
         );
     }
 
+    const renderPublicPages = () => (
+        <>
+            <AnimatePresence>
+                {showCreatorPopup && <CreatorPopup onClose={() => setShowCreatorPopup(false)} />}
+            </AnimatePresence>
+            <FloatingCreatorButton onClick={() => setShowCreatorPopup(true)} />
+            <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
+            
+            {showFrontPage ? (
+                <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} />
+            ) : (
+                <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />
+            )}
+        </>
+    );
+
     if (!isAuthenticated || !user) {
-        if (showFrontPage) {
-            return <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} />;
-        }
-        return <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />;
+        return renderPublicPages();
     }
 
     if (loading) {
@@ -394,7 +418,9 @@ const AppContent: React.FC = () => {
 
     return (
         <div className="min-h-screen flex flex-col bg-transparent text-white" style={creatorBackgroundStyle}>
-            {showCreatorPopup && <CreatorPopup onClose={() => setShowCreatorPopup(false)} />}
+            <AnimatePresence>
+                {showCreatorPopup && <CreatorPopup onClose={() => setShowCreatorPopup(false)} />}
+            </AnimatePresence>
             <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
 
             <header className="bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-800 p-4 flex justify-between items-center sticky top-0 z-30">
@@ -448,7 +474,6 @@ const AppContent: React.FC = () => {
             <Footer 
                 details={companyDetails} 
                 socialLinks={socialLinks} 
-                onCreatorClick={() => setShowCreatorPopup(true)} 
                 onHelpClick={() => setShowHelp(true)}
             />
             {!IS_LIVE_DATA && <MockDataWatermark />}

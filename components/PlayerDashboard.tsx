@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Rank, Badge, LegendaryBadge, Raffle } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -12,7 +12,7 @@ import { Input } from './Input';
 import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
 import { Leaderboard } from './Leaderboard';
-import { HelpSystem } from './Help';
+import { AuthContext } from '../auth/AuthContext';
 
 
 const getRankForPlayer = (player: Player, ranks: Rank[]): Rank => {
@@ -844,6 +844,7 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'raffles' | 'pl
 
 export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, players, sponsors, onPlayerUpdate, events, onEventSignUp, legendaryBadges, raffles, ranks }) => {
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
+    const auth = useContext(AuthContext);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -854,11 +855,14 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, player
         }
     }, []);
 
-    const helpTopic = `player-dashboard-${activeTab.toLowerCase()}`;
+    useEffect(() => {
+        if(auth) {
+            auth.setHelpTopic(`player-dashboard-${activeTab.toLowerCase()}`);
+        }
+    }, [activeTab, auth]);
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
-            <HelpSystem topic={helpTopic} />
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             
             {activeTab === 'Overview' && <OverviewTab player={player} events={events} sponsors={sponsors} ranks={ranks} />}

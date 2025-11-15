@@ -10,7 +10,6 @@ import { MOCK_EVENT_THEMES, EVENT_STATUSES, EVENT_TYPES } from '../constants';
 import { ImageUpload } from './ImageUpload';
 import { BadgePill } from './BadgePill';
 import { InfoTooltip } from './InfoTooltip';
-import { HelpSystem } from './Help';
 
 interface ManageEventPageProps {
     event?: GameEvent;
@@ -207,7 +206,6 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
-            <HelpSystem topic="admin-manage-event" />
             <header className="flex items-center mb-6">
                 <Button onClick={onBack} variant="secondary" size="sm" className="mr-4">
                     <ArrowLeftIcon className="w-5 h-5" />

@@ -1,4 +1,5 @@
 
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -166,7 +167,7 @@ const Footer: React.FC<{
                     whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.95 }}
                     className="p-1" title="Creator Information" aria-label="Open creator information"
                 >
-                    <img src={creatorDetails.logoUrl} alt="Creator Icon" className="w-6 h-6 rounded-full" />
+                    <img src="https://i.ibb.co/0phm4WG/image-removebg-preview.png" alt="Creator Icon" className="w-8 h-8 rounded-full" />
                 </motion.button>
             </div>
         </div>
@@ -372,9 +373,9 @@ const AppContent: React.FC = () => {
     const renderPublicContent = () => (
         <>
             {showFrontPage ? (
-                <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} />
+                <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} onCreatorClick={() => setShowCreatorPopup(true)} />
             ) : (
-                <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />
+                <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} onCreatorClick={() => setShowCreatorPopup(true)} />
             )}
         </>
     );

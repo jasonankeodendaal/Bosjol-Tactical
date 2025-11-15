@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { USE_FIREBASE, db } from '../firebase';
 import * as mock from '../constants';
@@ -77,15 +78,15 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                 console.error(`Failed to save document ${collectionName}/${docId}:`, error);
                 alert(`Failed to save settings to the database. This can happen if uploaded images or videos are too large (document size limit is 1MB).\n\nError: ${error.message}`);
             }
-        } else {
-            setData(finalData);
         }
+        setData(finalData); // Update local state for both firebase and mock
     };
     
     return [data, updateData, loading] as const;
 }
 
-interface DataContextType {
+// --- START OF TYPE DEFINITION ---
+export interface DataContextType {
     players: Player[]; setPlayers: (d: Player[] | ((p: Player[]) => Player[])) => void;
     events: GameEvent[]; setEvents: (d: GameEvent[] | ((p: GameEvent[]) => GameEvent[])) => void;
     ranks: Rank[]; setRanks: (d: Rank[] | ((p: Rank[]) => Rank[])) => void;
@@ -93,7 +94,7 @@ interface DataContextType {
     legendaryBadges: LegendaryBadge[]; setLegendaryBadges: (d: LegendaryBadge[] | ((p: LegendaryBadge[]) => LegendaryBadge[])) => void;
     gamificationSettings: GamificationSettings; setGamificationSettings: (d: GamificationSettings | ((p: GamificationSettings) => GamificationSettings)) => void;
     sponsors: Sponsor[]; setSponsors: (d: Sponsor[] | ((p: Sponsor[]) => Sponsor[])) => void;
-    companyDetails: CompanyDetails; setCompanyDetails: (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => void;
+    companyDetails: CompanyDetails; setCompanyDetails: (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => Promise<void>;
     socialLinks: SocialLink[]; setSocialLinks: (d: SocialLink[] | ((p: SocialLink[]) => SocialLink[])) => void;
     carouselMedia: CarouselMedia[]; setCarouselMedia: (d: CarouselMedia[] | ((p: CarouselMedia[]) => CarouselMedia[])) => void;
     vouchers: Voucher[]; setVouchers: (d: Voucher[] | ((p: Voucher[]) => Voucher[])) => void;
@@ -102,16 +103,19 @@ interface DataContextType {
     transactions: Transaction[]; setTransactions: (d: Transaction[] | ((p: Transaction[]) => Transaction[])) => void;
     locations: Location[]; setLocations: (d: Location[] | ((p: Location[]) => Location[])) => void;
     raffles: Raffle[]; setRaffles: (d: Raffle[] | ((p: Raffle[]) => Raffle[])) => void;
+    
+    // CRUD functions
+    updateDoc: <T extends {id: string}>(collectionName: string, doc: T) => Promise<void>;
+    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<void>;
+    deleteDoc: (collectionName: string, docId: string) => Promise<void>;
+    
     deleteAllData: () => Promise<void>;
     seedInitialData: () => Promise<void>;
     loading: boolean;
     isSeeding: boolean;
-    updatePlayerDoc: (player: Player) => Promise<void>;
-    addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<void>;
-    updateEventDoc: (event: GameEvent) => Promise<void>;
-    addEventDoc: (eventData: Omit<GameEvent, 'id'>) => Promise<void>;
-    deleteEventDoc: (eventId: string) => Promise<void>;
 }
+// --- END OF TYPE DEFINITION ---
+
 
 export const DataContext = createContext<DataContextType | null>(null);
 
@@ -137,6 +141,36 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingCompanyDetails || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia;
     
+    // --- GENERIC CRUD FUNCTIONS ---
+    const addDoc = async <T extends {}>(collectionName: string, data: T) => {
+        if (USE_FIREBASE && db) {
+            await db.collection(collectionName).add(data);
+        } else {
+            const mockSetter = `set${collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}`;
+            eval(`${mockSetter}(prev => [...prev, { ...data, id: \`mock\${Date.now()}\` }])`);
+        }
+    };
+
+    const updateDoc = async <T extends {id: string}>(collectionName: string, doc: T) => {
+        if (USE_FIREBASE && db) {
+            const { id, ...data } = doc;
+            await db.collection(collectionName).doc(id).set(data, { merge: true });
+        } else {
+            const mockSetter = `set${collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}`;
+            eval(`${mockSetter}(prev => prev.map(item => item.id === doc.id ? doc : item))`);
+        }
+    };
+
+    const deleteDoc = async (collectionName: string, docId: string) => {
+        if (USE_FIREBASE && db) {
+            await db.collection(collectionName).doc(docId).delete();
+        } else {
+            const mockSetter = `set${collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}`;
+            eval(`${mockSetter}(prev => prev.filter(item => item.id !== docId))`);
+        }
+    };
+    // --- END GENERIC CRUD ---
+
     const seedInitialData = async () => {
         if (!USE_FIREBASE || !db) return;
         setIsSeeding(true);
@@ -227,49 +261,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
     
-    const updatePlayerDoc = async (player: Player) => {
-        if (!USE_FIREBASE || !db) {
-            setPlayers(prev => prev.map(p => p.id === player.id ? player : p));
-            return;
-        }
-        const { id, ...playerData } = player;
-        await db.collection('players').doc(id).set(playerData, { merge: true });
-    };
-    
-    const addPlayerDoc = async (playerData: Omit<Player, 'id'>) => {
-        if (!USE_FIREBASE || !db) {
-            const newPlayer = { ...playerData, id: `p${Date.now()}` };
-            setPlayers(prev => [...prev, newPlayer]);
-            return;
-        }
-        await db.collection('players').add(playerData);
-    };
-
-    const updateEventDoc = async (event: GameEvent) => {
-        if (!USE_FIREBASE || !db) {
-            setEvents(prev => prev.map(e => e.id === event.id ? event : e));
-            return;
-        }
-        const { id, ...eventData } = event;
-        await db.collection('events').doc(id).set(eventData, { merge: true });
-    };
-    
-    const addEventDoc = async (eventData: Omit<GameEvent, 'id'>) => {
-        if (!USE_FIREBASE || !db) {
-            const newEvent: GameEvent = { ...eventData, id: `e${Date.now()}` };
-            setEvents(prev => [...prev, newEvent]);
-            return;
-        }
-        await db.collection('events').add(eventData);
-    };
-
-    const deleteEventDoc = async (eventId: string) => {
-        if (!USE_FIREBASE || !db) {
-            setEvents(prev => prev.filter(e => e.id !== eventId));
-            return;
-        }
-        await db.collection('events').doc(eventId).delete();
-    };
 
     const value: DataContextType = {
         players, setPlayers,
@@ -288,15 +279,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         transactions, setTransactions,
         locations, setLocations,
         raffles, setRaffles,
+        
+        updateDoc,
+        addDoc,
+        deleteDoc,
+
         deleteAllData,
         seedInitialData,
         loading,
         isSeeding,
-        updatePlayerDoc,
-        addPlayerDoc,
-        updateEventDoc,
-        addEventDoc,
-        deleteEventDoc
     };
 
     return (

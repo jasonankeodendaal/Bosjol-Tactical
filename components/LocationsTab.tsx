@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { Location } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -10,18 +11,21 @@ import { MapPinIcon, PlusIcon, PencilIcon, TrashIcon, AtSymbolIcon, PhoneIcon, X
 interface LocationsTabProps {
     locations: Location[];
     setLocations: React.Dispatch<React.SetStateAction<Location[]>>;
+    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<void>;
+    updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
+    deleteDoc: (collectionName: string, docId: string) => Promise<void>;
 }
 
-const LocationEditorModal: React.FC<{ location: Location | {}, onClose: () => void, onSave: (l: Location) => void }> = ({ location, onClose, onSave }) => {
+const LocationEditorModal: React.FC<{ location: Partial<Location>, onClose: () => void, onSave: (l: Location | Omit<Location, 'id'>) => void }> = ({ location, onClose, onSave }) => {
     const [formData, setFormData] = useState({
-        name: 'name' in location ? location.name : '',
-        description: 'description' in location ? location.description : '',
-        address: 'address' in location ? location.address : '',
-        pinLocationUrl: 'pinLocationUrl' in location ? location.pinLocationUrl : '',
-        phone: 'contactInfo' in location && location.contactInfo.phone ? location.contactInfo.phone : '',
-        email: 'contactInfo' in location && location.contactInfo.email ? location.contactInfo.email : '',
+        name: location.name || '',
+        description: location.description || '',
+        address: location.address || '',
+        pinLocationUrl: location.pinLocationUrl || '',
+        phone: location.contactInfo?.phone || '',
+        email: location.contactInfo?.email || '',
     });
-    const [imageUrls, setImageUrls] = useState<string[]>('imageUrls' in location ? location.imageUrls : []);
+    const [imageUrls, setImageUrls] = useState<string[]>(location.imageUrls || []);
 
     const handleImageUpload = (index: number, url: string) => {
         const newImages = [...imageUrls];
@@ -42,12 +46,12 @@ const LocationEditorModal: React.FC<{ location: Location | {}, onClose: () => vo
             pinLocationUrl: formData.pinLocationUrl,
             imageUrls: imageUrls.filter(Boolean),
             contactInfo: { phone: formData.phone, email: formData.email },
-        } as Location;
+        };
         onSave(finalLocation);
     };
 
     return (
-        <Modal isOpen={true} onClose={onClose} title={'id' in location ? 'Edit Location' : 'Add New Location'}>
+        <Modal isOpen={true} onClose={onClose} title={location.id ? 'Edit Location' : 'Add New Location'}>
             <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 <Input label="Location Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                 <Input label="Address" value={formData.address} onChange={e => setFormData(f => ({ ...f, address: e.target.value }))} />
@@ -73,7 +77,7 @@ const LocationEditorModal: React.FC<{ location: Location | {}, onClose: () => vo
                                 </div>
                             ) : (
                                 <div className="flex-grow">
-                                     <ImageUpload onUpload={(url) => handleImageUpload(index, url)} accept="image/*" />
+                                     <ImageUpload onUpload={(urls) => handleImageUpload(index, urls[0])} accept="image/*" />
                                 </div>
                             )}
                            </div>
@@ -88,22 +92,22 @@ const LocationEditorModal: React.FC<{ location: Location | {}, onClose: () => vo
     );
 };
 
-export const LocationsTab: React.FC<LocationsTabProps> = ({ locations, setLocations }) => {
-    const [isEditing, setIsEditing] = useState<Location | {} | null>(null);
+export const LocationsTab: React.FC<LocationsTabProps> = ({ locations, setLocations, addDoc, updateDoc, deleteDoc }) => {
+    const [isEditing, setIsEditing] = useState<Partial<Location> | null>(null);
     const [deletingLocation, setDeletingLocation] = useState<Location | null>(null);
 
-    const handleSave = (locationData: Location) => {
-        if ('id' in locationData && locationData.id) {
-            setLocations(ls => ls.map(l => l.id === locationData.id ? locationData : l));
+    const handleSave = (locationData: Location | Omit<Location, 'id'>) => {
+        if ('id' in locationData) {
+            updateDoc('locations', locationData);
         } else {
-            setLocations(ls => [...ls, { ...locationData, id: `loc${Date.now()}` }]);
+            addDoc('locations', locationData);
         }
         setIsEditing(null);
     };
 
     const handleDelete = () => {
         if (!deletingLocation) return;
-        setLocations(ls => ls.filter(l => l.id !== deletingLocation.id));
+        deleteDoc('locations', deletingLocation.id);
         setDeletingLocation(null);
     };
 

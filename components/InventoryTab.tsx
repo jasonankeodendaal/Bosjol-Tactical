@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import type { InventoryItem, Supplier } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -12,31 +13,34 @@ interface InventoryTabProps {
     inventory: InventoryItem[];
     setInventory: React.Dispatch<React.SetStateAction<InventoryItem[]>>;
     suppliers: Supplier[];
+    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<void>;
+    updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
+    deleteDoc: (collectionName: string, docId: string) => Promise<void>;
 }
 
-const InventoryEditorModal: React.FC<{ item: InventoryItem | {}, onClose: () => void, onSave: (item: InventoryItem) => void, suppliers: Supplier[] }> = ({ item, onClose, onSave, suppliers }) => {
+const InventoryEditorModal: React.FC<{ item: Partial<InventoryItem>, onClose: () => void, onSave: (item: InventoryItem | Omit<InventoryItem, 'id'>) => void, suppliers: Supplier[] }> = ({ item, onClose, onSave, suppliers }) => {
     const [formData, setFormData] = useState<Omit<InventoryItem, 'id'>>({
-        name: 'name' in item ? item.name : '',
-        description: 'description' in item ? item.description : '',
-        salePrice: 'salePrice' in item ? item.salePrice : 0,
-        stock: 'stock' in item ? item.stock : 0,
-        type: 'type' in item ? item.type : 'Weapon',
-        isRental: 'isRental' in item ? item.isRental : false,
-        category: 'category' in item ? item.category : 'AEG Rifle',
-        condition: 'condition' in item ? item.condition : 'New',
-        purchasePrice: 'purchasePrice' in item ? item.purchasePrice : 0,
-        reorderLevel: 'reorderLevel' in item ? item.reorderLevel : 0,
-        supplierId: 'supplierId' in item ? item.supplierId : '',
-        sku: 'sku' in item ? item.sku : '',
+        name: item.name || '',
+        description: item.description || '',
+        salePrice: item.salePrice || 0,
+        stock: item.stock || 0,
+        type: item.type || 'Weapon',
+        isRental: item.isRental || false,
+        category: item.category || 'AEG Rifle',
+        condition: item.condition || 'New',
+        purchasePrice: item.purchasePrice || 0,
+        reorderLevel: item.reorderLevel || 0,
+        supplierId: item.supplierId || '',
+        sku: item.sku || '',
     });
 
     const handleSaveClick = () => {
-        const finalItem = { ...item, ...formData } as InventoryItem;
+        const finalItem = { ...item, ...formData };
         onSave(finalItem);
     }
 
     return (
-        <Modal isOpen={true} onClose={onClose} title={'id' in item ? 'Edit Item' : 'Add New Item'}>
+        <Modal isOpen={true} onClose={onClose} title={item.id ? 'Edit Item' : 'Add New Item'}>
             <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 <Input label="Item Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                 <div>
@@ -116,8 +120,8 @@ const InventoryItemCard: React.FC<{ item: InventoryItem, onEdit: (i: InventoryIt
 );
 
 
-export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInventory, suppliers }) => {
-    const [isEditing, setIsEditing] = useState<InventoryItem | {} | null>(null);
+export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInventory, suppliers, addDoc, updateDoc, deleteDoc }) => {
+    const [isEditing, setIsEditing] = useState<Partial<InventoryItem> | null>(null);
     const [deletingItem, setDeletingItem] = useState<InventoryItem | null>(null);
     const [filter, setFilter] = useState<'all' | 'rental' | 'sale'>('all');
 
@@ -128,18 +132,18 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInvent
     }, [inventory, filter]);
 
 
-    const handleSave = (item: InventoryItem) => {
-        if (item.id) {
-            setInventory(inv => inv.map(i => i.id === item.id ? item : i));
+    const handleSave = (item: InventoryItem | Omit<InventoryItem, 'id'>) => {
+        if ('id' in item) {
+            updateDoc('inventory', item);
         } else {
-            setInventory(inv => [...inv, { ...item, id: `inv${Date.now()}` }]);
+            addDoc('inventory', item);
         }
         setIsEditing(null);
     };
 
     const handleDelete = () => {
         if (!deletingItem) return;
-        setInventory(inv => inv.filter(i => i.id !== deletingItem.id));
+        deleteDoc('inventory', deletingItem.id);
         setDeletingItem(null);
     };
 

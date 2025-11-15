@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { Supplier } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -9,25 +10,28 @@ import { TruckIcon, PlusIcon, PencilIcon, TrashIcon, AtSymbolIcon, PhoneIcon, Gl
 interface SuppliersTabProps {
     suppliers: Supplier[];
     setSuppliers: React.Dispatch<React.SetStateAction<Supplier[]>>;
+    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<void>;
+    updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
+    deleteDoc: (collectionName: string, docId: string) => Promise<void>;
 }
 
-const SupplierEditorModal: React.FC<{ supplier: Supplier | {}, onClose: () => void, onSave: (s: Supplier) => void }> = ({ supplier, onClose, onSave }) => {
+const SupplierEditorModal: React.FC<{ supplier: Partial<Supplier>, onClose: () => void, onSave: (s: Supplier | Omit<Supplier, 'id'>) => void }> = ({ supplier, onClose, onSave }) => {
     const [formData, setFormData] = useState({
-        name: 'name' in supplier ? supplier.name : '',
-        contactPerson: 'contactPerson' in supplier ? supplier.contactPerson : '',
-        email: 'email' in supplier ? supplier.email : '',
-        phone: 'phone' in supplier ? supplier.phone : '',
-        website: 'website' in supplier ? supplier.website : '',
-        address: 'address' in supplier ? supplier.address : '',
+        name: supplier.name || '',
+        contactPerson: supplier.contactPerson || '',
+        email: supplier.email || '',
+        phone: supplier.phone || '',
+        website: supplier.website || '',
+        address: supplier.address || '',
     });
 
     const handleSaveClick = () => {
-        const finalSupplier = Object.assign({}, supplier, formData) as Supplier;
+        const finalSupplier = { ...supplier, ...formData };
         onSave(finalSupplier);
     }
 
     return (
-        <Modal isOpen={true} onClose={onClose} title={'id' in supplier ? 'Edit Supplier' : 'Add New Supplier'}>
+        <Modal isOpen={true} onClose={onClose} title={supplier.id ? 'Edit Supplier' : 'Add New Supplier'}>
             <div className="space-y-4">
                 <Input label="Supplier Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                 <Input label="Contact Person" value={formData.contactPerson} onChange={e => setFormData(f => ({ ...f, contactPerson: e.target.value }))} />
@@ -46,22 +50,22 @@ const SupplierEditorModal: React.FC<{ supplier: Supplier | {}, onClose: () => vo
 };
 
 
-export const SuppliersTab: React.FC<SuppliersTabProps> = ({ suppliers, setSuppliers }) => {
-    const [isEditing, setIsEditing] = useState<Supplier | {} | null>(null);
+export const SuppliersTab: React.FC<SuppliersTabProps> = ({ suppliers, setSuppliers, addDoc, updateDoc, deleteDoc }) => {
+    const [isEditing, setIsEditing] = useState<Partial<Supplier> | null>(null);
     const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null);
 
-    const handleSave = (supplierData: Supplier) => {
-        if ('id' in supplierData && supplierData.id) {
-            setSuppliers(ss => ss.map(s => s.id === supplierData.id ? supplierData : s));
+    const handleSave = (supplierData: Supplier | Omit<Supplier, 'id'>) => {
+        if ('id' in supplierData) {
+            updateDoc('suppliers', supplierData);
         } else {
-            setSuppliers(ss => [...ss, { ...supplierData, id: `sup${Date.now()}` }]);
+            addDoc('suppliers', supplierData);
         }
         setIsEditing(null);
     };
 
     const handleDelete = () => {
         if (!deletingSupplier) return;
-        setSuppliers(ss => ss.filter(s => s.id !== deletingSupplier.id));
+        deleteDoc('suppliers', deletingSupplier.id);
         setDeletingSupplier(null);
     };
 

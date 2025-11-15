@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import type { CompanyDetails, SocialLink, CarouselMedia } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -8,13 +9,15 @@ import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon
 
 interface SettingsTabProps {
     companyDetails: CompanyDetails;
-    setCompanyDetails: (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => void;
+    setCompanyDetails: (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => Promise<void>;
     socialLinks: SocialLink[];
     setSocialLinks: (d: SocialLink[] | ((p: SocialLink[]) => SocialLink[])) => void;
     carouselMedia: CarouselMedia[];
     setCarouselMedia: (d: CarouselMedia[] | ((p: CarouselMedia[]) => CarouselMedia[])) => void;
     onDeleteAllData: () => void;
-    migrateToApiServer: (apiUrl: string) => Promise<void>;
+    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<void>;
+    updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
+    deleteDoc: (collectionName: string, docId: string) => Promise<void>;
 }
 
 type MigrationStatus = 'idle' | 'migrating' | 'complete' | 'error';
@@ -91,7 +94,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     carouselMedia,
     setCarouselMedia,
     onDeleteAllData,
-    migrateToApiServer
+    addDoc, updateDoc, deleteDoc
 }) => {
     const [formData, setFormData] = useState(() => normalizeCompanyDetails(companyDetails));
     const [socialLinksData, setSocialLinksData] = useState(socialLinks);
@@ -99,6 +102,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const [carouselUploadProgress, setCarouselUploadProgress] = useState<number | null>(null);
     const [migrationStatus, setMigrationStatus] = useState<MigrationStatus>('idle');
     const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
     
     useEffect(() => {
         setFormData(normalizeCompanyDetails(companyDetails));
@@ -106,33 +110,53 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         setCarouselMediaData(carouselMedia);
     }, [companyDetails, socialLinks, carouselMedia]);
 
-    useEffect(() => {
-        const fetchStorageInfo = async () => {
-            if (formData.apiServerUrl) {
-                try {
-                    const response = await fetch(`${formData.apiServerUrl}/storage-info`);
-                    if (!response.ok) throw new Error('Failed to fetch storage info');
-                    const data: StorageInfo = await response.json();
-                    setStorageInfo(data);
-                } catch (error) {
-                    console.error('Could not fetch storage info:', error);
-                    setStorageInfo(null);
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            // 1. Save company details
+            await setCompanyDetails(formData);
+
+            // 2. Diff and save Social Links
+            const originalLinks = new Map(socialLinks.map(l => [l.id, l]));
+            const newLinks = new Map(socialLinksData.map(l => [l.id, l]));
+
+            for (const link of socialLinksData) {
+                const original = originalLinks.get(link.id);
+                if (!original) { // It's new if it has a temp id and is not in the original map
+                    const { id, ...data } = link;
+                    await addDoc('socialLinks', data);
+                } else if (JSON.stringify(original) !== JSON.stringify(link)) { // It's updated
+                    await updateDoc('socialLinks', link);
                 }
-            } else {
-                setStorageInfo(null);
             }
-        };
+            for (const original of socialLinks) {
+                if (!newLinks.has(original.id)) { // It was deleted
+                    await deleteDoc('socialLinks', original.id);
+                }
+            }
+            
+            // 3. Diff and save Carousel Media
+            const originalMedia = new Map(carouselMedia.map(m => [m.id, m]));
+            const newMedia = new Map(carouselMediaData.map(m => [m.id, m]));
+            for (const media of carouselMediaData) {
+                if (!originalMedia.has(media.id)) { // It's new
+                    const { id, ...data } = media;
+                    await addDoc('carouselMedia', data);
+                }
+            }
+            for (const original of carouselMedia) {
+                if (!newMedia.has(original.id)) { // It was deleted
+                    await deleteDoc('carouselMedia', original.id);
+                }
+            }
 
-        fetchStorageInfo();
-        const interval = setInterval(fetchStorageInfo, 30000); // Refresh every 30 seconds
-        return () => clearInterval(interval);
-    }, [formData.apiServerUrl]);
-
-    const handleSave = () => {
-        setCompanyDetails(formData);
-        setSocialLinks(socialLinksData);
-        setCarouselMedia(carouselMediaData);
-        alert("Settings saved!");
+            alert("Settings saved successfully!");
+        } catch (error) {
+            console.error("Failed to save settings:", error);
+            alert(`An error occurred while saving: ${(error as Error).message}`);
+        } finally {
+            setIsSaving(false);
+        }
     };
     
     const handleSocialLinkChange = (id: string, field: keyof Omit<SocialLink, 'id'>, value: string) => {
@@ -140,18 +164,18 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     };
 
     const handleAddSocialLink = () => {
-        setSocialLinksData(prev => [...prev, { id: `sl${Date.now()}`, name: '', url: '', iconUrl: '' }]);
+        setSocialLinksData(prev => [...prev, { id: `temp_${Date.now()}`, name: '', url: '', iconUrl: '' }]);
     };
     
     const handleRemoveSocialLink = (id: string) => {
         setSocialLinksData(prev => prev.filter(link => link.id !== id));
     };
 
-    const handleCarouselMediaUpload = (base64s: string[]) => {
-        const newMedia = base64s.map(base64 => ({
-            id: `cm${Date.now()}-${Math.random()}`,
-            type: base64.startsWith('data:video') ? 'video' as const : 'image' as const,
-            url: base64
+    const handleCarouselMediaUpload = (urls: string[]) => {
+        const newMedia = urls.map(url => ({
+            id: `temp_${Date.now()}-${Math.random()}`,
+            type: url.startsWith('data:video') ? 'video' as const : 'image' as const,
+            url: url
         }));
         setCarouselMediaData(prev => [...prev, ...newMedia]);
     };
@@ -160,33 +184,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         setCarouselMediaData(prev => prev.filter(media => media.id !== id));
     };
     
-    const handleMigration = async () => {
-        if (!formData.apiServerUrl || !/^(http|https):\/\/[^ "]+$/.test(formData.apiServerUrl)) {
-            alert('Please enter a valid, full URL for the API server (e.g., https://your-server.com).');
-            return;
-        }
-
-        if (!confirm('This will migrate all existing media files to the new server. This process is irreversible and may take some time. Are you sure you want to continue?')) {
-            return;
-        }
-        
-        setMigrationStatus('migrating');
-        try {
-            await migrateToApiServer(formData.apiServerUrl);
-            setMigrationStatus('complete');
-            alert('Migration successful! The page will now reload to apply the new settings.');
-            handleSave();
-            setTimeout(() => window.location.reload(), 1000);
-        } catch (error) {
-            setMigrationStatus('error');
-            alert(`Migration failed: ${(error as Error).message}`);
-        }
-    }
-
-    const isUploading = carouselUploadProgress !== null && carouselUploadProgress < 100;
     const isDirty = JSON.stringify(formData) !== JSON.stringify(normalizeCompanyDetails(companyDetails)) ||
-                    JSON.stringify(socialLinksData) !== JSON.stringify(socialLinks) ||
-                    JSON.stringify(carouselMediaData) !== JSON.stringify(carouselMedia);
+                    JSON.stringify(socialLinksData.map(l => ({...l, id: ''}))) !== JSON.stringify(socialLinks.map(l => ({...l, id: ''}))) || // complex check needed
+                    socialLinksData.length !== socialLinks.length ||
+                    carouselMediaData.length !== carouselMedia.length;
 
 
     return (
@@ -226,7 +227,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onUpload={(url) => setFormData(f => ({ ...f, logoUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, logoUrl: '' }))}
                         accept="image/*"
-                        apiServerUrl={formData.apiServerUrl}
                     />
                     <FileUploadField
                         label="Login Screen Background"
@@ -234,7 +234,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onUpload={(url) => setFormData(f => ({ ...f, loginBackgroundUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, loginBackgroundUrl: '' }))}
                         accept="image/*,video/*"
-                        apiServerUrl={formData.apiServerUrl}
                     />
                      <FileUploadField
                         label="Login Screen Audio"
@@ -243,7 +242,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onRemove={() => setFormData(f => ({ ...f, loginAudioUrl: '' }))}
                         accept="audio/*"
                         previewType="audio"
-                        apiServerUrl={formData.apiServerUrl}
                     />
                     <FileUploadField
                         label="Player Dashboard BG"
@@ -251,7 +249,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onUpload={(url) => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: '' }))}
                         accept="image/*"
-                        apiServerUrl={formData.apiServerUrl}
                     />
                     <FileUploadField
                         label="Admin Dashboard BG"
@@ -259,41 +256,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onUpload={(url) => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: '' }))}
                         accept="image/*"
-                        apiServerUrl={formData.apiServerUrl}
                     />
                 </div>
             </DashboardCard>
 
             <DashboardCard title="App & Content Settings" icon={<CogIcon className="w-6 h-6" />}>
                 <div className="p-6 space-y-6">
-                     <div className="pt-6 border-t border-zinc-800">
-                        <h4 className="font-semibold text-gray-200 mb-4 text-lg flex items-center gap-2"><KeyIcon className="w-5 h-5" />External API Server</h4>
-                        <p className="text-sm text-gray-400 mb-4">Connect to a self-hosted server to handle all file uploads and data management, bypassing Firebase's 1MB document limit. See the "API Setup" tab for instructions.</p>
-                        <div className="flex items-start gap-2">
-                             <Input 
-                                label="API Server URL" 
-                                value={formData.apiServerUrl || ''} 
-                                onChange={e => setFormData(f => ({...f, apiServerUrl: e.target.value}))} 
-                                placeholder="https://your-server-url.com"
-                                disabled={!!companyDetails.apiServerUrl}
-                            />
-                            {companyDetails.apiServerUrl ? (
-                                <div className="pt-8">
-                                    <Button disabled variant="secondary">Connected</Button>
-                                </div>
-                            ) : (
-                                <div className="pt-8">
-                                    <Button onClick={handleMigration} disabled={migrationStatus === 'migrating'}>
-                                        {migrationStatus === 'migrating' ? 'Migrating...' : 'Connect & Migrate'}
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                        {migrationStatus === 'migrating' && <p className="text-amber-400 text-sm mt-2">Migrating data... This may take several minutes. Please do not close this window.</p>}
-                        {migrationStatus === 'error' && <p className="text-red-400 text-sm mt-2">Migration failed. Check the console for errors and try again.</p>}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-zinc-800">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Input label="Minimum Signup Age" type="number" value={formData.minimumSignupAge} onChange={e => setFormData(f => ({...f, minimumSignupAge: Number(e.target.value)}))} />
                         <Input
                             label="Android APK URL"
@@ -335,7 +304,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                     setTimeout(() => setCarouselUploadProgress(null), 1500);
                                 }
                             }}
-                            apiServerUrl={formData.apiServerUrl}
                         />
                          {carouselUploadProgress !== null && (
                             <div className="mt-2">
@@ -365,7 +333,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                             </Button>
                                         </div>
                                     ) : (
-                                        <ImageUpload onUpload={(base64s) => { if (base64s.length > 0) handleSocialLinkChange(link.id, 'iconUrl', base64s[0]) }} accept="image/*" apiServerUrl={formData.apiServerUrl} />
+                                        <ImageUpload onUpload={(base64s) => { if (base64s.length > 0) handleSocialLinkChange(link.id, 'iconUrl', base64s[0]) }} accept="image/*" />
                                     )}
                                 </div>
                                 <Button variant="danger" className="!py-2.5" onClick={() => handleRemoveSocialLink(link.id)}>
@@ -395,16 +363,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </DashboardCard>
 
             <div className="mt-6 sticky bottom-6 z-20">
-                {storageInfo && (
-                     <div className="text-center text-sm text-gray-400 mb-2 p-2 bg-zinc-900/80 rounded-md border border-zinc-800">
-                        <p>Server Storage: <span className="font-bold text-white">{formatBytes(storageInfo.free)}</span> free of <span className="font-bold text-white">{formatBytes(storageInfo.size)}</span></p>
-                        <div className="w-full bg-zinc-700 rounded-full h-1.5 mt-1">
-                            <div className="bg-red-500 h-1.5 rounded-full" style={{ width: `${((storageInfo.size - storageInfo.free) / storageInfo.size) * 100}%` }}></div>
-                        </div>
-                    </div>
-                )}
-                <Button onClick={handleSave} disabled={!isDirty || isUploading || migrationStatus === 'migrating'} className="w-full py-3 text-lg shadow-lg">
-                    {isUploading ? 'Processing Media...' : migrationStatus === 'migrating' ? 'Migrating Data...' : isDirty ? 'Save All Settings' : 'All Changes Saved'}
+                <Button onClick={handleSave} disabled={!isDirty || isSaving} className="w-full py-3 text-lg shadow-lg">
+                    {isSaving ? 'Saving...' : isDirty ? 'Save All Settings' : 'All Changes Saved'}
                 </Button>
             </div>
         </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, RentalSignup, CarouselMedia } from '../types';
@@ -21,45 +22,14 @@ import { SponsorsTab } from './SponsorsTab';
 import { Leaderboard } from './Leaderboard';
 import { SettingsTab } from './SettingsTab';
 import { ApiSetupTab } from './ApiSetupTab';
-import { DataContext } from '../data/DataContext';
+import { DataContext, DataContextType } from '../data/DataContext';
 import { HelpSystem } from './Help';
 
-interface AdminDashboardProps {
-    players: Player[];
-    setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
-    events: GameEvent[];
-    setEvents: React.Dispatch<React.SetStateAction<GameEvent[]>>;
-    ranks: Rank[];
-    setRanks: React.Dispatch<React.SetStateAction<Rank[]>>;
-    badges: Badge[];
-    setBadges: React.Dispatch<React.SetStateAction<Badge[]>>;
-    legendaryBadges: LegendaryBadge[];
-    setLegendaryBadges: React.Dispatch<React.SetStateAction<LegendaryBadge[]>>;
-    gamificationSettings: GamificationSettings;
-    setGamificationSettings: React.Dispatch<React.SetStateAction<GamificationSettings>>;
-    sponsors: Sponsor[];
-    setSponsors: React.Dispatch<React.SetStateAction<Sponsor[]>>;
-    companyDetails: CompanyDetails;
-    setCompanyDetails: React.Dispatch<React.SetStateAction<CompanyDetails>>;
-    socialLinks: SocialLink[];
-    setSocialLinks: React.Dispatch<React.SetStateAction<SocialLink[]>>;
-    carouselMedia: CarouselMedia[];
-    setCarouselMedia: React.Dispatch<React.SetStateAction<CarouselMedia[]>>;
-    vouchers: Voucher[];
-    setVouchers: React.Dispatch<React.SetStateAction<Voucher[]>>;
-    inventory: InventoryItem[];
-    setInventory: React.Dispatch<React.SetStateAction<InventoryItem[]>>;
-    suppliers: Supplier[];
-    setSuppliers: React.Dispatch<React.SetStateAction<Supplier[]>>;
-    transactions: Transaction[];
-    setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
-    locations: Location[];
-    setLocations: React.Dispatch<React.SetStateAction<Location[]>>;
-    raffles: Raffle[];
-    setRaffles: React.Dispatch<React.SetStateAction<Raffle[]>>;
+export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' | 'seedInitialData' | 'updatePlayerDoc' | 'addEventDoc' | 'deleteEventDoc' | 'updateEventDoc'> & {
     onDeleteAllData: () => void;
     addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<void>;
-}
+};
+
 
 type Tab = 'Events' | 'Players' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'API Setup';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
@@ -318,9 +288,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
 
     const dataContext = useContext(DataContext);
     if (!dataContext) throw new Error("DataContext not found");
-    const { migrateToApiServer } = dataContext;
 
-    const { players, setPlayers, events, setEvents, legendaryBadges, ranks } = props;
+    const { players, setPlayers, events, setEvents, legendaryBadges, ranks, updateDoc, addDoc, deleteDoc } = props;
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -341,25 +310,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         setView('manage_event');
     }
     
-    const handleSaveEvent = (eventData: GameEvent) => {
+    const handleSaveEvent = async (eventData: GameEvent) => {
         if (eventData.id) {
-            setEvents(prev => prev.map(e => e.id === eventData.id ? eventData : e));
+            await updateDoc('events', eventData);
         } else {
-            setEvents(prev => [...prev, { ...eventData, id: `e${Date.now()}` }]);
+            const { id, ...newEventData } = eventData;
+            await addDoc('events', newEventData);
         }
         setView('dashboard');
     }
 
-    const handleDeleteEvent = (eventId: string) => {
+    const handleDeleteEvent = async (eventId: string) => {
         if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
-            setEvents(prev => prev.filter(e => e.id !== eventId));
+            await deleteDoc('events', eventId);
             setView('dashboard');
         }
     }
 
 
-    const handleUpdatePlayer = (updatedPlayer: Player) => {
-        setPlayers(prev => prev.map(p => p.id === updatedPlayer.id ? updatedPlayer : p));
+    const handleUpdatePlayer = async (updatedPlayer: Player) => {
+        await updateDoc('players', updatedPlayer);
     };
     
     const selectedPlayer = players.find(p => p.id === selectedPlayerId);
@@ -414,13 +384,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
             {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}
-            {activeTab === 'Progression' && <ProgressionTab {...props} />}
-            {activeTab === 'Inventory' && <InventoryTab {...props} />}
-            {activeTab === 'Locations' && <LocationsTab {...props} />}
-            {activeTab === 'Suppliers' && <SuppliersTab {...props} />}
-            {activeTab === 'Finance' && <FinanceTab {...props} />}
-            {activeTab === 'Vouchers & Raffles' && <VouchersRafflesTab {...props} />}
-            {activeTab === 'Sponsors' && <SponsorsTab {...props} />}
+            {activeTab === 'Progression' && <ProgressionTab 
+                ranks={props.ranks} setRanks={props.setRanks}
+                badges={props.badges} setBadges={props.setBadges}
+                legendaryBadges={props.legendaryBadges} setLegendaryBadges={props.setLegendaryBadges}
+                gamificationSettings={props.gamificationSettings} setGamificationSettings={props.setGamificationSettings}
+                addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+            />}
+            {activeTab === 'Inventory' && <InventoryTab 
+                inventory={props.inventory} setInventory={props.setInventory}
+                suppliers={props.suppliers}
+                addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+            />}
+            {activeTab === 'Locations' && <LocationsTab 
+                locations={props.locations} setLocations={props.setLocations}
+                addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+            />}
+            {activeTab === 'Suppliers' && <SuppliersTab 
+                suppliers={props.suppliers} setSuppliers={props.setSuppliers}
+                addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+            />}
+            {activeTab === 'Finance' && <FinanceTab 
+                 transactions={props.transactions}
+                 players={props.players}
+                 events={props.events}
+                 locations={props.locations}
+                 companyDetails={props.companyDetails}
+            />}
+            {activeTab === 'Vouchers & Raffles' && <VouchersRafflesTab 
+                vouchers={props.vouchers} setVouchers={props.setVouchers}
+                raffles={props.raffles} setRaffles={props.setRaffles}
+                players={props.players}
+                addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+            />}
+            {activeTab === 'Sponsors' && <SponsorsTab 
+                sponsors={props.sponsors} setSponsors={props.setSponsors}
+                addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+            />}
             {activeTab === 'Leaderboard' && <LeaderboardTab players={props.players} />}
             {activeTab === 'Settings' && <SettingsTab 
                 companyDetails={props.companyDetails} 
@@ -430,7 +430,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 carouselMedia={props.carouselMedia}
                 setCarouselMedia={props.setCarouselMedia}
                 onDeleteAllData={props.onDeleteAllData}
-                migrateToApiServer={migrateToApiServer}
+                addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
             />}
             {activeTab === 'API Setup' && <ApiSetupTab />}
         </div>

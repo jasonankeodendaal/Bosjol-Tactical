@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { Voucher, Raffle, Prize, Player } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -12,27 +13,30 @@ interface VouchersRafflesTabProps {
     raffles: Raffle[];
     setRaffles: React.Dispatch<React.SetStateAction<Raffle[]>>;
     players: Player[];
+    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<void>;
+    updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
+    deleteDoc: (collectionName: string, docId: string) => Promise<void>;
 }
 
-const VoucherEditorModal: React.FC<{ voucher: Voucher | {}, onClose: () => void, onSave: (v: Voucher) => void, players: Player[] }> = ({ voucher, onClose, onSave, players }) => {
+const VoucherEditorModal: React.FC<{ voucher: Partial<Voucher>, onClose: () => void, onSave: (v: Voucher | Omit<Voucher, 'id'>) => void, players: Player[] }> = ({ voucher, onClose, onSave, players }) => {
     const [formData, setFormData] = useState({
-        code: 'code' in voucher ? voucher.code : '',
-        description: 'description' in voucher ? voucher.description : '',
-        discount: 'discount' in voucher ? voucher.discount : 0,
-        type: 'type' in voucher ? voucher.type : 'fixed' as 'fixed' | 'percentage',
-        status: 'status' in voucher ? voucher.status : 'Active' as 'Active' | 'Expired' | 'Depleted',
-        usageLimit: 'usageLimit' in voucher ? voucher.usageLimit : 1,
-        perUserLimit: 'perUserLimit' in voucher ? voucher.perUserLimit : 1,
-        assignedToPlayerId: 'assignedToPlayerId' in voucher ? voucher.assignedToPlayerId : ''
+        code: voucher.code || '',
+        description: voucher.description || '',
+        discount: voucher.discount || 0,
+        type: voucher.type || 'fixed' as 'fixed' | 'percentage',
+        status: voucher.status || 'Active' as 'Active' | 'Expired' | 'Depleted',
+        usageLimit: voucher.usageLimit || 1,
+        perUserLimit: voucher.perUserLimit || 1,
+        assignedToPlayerId: voucher.assignedToPlayerId || ''
     });
 
     const handleSaveClick = () => {
-        const finalVoucher = { redemptions: [], ...voucher, ...formData } as Voucher;
+        const finalVoucher = { redemptions: [], ...voucher, ...formData };
         onSave(finalVoucher);
     }
     
     return (
-        <Modal isOpen={true} onClose={onClose} title={'id' in voucher ? 'Edit Voucher' : 'Create Voucher'}>
+        <Modal isOpen={true} onClose={onClose} title={voucher.id ? 'Edit Voucher' : 'Create Voucher'}>
             <div className="space-y-4">
                 <Input label="Voucher Code" value={formData.code} onChange={e => setFormData(f => ({ ...f, code: e.target.value.toUpperCase() }))} />
                 <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} />
@@ -65,14 +69,14 @@ const VoucherEditorModal: React.FC<{ voucher: Voucher | {}, onClose: () => void,
     )
 }
 
-const RaffleEditorModal: React.FC<{ raffle: Raffle | {}, onClose: () => void, onSave: (r: Raffle) => void }> = ({ raffle, onClose, onSave }) => {
+const RaffleEditorModal: React.FC<{ raffle: Partial<Raffle>, onClose: () => void, onSave: (r: Raffle | Omit<Raffle, 'id'>) => void }> = ({ raffle, onClose, onSave }) => {
     const [formData, setFormData] = useState({
-        name: 'name' in raffle ? raffle.name : '',
-        location: 'location' in raffle ? raffle.location : '',
-        contactPhone: 'contactPhone' in raffle ? raffle.contactPhone : '',
-        drawDate: 'drawDate' in raffle ? raffle.drawDate.split('T')[0] : '',
+        name: raffle.name || '',
+        location: raffle.location || '',
+        contactPhone: raffle.contactPhone || '',
+        drawDate: raffle.drawDate ? raffle.drawDate.split('T')[0] : '',
     });
-    const [prizes, setPrizes] = useState<Prize[]>('prizes' in raffle ? raffle.prizes : []);
+    const [prizes, setPrizes] = useState<Prize[]>(raffle.prizes || []);
 
     const handlePrizeChange = (index: number, value: string) => {
         const newPrizes = [...prizes];
@@ -91,12 +95,12 @@ const RaffleEditorModal: React.FC<{ raffle: Raffle | {}, onClose: () => void, on
             tickets: [], winners: [], status: 'Upcoming', createdAt: new Date().toISOString(), 
             ...raffle, ...formData, prizes,
             drawDate: new Date(formData.drawDate).toISOString()
-        } as Raffle;
+        };
         onSave(finalRaffle);
     }
 
     return (
-        <Modal isOpen={true} onClose={onClose} title={'id' in raffle ? 'Edit Raffle' : 'Create Raffle'}>
+        <Modal isOpen={true} onClose={onClose} title={raffle.id ? 'Edit Raffle' : 'Create Raffle'}>
             <div className="space-y-4">
                 <Input label="Raffle Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                  <div className="grid grid-cols-2 gap-4">
@@ -124,24 +128,24 @@ const RaffleEditorModal: React.FC<{ raffle: Raffle | {}, onClose: () => void, on
 
 
 export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => {
-    const { vouchers, setVouchers, raffles, setRaffles, players } = props;
-    const [isEditingVoucher, setIsEditingVoucher] = useState<Voucher | {} | null>(null);
-    const [isEditingRaffle, setIsEditingRaffle] = useState<Raffle | {} | null>(null);
+    const { vouchers, setVouchers, raffles, setRaffles, players, addDoc, updateDoc, deleteDoc } = props;
+    const [isEditingVoucher, setIsEditingVoucher] = useState<Partial<Voucher> | null>(null);
+    const [isEditingRaffle, setIsEditingRaffle] = useState<Partial<Raffle> | null>(null);
 
-    const handleSaveVoucher = (voucher: Voucher) => {
-        if (voucher.id) {
-            setVouchers(vs => vs.map(v => v.id === voucher.id ? voucher : v));
+    const handleSaveVoucher = (voucher: Voucher | Omit<Voucher, 'id'>) => {
+        if ('id' in voucher) {
+            updateDoc('vouchers', voucher);
         } else {
-            setVouchers(vs => [...vs, { ...voucher, id: `v${Date.now()}` }]);
+            addDoc('vouchers', voucher);
         }
         setIsEditingVoucher(null);
     };
 
-    const handleSaveRaffle = (raffle: Raffle) => {
-        if (raffle.id) {
-            setRaffles(rs => rs.map(r => r.id === raffle.id ? raffle : r));
+    const handleSaveRaffle = (raffle: Raffle | Omit<Raffle, 'id'>) => {
+        if ('id' in raffle) {
+            updateDoc('raffles', raffle);
         } else {
-            setRaffles(rs => [...rs, { ...raffle, id: `r${Date.now()}` }]);
+            addDoc('raffles', raffle);
         }
         setIsEditingRaffle(null);
     }
@@ -170,7 +174,7 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
         }
 
         const updatedRaffle = { ...raffle, winners, status: 'Completed' as 'Completed' };
-        setRaffles(rs => rs.map(r => r.id === raffleId ? updatedRaffle : r));
+        updateDoc('raffles', updatedRaffle);
     }
 
 

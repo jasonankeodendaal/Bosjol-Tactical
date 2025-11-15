@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { Rank, Badge, LegendaryBadge, GamificationRule, GamificationSettings } from '../types';
 import { Button } from './Button';
@@ -17,12 +18,15 @@ interface ProgressionTabProps {
     setLegendaryBadges: React.Dispatch<React.SetStateAction<LegendaryBadge[]>>;
     gamificationSettings: GamificationSettings;
     setGamificationSettings: React.Dispatch<React.SetStateAction<GamificationSettings>>;
+    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<void>;
+    updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
+    deleteDoc: (collectionName: string, docId: string) => Promise<void>;
 }
 
 const GamificationRuleEditorModal: React.FC<{
     rule: Partial<GamificationRule> | null,
     onClose: () => void,
-    onSave: (rule: GamificationRule) => void
+    onSave: (rule: Omit<GamificationRule, 'id'> | GamificationRule) => void
 }> = ({ rule, onClose, onSave }) => {
     const [formData, setFormData] = useState({
         name: rule?.name || '',
@@ -35,10 +39,9 @@ const GamificationRuleEditorModal: React.FC<{
             alert("Rule Name and Description cannot be empty.");
             return;
         }
-        const finalRule: GamificationRule = {
-            id: rule?.id || `g${Date.now()}`,
-            name: formData.name,
-            description: formData.description,
+        const finalRule = {
+            ...rule,
+            ...formData,
             xp: Number(formData.xp) || 0
         };
         onSave(finalRule);
@@ -84,7 +87,7 @@ const GamificationRuleItem: React.FC<{
 const BadgeEditorModal: React.FC<{
     badge: Partial<Badge> | null,
     onClose: () => void,
-    onSave: (badge: Badge) => void
+    onSave: (badge: Omit<Badge, 'id'> | Badge) => void
 }> = ({ badge, onClose, onSave }) => {
     const [formData, setFormData] = useState({
         name: badge?.name || '',
@@ -95,8 +98,8 @@ const BadgeEditorModal: React.FC<{
     });
 
     const handleSave = () => {
-        const finalBadge: Badge = {
-            id: badge?.id || `b${Date.now()}`,
+        const finalBadge = {
+            ...badge,
             name: formData.name,
             description: formData.description,
             iconUrl: formData.iconUrl,
@@ -137,7 +140,7 @@ const BadgeEditorModal: React.FC<{
 const LegendaryBadgeEditorModal: React.FC<{
     badge: Partial<LegendaryBadge> | null,
     onClose: () => void,
-    onSave: (badge: LegendaryBadge) => void
+    onSave: (badge: Omit<LegendaryBadge, 'id'> | LegendaryBadge) => void
 }> = ({ badge, onClose, onSave }) => {
     const [formData, setFormData] = useState({
         name: badge?.name || '',
@@ -147,12 +150,9 @@ const LegendaryBadgeEditorModal: React.FC<{
     });
 
     const handleSave = () => {
-        const finalBadge: LegendaryBadge = {
-            id: badge?.id || `leg${Date.now()}`,
-            name: formData.name,
-            description: formData.description,
-            iconUrl: formData.iconUrl,
-            howToObtain: formData.howToObtain
+        const finalBadge = {
+            ...badge,
+            ...formData,
         };
         onSave(finalBadge);
         onClose();
@@ -174,7 +174,16 @@ const LegendaryBadgeEditorModal: React.FC<{
     );
 }
 
-export const ProgressionTab: React.FC<ProgressionTabProps> = ({ gamificationSettings, setGamificationSettings, badges, setBadges, legendaryBadges, setLegendaryBadges }) => {
+export const ProgressionTab: React.FC<ProgressionTabProps> = ({ 
+    gamificationSettings, 
+    badges, 
+    legendaryBadges, 
+    ranks, 
+    setRanks, 
+    addDoc, 
+    updateDoc, 
+    deleteDoc 
+}) => {
     const [editingRule, setEditingRule] = useState<Partial<GamificationRule> | null>(null);
     const [deletingRule, setDeletingRule] = useState<GamificationRule | null>(null);
     
@@ -185,61 +194,49 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({ gamificationSett
     const [deletingLegendaryBadge, setDeletingLegendaryBadge] = useState<LegendaryBadge | null>(null);
     
     // Gamification Handlers
-    const handleSaveRule = (rule: GamificationRule) => {
-        setGamificationSettings(prev => {
-            const index = prev.findIndex(r => r.id === rule.id);
-            if (index > -1) {
-                const newSettings = [...prev];
-                newSettings[index] = rule;
-                return newSettings;
-            }
-            return [...prev, rule];
-        });
+    const handleSaveRule = (rule: Omit<GamificationRule, 'id'> | GamificationRule) => {
+        if ('id' in rule) {
+            updateDoc('gamificationSettings', rule);
+        } else {
+            addDoc('gamificationSettings', rule);
+        }
     };
 
     const handleDeleteRule = () => {
         if (!deletingRule) return;
-        setGamificationSettings(prev => prev.filter(r => r.id !== deletingRule.id));
+        deleteDoc('gamificationSettings', deletingRule.id);
         setDeletingRule(null);
     };
     
     // Standard Badge Handlers
-    const handleSaveBadge = (badge: Badge) => {
-        setBadges(prev => {
-            const index = prev.findIndex(b => b.id === badge.id);
-            if (index > -1) {
-                const newBadges = [...prev];
-                newBadges[index] = badge;
-                return newBadges;
-            }
-            return [...prev, badge];
-        });
+    const handleSaveBadge = (badge: Omit<Badge, 'id'> | Badge) => {
+        if ('id' in badge) {
+            updateDoc('badges', badge);
+        } else {
+            addDoc('badges', badge);
+        }
         setEditingBadge(null);
     }
     
     const handleDeleteBadge = () => {
         if (!deletingBadge) return;
-        setBadges(prev => prev.filter(b => b.id !== deletingBadge.id));
+        deleteDoc('badges', deletingBadge.id);
         setDeletingBadge(null);
     }
 
     // Legendary Badge Handlers
-    const handleSaveLegendaryBadge = (badge: LegendaryBadge) => {
-        setLegendaryBadges(prev => {
-            const index = prev.findIndex(b => b.id === badge.id);
-            if (index > -1) {
-                const newBadges = [...prev];
-                newBadges[index] = badge;
-                return newBadges;
-            }
-            return [...prev, badge];
-        });
+    const handleSaveLegendaryBadge = (badge: Omit<LegendaryBadge, 'id'> | LegendaryBadge) => {
+        if ('id' in badge) {
+            updateDoc('legendaryBadges', badge);
+        } else {
+            addDoc('legendaryBadges', badge);
+        }
         setEditingLegendaryBadge(null);
     }
 
     const handleDeleteLegendaryBadge = () => {
         if (!deletingLegendaryBadge) return;
-        setLegendaryBadges(prev => prev.filter(b => b.id !== deletingLegendaryBadge.id));
+        deleteDoc('legendaryBadges', deletingLegendaryBadge.id);
         setDeletingLegendaryBadge(null);
     }
 

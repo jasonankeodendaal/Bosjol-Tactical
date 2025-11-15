@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { Sponsor } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -10,24 +11,27 @@ import { SparklesIcon, PlusIcon, PencilIcon, TrashIcon } from './icons/Icons';
 interface SponsorsTabProps {
     sponsors: Sponsor[];
     setSponsors: React.Dispatch<React.SetStateAction<Sponsor[]>>;
+    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<void>;
+    updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
+    deleteDoc: (collectionName: string, docId: string) => Promise<void>;
 }
 
-const SponsorEditorModal: React.FC<{ sponsor: Sponsor | {}, onClose: () => void, onSave: (s: Sponsor) => void }> = ({ sponsor, onClose, onSave }) => {
+const SponsorEditorModal: React.FC<{ sponsor: Partial<Sponsor>, onClose: () => void, onSave: (s: Sponsor | Omit<Sponsor, 'id'>) => void }> = ({ sponsor, onClose, onSave }) => {
     const [formData, setFormData] = useState({
-        name: 'name' in sponsor ? sponsor.name : '',
-        logoUrl: 'logoUrl' in sponsor ? sponsor.logoUrl : '',
-        email: 'email' in sponsor ? sponsor.email : '',
-        phone: 'phone' in sponsor ? sponsor.phone : '',
-        website: 'website' in sponsor ? sponsor.website : '',
+        name: sponsor.name || '',
+        logoUrl: sponsor.logoUrl || '',
+        email: sponsor.email || '',
+        phone: sponsor.phone || '',
+        website: sponsor.website || '',
     });
     
     const handleSaveClick = () => {
-        const finalSponsor = { ...sponsor, ...formData } as Sponsor;
+        const finalSponsor = { ...sponsor, ...formData };
         onSave(finalSponsor);
     };
 
     return (
-        <Modal isOpen={true} onClose={onClose} title={'id' in sponsor ? 'Edit Sponsor' : 'Add New Sponsor'}>
+        <Modal isOpen={true} onClose={onClose} title={sponsor.id ? 'Edit Sponsor' : 'Add New Sponsor'}>
             <div className="space-y-4">
                 <Input label="Sponsor Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                 <div className="grid grid-cols-2 gap-4">
@@ -54,22 +58,22 @@ const SponsorEditorModal: React.FC<{ sponsor: Sponsor | {}, onClose: () => void,
     );
 };
 
-export const SponsorsTab: React.FC<SponsorsTabProps> = ({ sponsors, setSponsors }) => {
-    const [isEditing, setIsEditing] = useState<Sponsor | {} | null>(null);
+export const SponsorsTab: React.FC<SponsorsTabProps> = ({ sponsors, setSponsors, addDoc, updateDoc, deleteDoc }) => {
+    const [isEditing, setIsEditing] = useState<Partial<Sponsor> | null>(null);
     const [deletingSponsor, setDeletingSponsor] = useState<Sponsor | null>(null);
 
-    const handleSave = (sponsor: Sponsor) => {
-        if (sponsor.id) {
-            setSponsors(prev => prev.map(s => s.id === sponsor.id ? sponsor : s));
+    const handleSave = (sponsor: Sponsor | Omit<Sponsor, 'id'>) => {
+        if ('id' in sponsor) {
+            updateDoc('sponsors', sponsor);
         } else {
-            setSponsors(prev => [...prev, { ...sponsor, id: `s${Date.now()}` }]);
+            addDoc('sponsors', sponsor);
         }
         setIsEditing(null);
     };
 
     const handleDelete = () => {
         if (!deletingSponsor) return;
-        setSponsors(prev => prev.filter(s => s.id !== deletingSponsor.id));
+        deleteDoc('sponsors', deletingSponsor.id);
         setDeletingSponsor(null);
     };
 

@@ -1,5 +1,6 @@
 
 
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -232,29 +233,15 @@ const AppContent: React.FC = () => {
     }, [isAuthenticated, resetInactivityTimer]);
 
     const { 
-        players, setPlayers,
-        events, setEvents,
-        ranks, setRanks,
-        badges, setBadges,
-        legendaryBadges, setLegendaryBadges,
-        gamificationSettings, setGamificationSettings,
-        sponsors, setSponsors,
-        companyDetails, setCompanyDetails,
-        socialLinks, setSocialLinks,
-        carouselMedia, setCarouselMedia,
-        vouchers, setVouchers,
-        inventory, setInventory,
-        suppliers, setSuppliers,
-        transactions, setTransactions,
-        locations, setLocations,
-        raffles, setRaffles,
-        deleteAllData,
-        seedInitialData,
+        players,
+        events,
+        companyDetails,
+        socialLinks,
+        carouselMedia,
         loading,
         isSeeding,
-        updatePlayerDoc,
-        addPlayerDoc,
-        updateEventDoc,
+        updateDoc,
+        addDoc,
     } = data;
     
     // Centralized background audio management
@@ -300,7 +287,7 @@ const AppContent: React.FC = () => {
     const currentPlayer = players.find(p => p.id === user?.id);
 
     const handleUpdatePlayer = async (updatedPlayer: Player) => {
-        await updatePlayerDoc(updatedPlayer);
+        await updateDoc('players', updatedPlayer);
         if (auth.user?.id === updatedPlayer.id) {
             auth.updateUser(updatedPlayer);
         }
@@ -330,12 +317,12 @@ const AppContent: React.FC = () => {
                 rentalSignups: [...rentalSignups, { playerId, requestedGearIds, note }]
             };
         }
-        await updateEventDoc(updatedEvent);
+        await updateDoc('events', updatedEvent);
     };
     
     const handleDeleteAllData = async () => {
         if (confirm('ARE YOU ABSOLUTELY SURE? This will wipe all data except for system settings (ranks, badges, etc). This cannot be undone.')) {
-            await deleteAllData();
+            await data.deleteAllData();
             alert("All transactional data has been deleted.");
             logout();
         }
@@ -399,49 +386,19 @@ const AppContent: React.FC = () => {
                         <PlayerDashboard 
                             player={currentPlayer}
                             players={players}
-                            sponsors={sponsors} 
+                            sponsors={data.sponsors} 
                             onPlayerUpdate={handleUpdatePlayer}
                             events={events}
                             onEventSignUp={handleEventSignUp}
-                            legendaryBadges={legendaryBadges}
-                            raffles={raffles}
-                            ranks={ranks}
+                            legendaryBadges={data.legendaryBadges}
+                            raffles={data.raffles}
+                            ranks={data.ranks}
                         /> : 
                         <AdminDashboard 
-                            players={players}
-                            setPlayers={setPlayers}
-                            events={events}
-                            setEvents={setEvents}
-                            ranks={ranks}
-                            setRanks={setRanks}
-                            badges={badges}
-                            setBadges={setBadges}
-                            legendaryBadges={legendaryBadges}
-                            setLegendaryBadges={setLegendaryBadges}
-                            gamificationSettings={gamificationSettings}
-                            setGamificationSettings={setGamificationSettings}
-                            sponsors={sponsors}
-                            setSponsors={setSponsors}
-                            companyDetails={companyDetails}
-                            setCompanyDetails={setCompanyDetails}
-                            socialLinks={socialLinks}
-                            setSocialLinks={setSocialLinks}
-                            carouselMedia={carouselMedia}
-                            setCarouselMedia={setCarouselMedia}
-                            vouchers={vouchers}
-                            setVouchers={setVouchers}
-                            inventory={inventory}
-                            setInventory={setInventory}
-                            suppliers={suppliers}
-                            setSuppliers={setSuppliers}
-                            transactions={transactions}
-                            setTransactions={setTransactions}
-                            locations={locations}
-                            setLocations={setLocations}
-                            raffles={raffles}
-                            setRaffles={setRaffles}
+                            // Pass all data and functions from context to AdminDashboard
+                            {...data}
+                            addPlayerDoc={(playerData) => addDoc('players', playerData)}
                             onDeleteAllData={handleDeleteAllData}
-                            addPlayerDoc={addPlayerDoc}
                         />
                     }
                 </div>

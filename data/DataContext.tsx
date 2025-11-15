@@ -75,15 +75,7 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                 await docRef.set(finalData, { merge: true });
             } catch (error: any) {
                 console.error(`Failed to save document ${collectionName}/${docId}:`, error);
-
-                let alertMessage = `Failed to save settings to the database. Please try again.\n\nError: ${error.message}`;
-
-                // Check for specific Firebase error related to document size
-                if (error.message && (error.message.includes('exceeds the maximum size') || error.message.toLowerCase().includes('is too large'))) {
-                    alertMessage = `Save Failed: The data you are trying to save exceeds Firebase's 1MB document size limit.\n\nThis usually happens when uploading large files (like backgrounds or audio) without a configured External API Server.\n\nPlease go to Settings > API Setup to configure your server, or upload smaller files.`;
-                }
-                
-                alert(alertMessage);
+                alert(`Failed to save settings to the database. This can happen if uploaded images or videos are too large (document size limit is 1MB).\n\nError: ${error.message}`);
             }
         } else {
             setData(finalData);

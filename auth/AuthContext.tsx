@@ -10,7 +10,7 @@ interface AuthProviderProps {
 }
 
 const ADMIN_EMAIL = 'bosjoltactical@gmail.com';
-const CREATOR_EMAIL = 'jstypme@gmail.com';
+const CREATOR_PIN = '1723'; // Hardcoded PIN for the creator
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | Player | Admin | null>(null);
@@ -44,24 +44,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         await auth.signOut();
                         setUser(null);
                     }
-                } else if (email === CREATOR_EMAIL) {
-                    try {
-                        const creatorDoc = await db.collection('settings').doc('creatorDetails').get();
-                        const creatorName = creatorDoc.exists ? (creatorDoc.data() as CreatorDetails).name : 'Creator';
-                        setUser({ id: 'creator', name: creatorName, role: 'creator' });
-                    } catch (error) {
-                        console.error("Error fetching creator details:", error);
-                        setUser({ id: 'creator', name: 'Creator', role: 'creator' });
-                    }
                 } else {
-                    // Non-admin/creator Firebase user, sign them out
+                    // Non-admin Firebase user, sign them out
                     await auth.signOut();
                     setUser(null);
                 }
             } else {
-                // No Firebase user, clear admin/creator state but not player state
+                // No Firebase user, clear admin state but not player/creator state
                 setUser(currentUser => {
-                    if (currentUser?.role === 'admin' || currentUser?.role === 'creator') {
+                    if (currentUser?.role === 'admin') {
                         return null;
                     }
                     return currentUser;
@@ -76,68 +67,70 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const login = async (username: string, password: string): Promise<boolean> => {
         const cleanUsername = username.trim();
         const cleanPassword = password.trim();
-        const isSpecialLogin = [ADMIN_EMAIL, CREATOR_EMAIL].includes(cleanUsername.toLowerCase());
+        
+        // Handle Creator PIN login first
+        if (cleanUsername === 'creator' && cleanPassword === CREATOR_PIN) {
+             setUser({ id: 'creator', name: 'Creator', role: 'creator' });
+             return true;
+        }
 
-        if (isSpecialLogin) {
+        // Handle Admin login
+        if (cleanUsername.toLowerCase() === ADMIN_EMAIL) {
             if (USE_FIREBASE && auth) {
                 try {
                     await auth.signInWithEmailAndPassword(cleanUsername, cleanPassword);
                     // onAuthStateChanged will set user state
                     return true;
                 } catch (error) {
-                    // Log the specific Firebase error code for better debugging
                     const typedError = error as { code?: string; message?: string };
                     console.error(`Firebase login failed with code: ${typedError.code || 'N/A'}. Message: ${typedError.message || 'Unknown error'}`);
                     return false;
                 }
-            } else { // Mock login for admin/creator
-                if (cleanUsername === ADMIN_EMAIL && cleanPassword === '1234') {
+            } else { // Mock admin login
+                if (cleanPassword === '1234') {
                     setUser(MOCK_ADMIN);
-                    return true;
-                }
-                if (cleanUsername === CREATOR_EMAIL && cleanPassword === 'creatorpass') {
-                     setUser({ id: 'creator', name: 'Creator', role: 'creator' });
-                     return true;
-                }
-                return false;
-            }
-        } else {
-            // Player login logic
-            if (USE_FIREBASE && db) {
-                try {
-                    const playersRef = db.collection("players");
-                    const q = playersRef.where("playerCode", "==", cleanUsername.toUpperCase()).limit(1);
-                    const querySnapshot = await q.get();
-
-                    if (querySnapshot.empty) return false;
-
-                    const playerDoc = querySnapshot.docs[0];
-                    const playerData = { id: playerDoc.id, ...playerDoc.data() } as Player;
-                    
-                    if (playerData.pin === cleanPassword) {
-                        setUser(playerData);
-                        return true;
-                    }
-                    return false;
-                } catch (error) {
-                    console.error("Player Firestore login failed:", error);
-                    return false;
-                }
-            } else { // Mock player login
-                const player = MOCK_PLAYERS.find(p => 
-                    p.playerCode.toLowerCase() === cleanUsername.toLowerCase() && p.pin === cleanPassword
-                );
-                if (player) {
-                    setUser(player);
                     return true;
                 }
                 return false;
             }
         }
+        
+        // Player login logic
+        if (USE_FIREBASE && db) {
+            try {
+                const playersRef = db.collection("players");
+                const q = playersRef.where("playerCode", "==", cleanUsername.toUpperCase()).limit(1);
+                const querySnapshot = await q.get();
+
+                if (querySnapshot.empty) return false;
+
+                const playerDoc = querySnapshot.docs[0];
+                const playerData = { id: playerDoc.id, ...playerDoc.data() } as Player;
+                
+                if (playerData.pin === cleanPassword) {
+                    setUser(playerData);
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error("Player Firestore login failed:", error);
+                return false;
+            }
+        } else { // Mock player login
+            const player = MOCK_PLAYERS.find(p => 
+                p.playerCode.toLowerCase() === cleanUsername.toLowerCase() && p.pin === cleanPassword
+            );
+            if (player) {
+                setUser(player);
+                return true;
+            }
+            return false;
+        }
     };
 
     const logout = async () => {
-        if (USE_FIREBASE && auth && auth.currentUser) {
+        // Only sign out from Firebase if the logged-in user is an admin
+        if (USE_FIREBASE && auth && auth.currentUser && user?.role === 'admin') {
             await auth.signOut();
         }
         setUser(null);

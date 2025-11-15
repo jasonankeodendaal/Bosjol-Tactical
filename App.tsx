@@ -6,6 +6,10 @@
 
 
 
+
+
+
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -36,25 +40,42 @@ const CreatorPopup: React.FC<{
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const CREATOR_EMAIL = 'jstypme@gmail.com';
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError(null);
 
-        const success = await login(CREATOR_EMAIL, password);
+        const success = await login("creator", password); // Use a fixed identifier for creator PIN login
         if (success) {
             onClose();
         } else {
-            setError("Invalid credentials. Please check your password and try again.");
+            setError("Invalid PIN. Please try again.");
             setIsLoading(false);
         }
     };
 
-    const emailHref = `mailto:${creatorDetails.email}?subject=Project%20Inquiry`;
+    const clientInquiryTemplate = `Hello JSTYP.me,
+
+I came across your work on the Bosjol Tactical Dashboard and I'm interested in discussing a potential project.
+
+Please see my details below for your convenience:
+
+- Project Name/Idea: 
+- My Name: 
+- Company Name (if applicable): 
+- Brief Project Description: 
+- Estimated Budget (Optional): 
+- Best Contact Method (Email/Phone): 
+
+Thank you, I look forward to hearing from you.
+`;
+
+    const emailSubject = "Project Inquiry via Bosjol Tactical Dashboard";
+    const emailHref = `mailto:${creatorDetails.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(clientInquiryTemplate)}`;
+    
     const whatsappNumber = creatorDetails.whatsapp.replace(/\D/g, '');
-    const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Hello, I'm interested in your services.")}`;
+    const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(clientInquiryTemplate)}`;
 
 
     return (
@@ -110,12 +131,14 @@ const CreatorPopup: React.FC<{
                              <Input
                                 icon={<KeyIcon className="w-4 h-4"/>}
                                 type="password"
-                                placeholder="Password"
+                                placeholder="PIN"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                                 autoFocus
                                 className="!py-1.5 text-xs"
+                                inputMode="numeric"
+                                pattern="\d*"
                             />
                             {error && (
                                 <motion.div

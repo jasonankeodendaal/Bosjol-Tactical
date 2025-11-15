@@ -19,13 +19,51 @@ interface ProgressionTabProps {
     setGamificationSettings: React.Dispatch<React.SetStateAction<GamificationSettings>>;
 }
 
-const GamificationEditor: React.FC<{rule: GamificationRule, onSave: (id: string, newXp: number) => void}> = ({rule, onSave}) => {
-     const [xp, setXp] = useState(rule.xp);
+const GamificationRuleEditorModal: React.FC<{
+    rule: Partial<GamificationRule> | null,
+    onClose: () => void,
+    onSave: (rule: GamificationRule) => void
+}> = ({ rule, onClose, onSave }) => {
+    const [formData, setFormData] = useState({
+        name: rule?.name || '',
+        description: rule?.description || '',
+        xp: rule?.xp === undefined ? 0 : rule.xp,
+    });
 
     const handleSave = () => {
-        onSave(rule.id, Number(xp));
+        if (!formData.name.trim() || !formData.description.trim()) {
+            alert("Rule Name and Description cannot be empty.");
+            return;
+        }
+        const finalRule: GamificationRule = {
+            id: rule?.id || `g${Date.now()}`,
+            name: formData.name,
+            description: formData.description,
+            xp: Number(formData.xp) || 0
+        };
+        onSave(finalRule);
+        onClose();
     }
-    
+
+    return (
+        <Modal isOpen={true} onClose={onClose} title={rule?.id ? 'Edit Gamification Rule' : 'Create Gamification Rule'}>
+            <div className="space-y-4">
+                <Input label="Rule Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))} />
+                <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({...f, description: e.target.value}))} />
+                <Input label="XP Value" type="number" value={formData.xp} onChange={e => setFormData(f => ({...f, xp: e.target.value === '' ? 0 : Number(e.target.value)}))} placeholder="e.g., 10 or -5" />
+            </div>
+            <div className="mt-6">
+                <Button className="w-full" onClick={handleSave}>Save Rule</Button>
+            </div>
+        </Modal>
+    );
+}
+
+const GamificationRuleItem: React.FC<{
+    rule: GamificationRule,
+    onEdit: (rule: GamificationRule) => void,
+    onDelete: (rule: GamificationRule) => void
+}> = ({ rule, onEdit, onDelete }) => {
     return (
         <div className="flex items-center gap-4 bg-zinc-800/50 p-3 rounded-lg">
             <div className="flex-grow">
@@ -33,20 +71,27 @@ const GamificationEditor: React.FC<{rule: GamificationRule, onSave: (id: string,
                 <p className="text-xs text-gray-400">{rule.description}</p>
             </div>
             <div className="flex items-center gap-2">
-                <Input type="number" value={xp} onChange={e => setXp(Number(e.target.value))} className="w-24 text-right"/>
-                <Button size="sm" onClick={handleSave} disabled={xp === rule.xp}>Save</Button>
+                <p className={`font-bold text-lg w-24 text-right ${rule.xp >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {rule.xp >= 0 ? '+' : ''}{rule.xp} XP
+                </p>
+                <Button size="sm" variant="secondary" onClick={() => onEdit(rule)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
+                <Button size="sm" variant="danger" onClick={() => onDelete(rule)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
             </div>
         </div>
-    )
+    );
 }
 
-const StandardBadgeEditorModal: React.FC<{ badge: Partial<Badge> | null, onClose: () => void, onSave: (b: Badge) => void }> = ({ badge, onClose, onSave }) => {
+const BadgeEditorModal: React.FC<{
+    badge: Partial<Badge> | null,
+    onClose: () => void,
+    onSave: (badge: Badge) => void
+}> = ({ badge, onClose, onSave }) => {
     const [formData, setFormData] = useState({
         name: badge?.name || '',
         description: badge?.description || '',
         iconUrl: badge?.iconUrl || '',
         criteriaType: badge?.criteria?.type || 'kills',
-        criteriaValue: badge?.criteria?.value || '',
+        criteriaValue: badge?.criteria?.value || 0,
     });
 
     const handleSave = () => {
@@ -57,57 +102,48 @@ const StandardBadgeEditorModal: React.FC<{ badge: Partial<Badge> | null, onClose
             iconUrl: formData.iconUrl,
             criteria: {
                 type: formData.criteriaType as Badge['criteria']['type'],
-                value: formData.criteriaType === 'rank' || formData.criteriaType === 'custom' ? formData.criteriaValue : Number(formData.criteriaValue)
+                value: formData.criteriaValue
             }
         };
         onSave(finalBadge);
         onClose();
     }
-    
+
     return (
-         <Modal isOpen={true} onClose={onClose} title={badge?.id ? 'Edit Standard Badge' : 'Create Standard Badge'}>
+        <Modal isOpen={true} onClose={onClose} title={badge?.id ? 'Edit Badge' : 'Create Badge'}>
             <div className="space-y-4">
-                <Input label="Badge Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))} />
-                <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({...f, description: e.target.value}))} />
-                <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Badge Icon</label>
-                    {formData.iconUrl ? (
-                        <div className="flex items-center gap-2">
-                            <img src={formData.iconUrl} alt="Icon preview" className="w-16 h-16 object-contain rounded-md bg-zinc-800 p-1" />
-                            <Button variant="danger" size="sm" onClick={() => setFormData(f => ({...f, iconUrl: ''}))}>Remove</Button>
-                        </div>
-                    ) : (
-                        <ImageUpload onUpload={(urls) => { if (urls.length > 0) setFormData(f => ({...f, iconUrl: urls[0]})); }} accept="image/*" />
-                    )}
-                </div>
+                <Input label="Badge Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
+                <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} />
+                <ImageUpload onUpload={(urls) => { if(urls.length) setFormData(f => ({...f, iconUrl: urls[0]}))}} accept="image/*" />
+                {formData.iconUrl && <img src={formData.iconUrl} alt="icon preview" className="w-16 h-16"/>}
                 <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Criteria Type</label>
-                        {/* FIX: Cast e.target.value to the correct literal union type to satisfy TypeScript. */}
-                        <select value={formData.criteriaType} onChange={e => setFormData(f => ({...f, criteriaType: e.target.value as Badge['criteria']['type']}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                            <option value="kills">Kills</option>
-                            <option value="headshots">Headshots</option>
-                            <option value="gamesPlayed">Games Played</option>
-                            <option value="rank">Rank</option>
-                            <option value="custom">Custom</option>
-                        </select>
-                    </div>
-                    <Input label="Criteria Value" value={formData.criteriaValue} onChange={e => setFormData(f => ({...f, criteriaValue: e.target.value}))} />
+                    <select value={formData.criteriaType} onChange={e => setFormData(f => ({...f, criteriaType: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <option value="kills">Kills</option>
+                        <option value="headshots">Headshots</option>
+                        <option value="gamesPlayed">Games Played</option>
+                        <option value="rank">Rank</option>
+                        <option value="custom">Custom (Admin Awarded)</option>
+                    </select>
+                     <Input label="Criteria Value" value={formData.criteriaValue} onChange={e => setFormData(f => ({ ...f, criteriaValue: e.target.value }))} />
                 </div>
             </div>
             <div className="mt-6">
-                <Button className="w-full" onClick={handleSave}>Save Badge</Button>
+                <Button onClick={handleSave} className="w-full">Save Badge</Button>
             </div>
         </Modal>
     );
 }
 
-const LegendaryBadgeEditorModal: React.FC<{ badge: Partial<LegendaryBadge> | null, onClose: () => void, onSave: (b: LegendaryBadge) => void }> = ({ badge, onClose, onSave }) => {
+const LegendaryBadgeEditorModal: React.FC<{
+    badge: Partial<LegendaryBadge> | null,
+    onClose: () => void,
+    onSave: (badge: LegendaryBadge) => void
+}> = ({ badge, onClose, onSave }) => {
     const [formData, setFormData] = useState({
         name: badge?.name || '',
         description: badge?.description || '',
         iconUrl: badge?.iconUrl || '',
-        howToObtain: badge?.howToObtain || 'Manually awarded by an admin.',
+        howToObtain: badge?.howToObtain || ''
     });
 
     const handleSave = () => {
@@ -116,48 +152,59 @@ const LegendaryBadgeEditorModal: React.FC<{ badge: Partial<LegendaryBadge> | nul
             name: formData.name,
             description: formData.description,
             iconUrl: formData.iconUrl,
-            howToObtain: formData.howToObtain,
+            howToObtain: formData.howToObtain
         };
         onSave(finalBadge);
         onClose();
     }
-    
+
     return (
-         <Modal isOpen={true} onClose={onClose} title={badge?.id ? 'Edit Legendary Badge' : 'Create Legendary Badge'}>
+        <Modal isOpen={true} onClose={onClose} title={badge?.id ? 'Edit Legendary Badge' : 'Create Legendary Badge'}>
             <div className="space-y-4">
-                <Input label="Badge Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))} />
-                <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({...f, description: e.target.value}))} />
-                <Input label="How to Obtain" value={formData.howToObtain} onChange={e => setFormData(f => ({...f, howToObtain: e.target.value}))} />
-                <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Badge Icon</label>
-                    {formData.iconUrl ? (
-                         <div className="flex items-center gap-2">
-                            <img src={formData.iconUrl} alt="Icon preview" className="w-16 h-16 object-contain rounded-md bg-zinc-800 p-1" />
-                            <Button variant="danger" size="sm" onClick={() => setFormData(f => ({...f, iconUrl: ''}))}>Remove</Button>
-                        </div>
-                    ) : (
-                        <ImageUpload onUpload={(urls) => { if (urls.length > 0) setFormData(f => ({...f, iconUrl: urls[0]})); }} accept="image/*" />
-                    )}
-                </div>
+                <Input label="Badge Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
+                <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} />
+                <Input label="How to Obtain" value={formData.howToObtain} onChange={e => setFormData(f => ({ ...f, howToObtain: e.target.value }))} />
+                <ImageUpload onUpload={(urls) => { if(urls.length) setFormData(f => ({...f, iconUrl: urls[0]}))}} accept="image/*" />
+                {formData.iconUrl && <img src={formData.iconUrl} alt="icon preview" className="w-16 h-16"/>}
             </div>
             <div className="mt-6">
-                <Button className="w-full" onClick={handleSave}>Save Badge</Button>
+                <Button onClick={handleSave} className="w-full">Save Badge</Button>
             </div>
         </Modal>
     );
-};
+}
 
-
-export const ProgressionTab: React.FC<ProgressionTabProps> = ({ ranks, setRanks, badges, setBadges, legendaryBadges, setLegendaryBadges, gamificationSettings, setGamificationSettings }) => {
-    const [editingStandardBadge, setEditingStandardBadge] = useState<Partial<Badge> | null>(null);
-    const [editingLegendaryBadge, setEditingLegendaryBadge] = useState<Partial<LegendaryBadge> | null>(null);
-    const [deletingBadge, setDeletingBadge] = useState<Badge | LegendaryBadge | null>(null);
+export const ProgressionTab: React.FC<ProgressionTabProps> = ({ gamificationSettings, setGamificationSettings, badges, setBadges, legendaryBadges, setLegendaryBadges }) => {
+    const [editingRule, setEditingRule] = useState<Partial<GamificationRule> | null>(null);
+    const [deletingRule, setDeletingRule] = useState<GamificationRule | null>(null);
     
-    const handleGamificationSave = (id: string, newXp: number) => {
-        setGamificationSettings(prev => prev.map(rule => rule.id === id ? {...rule, xp: newXp} : rule));
+    const [editingBadge, setEditingBadge] = useState<Partial<Badge> | null>(null);
+    const [deletingBadge, setDeletingBadge] = useState<Badge | null>(null);
+
+    const [editingLegendaryBadge, setEditingLegendaryBadge] = useState<Partial<LegendaryBadge> | null>(null);
+    const [deletingLegendaryBadge, setDeletingLegendaryBadge] = useState<LegendaryBadge | null>(null);
+    
+    // Gamification Handlers
+    const handleSaveRule = (rule: GamificationRule) => {
+        setGamificationSettings(prev => {
+            const index = prev.findIndex(r => r.id === rule.id);
+            if (index > -1) {
+                const newSettings = [...prev];
+                newSettings[index] = rule;
+                return newSettings;
+            }
+            return [...prev, rule];
+        });
     };
 
-    const handleStandardBadgeSave = (badge: Badge) => {
+    const handleDeleteRule = () => {
+        if (!deletingRule) return;
+        setGamificationSettings(prev => prev.filter(r => r.id !== deletingRule.id));
+        setDeletingRule(null);
+    };
+    
+    // Standard Badge Handlers
+    const handleSaveBadge = (badge: Badge) => {
         setBadges(prev => {
             const index = prev.findIndex(b => b.id === badge.id);
             if (index > -1) {
@@ -167,9 +214,17 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({ ranks, setRanks,
             }
             return [...prev, badge];
         });
-    };
+        setEditingBadge(null);
+    }
+    
+    const handleDeleteBadge = () => {
+        if (!deletingBadge) return;
+        setBadges(prev => prev.filter(b => b.id !== deletingBadge.id));
+        setDeletingBadge(null);
+    }
 
-    const handleLegendaryBadgeSave = (badge: LegendaryBadge) => {
+    // Legendary Badge Handlers
+    const handleSaveLegendaryBadge = (badge: LegendaryBadge) => {
         setLegendaryBadges(prev => {
             const index = prev.findIndex(b => b.id === badge.id);
             if (index > -1) {
@@ -179,86 +234,108 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({ ranks, setRanks,
             }
             return [...prev, badge];
         });
-    };
-    
-    const handleDeleteConfirm = () => {
-        if (!deletingBadge) return;
-        if ('criteria' in deletingBadge) { // It's a Standard Badge
-            setBadges(prev => prev.filter(b => b.id !== deletingBadge.id));
-        } else { // It's a Legendary Badge
-            setLegendaryBadges(prev => prev.filter(b => b.id !== deletingBadge.id));
-        }
-        setDeletingBadge(null);
+        setEditingLegendaryBadge(null);
+    }
+
+    const handleDeleteLegendaryBadge = () => {
+        if (!deletingLegendaryBadge) return;
+        setLegendaryBadges(prev => prev.filter(b => b.id !== deletingLegendaryBadge.id));
+        setDeletingLegendaryBadge(null);
     }
 
     return (
-         <div className="space-y-6">
-            {editingStandardBadge && <StandardBadgeEditorModal badge={editingStandardBadge} onClose={() => setEditingStandardBadge(null)} onSave={handleStandardBadgeSave} />}
-            {editingLegendaryBadge && <LegendaryBadgeEditorModal badge={editingLegendaryBadge} onClose={() => setEditingLegendaryBadge(null)} onSave={handleLegendaryBadgeSave} />}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Modals */}
+            {editingRule && <GamificationRuleEditorModal rule={editingRule} onClose={() => setEditingRule(null)} onSave={handleSaveRule} />}
+            {deletingRule && (
+                <Modal isOpen={true} onClose={() => setDeletingRule(null)} title="Confirm Deletion">
+                    <p>Are you sure you want to delete the rule "{deletingRule.name}"?</p>
+                    <div className="flex justify-end gap-4 mt-6">
+                        <Button variant="secondary" onClick={() => setDeletingRule(null)}>Cancel</Button>
+                        <Button variant="danger" onClick={handleDeleteRule}>Delete</Button>
+                    </div>
+                </Modal>
+            )}
+            {editingBadge && <BadgeEditorModal badge={editingBadge} onClose={() => setEditingBadge(null)} onSave={handleSaveBadge} />}
             {deletingBadge && (
                  <Modal isOpen={true} onClose={() => setDeletingBadge(null)} title="Confirm Deletion">
-                    <p className="text-gray-300">Are you sure you want to delete the badge "{deletingBadge.name}"? This action cannot be undone.</p>
+                    <p>Are you sure you want to delete the badge "{deletingBadge.name}"?</p>
                     <div className="flex justify-end gap-4 mt-6">
                         <Button variant="secondary" onClick={() => setDeletingBadge(null)}>Cancel</Button>
-                        <Button variant="danger" onClick={handleDeleteConfirm}>Delete</Button>
+                        <Button variant="danger" onClick={handleDeleteBadge}>Delete</Button>
+                    </div>
+                </Modal>
+            )}
+            {editingLegendaryBadge && <LegendaryBadgeEditorModal badge={editingLegendaryBadge} onClose={() => setEditingLegendaryBadge(null)} onSave={handleSaveLegendaryBadge} />}
+            {deletingLegendaryBadge && (
+                 <Modal isOpen={true} onClose={() => setDeletingLegendaryBadge(null)} title="Confirm Deletion">
+                    <p>Are you sure you want to delete the badge "{deletingLegendaryBadge.name}"?</p>
+                    <div className="flex justify-end gap-4 mt-6">
+                        <Button variant="secondary" onClick={() => setDeletingLegendaryBadge(null)}>Cancel</Button>
+                        <Button variant="danger" onClick={handleDeleteLegendaryBadge}>Delete</Button>
                     </div>
                 </Modal>
             )}
 
-            <DashboardCard title="Gamification Settings" icon={<PlusCircleIcon className="w-6 h-6"/>}>
-                <div className="p-4 space-y-2">
-                    {gamificationSettings.map(rule => (
-                        <GamificationEditor key={rule.id} rule={rule} onSave={handleGamificationSave} />
-                    ))}
-                </div>
-            </DashboardCard>
-
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                 <DashboardCard title="Standard Badges" icon={<TrophyIcon className="w-6 h-6"/>}>
+            {/* Main Content */}
+            <div className="space-y-6">
+                <DashboardCard title="Gamification Settings" icon={<ShieldCheckIcon className="w-6 h-6" />}>
                      <div className="p-4">
                         <div className="flex justify-end mb-4">
-                            <Button onClick={() => setEditingStandardBadge({})} size="sm"><PlusIcon className="w-5 h-5 mr-2" />Add Badge</Button>
+                            <Button size="sm" onClick={() => setEditingRule({})}>
+                                <PlusIcon className="w-5 h-5 mr-2" /> Add Rule
+                            </Button>
                         </div>
-                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                        <div className="space-y-2">
+                            {gamificationSettings.map(rule => (
+                                <GamificationRuleItem key={rule.id} rule={rule} onEdit={setEditingRule} onDelete={setDeletingRule} />
+                            ))}
+                        </div>
+                    </div>
+                </DashboardCard>
+            </div>
+            <div className="space-y-6">
+                 <DashboardCard title="Standard Badges" icon={<TrophyIcon className="w-6 h-6" />}>
+                     <div className="p-4">
+                        <div className="flex justify-end mb-4">
+                            <Button size="sm" onClick={() => setEditingBadge({})}><PlusIcon className="w-5 h-5 mr-2"/>Add Badge</Button>
+                        </div>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
                             {badges.map(badge => (
-                                <div key={badge.id} className="flex items-center gap-4 bg-zinc-800/50 p-3 rounded-lg">
-                                    <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10" />
+                                <div key={badge.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg">
+                                    <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10"/>
                                     <div className="flex-grow">
                                         <p className="font-bold text-white">{badge.name}</p>
-                                        <p className="text-xs text-gray-400">{badge.description} ({badge.criteria.type}: {badge.criteria.value})</p>
+                                        <p className="text-xs text-gray-400">{badge.description}</p>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <Button size="sm" variant="secondary" onClick={() => setEditingStandardBadge(badge)}><PencilIcon className="w-4 h-4"/></Button>
-                                        <Button size="sm" variant="danger" onClick={() => setDeletingBadge(badge)}><TrashIcon className="w-4 h-4"/></Button>
-                                    </div>
+                                    <Button size="sm" variant="secondary" onClick={() => setEditingBadge(badge)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
+                                    <Button size="sm" variant="danger" onClick={() => setDeletingBadge(badge)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
                                 </div>
                             ))}
                         </div>
-                     </div>
+                    </div>
                 </DashboardCard>
-                <DashboardCard title="Legendary Badges" icon={<TrophyIcon className="w-6 h-6 text-amber-400"/>}>
-                     <div className="p-4">
+                <DashboardCard title="Legendary Badges" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
+                    <div className="p-4">
                         <div className="flex justify-end mb-4">
-                            <Button onClick={() => setEditingLegendaryBadge({})} size="sm"><PlusIcon className="w-5 h-5 mr-2" />Add Badge</Button>
+                            <Button size="sm" onClick={() => setEditingLegendaryBadge({})}><PlusIcon className="w-5 h-5 mr-2"/>Add Badge</Button>
                         </div>
-                        <div className="space-y-2 max-h-96 overflow-y-auto">
-                            {legendaryBadges.map(badge => (
-                                <div key={badge.id} className="flex items-center gap-4 bg-zinc-800/50 p-3 rounded-lg">
-                                    <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10" />
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                             {legendaryBadges.map(badge => (
+                                <div key={badge.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg">
+                                    <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10"/>
                                     <div className="flex-grow">
                                         <p className="font-bold text-amber-300">{badge.name}</p>
-                                        <p className="text-xs text-gray-300">{badge.description}</p>
+                                        <p className="text-xs text-gray-400">{badge.description}</p>
                                     </div>
-                                     <div className="flex gap-2">
-                                        <Button size="sm" variant="secondary" onClick={() => setEditingLegendaryBadge(badge)}><PencilIcon className="w-4 h-4"/></Button>
-                                        <Button size="sm" variant="danger" onClick={() => setDeletingBadge(badge)}><TrashIcon className="w-4 h-4"/></Button>
-                                    </div>
+                                    <Button size="sm" variant="secondary" onClick={() => setEditingLegendaryBadge(badge)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
+                                    <Button size="sm" variant="danger" onClick={() => setDeletingLegendaryBadge(badge)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
                                 </div>
                             ))}
                         </div>
-                     </div>
+                    </div>
                 </DashboardCard>
-             </div>
+            </div>
         </div>
     );
 };

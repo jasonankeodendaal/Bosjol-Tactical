@@ -1,4 +1,5 @@
 
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -160,6 +161,8 @@ const AppContent: React.FC = () => {
     const auth = useContext(AuthContext);
     const data = useContext(DataContext);
     const [showFrontPage, setShowFrontPage] = useState(true);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
 
     if (firebaseInitializationError) {
         return (
@@ -254,6 +257,46 @@ const AppContent: React.FC = () => {
         updateEventDoc,
     } = data;
     
+    // Centralized background audio management
+    useEffect(() => {
+        const audioUrl = companyDetails.loginAudioUrl;
+
+        if (!audioUrl) {
+            if (audioRef.current) {
+                audioRef.current.pause();
+            }
+            return;
+        }
+
+        if (!audioRef.current) {
+            audioRef.current = new Audio(audioUrl);
+            audioRef.current.loop = true;
+        } else if (audioRef.current.src !== audioUrl) {
+            audioRef.current.src = audioUrl;
+        }
+
+        const audio = audioRef.current;
+        let playPromise: Promise<void> | undefined;
+
+        if (showFrontPage) {
+            audio.pause();
+        } else if (!isAuthenticated) { // Login Screen
+            audio.volume = 0.5; // Louder on login
+            playPromise = audio.play();
+        } else { // Authenticated Dashboard
+            audio.volume = 0.2; // Softer on dashboard
+            playPromise = audio.play();
+        }
+        
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log("Audio autoplay was prevented by the browser.");
+            });
+        }
+
+    }, [showFrontPage, isAuthenticated, companyDetails.loginAudioUrl]);
+
+
     const currentPlayer = players.find(p => p.id === user?.id);
 
     const handleUpdatePlayer = async (updatedPlayer: Player) => {

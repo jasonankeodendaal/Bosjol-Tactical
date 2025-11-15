@@ -24,25 +24,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
 
   const { login } = auth;
   
-  useEffect(() => {
-    if (companyDetails.loginAudioUrl) {
-        try {
-            const audio = new Audio(companyDetails.loginAudioUrl);
-            audio.loop = true;
-            audio.volume = 0.3;
-            audio.play().catch(e => console.error("Autoplay was prevented:", e));
-            
-            // Cleanup function to stop audio when component unmounts
-            return () => {
-                audio.pause();
-                audio.src = "";
-            };
-        } catch (e) {
-            console.error("Failed to play login audio:", e);
-        }
-    }
-  }, [companyDetails.loginAudioUrl]);
-  
   const handleLogin = async (e: React.FormEvent) => {
       e.preventDefault();
 

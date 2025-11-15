@@ -326,8 +326,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     if (!dataContext) throw new Error("DataContext not found");
     const { migrateToApiServer } = dataContext;
 
-    const { players, setPlayers, events, setEvents, legendaryBadges, ranks } = props;
-
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab') as Tab | null;
@@ -355,26 +353,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     
     const handleSaveEvent = (eventData: GameEvent) => {
         if (eventData.id) {
-            setEvents(prev => prev.map(e => e.id === eventData.id ? eventData : e));
+            props.setEvents(prev => prev.map(e => e.id === eventData.id ? eventData : e));
         } else {
-            setEvents(prev => [...prev, { ...eventData, id: `e${Date.now()}` }]);
+            props.setEvents(prev => [...prev, { ...eventData, id: `e${Date.now()}` }]);
         }
         setView('dashboard');
     }
 
     const handleDeleteEvent = (eventId: string) => {
         if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
-            setEvents(prev => prev.filter(e => e.id !== eventId));
+            props.setEvents(prev => prev.filter(e => e.id !== eventId));
             setView('dashboard');
         }
     }
 
 
     const handleUpdatePlayer = (updatedPlayer: Player) => {
-        setPlayers(prev => prev.map(p => p.id === updatedPlayer.id ? updatedPlayer : p));
+        props.setPlayers(prev => prev.map(p => p.id === updatedPlayer.id ? updatedPlayer : p));
     };
     
-    const selectedPlayer = players.find(p => p.id === selectedPlayerId);
+    const selectedPlayer = props.players.find(p => p.id === selectedPlayerId);
 
     const getHelpTopic = () => {
         if (view === 'player_profile') return 'admin-player-profile';
@@ -389,11 +387,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             <>
                 <PlayerProfilePage 
                     player={selectedPlayer} 
-                    events={events} 
-                    legendaryBadges={legendaryBadges}
+                    events={props.events} 
+                    legendaryBadges={props.legendaryBadges}
                     onBack={() => setView('dashboard')}
                     onUpdatePlayer={handleUpdatePlayer}
-                    ranks={ranks}
+                    ranks={props.ranks}
                 />
                 <HelpSystem topic={getHelpTopic()} />
             </>
@@ -401,7 +399,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     }
 
     if (view === 'manage_event') {
-        const eventToManage = selectedEventId ? events.find(e => e.id === selectedEventId) : undefined;
+        const eventToManage = selectedEventId ? props.events.find(e => e.id === selectedEventId) : undefined;
         return (
             <>
                 <ManageEventPage 
@@ -439,7 +437,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'Events': return <EventsTab events={events} onManageEvent={handleManageEvent} />;
+            case 'Events': return <EventsTab events={props.events} onManageEvent={handleManageEvent} />;
             case 'Players': return <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>;
             case 'Progression': return <ProgressionTab {...props} />;
             case 'Inventory': return <InventoryTab {...props} />;

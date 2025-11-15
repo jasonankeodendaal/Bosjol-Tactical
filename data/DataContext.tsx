@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useCallback, Dispatch, SetStateAction } from 'react';
 import { USE_FIREBASE, db } from '../firebase';
 import * as mock from '../constants';
 import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia } from '../types';
@@ -86,22 +86,22 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
 }
 
 interface DataContextType {
-    players: Player[]; setPlayers: (d: Player[] | ((p: Player[]) => Player[])) => void;
-    events: GameEvent[]; setEvents: (d: GameEvent[] | ((p: GameEvent[]) => GameEvent[])) => void;
-    ranks: Rank[]; setRanks: (d: Rank[] | ((p: Rank[]) => Rank[])) => void;
-    badges: Badge[]; setBadges: (d: Badge[] | ((p: Badge[]) => Badge[])) => void;
-    legendaryBadges: LegendaryBadge[]; setLegendaryBadges: (d: LegendaryBadge[] | ((p: LegendaryBadge[]) => LegendaryBadge[])) => void;
-    gamificationSettings: GamificationSettings; setGamificationSettings: (d: GamificationSettings | ((p: GamificationSettings) => GamificationSettings)) => void;
-    sponsors: Sponsor[]; setSponsors: (d: Sponsor[] | ((p: Sponsor[]) => Sponsor[])) => void;
+    players: Player[]; setPlayers: Dispatch<SetStateAction<Player[]>>;
+    events: GameEvent[]; setEvents: Dispatch<SetStateAction<GameEvent[]>>;
+    ranks: Rank[]; setRanks: Dispatch<SetStateAction<Rank[]>>;
+    badges: Badge[]; setBadges: Dispatch<SetStateAction<Badge[]>>;
+    legendaryBadges: LegendaryBadge[]; setLegendaryBadges: Dispatch<SetStateAction<LegendaryBadge[]>>;
+    gamificationSettings: GamificationSettings; setGamificationSettings: Dispatch<SetStateAction<GamificationSettings>>;
+    sponsors: Sponsor[]; setSponsors: Dispatch<SetStateAction<Sponsor[]>>;
     companyDetails: CompanyDetails; setCompanyDetails: (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => void;
-    socialLinks: SocialLink[]; setSocialLinks: (d: SocialLink[] | ((p: SocialLink[]) => SocialLink[])) => void;
-    carouselMedia: CarouselMedia[]; setCarouselMedia: (d: CarouselMedia[] | ((p: CarouselMedia[]) => CarouselMedia[])) => void;
-    vouchers: Voucher[]; setVouchers: (d: Voucher[] | ((p: Voucher[]) => Voucher[])) => void;
-    inventory: InventoryItem[]; setInventory: (d: InventoryItem[] | ((p: InventoryItem[]) => InventoryItem[])) => void;
-    suppliers: Supplier[]; setSuppliers: (d: Supplier[] | ((p: Supplier[]) => Supplier[])) => void;
-    transactions: Transaction[]; setTransactions: (d: Transaction[] | ((p: Transaction[]) => Transaction[])) => void;
-    locations: Location[]; setLocations: (d: Location[] | ((p: Location[]) => Location[])) => void;
-    raffles: Raffle[]; setRaffles: (d: Raffle[] | ((p: Raffle[]) => Raffle[])) => void;
+    socialLinks: SocialLink[]; setSocialLinks: Dispatch<SetStateAction<SocialLink[]>>;
+    carouselMedia: CarouselMedia[]; setCarouselMedia: Dispatch<SetStateAction<CarouselMedia[]>>;
+    vouchers: Voucher[]; setVouchers: Dispatch<SetStateAction<Voucher[]>>;
+    inventory: InventoryItem[]; setInventory: Dispatch<SetStateAction<InventoryItem[]>>;
+    suppliers: Supplier[]; setSuppliers: Dispatch<SetStateAction<Supplier[]>>;
+    transactions: Transaction[]; setTransactions: Dispatch<SetStateAction<Transaction[]>>;
+    locations: Location[]; setLocations: Dispatch<SetStateAction<Location[]>>;
+    raffles: Raffle[]; setRaffles: Dispatch<SetStateAction<Raffle[]>>;
     deleteAllData: () => Promise<void>;
     seedInitialData: () => Promise<void>;
     loading: boolean;
@@ -116,22 +116,53 @@ interface DataContextType {
 export const DataContext = createContext<DataContextType | null>(null);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [players, setPlayers, loadingPlayers] = useCollection<Player>('players', mock.MOCK_PLAYERS, []);
-    const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', mock.MOCK_EVENTS, []);
-    const [ranks, setRanks, loadingRanks] = useCollection<Rank>('ranks', mock.MOCK_RANKS, []);
-    const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', mock.MOCK_BADGES, []);
-    const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', mock.MOCK_LEGENDARY_BADGES, []);
-    const [gamificationSettings, setGamificationSettings, loadingGamification] = useCollection<GamificationRule>('gamificationSettings', mock.MOCK_GAMIFICATION_SETTINGS, []);
-    const [sponsors, setSponsors, loadingSponsors] = useCollection<Sponsor>('sponsors', mock.MOCK_SPONSORS, []);
-    const [vouchers, setVouchers, loadingVouchers] = useCollection<Voucher>('vouchers', mock.MOCK_VOUCHERS, []);
-    const [inventory, setInventory, loadingInventory] = useCollection<InventoryItem>('inventory', mock.MOCK_INVENTORY, []);
-    const [suppliers, setSuppliers, loadingSuppliers] = useCollection<Supplier>('suppliers', mock.MOCK_SUPPLIERS, []);
-    const [transactions, setTransactions, loadingTransactions] = useCollection<Transaction>('transactions', mock.MOCK_TRANSACTIONS, []);
-    const [locations, setLocations, loadingLocations] = useCollection<Location>('locations', mock.MOCK_LOCATIONS, []);
-    const [raffles, setRaffles, loadingRaffles] = useCollection<Raffle>('raffles', mock.MOCK_RAFFLES, []);
-    const [companyDetails, setCompanyDetails, loadingCompanyDetails] = useDocument<CompanyDetails>('settings', 'companyDetails', mock.MOCK_COMPANY_DETAILS);
-    const [socialLinks, setSocialLinks, loadingSocialLinks] = useCollection<SocialLink>('socialLinks', mock.MOCK_SOCIAL_LINKS, []);
-    const [carouselMedia, setCarouselMedia, loadingCarouselMedia] = useCollection<CarouselMedia>('carouselMedia', mock.MOCK_CAROUSEL_MEDIA, []);
+    const [players, _setPlayers, loadingPlayers] = useCollection<Player>('players', mock.MOCK_PLAYERS, []);
+    const setPlayers = useCallback((d: SetStateAction<Player[]>) => _setPlayers(d), []);
+    
+    const [events, _setEvents, loadingEvents] = useCollection<GameEvent>('events', mock.MOCK_EVENTS, []);
+    const setEvents = useCallback((d: SetStateAction<GameEvent[]>) => _setEvents(d), []);
+
+    const [ranks, _setRanks, loadingRanks] = useCollection<Rank>('ranks', mock.MOCK_RANKS, []);
+    const setRanks = useCallback((d: SetStateAction<Rank[]>) => _setRanks(d), []);
+
+    const [badges, _setBadges, loadingBadges] = useCollection<Badge>('badges', mock.MOCK_BADGES, []);
+    const setBadges = useCallback((d: SetStateAction<Badge[]>) => _setBadges(d), []);
+
+    const [legendaryBadges, _setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', mock.MOCK_LEGENDARY_BADGES, []);
+    const setLegendaryBadges = useCallback((d: SetStateAction<LegendaryBadge[]>) => _setLegendaryBadges(d), []);
+
+    const [gamificationSettings, _setGamificationSettings, loadingGamification] = useCollection<GamificationRule>('gamificationSettings', mock.MOCK_GAMIFICATION_SETTINGS, []);
+    const setGamificationSettings = useCallback((d: SetStateAction<GamificationRule[]>) => _setGamificationSettings(d), []);
+
+    const [sponsors, _setSponsors, loadingSponsors] = useCollection<Sponsor>('sponsors', mock.MOCK_SPONSORS, []);
+    const setSponsors = useCallback((d: SetStateAction<Sponsor[]>) => _setSponsors(d), []);
+
+    const [vouchers, _setVouchers, loadingVouchers] = useCollection<Voucher>('vouchers', mock.MOCK_VOUCHERS, []);
+    const setVouchers = useCallback((d: SetStateAction<Voucher[]>) => _setVouchers(d), []);
+
+    const [inventory, _setInventory, loadingInventory] = useCollection<InventoryItem>('inventory', mock.MOCK_INVENTORY, []);
+    const setInventory = useCallback((d: SetStateAction<InventoryItem[]>) => _setInventory(d), []);
+
+    const [suppliers, _setSuppliers, loadingSuppliers] = useCollection<Supplier>('suppliers', mock.MOCK_SUPPLIERS, []);
+    const setSuppliers = useCallback((d: SetStateAction<Supplier[]>) => _setSuppliers(d), []);
+
+    const [transactions, _setTransactions, loadingTransactions] = useCollection<Transaction>('transactions', mock.MOCK_TRANSACTIONS, []);
+    const setTransactions = useCallback((d: SetStateAction<Transaction[]>) => _setTransactions(d), []);
+
+    const [locations, _setLocations, loadingLocations] = useCollection<Location>('locations', mock.MOCK_LOCATIONS, []);
+    const setLocations = useCallback((d: SetStateAction<Location[]>) => _setLocations(d), []);
+
+    const [raffles, _setRaffles, loadingRaffles] = useCollection<Raffle>('raffles', mock.MOCK_RAFFLES, []);
+    const setRaffles = useCallback((d: SetStateAction<Raffle[]>) => _setRaffles(d), []);
+
+    const [socialLinks, _setSocialLinks, loadingSocialLinks] = useCollection<SocialLink>('socialLinks', mock.MOCK_SOCIAL_LINKS, []);
+    const setSocialLinks = useCallback((d: SetStateAction<SocialLink[]>) => _setSocialLinks(d), []);
+
+    const [carouselMedia, _setCarouselMedia, loadingCarouselMedia] = useCollection<CarouselMedia>('carouselMedia', mock.MOCK_CAROUSEL_MEDIA, []);
+    const setCarouselMedia = useCallback((d: SetStateAction<CarouselMedia[]>) => _setCarouselMedia(d), []);
+
+    const [companyDetails, _setCompanyDetails, loadingCompanyDetails] = useDocument<CompanyDetails>('settings', 'companyDetails', mock.MOCK_COMPANY_DETAILS);
+    const setCompanyDetails = useCallback((d: SetStateAction<CompanyDetails>) => _setCompanyDetails(d), [_setCompanyDetails]);
     
     const [isSeeding, setIsSeeding] = useState(false);
 

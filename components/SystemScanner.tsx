@@ -55,30 +55,111 @@ export const SystemScanner: React.FC = () => {
     const runScan = useCallback(async () => {
         if (!dataContext) return;
 
-        const { players, events, companyDetails, ranks, gamificationSettings, carouselMedia, socialLinks, sponsors } = dataContext;
+        const { players, events, companyDetails, ranks, gamificationSettings, carouselMedia, socialLinks, sponsors, creatorDetails } = dataContext;
         
         const checks = [
             // Core System
             { category: 'Core System', name: 'React App Initialized', checkFn: async () => document.getElementById('root')?.hasChildNodes() ? { status: 'pass' as CheckStatus, detail: 'Root element is mounted.' } : { status: 'fail' as CheckStatus, detail: 'React root not found or is empty.' } },
             { category: 'Core System', name: 'Data Context Ready', checkFn: async () => dataContext ? { status: 'pass' as CheckStatus, detail: 'DataContext is available.' } : { status: 'fail' as CheckStatus, detail: 'DataContext is missing.' } },
-            { category: 'Core System', name: 'Service Worker Active', checkFn: async () => 'serviceWorker' in navigator && navigator.serviceWorker.controller ? { status: 'pass' as CheckStatus, detail: 'Service worker is controlling the page.' } : { status: 'warn' as CheckStatus, detail: 'Service worker not registered or not active.' } },
+            { category: 'Core System', name: 'PWA Manifest Check', checkFn: async () => {
+                try {
+                    const response = await fetch('/manifest.json');
+                    if (!response.ok) return { status: 'fail', detail: `manifest.json not found (Status: ${response.status})` };
+                    const manifest = await response.json();
+                    if (manifest.name && manifest.icons) {
+                        return { status: 'pass', detail: `Manifest "${manifest.name}" loaded successfully.` };
+                    }
+                    return { status: 'warn', detail: 'Manifest is missing key properties like "name" or "icons".' };
+                } catch (e) {
+                    return { status: 'fail', detail: `Failed to fetch or parse manifest.json: ${(e as Error).message}` };
+                }
+            }},
+
+            // Service Worker
+            { category: 'Service Worker', name: 'Browser Support', checkFn: async () => 'serviceWorker' in navigator ? { status: 'pass' as CheckStatus, detail: 'Service Worker API is supported by this browser.' } : { status: 'fail' as CheckStatus, detail: 'Service Worker API is not supported.' } },
+            { category: 'Service Worker', name: 'Registration Status', checkFn: async () => {
+                if (!('serviceWorker' in navigator)) return { status: 'fail' as CheckStatus, detail: 'Browser does not support Service Workers.' };
+                const registration = await navigator.serviceWorker.getRegistration();
+                return registration ? { status: 'pass' as CheckStatus, detail: `Service Worker registered with scope: ${registration.scope}` } : { status: 'warn' as CheckStatus, detail: 'No active Service Worker registration found.' };
+            }},
+            { category: 'Service Worker', name: 'Page Control', checkFn: async () => navigator.serviceWorker.controller ? { status: 'pass' as CheckStatus, detail: 'Page is currently controlled by a Service Worker.' } : { status: 'warn' as CheckStatus, detail: 'Page is not controlled by a Service Worker (may happen on first load).' } },
+            
             // Data & Storage
-            { category: 'Data & Storage', name: 'Storage Mode Detection', checkFn: async () => ({ status: 'info' as CheckStatus, detail: `App is running in ${IS_LIVE_DATA ? 'LIVE (Firebase/API)' : 'MOCK'} data mode.` }) },
+            { category: 'Data & Storage', name: 'Storage Mode', checkFn: async () => ({ status: 'info' as CheckStatus, detail: `App is running in ${IS_LIVE_DATA ? 'LIVE (Firebase/API)' : 'MOCK'} data mode.` }) },
             { category: 'Data & Storage', name: 'Firebase SDK Initialization', checkFn: async () => !USE_FIREBASE ? {status: 'info' as CheckStatus, detail: 'Firebase is disabled (VITE_USE_FIREBASE=false).'} : firebaseInitializationError ? { status: 'fail' as CheckStatus, detail: `Firebase SDK failed to initialize: ${firebaseInitializationError.message}` } : { status: 'pass' as CheckStatus, detail: 'Firebase SDK initialized successfully.' } },
-            { category: 'Data & Storage', name: 'Firebase Config Variables', checkFn: async () => !USE_FIREBASE ? {status: 'info'as CheckStatus, detail: 'Firebase is disabled.'} : isFirebaseConfigured() ? { status: 'pass' as CheckStatus, detail: 'All required Firebase environment variables are set.' } : { status: 'fail' as CheckStatus, detail: 'One or more VITE_FIREBASE_* environment variables are missing.' } },
-            { category: 'Data & Storage', name: 'Firestore Connection', checkFn: async () => !IS_LIVE_DATA ? { status: 'pass' as CheckStatus, detail: 'Skipped (mock data mode).' } : !db ? {status: 'fail' as CheckStatus, detail: 'DB object not initialized.'} : db.collection('settings').doc('companyDetails').get().then(() => ({ status: 'pass' as CheckStatus, detail: 'Successfully connected to Firestore.' })).catch(e => ({ status: 'fail' as CheckStatus, detail: `Firestore connection failed: ${e.message}` })) },
+            { category: 'Data & Storage', name: 'Firebase Config', checkFn: async () => !USE_FIREBASE ? {status: 'info'as CheckStatus, detail: 'Firebase is disabled.'} : isFirebaseConfigured() ? { status: 'pass' as CheckStatus, detail: 'All required Firebase environment variables are set.' } : { status: 'fail' as CheckStatus, detail: 'One or more VITE_FIREBASE_* environment variables are missing.' } },
+            { category: 'Data & Storage', name: 'Firestore Connectivity', checkFn: async () => !IS_LIVE_DATA ? { status: 'pass' as CheckStatus, detail: 'Skipped (mock data mode).' } : !db ? {status: 'fail' as CheckStatus, detail: 'DB object not initialized.'} : db.collection('settings').doc('companyDetails').get().then(() => ({ status: 'pass' as CheckStatus, detail: 'Successfully connected to Firestore.' })).catch(e => ({ status: 'fail' as CheckStatus, detail: `Firestore connection failed: ${e.message}` })) },
+            { category: 'Data & Storage', name: 'Firestore Read/Write Test', checkFn: async () => {
+                if (!IS_LIVE_DATA || !db) return { status: 'pass', detail: 'Skipped (mock data mode).' };
+                const testDocRef = db.collection('_system_health_check').doc(`test_${Date.now()}`);
+                try {
+                    await testDocRef.set({ status: 'written', timestamp: new Date() });
+                    const doc = await testDocRef.get();
+                    if (!doc.exists || doc.data()?.status !== 'written') throw new Error('Read verification failed.');
+                    await testDocRef.update({ status: 'updated' });
+                    const updatedDoc = await testDocRef.get();
+                    if (updatedDoc.data()?.status !== 'updated') throw new Error('Update verification failed.');
+                    await testDocRef.delete();
+                    const deletedDoc = await testDocRef.get();
+                    if (deletedDoc.exists) throw new Error('Delete verification failed.');
+                    return { status: 'pass', detail: 'Firestore CRUD operations (write, read, update, delete) successful.' };
+                } catch (e) {
+                    return { status: 'fail', detail: `Firestore R/W test failed: ${(e as Error).message}` };
+                } finally {
+                    try { await testDocRef.delete(); } catch (_) {}
+                }
+            }},
             { category: 'Data & Storage', name: 'API Server Health', checkFn: async () => !companyDetails.apiServerUrl ? { status: 'info' as CheckStatus, detail: 'API Server URL not configured.' } : checkUrl(`${companyDetails.apiServerUrl}/health`) },
+            { category: 'Data & Storage', name: 'Browser LocalStorage', checkFn: async () => {
+                try {
+                    const testKey = '_health_check';
+                    localStorage.setItem(testKey, 'ok');
+                    const result = localStorage.getItem(testKey);
+                    localStorage.removeItem(testKey);
+                    if (result === 'ok') return { status: 'pass', detail: 'LocalStorage is writable and readable.' };
+                    throw new Error('Read/write verification failed.');
+                } catch (e) {
+                    return { status: 'fail', detail: `LocalStorage access failed: ${(e as Error).message}` };
+                }
+            }},
+            { category: 'Data & Storage', name: 'Browser IndexedDB', checkFn: async () => {
+                return new Promise(resolve => {
+                    if (!('indexedDB' in window)) {
+                        resolve({ status: 'fail', detail: 'IndexedDB is not supported by this browser.' });
+                        return;
+                    }
+                    try {
+                        const request = indexedDB.open('_health_check_db');
+                        request.onupgradeneeded = () => { try { request.result.createObjectStore('test'); } catch(e) {} };
+                        request.onsuccess = () => {
+                            request.result.close();
+                            indexedDB.deleteDatabase('_health_check_db');
+                            resolve({ status: 'pass', detail: 'IndexedDB is available and operational.' });
+                        };
+                        request.onerror = () => resolve({ status: 'fail', detail: `IndexedDB access failed: ${request.error?.message}` });
+                    } catch(e) {
+                        resolve({ status: 'fail', detail: `IndexedDB access failed: ${(e as Error).message}` });
+                    }
+                });
+            }},
+
             // Configuration
             { category: 'Configuration', name: 'Company Details Loaded', checkFn: async () => companyDetails?.name ? { status: 'pass' as CheckStatus, detail: `Loaded: ${companyDetails.name}` } : { status: 'fail' as CheckStatus, detail: 'Company details are missing.' } },
+            { category: 'Configuration', name: 'Creator Details Loaded', checkFn: async () => creatorDetails?.name ? { status: 'pass' as CheckStatus, detail: `Loaded: ${creatorDetails.name}` } : { status: 'warn' as CheckStatus, detail: 'Creator details are missing.' } },
             { category: 'Configuration', name: 'Ranks Loaded', checkFn: async () => ranks.length > 0 ? { status: 'pass' as CheckStatus, detail: `${ranks.length} ranks loaded.` } : { status: 'fail' as CheckStatus, detail: 'No ranks found.' } },
             { category: 'Configuration', name: 'Gamification Rules Loaded', checkFn: async () => gamificationSettings.length > 0 ? { status: 'pass' as CheckStatus, detail: `${gamificationSettings.length} rules loaded.` } : { status: 'fail' as CheckStatus, detail: 'No gamification rules found.' } },
+            { category: 'Configuration', name: 'Fixed Event Rules Content', checkFn: async () => companyDetails?.fixedEventRules && companyDetails.fixedEventRules.length > 50 ? { status: 'pass' as CheckStatus, detail: 'Event rules content is present.' } : { status: 'warn' as CheckStatus, detail: 'Fixed Event Rules content is missing or very short.' } },
+
             // Content & Media
             { category: 'Content & Media', name: 'Company Logo URL', checkFn: () => checkUrl(companyDetails.logoUrl) },
-            { category: 'Content & Media', name: 'Player Avatars (Sample)', checkFn: () => checkUrl(players[0]?.avatarUrl) },
+            { category: 'Content & Media', name: 'Creator Logo URL', checkFn: () => checkUrl(creatorDetails.logoUrl) },
+            { category: 'Content & Media', name: 'Login Screen Background', checkFn: () => checkUrl(companyDetails.loginBackgroundUrl) },
+            { category: 'Content & Media', name: 'Login Screen Audio', checkFn: () => checkUrl(companyDetails.loginAudioUrl) },
+            { category: 'Content & Media', name: 'Player Avatars (Sample)', checkFn: () => players.length > 0 ? checkUrl(players[0]?.avatarUrl) : {status: 'info', detail: 'No players to check.'} },
             { category: 'Content & Media', name: 'Event Images (Sample)', checkFn: () => { const eventWithImage = events.find(e => e.imageUrl); return eventWithImage ? checkUrl(eventWithImage.imageUrl) : { status: 'info' as CheckStatus, detail: 'No events with images to check.' }; } },
-            { category: 'Content & Media', name: 'Carousel Media URLs', checkFn: async () => { for (const media of carouselMedia) { const res = await checkUrl(media.url); if (res.status === 'fail') return res; } return { status: 'pass' as CheckStatus, detail: 'All carousel media URLs are valid.' }; } },
-            { category: 'Content & Media', name: 'Social Link Icons', checkFn: async () => { for (const link of socialLinks) { const res = await checkUrl(link.iconUrl); if (res.status === 'fail') return res; } return { status: 'pass' as CheckStatus, detail: 'All social link icons are valid.' }; } },
-            { category: 'Content & Media', name: 'Sponsor Logos', checkFn: async () => { for (const sponsor of sponsors) { const res = await checkUrl(sponsor.logoUrl); if (res.status === 'fail') return res; } return { status: 'pass' as CheckStatus, detail: 'All sponsor logos are valid.' }; } },
+            { category: 'Content & Media', name: 'Carousel Media URLs', checkFn: async () => { for (const media of carouselMedia) { const res = await checkUrl(media.url); if (res.status === 'fail') return { status: 'fail', detail: `Carousel item failed: ${media.url}`}; } return { status: 'pass' as CheckStatus, detail: 'All carousel media URLs are valid.' }; } },
+            { category: 'Content & Media', name: 'Social Link Icons', checkFn: async () => { for (const link of socialLinks) { const res = await checkUrl(link.iconUrl); if (res.status === 'fail') return { status: 'fail', detail: `Icon for "${link.name}" failed: ${link.iconUrl}`}; } return { status: 'pass' as CheckStatus, detail: 'All social link icons are valid.' }; } },
+            { category: 'Content & Media', name: 'Sponsor Logos', checkFn: async () => { for (const sponsor of sponsors) { const res = await checkUrl(sponsor.logoUrl); if (res.status === 'fail') return { status: 'fail', detail: `Logo for "${sponsor.name}" failed: ${sponsor.logoUrl}`}; } return { status: 'pass' as CheckStatus, detail: 'All sponsor logos are valid.' }; } },
         ];
 
         const tempResults: Record<string, ResultCategory> = {};
@@ -89,12 +170,15 @@ export const SystemScanner: React.FC = () => {
             if (!tempResults[category]) {
                 tempResults[category] = { title: category, checks: [] };
             }
-            tempResults[category].checks.push({ text: name, ...result });
+            // FIX: Add a type assertion to `result` to fix property 'status' does not exist on type '{}' error
+            const typedResult = result as { status: CheckStatus; detail: string };
+            tempResults[category].checks.push({ text: name, ...typedResult });
         }
         
         setResults(tempResults);
         setLastScanTime(new Date());
 
+        // FIX: Explicitly type `cat` as ResultCategory to resolve error "Property 'checks' does not exist on type 'unknown'".
         const allChecks = Object.values(tempResults).flatMap((cat: ResultCategory) => cat.checks);
         const fails = allChecks.filter(c => c.status === 'fail').length;
         const warns = allChecks.filter(c => c.status === 'warn').length;
@@ -166,6 +250,7 @@ export const SystemScanner: React.FC = () => {
                     </div>
                 ) : (
                     <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                        {/* FIX: Explicitly type `category` to resolve errors on accessing its properties like 'title' and 'checks'. */}
                         {Object.entries(results).map(([key, category]: [string, ResultCategory]) => {
                             const hasFail = category.checks.some(c => c.status === 'fail');
                             const hasWarn = category.checks.some(c => c.status === 'warn');

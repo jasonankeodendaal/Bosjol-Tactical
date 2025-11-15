@@ -25,19 +25,20 @@ const checkUrl = async (url: string | undefined): Promise<{ status: 'pass' | 'fa
     if (!url || typeof url !== 'string' || url.trim() === '') {
         return { status: 'warn', detail: 'URL is not configured.' };
     }
+    // Data URIs are valid but not fetchable.
+    if (url.startsWith('data:')) {
+        return { status: 'pass', detail: 'URL is a valid data URI.' };
+    }
     try {
+        // Use a cache-busting parameter for live URLs
         const testUrl = new URL(url);
         testUrl.searchParams.append('_t', Date.now().toString());
 
-        // 'no-cors' mode allows fetching cross-origin resources but provides an opaque response.
-        // We can't check the status code, but a successful fetch (not throwing an error)
-        // is a strong indicator that the resource is reachable. This avoids most CORS-related warnings.
         await fetch(testUrl.toString(), { method: 'HEAD', mode: 'no-cors' });
 
         return { status: 'pass', detail: `URL is reachable.` };
     } catch (error) {
-        // This catch will now primarily handle network errors (DNS issues, server down),
-        // not CORS preflight failures.
+        // This catch handles network errors and invalid URL formats.
         return { status: 'fail', detail: `URL fetch failed: ${(error as Error).message}` };
     }
 };

@@ -16,6 +16,7 @@ const STATIC_ASSETS = [
 
 // INSTALL: Cache static assets and take control immediately
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME).then(cache => {
       console.log('Service Worker: Caching App Shell');
@@ -24,7 +25,6 @@ self.addEventListener('install', event => {
         console.error('Service Worker: App Shell caching failed', error);
     })
   );
-  self.skipWaiting();
 });
 
 // ACTIVATE: Clean up old caches and claim clients

@@ -64,6 +64,9 @@ interface AdminDashboardProps {
 type Tab = 'Events' | 'Players' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'API Setup';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
 
+const TABS: Tab[] = ['Events', 'Players', 'Progression', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'API Setup'];
+
+
 const NewPlayerModal: React.FC<{
     onClose: () => void;
     players: Player[];
@@ -315,6 +318,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [view, setView] = useState<View>('dashboard');
     const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+    const [direction, setDirection] = useState(0);
+    const prevTabRef = useRef<Tab>('Events');
+
 
     const dataContext = useContext(DataContext);
     if (!dataContext) throw new Error("DataContext not found");
@@ -325,11 +331,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab') as Tab | null;
-        const validTabs: Tab[] = ['Events', 'Players', 'Progression', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'API Setup'];
-        if (tab && validTabs.includes(tab)) {
+        if (tab && TABS.includes(tab)) {
             setActiveTab(tab);
         }
     }, []);
+    
+    useEffect(() => {
+        const oldIndex = TABS.indexOf(prevTabRef.current);
+        const newIndex = TABS.indexOf(activeTab);
+        setDirection(newIndex > oldIndex ? 1 : -1);
+        prevTabRef.current = activeTab;
+    }, [activeTab]);
 
     const handleViewPlayer = (id: string) => {
         setSelectedPlayerId(id);
@@ -407,22 +419,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             </>
         )
     }
+    
+    const paginate = (newDirection: number) => {
+        const currentIndex = TABS.indexOf(activeTab);
+        let newIndex = currentIndex + newDirection;
+        if (newIndex < 0) newIndex = TABS.length - 1;
+        else if (newIndex >= TABS.length) newIndex = 0;
+        setActiveTab(TABS[newIndex]);
+    };
 
-    return (
-        <div className="p-4 sm:p-6 lg:p-8">
-            <HelpSystem topic={getHelpTopic()} />
-            <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-            {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
-            {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}
-            {activeTab === 'Progression' && <ProgressionTab {...props} />}
-            {activeTab === 'Inventory' && <InventoryTab {...props} />}
-            {activeTab === 'Locations' && <LocationsTab {...props} />}
-            {activeTab === 'Suppliers' && <SuppliersTab {...props} />}
-            {activeTab === 'Finance' && <FinanceTab {...props} />}
-            {activeTab === 'Vouchers & Raffles' && <VouchersRafflesTab {...props} />}
-            {activeTab === 'Sponsors' && <SponsorsTab {...props} />}
-            {activeTab === 'Leaderboard' && <LeaderboardTab players={props.players} />}
-            {activeTab === 'Settings' && <SettingsTab 
+    const swipeConfidenceThreshold = 10000;
+    const swipePower = (offset: number, velocity: number) => Math.abs(offset) * velocity;
+
+    const variants = {
+        enter: (direction: number) => ({ x: direction > 0 ? '100%' : '-100%', opacity: 0 }),
+        center: { x: 0, opacity: 1 },
+        exit: (direction: number) => ({ x: direction < 0 ? '100%' : '-100%', opacity: 0 }),
+    };
+
+    const renderContent = () => {
+        switch (activeTab) {
+            case 'Events': return <EventsTab events={events} onManageEvent={handleManageEvent} />;
+            case 'Players': return <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>;
+            case 'Progression': return <ProgressionTab {...props} />;
+            case 'Inventory': return <InventoryTab {...props} />;
+            case 'Locations': return <LocationsTab {...props} />;
+            case 'Suppliers': return <SuppliersTab {...props} />;
+            case 'Finance': return <FinanceTab {...props} />;
+            case 'Vouchers & Raffles': return <VouchersRafflesTab {...props} />;
+            case 'Sponsors': return <SponsorsTab {...props} />;
+            case 'Leaderboard': return <LeaderboardTab players={props.players} />;
+            case 'Settings': return <SettingsTab 
                 companyDetails={props.companyDetails} 
                 setCompanyDetails={props.setCompanyDetails}
                 socialLinks={props.socialLinks}
@@ -431,8 +458,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 setCarouselMedia={props.setCarouselMedia}
                 onDeleteAllData={props.onDeleteAllData}
                 migrateToApiServer={migrateToApiServer}
-            />}
-            {activeTab === 'API Setup' && <ApiSetupTab />}
+            />;
+            case 'API Setup': return <ApiSetupTab />;
+            default: return null;
+        }
+    };
+
+    return (
+        <div className="p-4 sm:p-6 lg:p-8">
+            <HelpSystem topic={getHelpTopic()} />
+            <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
+
+            <div className="relative overflow-x-hidden">
+                 <AnimatePresence initial={false} custom={direction} mode="wait">
+                    <motion.div
+                        key={activeTab}
+                        custom={direction}
+                        variants={variants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        drag="x"
+                        dragConstraints={{ left: 0, right: 0 }}
+                        dragElastic={0.2}
+                        onDragEnd={(e, { offset, velocity }) => {
+                            const swipe = swipePower(offset.x, velocity.x);
+                            if (swipe < -swipeConfidenceThreshold) {
+                                paginate(1);
+                            } else if (swipe > swipeConfidenceThreshold) {
+                                paginate(-1);
+                            }
+                        }}
+                    >
+                        {renderContent()}
+                    </motion.div>
+                </AnimatePresence>
+            </div>
         </div>
     );
 };

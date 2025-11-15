@@ -160,20 +160,33 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
     for (const file of filesArray) {
         try {
             if (apiServerUrl) {
-                // API Mode: Upload directly to the server
+                // API Mode: Upload directly to the server, no client-side checks needed.
                 results.push(await uploadToServer(file, apiServerUrl));
             } else {
-                // Fallback Mode: Client-side processing
+                // Fallback (Firebase direct) Mode: Client-side processing with strict size checks.
+                if (file.type.startsWith('video/')) {
+                    alert(`Cannot upload video files ("${file.name}") without an External API Server. This upload will be skipped. Please configure the API Server in Settings to handle large files.`);
+                    continue; // Skip this file
+                }
+                
+                if (file.type.startsWith('image/') && file.size > 500 * 1024) { // 500KB limit for images
+                    alert(`Image file "${file.name}" is larger than 500KB. To prevent database errors, large images can only be uploaded via an External API Server. This file will be skipped.`);
+                    continue; // Skip this file
+                }
+
                 if (file.type.startsWith('image/')) {
-                    // Compress images to save space
+                    // compressImage will reduce the image size before converting to base64.
                     results.push(await compressImage(file));
                 } else if (file.type.startsWith('audio/')) {
-                    // Compress audio to a smaller size before converting to base64
+                    // compressAudio already contains size checks and will throw an error if too large.
                     results.push(await compressAudio(file));
                 } else {
-                    // Block other file types like video
-                    alert(`Cannot upload "${file.name}". Video and other large file types require setting up an External API Server to avoid exceeding database limits. This upload will be skipped.`);
-                    continue; // Skip this file
+                    // For any other file types, enforce a generic size limit.
+                     if (file.size > 500 * 1024) {
+                        alert(`File "${file.name}" is too large. Only small files (<500KB) can be uploaded without an API server.`);
+                        continue;
+                    }
+                    results.push(await fileToBase64(file));
                 }
             }
         } catch (err) {

@@ -30,7 +30,7 @@ const normalizeCompanyDetails = (details: CompanyDetails): CompanyDetails => ({
 });
 
 const formatBytes = (bytes: number, decimals = 2) => {
-    if (bytes === 0) return '0 Bytes';
+    if (!bytes || bytes === 0) return '0 Bytes';
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
@@ -99,6 +99,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const [carouselUploadProgress, setCarouselUploadProgress] = useState<number | null>(null);
     const [migrationStatus, setMigrationStatus] = useState<MigrationStatus>('idle');
     const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null);
+    const [isServerReachable, setIsServerReachable] = useState<boolean | null>(null);
     
     useEffect(() => {
         setFormData(normalizeCompanyDetails(companyDetails));
@@ -114,12 +115,15 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     if (!response.ok) throw new Error('Failed to fetch storage info');
                     const data: StorageInfo = await response.json();
                     setStorageInfo(data);
+                    setIsServerReachable(true);
                 } catch (error) {
                     console.error('Could not fetch storage info:', error);
                     setStorageInfo(null);
+                    setIsServerReachable(false);
                 }
             } else {
                 setStorageInfo(null);
+                setIsServerReachable(null);
             }
         };
 
@@ -291,6 +295,21 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         </div>
                         {migrationStatus === 'migrating' && <p className="text-amber-400 text-sm mt-2">Migrating data... This may take several minutes. Please do not close this window.</p>}
                         {migrationStatus === 'error' && <p className="text-red-400 text-sm mt-2">Migration failed. Check the console for errors and try again.</p>}
+                        {formData.apiServerUrl && isServerReachable !== null && (
+                            <div className="mt-2 text-sm text-gray-400 p-3 bg-zinc-900/80 rounded-lg border border-zinc-800">
+                                {isServerReachable && storageInfo ? (
+                                    <>
+                                        <p className="font-bold text-green-400">Status: Connected</p>
+                                        <p>Storage: <span className="font-bold text-white">{formatBytes(storageInfo.free)}</span> free of <span className="font-bold text-white">{formatBytes(storageInfo.size)}</span></p>
+                                        <div className="w-full bg-zinc-700 rounded-full h-1.5 mt-1">
+                                            <div className="bg-red-500 h-1.5 rounded-full" style={{ width: `${storageInfo.size > 0 ? ((storageInfo.size - storageInfo.free) / storageInfo.size) * 100 : 0}%` }}></div>
+                                        </div>
+                                    </>
+                                ) : (
+                                     <p className="font-bold text-red-400">Status: Unreachable</p>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-zinc-800">
@@ -395,14 +414,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </DashboardCard>
 
             <div className="mt-6 sticky bottom-6 z-20">
-                {storageInfo && (
-                     <div className="text-center text-sm text-gray-400 mb-2 p-2 bg-zinc-900/80 rounded-md border border-zinc-800">
-                        <p>Server Storage: <span className="font-bold text-white">{formatBytes(storageInfo.free)}</span> free of <span className="font-bold text-white">{formatBytes(storageInfo.size)}</span></p>
-                        <div className="w-full bg-zinc-700 rounded-full h-1.5 mt-1">
-                            <div className="bg-red-500 h-1.5 rounded-full" style={{ width: `${((storageInfo.size - storageInfo.free) / storageInfo.size) * 100}%` }}></div>
-                        </div>
-                    </div>
-                )}
                 <Button onClick={handleSave} disabled={!isDirty || isUploading || migrationStatus === 'migrating'} className="w-full py-3 text-lg shadow-lg">
                     {isUploading ? 'Processing Media...' : migrationStatus === 'migrating' ? 'Migrating Data...' : isDirty ? 'Save All Settings' : 'All Changes Saved'}
                 </Button>

@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect, useRef, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, RentalSignup, CarouselMedia } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
-import { UsersIcon, CogIcon, CalendarIcon, TrashIcon, ShieldCheckIcon, PlusIcon, TrophyIcon, BuildingOfficeIcon, SparklesIcon, PencilIcon, XIcon, TicketIcon, AtSymbolIcon, PhoneIcon, GlobeAltIcon, ArrowLeftIcon, ArchiveBoxIcon, CurrencyDollarIcon, TruckIcon, MapPinIcon, MinusIcon, KeyIcon, Bars3Icon, ExclamationTriangleIcon, InformationCircleIcon, CreditCardIcon, CheckCircleIcon, PrinterIcon, PlusCircleIcon, CodeBracketIcon } from './icons/Icons';
+import { UsersIcon, CogIcon, CalendarIcon, TrashIcon, ShieldCheckIcon, PlusIcon, TrophyIcon, BuildingOfficeIcon, SparklesIcon, PencilIcon, XIcon, TicketIcon, AtSymbolIcon, PhoneIcon, GlobeAltIcon, ArrowLeftIcon, ArchiveBoxIcon, CurrencyDollarIcon, TruckIcon, MapPinIcon, MinusIcon, KeyIcon, Bars3Icon, ExclamationTriangleIcon, InformationCircleIcon, CreditCardIcon, CheckCircleIcon, PrinterIcon, PlusCircleIcon, CodeBracketIcon, ChatBubbleLeftRightIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
 import { Modal } from './Modal';
 import { MOCK_RANKS } from '../constants';
@@ -21,6 +22,7 @@ import { SponsorsTab } from './SponsorsTab';
 import { Leaderboard } from './Leaderboard';
 import { SettingsTab } from './SettingsTab';
 import { ApiSetupTab } from './ApiSetupTab';
+import { ChatsTab } from './ChatsTab';
 import { DataContext, DataContextType } from '../data/DataContext';
 import { AuthContext } from '../auth/AuthContext';
 
@@ -30,7 +32,7 @@ export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' 
 };
 
 
-type Tab = 'Events' | 'Players' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings';
+type Tab = 'Events' | 'Players' | 'Chats' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'API Setup';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
 
 const NewPlayerModal: React.FC<{
@@ -139,6 +141,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     const tabs: {name: Tab, icon: React.ReactNode}[] = [
         {name: 'Events', icon: <CalendarIcon className="w-5 h-5"/>},
         {name: 'Players', icon: <UsersIcon className="w-5 h-5"/>},
+        {name: 'Chats', icon: <ChatBubbleLeftRightIcon className="w-5 h-5"/>},
         {name: 'Progression', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Inventory', icon: <ArchiveBoxIcon className="w-5 h-5"/>},
         {name: 'Locations', icon: <MapPinIcon className="w-5 h-5"/>},
@@ -148,6 +151,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Sponsors', icon: <SparklesIcon className="w-5 h-5"/>},
         {name: 'Leaderboard', icon: <TrophyIcon className="w-5 h-5"/>},
         {name: 'Settings', icon: <CogIcon className="w-5 h-5"/>},
+        {name: 'API Setup', icon: <CodeBracketIcon className="w-5 h-5"/>},
     ];
 
     const activeTabInfo = tabs.find(t => t.name === activeTab);
@@ -293,7 +297,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab') as Tab | null;
-        const validTabs: Tab[] = ['Events', 'Players', 'Progression', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings'];
+        const validTabs: Tab[] = ['Events', 'Players', 'Chats', 'Progression', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'API Setup'];
         if (tab && validTabs.includes(tab)) {
             setActiveTab(tab);
         }
@@ -303,7 +307,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         if (view === 'player_profile') return 'admin-player-profile';
         if (view === 'manage_event') return 'admin-manage-event';
         // Format tab name for help content key
-        const formattedTab = activeTab.toLowerCase().replace(' & ', '-').replace(' ', '-');
+        const formattedTab = activeTab.toLowerCase().replace(' & ', '-').replace(/\s+/g, '-');
         return `admin-dashboard-${formattedTab}`;
     };
 
@@ -382,6 +386,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
             {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}
+            {activeTab === 'Chats' && <ChatsTab />}
             {activeTab === 'Progression' && <ProgressionTab 
                 ranks={props.ranks} setRanks={props.setRanks}
                 badges={props.badges} setBadges={props.setBadges}
@@ -430,6 +435,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 onDeleteAllData={props.onDeleteAllData}
                 addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
             />}
+            {activeTab === 'API Setup' && <ApiSetupTab creatorDetails={props.creatorDetails} />}
         </div>
     );
 };

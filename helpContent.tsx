@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export interface HelpTopic {
@@ -220,6 +221,16 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             }
         ]
     },
+    'admin-dashboard-chats': {
+        title: "Admin: Operator Communications",
+        description: "This is the future hub for real-time communication within the application.",
+        sections: [
+            {
+                heading: "Under Development",
+                content: "This feature is currently being developed. In a future update, this tab will provide tools for live chat, direct messaging with players, and broadcasting announcements, creating a fully integrated communication platform within the dashboard."
+            }
+        ]
+    },
     'admin-dashboard-progression': {
         title: "Admin: Progression Settings",
         description: "Define the rules for player advancement, including XP, ranks, and badges.",
@@ -290,7 +301,7 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             }
         ]
     },
-    'admin-dashboard-vouchers---raffles': {
+    'admin-dashboard-vouchers-raffles': {
         title: "Admin: Vouchers & Raffles",
         description: "Manage discount vouchers and create raffle events.",
         sections: [

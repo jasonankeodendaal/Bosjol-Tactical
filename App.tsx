@@ -1,3 +1,4 @@
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -5,7 +6,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { PlayerDashboard } from './components/PlayerDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Button } from './components/Button';
-import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia } from './types';
+import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails } from './types';
 import { BuildingOfficeIcon, ExclamationTriangleIcon, AtSymbolIcon, XIcon } from './components/icons/Icons';
 import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
 import { Loader } from './components/Loader';
@@ -133,26 +134,13 @@ Please let me know when would be a good time to discuss this further. Thank you!
 };
 // --- END Creator Popup ---
 
-const FloatingCreatorButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
-    <motion.button
-        onClick={onClick}
-        whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.95 }}
-        className="fixed bottom-6 right-6 z-50 p-2 bg-zinc-900/60 backdrop-blur-sm border border-zinc-700 rounded-full shadow-lg"
-        title="Creator Information"
-        aria-label="Open Creator Information"
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 1, type: 'spring' }}
-    >
-        <img src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png" alt="Creator Icon" className="h-10 w-10" />
-    </motion.button>
-);
-
 const Footer: React.FC<{ 
     details: CompanyDetails, 
     socialLinks: SocialLink[],
+    creatorDetails: CreatorDetails,
     onHelpClick: () => void,
-}> = ({ details, socialLinks, onHelpClick }) => (
+    onCreatorClick: () => void,
+}> = ({ details, socialLinks, creatorDetails, onHelpClick, onCreatorClick }) => (
     <footer className="fixed bottom-0 left-0 right-0 bg-zinc-950/80 backdrop-blur-sm border-t border-zinc-800 py-2 px-4 text-center text-xs text-gray-500 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
             <motion.button
@@ -173,7 +161,13 @@ const Footer: React.FC<{
 
             <div className="flex items-center gap-3">
                  <StorageStatusIndicator apiServerUrl={details.apiServerUrl} />
-                 <div className="w-8 h-8" />
+                 <motion.button
+                    onClick={onCreatorClick}
+                    whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.95 }}
+                    className="p-1" title="Creator Information" aria-label="Open creator information"
+                >
+                    <img src={creatorDetails.logoUrl} alt="Creator Icon" className="w-6 h-6 rounded-full" />
+                </motion.button>
             </div>
         </div>
     </footer>
@@ -375,14 +369,8 @@ const AppContent: React.FC = () => {
         );
     }
 
-    const renderPublicPages = () => (
+    const renderPublicContent = () => (
         <>
-            <AnimatePresence>
-                {showCreatorPopup && <CreatorPopup onClose={() => setShowCreatorPopup(false)} />}
-            </AnimatePresence>
-            <FloatingCreatorButton onClick={() => setShowCreatorPopup(true)} />
-            <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
-            
             {showFrontPage ? (
                 <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} />
             ) : (
@@ -391,30 +379,25 @@ const AppContent: React.FC = () => {
         </>
     );
 
-    if (!isAuthenticated || !user) {
-        return renderPublicPages();
-    }
-
     if (loading) {
         return <Loader />;
     }
-    
+
     let dashboardBackground: string | undefined;
     let creatorBackgroundStyle = {};
 
-    if(user.role === 'creator') {
+    if(user?.role === 'creator') {
         creatorBackgroundStyle = {
              backgroundImage: "linear-gradient(rgba(10, 10, 10, 0.85), rgba(10, 10, 10, 0.85)), url('https://i.ibb.co/dsh2c2hp/unnamed.jpg')",
              backgroundSize: 'cover',
              backgroundPosition: 'center',
              backgroundAttachment: 'fixed',
         };
-    } else {
+    } else if (user) {
         dashboardBackground = user.role === 'admin' 
         ? companyDetails.adminDashboardBackgroundUrl 
         : companyDetails.playerDashboardBackgroundUrl;
     }
-
 
     return (
         <div className="min-h-screen flex flex-col bg-transparent text-white" style={creatorBackgroundStyle}>
@@ -423,61 +406,69 @@ const AppContent: React.FC = () => {
             </AnimatePresence>
             <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
 
-            <header className="bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-800 p-4 flex justify-between items-center sticky top-0 z-30">
-                 <div className="flex items-center">
-                    <div className="mr-3">
-                        <img src={companyDetails.logoUrl} alt="Logo" className="h-8 w-8 rounded-md"/>
-                    </div>
-                    <h1 className="text-xl font-black text-red-500 tracking-wider uppercase">
-                        BOSJOL TACTICAL
-                    </h1>
-                 </div>
-                <div className="flex items-center">
-                    <p className="text-sm text-gray-300 mr-4 hidden sm:block">Welcome, <span className="font-bold">{user.name}</span></p>
-                    <Button onClick={logout} size="sm" variant="secondary">Logout</Button>
-                </div>
-            </header>
-            <main 
-                className="flex-grow relative pb-20" // Padding bottom to avoid footer overlap
-                style={{
-                    backgroundImage: dashboardBackground ? `url(${dashboardBackground})` : 'none',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundAttachment: 'fixed'
-                }}
-            >
-                {dashboardBackground && <div className="absolute inset-0 bg-black/50 z-0"/>}
-                <div className="relative z-10">
-                    {user.role === 'player' && currentPlayer ? 
-                        <PlayerDashboard 
-                            player={currentPlayer}
-                            players={players}
-                            sponsors={data.sponsors} 
-                            onPlayerUpdate={handleUpdatePlayer}
-                            events={events}
-                            onEventSignUp={handleEventSignUp}
-                            legendaryBadges={data.legendaryBadges}
-                            raffles={data.raffles}
-                            ranks={data.ranks}
-                        /> : user.role === 'admin' ?
-                        <AdminDashboard 
-                            // Pass all data and functions from context to AdminDashboard
-                            {...data}
-                            addPlayerDoc={(playerData) => addDoc('players', playerData)}
-                            onDeleteAllData={handleDeleteAllData}
-                        /> : user.role === 'creator' ?
-                        <CreatorDashboard />
-                        : null
-                    }
-                </div>
-            </main>
+            {!isAuthenticated || !user ? (
+                renderPublicContent()
+            ) : (
+                <>
+                    <header className="bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-800 p-4 flex justify-between items-center sticky top-0 z-30">
+                        <div className="flex items-center">
+                            <div className="mr-3">
+                                <img src={companyDetails.logoUrl} alt="Logo" className="h-8 w-8 rounded-md"/>
+                            </div>
+                            <h1 className="text-xl font-black text-red-500 tracking-wider uppercase">
+                                BOSJOL TACTICAL
+                            </h1>
+                        </div>
+                        <div className="flex items-center">
+                            <p className="text-sm text-gray-300 mr-4 hidden sm:block">Welcome, <span className="font-bold">{user.name}</span></p>
+                            <Button onClick={logout} size="sm" variant="secondary">Logout</Button>
+                        </div>
+                    </header>
+                    <main 
+                        className="flex-grow relative pb-20" // Padding bottom to avoid footer overlap
+                        style={{
+                            backgroundImage: dashboardBackground ? `url(${dashboardBackground})` : 'none',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundAttachment: 'fixed'
+                        }}
+                    >
+                        {dashboardBackground && <div className="absolute inset-0 bg-black/50 z-0"/>}
+                        <div className="relative z-10">
+                            {user.role === 'player' && currentPlayer ? 
+                                <PlayerDashboard 
+                                    player={currentPlayer}
+                                    players={players}
+                                    sponsors={data.sponsors} 
+                                    onPlayerUpdate={handleUpdatePlayer}
+                                    events={events}
+                                    onEventSignUp={handleEventSignUp}
+                                    legendaryBadges={data.legendaryBadges}
+                                    raffles={data.raffles}
+                                    ranks={data.ranks}
+                                /> : user.role === 'admin' ?
+                                <AdminDashboard 
+                                    // Pass all data and functions from context to AdminDashboard
+                                    {...data}
+                                    addPlayerDoc={(playerData) => addDoc('players', playerData)}
+                                    onDeleteAllData={handleDeleteAllData}
+                                /> : user.role === 'creator' ?
+                                <CreatorDashboard />
+                                : null
+                            }
+                        </div>
+                    </main>
+                </>
+            )}
+            
             <Footer 
                 details={companyDetails} 
                 socialLinks={socialLinks} 
+                creatorDetails={creatorDetails}
                 onHelpClick={() => setShowHelp(true)}
+                onCreatorClick={() => setShowCreatorPopup(true)}
             />
             {!IS_LIVE_DATA && <MockDataWatermark />}
-
         </div>
     );
 };

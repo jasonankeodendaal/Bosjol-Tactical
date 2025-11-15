@@ -1,18 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import React, { useContext, useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -167,10 +152,9 @@ Thank you, I look forward to hearing from you.
 };
 
 const PublicPageFloatingIcons: React.FC<{
-    socialLinks: SocialLink[],
     onHelpClick: () => void,
     onCreatorClick: () => void,
-}> = ({ socialLinks, onHelpClick, onCreatorClick }) => (
+}> = ({ onHelpClick, onCreatorClick }) => (
     <>
         {/* Help Icon */}
         <motion.button
@@ -186,22 +170,6 @@ const PublicPageFloatingIcons: React.FC<{
         >
             <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Help Icon" className="w-10 h-10" />
         </motion.button>
-
-        {/* Social Icons */}
-        {socialLinks.length > 0 && (
-            <motion.div
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 1.2, type: 'spring' }}
-                className="fixed bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4 bg-zinc-900/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-zinc-700"
-            >
-                {socialLinks.map(link => (
-                    <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-transform transform hover:scale-110">
-                        <img src={link.iconUrl} alt={link.name} className="h-6 w-6 object-contain"/>
-                    </a>
-                ))}
-            </motion.div>
-        )}
 
         {/* Creator Icon */}
         <motion.button
@@ -475,7 +443,6 @@ const AppContent: React.FC = () => {
                     <>
                         {renderPublicContent()}
                         <PublicPageFloatingIcons 
-                            socialLinks={socialLinks} 
                             onHelpClick={() => setShowHelp(true)} 
                             onCreatorClick={() => setShowCreatorPopup(true)} 
                         />

@@ -12,26 +12,29 @@
 
 
 
-import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
+
+import React, { useContext, useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
-import { LoginScreen } from './components/LoginScreen';
-import { PlayerDashboard } from './components/PlayerDashboard';
-import { AdminDashboard } from './components/AdminDashboard';
 import { Button } from './components/Button';
 import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails } from './types';
-import { BuildingOfficeIcon, ExclamationTriangleIcon, AtSymbolIcon, XIcon, KeyIcon, PhoneIcon } from './components/icons/Icons';
+import { XIcon, KeyIcon } from './components/icons/Icons';
 import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
 import { Loader } from './components/Loader';
-// FIX: Removed unused and non-existent `getEnvVar` from firebase imports.
 import { USE_FIREBASE, isFirebaseConfigured, firebaseInitializationError } from './firebase';
-import { FrontPage } from './components/FrontPage';
 import { Modal } from './components/Modal';
 import { HelpSystem } from './components/Help';
-import { CreatorDashboard } from './components/CreatorDashboard';
 import { StorageStatusIndicator } from './components/StorageStatusIndicator';
 import { MockDataWatermark } from './components/MockDataWatermark';
 import { Input } from './components/Input';
+
+
+// --- Lazy Load Components for Code Splitting ---
+const LoginScreen = lazy(() => import('./components/LoginScreen').then(module => ({ default: module.LoginScreen })));
+const PlayerDashboard = lazy(() => import('./components/PlayerDashboard').then(module => ({ default: module.PlayerDashboard })));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const FrontPage = lazy(() => import('./components/FrontPage').then(module => ({ default: module.FrontPage })));
+const CreatorDashboard = lazy(() => import('./components/CreatorDashboard').then(module => ({ default: module.CreatorDashboard })));
 
 
 // --- Creator Popup Component and Icons ---
@@ -259,7 +262,7 @@ const AppContent: React.FC = () => {
         return (
              <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center p-8 text-center">
                 <div className="bg-red-900/50 border border-red-700 text-red-200 p-8 rounded-lg max-w-2xl">
-                    <ExclamationTriangleIcon className="w-12 h-12 mx-auto mb-4 text-red-400" />
+                    <XIcon className="w-12 h-12 mx-auto mb-4 text-red-400" />
                     <h1 className="text-2xl font-bold mb-2 text-white">Firebase Not Configured</h1>
                     <p className="text-base">
                         The application is set to use Firebase (<code className="bg-black/20 px-1 rounded">VITE_USE_FIREBASE=true</code>), but the necessary Firebase configuration variables are missing. Please set them up in your environment.
@@ -467,85 +470,87 @@ const AppContent: React.FC = () => {
             </AnimatePresence>
             <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
 
-            {!isAuthenticated || !user ? (
-                <>
-                    {renderPublicContent()}
-                    <PublicPageFloatingIcons 
-                        socialLinks={socialLinks} 
-                        onHelpClick={() => setShowHelp(true)} 
-                        onCreatorClick={() => setShowCreatorPopup(true)} 
-                    />
-                </>
-            ) : (
-                <>
-                    <header className="bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-800 p-4 flex justify-between items-center sticky top-0 z-30">
-                        <div className="flex items-center">
-                            <div className="mr-3">
-                                <img src={companyDetails.logoUrl} alt="Logo" className="h-8 w-8 rounded-md"/>
+            <Suspense fallback={<Loader />}>
+                {!isAuthenticated || !user ? (
+                    <>
+                        {renderPublicContent()}
+                        <PublicPageFloatingIcons 
+                            socialLinks={socialLinks} 
+                            onHelpClick={() => setShowHelp(true)} 
+                            onCreatorClick={() => setShowCreatorPopup(true)} 
+                        />
+                    </>
+                ) : (
+                    <>
+                        <header className="bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-800 p-4 flex justify-between items-center sticky top-0 z-30">
+                            <div className="flex items-center">
+                                <div className="mr-3">
+                                    <img src={companyDetails.logoUrl} alt="Logo" className="h-8 w-8 rounded-md"/>
+                                </div>
+                                <h1 className="text-xl font-black text-red-500 tracking-wider uppercase">
+                                    BOSJOL TACTICAL
+                                </h1>
                             </div>
-                            <h1 className="text-xl font-black text-red-500 tracking-wider uppercase">
-                                BOSJOL TACTICAL
-                            </h1>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <p className="text-sm text-gray-300 mr-2 hidden sm:block">Welcome, <span className="font-bold">{user.name}</span></p>
-                            
-                             <motion.button
-                                onClick={() => setShowHelp(true)}
-                                whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.95 }}
-                                className="p-1 rounded-full hover:bg-zinc-700" title="Help" aria-label="Open help menu"
-                            >
-                                <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Help Icon" className="w-6 h-6 object-contain" />
-                            </motion.button>
-                            
-                            <motion.button
-                                onClick={() => setShowCreatorPopup(true)}
-                                whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.95 }}
-                                className="p-1 rounded-full hover:bg-zinc-700" title="Creator Information" aria-label="Open creator information"
-                            >
-                                <img src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png" alt="Creator Icon" className="w-6 h-6 rounded-full" />
-                            </motion.button>
+                            <div className="flex items-center gap-2">
+                                <p className="text-sm text-gray-300 mr-2 hidden sm:block">Welcome, <span className="font-bold">{user.name}</span></p>
+                                
+                                <motion.button
+                                    onClick={() => setShowHelp(true)}
+                                    whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.95 }}
+                                    className="p-1 rounded-full hover:bg-zinc-700" title="Help" aria-label="Open help menu"
+                                >
+                                    <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Help Icon" className="w-6 h-6 object-contain" />
+                                </motion.button>
+                                
+                                <motion.button
+                                    onClick={() => setShowCreatorPopup(true)}
+                                    whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.95 }}
+                                    className="p-1 rounded-full hover:bg-zinc-700" title="Creator Information" aria-label="Open creator information"
+                                >
+                                    <img src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png" alt="Creator Icon" className="w-6 h-6 rounded-full" />
+                                </motion.button>
 
-                            <Button onClick={logout} size="sm" variant="secondary">Logout</Button>
-                        </div>
-                    </header>
-                    <main 
-                        className="flex-grow relative pb-20" // Padding bottom to avoid footer overlap
-                        style={{
-                            backgroundImage: dashboardBackground ? `url(${dashboardBackground})` : 'none',
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            backgroundAttachment: 'fixed'
-                        }}
-                    >
-                        {dashboardBackground && <div className="absolute inset-0 bg-black/50 z-0"/>}
-                        <div className="relative z-10">
-                            {user.role === 'player' && currentPlayer ? 
-                                <PlayerDashboard 
-                                    player={currentPlayer}
-                                    players={players}
-                                    sponsors={data.sponsors} 
-                                    onPlayerUpdate={handleUpdatePlayer}
-                                    events={events}
-                                    onEventSignUp={handleEventSignUp}
-                                    legendaryBadges={data.legendaryBadges}
-                                    raffles={data.raffles}
-                                    ranks={data.ranks}
-                                /> : user.role === 'admin' ?
-                                <AdminDashboard 
-                                    // Pass all data and functions from context to AdminDashboard
-                                    {...data}
-                                    addPlayerDoc={(playerData) => addDoc('players', playerData)}
-                                    onDeleteAllData={handleDeleteAllData}
-                                /> : user.role === 'creator' ?
-                                <CreatorDashboard />
-                                : null
-                            }
-                        </div>
-                    </main>
-                    <Footer details={companyDetails} />
-                </>
-            )}
+                                <Button onClick={logout} size="sm" variant="secondary">Logout</Button>
+                            </div>
+                        </header>
+                        <main 
+                            className="flex-grow relative pb-20" // Padding bottom to avoid footer overlap
+                            style={{
+                                backgroundImage: dashboardBackground ? `url(${dashboardBackground})` : 'none',
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                backgroundAttachment: 'fixed'
+                            }}
+                        >
+                            {dashboardBackground && <div className="absolute inset-0 bg-black/50 z-0"/>}
+                            <div className="relative z-10">
+                                {user.role === 'player' && currentPlayer ? 
+                                    <PlayerDashboard 
+                                        player={currentPlayer}
+                                        players={players}
+                                        sponsors={data.sponsors} 
+                                        onPlayerUpdate={handleUpdatePlayer}
+                                        events={events}
+                                        onEventSignUp={handleEventSignUp}
+                                        legendaryBadges={data.legendaryBadges}
+                                        raffles={data.raffles}
+                                        ranks={data.ranks}
+                                    /> : user.role === 'admin' ?
+                                    <AdminDashboard 
+                                        // Pass all data and functions from context to AdminDashboard
+                                        {...data}
+                                        addPlayerDoc={(playerData) => addDoc('players', playerData)}
+                                        onDeleteAllData={handleDeleteAllData}
+                                    /> : user.role === 'creator' ?
+                                    <CreatorDashboard />
+                                    : null
+                                }
+                            </div>
+                        </main>
+                        <Footer details={companyDetails} />
+                    </>
+                )}
+            </Suspense>
             
             {!IS_LIVE_DATA && <MockDataWatermark />}
         </div>

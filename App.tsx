@@ -4,6 +4,8 @@
 
 
 
+
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -184,7 +186,7 @@ const PublicPageFloatingIcons: React.FC<{
             title="Creator Information"
             aria-label="Open creator information"
         >
-            <img src="https://i.ibb.co/0phm4WG/image-removebg-preview.png" alt="Creator Icon" className="w-10 h-10" />
+            <img src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png" alt="Creator Icon" className="w-10 h-10" />
         </motion.button>
     </>
 );
@@ -475,7 +477,7 @@ const AppContent: React.FC = () => {
                                 whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.95 }}
                                 className="p-1 rounded-full hover:bg-zinc-700" title="Creator Information" aria-label="Open creator information"
                             >
-                                <img src="https://i.ibb.co/0phm4WG/image-removebg-preview.png" alt="Creator Icon" className="w-6 h-6 rounded-full" />
+                                <img src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png" alt="Creator Icon" className="w-6 h-6 rounded-full" />
                             </motion.button>
 
                             <Button onClick={logout} size="sm" variant="secondary">Logout</Button>

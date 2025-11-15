@@ -51,13 +51,13 @@ export const HelpSystem: React.FC<HelpSystemProps> = ({ topic }) => {
         <>
             <motion.button
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-16 right-6 z-50 w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg help-icon-pulse"
+                className="fixed bottom-16 right-6 z-50 w-10 h-10 rounded-full flex items-center justify-center help-icon-pulse"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 title="Help"
                 aria-label="Open help modal"
             >
-                <span className="font-bold text-2xl italic">i</span>
+                <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Help Icon" className="w-full h-full object-contain" />
             </motion.button>
 
             <AnimatePresence>

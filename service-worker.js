@@ -45,33 +45,42 @@ self.addEventListener('activate', event => {
   );
 });
 
-// FETCH: Network-first strategy with no offline fallback.
+// FETCH: Network falling back to cache strategy
 self.addEventListener('fetch', event => {
   event.respondWith(
+    // 1. Try to fetch from the network
     fetch(event.request)
       .then(networkResponse => {
-        // If the network request is successful, cache the response for potential future performance improvements during ONLINE sessions.
-        // This does not provide an offline fallback.
+        // 2a. If network is successful, cache the response and return it
         const responseToCache = networkResponse.clone();
         
-        // Decide which cache to use.
-        const url = new URL(event.request.url);
-        // A simple way to check if it's a static asset from our predefined list.
-        // We check both full URL and just pathname for flexibility.
-        const isStaticAsset = STATIC_ASSETS.includes(url.href) || STATIC_ASSETS.includes(url.pathname);
-        const cacheName = isStaticAsset ? STATIC_CACHE_NAME : DYNAMIC_CACHE_NAME;
-
-        // Only cache successful GET requests.
+        // Only cache successful GET requests. We'll use the dynamic cache for all runtime requests.
         if (networkResponse.ok && event.request.method === 'GET') {
-          caches.open(cacheName).then(cache => {
+          caches.open(DYNAMIC_CACHE_NAME).then(cache => {
             cache.put(event.request, responseToCache);
           });
         }
         
         return networkResponse;
       })
-      // By omitting the .catch() block that would serve from cache,
-      // any network failure will result in the browser's default offline error page.
-      // This satisfies the "no offline" requirement.
+      .catch(() => {
+        // 2b. If network fails, try to serve from the cache
+        return caches.match(event.request).then(cachedResponse => {
+          // If a cached response is found, return it.
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
+          // For page navigation requests that are not in the cache (e.g., a direct link to a sub-page),
+          // fall back to the main index.html file. This is crucial for SPAs.
+          if (event.request.mode === 'navigate') {
+            return caches.match('/');
+          }
+
+          // If no cache match is found for other types of requests (like API calls),
+          // the promise will resolve to undefined, and the browser will handle the network error.
+          return;
+        });
+      })
   );
 });

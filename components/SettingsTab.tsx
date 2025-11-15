@@ -46,14 +46,14 @@ const formatBytes = (bytes: number, decimals = 2) => {
 };
 
 
-const FileUploadField: React.FC<{
+const UrlOrUploadField: React.FC<{
     label: string;
     fileUrl: string | undefined;
-    onUpload: (url: string) => void;
+    onUrlSet: (url: string) => void;
     onRemove: () => void;
     accept: string;
     previewType?: 'image' | 'audio';
-}> = ({ label, fileUrl, onUpload, onRemove, accept, previewType = 'image' }) => {
+}> = ({ label, fileUrl, onUrlSet, onRemove, accept, previewType = 'image' }) => {
     const previewContent = () => {
         if (!fileUrl) return null;
         switch (previewType) {
@@ -76,13 +76,24 @@ const FileUploadField: React.FC<{
             {fileUrl ? (
                 <div className="flex items-center gap-3 bg-zinc-900/50 p-2 rounded-lg border border-zinc-700/50">
                     {previewContent()}
-                    <p className="text-xs text-gray-400 truncate flex-grow">File uploaded</p>
+                    <p className="text-xs text-gray-400 truncate flex-grow">File configured</p>
                     <Button variant="danger" size="sm" onClick={onRemove} className="!p-2 flex-shrink-0">
                         <TrashIcon className="w-4 h-4" />
                     </Button>
                 </div>
             ) : (
-                <ImageUpload onUpload={(urls) => { if(urls.length > 0) onUpload(urls[0]); }} accept={accept} />
+                <div className="space-y-2">
+                    <ImageUpload onUpload={(urls) => { if(urls.length > 0) onUrlSet(urls[0]); }} accept={accept} />
+                    <div className="flex items-center gap-2">
+                        <hr className="flex-grow border-zinc-600"/>
+                        <span className="text-xs text-zinc-500">OR</span>
+                        <hr className="flex-grow border-zinc-600"/>
+                    </div>
+                    <Input 
+                        placeholder="Paste direct URL"
+                        onBlur={(e) => { if(e.target.value) onUrlSet(e.target.value); }}
+                    />
+                </div>
             )}
         </div>
     );
@@ -290,39 +301,39 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             
             <DashboardCard title="Branding & Visuals" icon={<SparklesIcon className="w-6 h-6" />}>
                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <FileUploadField
+                    <UrlOrUploadField
                         label="Company Logo"
                         fileUrl={formData.logoUrl}
-                        onUpload={(url) => setFormData(f => ({ ...f, logoUrl: url }))}
+                        onUrlSet={(url) => setFormData(f => ({ ...f, logoUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, logoUrl: '' }))}
                         accept="image/*"
                     />
-                    <FileUploadField
+                    <UrlOrUploadField
                         label="Login Screen Background"
                         fileUrl={formData.loginBackgroundUrl}
-                        onUpload={(url) => setFormData(f => ({ ...f, loginBackgroundUrl: url }))}
+                        onUrlSet={(url) => setFormData(f => ({ ...f, loginBackgroundUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, loginBackgroundUrl: '' }))}
                         accept="image/*,video/*"
                     />
-                     <FileUploadField
+                     <UrlOrUploadField
                         label="Login Screen Audio"
                         fileUrl={formData.loginAudioUrl}
-                        onUpload={(url) => setFormData(f => ({ ...f, loginAudioUrl: url }))}
+                        onUrlSet={(url) => setFormData(f => ({ ...f, loginAudioUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, loginAudioUrl: '' }))}
                         accept="audio/*"
                         previewType="audio"
                     />
-                    <FileUploadField
+                    <UrlOrUploadField
                         label="Player Dashboard BG"
                         fileUrl={formData.playerDashboardBackgroundUrl}
-                        onUpload={(url) => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: url }))}
+                        onUrlSet={(url) => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: '' }))}
                         accept="image/*"
                     />
-                    <FileUploadField
+                    <UrlOrUploadField
                         label="Admin Dashboard BG"
                         fileUrl={formData.adminDashboardBackgroundUrl}
-                        onUpload={(url) => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: url }))}
+                        onUrlSet={(url) => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: '' }))}
                         accept="image/*"
                     />
@@ -376,17 +387,36 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 </div>
                             ))}
                         </div>
-                        <ImageUpload 
-                            onUpload={handleCarouselMediaUpload} 
-                            accept="image/*,video/*" 
-                            multiple 
-                            onProgress={(percent) => {
-                                setCarouselUploadProgress(percent);
-                                if (percent === 100) {
-                                    setTimeout(() => setCarouselUploadProgress(null), 1500);
-                                }
-                            }}
-                        />
+                        <div className="space-y-2">
+                            <ImageUpload 
+                                onUpload={handleCarouselMediaUpload} 
+                                accept="image/*,video/*" 
+                                multiple 
+                                onProgress={(percent) => {
+                                    setCarouselUploadProgress(percent);
+                                    if (percent === 100) {
+                                        setTimeout(() => setCarouselUploadProgress(null), 1500);
+                                    }
+                                }}
+                            />
+                             <div className="flex items-center gap-2">
+                                <hr className="flex-grow border-zinc-600"/><span className="text-xs text-zinc-500">OR</span><hr className="flex-grow border-zinc-600" />
+                            </div>
+                             <div className="flex gap-2">
+                                <Input 
+                                    placeholder="Paste Image/Video URL"
+                                    className="flex-grow"
+                                    id="carousel-url-input"
+                                />
+                                <Button onClick={() => {
+                                    const input = document.getElementById('carousel-url-input') as HTMLInputElement;
+                                    if (input && input.value) {
+                                        handleCarouselMediaUpload([input.value]);
+                                        input.value = '';
+                                    }
+                                }}>Add URL</Button>
+                            </div>
+                        </div>
                          {carouselUploadProgress !== null && (
                             <div className="mt-2">
                                 <p className="text-sm text-gray-400 mb-1 text-center">
@@ -415,7 +445,16 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                             </Button>
                                         </div>
                                     ) : (
-                                        <ImageUpload onUpload={(base64s) => { if (base64s.length > 0) handleSocialLinkChange(link.id, 'iconUrl', base64s[0]) }} accept="image/*" />
+                                        <div className="space-y-2">
+                                            <ImageUpload onUpload={(urls) => { if (urls.length > 0) handleSocialLinkChange(link.id, 'iconUrl', urls[0]) }} accept="image/*" />
+                                            <div className="flex items-center gap-2">
+                                                <hr className="flex-grow border-zinc-600" /><span className="text-xs text-zinc-500">OR</span><hr className="flex-grow border-zinc-600" />
+                                            </div>
+                                            <Input 
+                                                placeholder="Paste Icon URL"
+                                                onBlur={(e) => { if(e.target.value) handleSocialLinkChange(link.id, 'iconUrl', e.target.value) }}
+                                            />
+                                        </div>
                                     )}
                                 </div>
                                 <Button variant="danger" className="!py-2.5" onClick={() => handleRemoveSocialLink(link.id)}>

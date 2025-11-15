@@ -1,5 +1,3 @@
-
-
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
@@ -7,24 +5,23 @@ import 'firebase/compat/storage';
 
 // Vite exposes environment variables on `import.meta.env`.
 // These variables are replaced at build time. They MUST be prefixed with `VITE_`
-// to be exposed to the client-side code.
-// We add a fallback for environments that might not have `import.meta`.
-// @ts-ignore - `import.meta` is a standard feature but may not be in all TS configs.
-const env = typeof import.meta !== 'undefined' ? import.meta.env : {};
+// to be exposed to the client-side code. Access them directly.
 
 // This flag controls whether the app uses Firebase or mock data.
-export const USE_FIREBASE = env.VITE_USE_FIREBASE === 'true';
+// FIX: Cast `import.meta` to `any` to access `env` and resolve TypeScript error.
+export const USE_FIREBASE = (import.meta as any).env.VITE_USE_FIREBASE === 'true';
 
 // IMPORTANT: These environment variables must be set for Firebase to work.
 // In a Vercel deployment, these should be configured as Environment Variables.
 // For local development, you can create a .env.local file.
 const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY,
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: env.VITE_FIREBASE_APP_ID,
+  // FIX: Cast `import.meta` to `any` to access `env` properties and resolve TypeScript errors.
+  apiKey: (import.meta as any).env.VITE_FIREBASE_API_KEY,
+  authDomain: (import.meta as any).env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: (import.meta as any).env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: (import.meta as any).env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: (import.meta as any).env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: (import.meta as any).env.VITE_FIREBASE_APP_ID,
 };
 
 export const isFirebaseConfigured = () => {

@@ -1,5 +1,3 @@
-
-
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { USE_FIREBASE, db, firebaseInitializationError } from '../firebase';
 import * as mock from '../constants';
@@ -143,13 +141,35 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingCompanyDetails || loadingCreatorDetails || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia;
     
+    const collectionSetters = {
+        players: setPlayers,
+        events: setEvents,
+        ranks: setRanks,
+        badges: setBadges,
+        legendaryBadges: setLegendaryBadges,
+        gamificationSettings: setGamificationSettings,
+        sponsors: setSponsors,
+        socialLinks: setSocialLinks,
+        carouselMedia: setCarouselMedia,
+        vouchers: setVouchers,
+        inventory: setInventory,
+        suppliers: setSuppliers,
+        transactions: setTransactions,
+        locations: setLocations,
+        raffles: setRaffles,
+    };
+    type CollectionName = keyof typeof collectionSetters;
+
     // --- GENERIC CRUD FUNCTIONS ---
     const addDoc = async <T extends {}>(collectionName: string, data: T) => {
         if (IS_LIVE_DATA) {
             await db.collection(collectionName).add(data);
         } else {
-            const mockSetter = `set${collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}`;
-            eval(`${mockSetter}(prev => [...prev, { ...data, id: \`mock\${Date.now()}\` }])`);
+            const setter = collectionSetters[collectionName as CollectionName];
+            if (setter) {
+                // @ts-ignore
+                setter(prev => [...prev, { ...data, id: `mock${Date.now()}` }]);
+            }
         }
     };
 
@@ -158,8 +178,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const { id, ...data } = doc;
             await db.collection(collectionName).doc(id).set(data, { merge: true });
         } else {
-            const mockSetter = `set${collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}`;
-            eval(`${mockSetter}(prev => prev.map(item => item.id === doc.id ? doc : item))`);
+            const setter = collectionSetters[collectionName as CollectionName];
+            if (setter) {
+                // @ts-ignore
+                setter(prev => prev.map(item => item.id === doc.id ? doc : item));
+            }
         }
     };
 
@@ -167,8 +190,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (IS_LIVE_DATA) {
             await db.collection(collectionName).doc(docId).delete();
         } else {
-            const mockSetter = `set${collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}`;
-            eval(`${mockSetter}(prev => prev.filter(item => item.id !== docId))`);
+            const setter = collectionSetters[collectionName as CollectionName];
+            if (setter) {
+                 // @ts-ignore
+                setter(prev => prev.filter(item => item.id !== docId));
+            }
         }
     };
     // --- END GENERIC CRUD ---

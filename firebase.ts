@@ -1,43 +1,31 @@
 
-import * as firebase from 'firebase/compat/app';
+
+import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
 import 'firebase/compat/storage';
 
-// Helper to get environment variables from either Vite's `import.meta.env` or a Node-like `process.env`.
-// This provides compatibility for both the AI Studio preview environment and a standard Vite deployment.
-export const getEnvVar = (key: string): string | undefined => {
-  // Vite environment variables are replaced at build time, so `import.meta.env` will be an object.
-  // FIX: Cast `import.meta` to `any` to resolve TypeScript error "Property 'env' does not exist on type 'ImportMeta'".
-  // This is necessary because the environment doesn't include Vite's client type definitions.
-  if (typeof (import.meta as any).env !== 'undefined' && (import.meta as any).env[key]) {
-    return (import.meta as any).env[key];
-  }
-  // Fallback for environments like AI Studio that provide `process.env` in a browser-like context.
-  // @ts-ignore
-  if (typeof process !== 'undefined' && process.env && process.env[key]) {
-    // @ts-ignore
-    return process.env[key];
-  }
-  return undefined;
-};
+// Vite exposes environment variables on `import.meta.env`.
+// These variables are replaced at build time. They MUST be prefixed with `VITE_`
+// to be exposed to the client-side code.
+// We add a fallback for environments that might not have `import.meta`.
+// @ts-ignore - `import.meta` is a standard feature but may not be in all TS configs.
+const env = typeof import.meta !== 'undefined' ? import.meta.env : {};
 
+// This flag controls whether the app uses Firebase or mock data.
+export const USE_FIREBASE = env.VITE_USE_FIREBASE === 'true';
 
 // IMPORTANT: These environment variables must be set for Firebase to work.
 // In a Vercel deployment, these should be configured as Environment Variables.
 // For local development, you can create a .env.local file.
-// Example: VITE_USE_FIREBASE=true
 const firebaseConfig = {
-  apiKey: getEnvVar('VITE_FIREBASE_API_KEY'),
-  authDomain: getEnvVar('VITE_FIREBASE_AUTH_DOMAIN'),
-  projectId: getEnvVar('VITE_FIREBASE_PROJECT_ID'),
-  storageBucket: getEnvVar('VITE_FIREBASE_STORAGE_BUCKET'),
-  messagingSenderId: getEnvVar('VITE_FIREBASE_MESSAGING_SENDER_ID'),
-  appId: getEnvVar('VITE_FIREBASE_APP_ID'),
+  apiKey: env.VITE_FIREBASE_API_KEY,
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: env.VITE_FIREBASE_APP_ID,
 };
-
-// This flag controls whether the app uses Firebase or mock data.
-export const USE_FIREBASE = getEnvVar('VITE_USE_FIREBASE') === 'true';
 
 export const isFirebaseConfigured = () => {
     return !!(
@@ -61,6 +49,9 @@ try {
     } else {
       app = firebase.app();
     }
+  } else if (USE_FIREBASE && !isFirebaseConfigured()) {
+      firebaseInitializationError = new Error("Firebase is enabled (VITE_USE_FIREBASE=true), but the required Firebase environment variables are missing or not exposed to the client. Ensure they are prefixed with 'VITE_'.");
+      console.error(firebaseInitializationError.message, 'Config found:', firebaseConfig);
   }
 } catch (error) {
     console.error("Firebase initialization failed:", error);

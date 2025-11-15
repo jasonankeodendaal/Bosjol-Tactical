@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import type { Voucher, Raffle, Prize, Player } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -96,7 +97,9 @@ const RaffleEditorModal: React.FC<{ raffle: Partial<Raffle>, onClose: () => void
             ...raffle, ...formData, prizes,
             drawDate: new Date(formData.drawDate).toISOString()
         };
-        onSave(finalRaffle);
+        // FIX: Cast the final object to satisfy the onSave prop type, resolving issues
+        // with the inferred optional 'id' and widened 'status' properties.
+        onSave(finalRaffle as Raffle | Omit<Raffle, 'id'>);
     }
 
     return (

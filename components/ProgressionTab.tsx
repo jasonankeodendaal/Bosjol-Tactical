@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import type { Rank, Badge, LegendaryBadge, GamificationRule, GamificationSettings } from '../types';
 import { Button } from './Button';
@@ -120,7 +121,7 @@ const BadgeEditorModal: React.FC<{
                 <ImageUpload onUpload={(urls) => { if(urls.length) setFormData(f => ({...f, iconUrl: urls[0]}))}} accept="image/*" />
                 {formData.iconUrl && <img src={formData.iconUrl} alt="icon preview" className="w-16 h-16"/>}
                 <div className="grid grid-cols-2 gap-4">
-                    <select value={formData.criteriaType} onChange={e => setFormData(f => ({...f, criteriaType: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <select value={formData.criteriaType} onChange={e => setFormData(f => ({...f, criteriaType: e.target.value as Badge['criteria']['type']}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
                         <option value="kills">Kills</option>
                         <option value="headshots">Headshots</option>
                         <option value="gamesPlayed">Games Played</option>

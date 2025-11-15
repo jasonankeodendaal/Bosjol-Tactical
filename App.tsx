@@ -10,6 +10,8 @@
 
 
 
+
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -21,7 +23,8 @@ import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, Crea
 import { BuildingOfficeIcon, ExclamationTriangleIcon, AtSymbolIcon, XIcon, KeyIcon, PhoneIcon } from './components/icons/Icons';
 import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
 import { Loader } from './components/Loader';
-import { USE_FIREBASE, isFirebaseConfigured, getEnvVar, firebaseInitializationError } from './firebase';
+// FIX: Removed unused and non-existent `getEnvVar` from firebase imports.
+import { USE_FIREBASE, isFirebaseConfigured, firebaseInitializationError } from './firebase';
 import { FrontPage } from './components/FrontPage';
 import { Modal } from './components/Modal';
 import { HelpSystem } from './components/Help';

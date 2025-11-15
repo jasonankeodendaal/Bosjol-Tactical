@@ -238,12 +238,12 @@ export const FinanceTab: React.FC<{ transactions: Transaction[], players: Player
                  </div>
              </DashboardCard>
              
-             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <StatCard title="Total Revenue" value={`R ${metrics.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}`} colorClass="text-green-400" />
                 <StatCard title="Expenses" value={`R ${metrics.expenses.toLocaleString(undefined, {minimumFractionDigits: 2})}`} colorClass="text-red-400" />
                 <StatCard title="Net Profit" value={`R ${metrics.netProfit.toLocaleString(undefined, {minimumFractionDigits: 2})}`} colorClass={metrics.netProfit >= 0 ? 'text-white' : 'text-red-400'} />
                 <StatCard title="Outstanding" value={`R ${metrics.outstanding.toLocaleString(undefined, {minimumFractionDigits: 2})}`} colorClass="text-amber-400" />
-                <div className="col-span-2 lg:col-span-1 bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50 space-y-1">
+                <div className="col-span-1 sm:col-span-2 lg:col-span-1 bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50 space-y-1">
                     <div className="flex justify-between items-center text-sm"><span className="text-gray-400">Event Fees:</span> <span className="font-semibold text-green-400">R {metrics['Event Revenue'].toFixed(2)}</span></div>
                     <div className="flex justify-between items-center text-sm"><span className="text-gray-400">Rentals:</span> <span className="font-semibold text-blue-400">R {metrics['Rental Revenue'].toFixed(2)}</span></div>
                     <div className="flex justify-between items-center text-sm"><span className="text-gray-400">Retail:</span> <span className="font-semibold text-amber-400">R {metrics['Retail Revenue'].toFixed(2)}</span></div>

@@ -375,7 +375,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                 </div>
                 <div className="lg:col-span-2 space-y-6">
                     <DashboardCard title="Lifetime Performance" icon={<ChartBarIcon className="w-6 h-6"/>}>
-                        <div className="p-6 grid grid-cols-3 gap-y-6">
+                        <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-y-6">
                             <StatDisplay value={kdr} label="K/D Ratio" tooltip="Kill/Death Ratio. Calculated as Total Kills divided by Total Deaths."/>
                             <StatDisplay value={stats.kills.toLocaleString()} label="Total Kills"/>
                             <StatDisplay value={stats.deaths.toLocaleString()} label="Total Deaths"/>

@@ -271,13 +271,15 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                              <div className="p-4 max-h-96 overflow-y-auto">
                                 <div className="space-y-2">
                                     {attendeesDetails.map(player => (
-                                        <div key={player.id} className="bg-zinc-800/50 p-3 rounded-lg flex items-center gap-4">
-                                            <img src={player.avatarUrl} alt={player.name} className="w-10 h-10 rounded-full object-cover"/>
-                                            <p className="font-semibold text-white flex-grow">{player.name}</p>
-                                            <div className="flex items-center gap-2">
-                                                <Input type="number" value={liveStats[player.id]?.kills || 0} onChange={e => handleStatChange(player.id, 'kills', Number(e.target.value))} className="w-20 text-center" label="Kills"/>
-                                                <Input type="number" value={liveStats[player.id]?.deaths || 0} onChange={e => handleStatChange(player.id, 'deaths', Number(e.target.value))} className="w-20 text-center" label="Deaths"/>
-                                                <Input type="number" value={liveStats[player.id]?.headshots || 0} onChange={e => handleStatChange(player.id, 'headshots', Number(e.target.value))} className="w-20 text-center" label="HS"/>
+                                        <div key={player.id} className="bg-zinc-800/50 p-3 rounded-lg flex flex-col md:flex-row items-stretch md:items-center gap-4">
+                                            <div className="flex items-center gap-3 flex-grow">
+                                                <img src={player.avatarUrl} alt={player.name} className="w-10 h-10 rounded-full object-cover"/>
+                                                <p className="font-semibold text-white">{player.name}</p>
+                                            </div>
+                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0">
+                                                <Input type="number" value={liveStats[player.id]?.kills || 0} onChange={e => handleStatChange(player.id, 'kills', Number(e.target.value))} className="w-full sm:w-20 text-center" label="Kills"/>
+                                                <Input type="number" value={liveStats[player.id]?.deaths || 0} onChange={e => handleStatChange(player.id, 'deaths', Number(e.target.value))} className="w-full sm:w-20 text-center" label="Deaths"/>
+                                                <Input type="number" value={liveStats[player.id]?.headshots || 0} onChange={e => handleStatChange(player.id, 'headshots', Number(e.target.value))} className="w-full sm:w-20 text-center" label="HS"/>
                                             </div>
                                         </div>
                                     ))}

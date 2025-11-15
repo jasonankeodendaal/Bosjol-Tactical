@@ -1,12 +1,14 @@
 
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import type { CompanyDetails, SocialLink, CarouselMedia } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { ImageUpload } from './ImageUpload';
-import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, KeyIcon, InformationCircleIcon } from './icons/Icons';
+import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, KeyIcon, InformationCircleIcon, CloudArrowDownIcon, UploadCloudIcon } from './icons/Icons';
+import { Modal } from './Modal';
+import { DataContext } from '../data/DataContext';
 
 interface SettingsTabProps {
     companyDetails: CompanyDetails;
@@ -19,6 +21,7 @@ interface SettingsTabProps {
     addDoc: <T extends {}>(collectionName: string, data: T) => Promise<void>;
     updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
     deleteDoc: (collectionName: string, docId: string) => Promise<void>;
+    restoreFromBackup: (backupData: any) => Promise<void>;
 }
 
 type MigrationStatus = 'idle' | 'migrating' | 'complete' | 'error';
@@ -94,15 +97,21 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     carouselMedia,
     setCarouselMedia,
     onDeleteAllData,
-    addDoc, updateDoc, deleteDoc
+    addDoc, updateDoc, deleteDoc,
+    restoreFromBackup,
 }) => {
+    const dataContext = useContext(DataContext);
+    if (!dataContext) throw new Error("DataContext is not available");
+
     const [formData, setFormData] = useState(() => normalizeCompanyDetails(companyDetails));
     const [socialLinksData, setSocialLinksData] = useState(socialLinks);
     const [carouselMediaData, setCarouselMediaData] = useState(carouselMedia);
     const [carouselUploadProgress, setCarouselUploadProgress] = useState<number | null>(null);
-    const [migrationStatus, setMigrationStatus] = useState<MigrationStatus>('idle');
-    const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    
+    const [backupFile, setBackupFile] = useState<File | null>(null);
+    const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false);
+    const [restoreConfirmText, setRestoreConfirmText] = useState('');
     
     useEffect(() => {
         setFormData(normalizeCompanyDetails(companyDetails));
@@ -121,11 +130,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             const newLinks = new Map(socialLinksData.map(l => [l.id, l]));
 
             for (const link of socialLinksData) {
-                const original = originalLinks.get(link.id);
-                if (!original) { // It's new if it has a temp id and is not in the original map
+                if (!originalLinks.has(link.id)) { // It's new
                     const { id, ...data } = link;
                     await addDoc('socialLinks', data);
-                } else if (JSON.stringify(original) !== JSON.stringify(link)) { // It's updated
+                } else if (JSON.stringify(originalLinks.get(link.id)) !== JSON.stringify(link)) { // It's updated
                     await updateDoc('socialLinks', link);
                 }
             }
@@ -185,9 +193,70 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     };
     
     const isDirty = JSON.stringify(formData) !== JSON.stringify(normalizeCompanyDetails(companyDetails)) ||
-                    JSON.stringify(socialLinksData.map(l => ({...l, id: ''}))) !== JSON.stringify(socialLinks.map(l => ({...l, id: ''}))) || // complex check needed
-                    socialLinksData.length !== socialLinks.length ||
-                    carouselMediaData.length !== carouselMedia.length;
+                    JSON.stringify(socialLinksData) !== JSON.stringify(socialLinks) ||
+                    JSON.stringify(carouselMediaData) !== JSON.stringify(carouselMedia);
+
+    const handleCreateBackup = () => {
+        const backupData = {
+            players: dataContext.players,
+            events: dataContext.events,
+            ranks: dataContext.ranks,
+            badges: dataContext.badges,
+            legendaryBadges: dataContext.legendaryBadges,
+            gamificationSettings: dataContext.gamificationSettings,
+            sponsors: dataContext.sponsors,
+            companyDetails: dataContext.companyDetails,
+            creatorDetails: dataContext.creatorDetails,
+            socialLinks: dataContext.socialLinks,
+            carouselMedia: dataContext.carouselMedia,
+            vouchers: dataContext.vouchers,
+            inventory: dataContext.inventory,
+            suppliers: dataContext.suppliers,
+            transactions: dataContext.transactions,
+            locations: dataContext.locations,
+            raffles: dataContext.raffles,
+        };
+
+        const jsonString = JSON.stringify(backupData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const date = new Date().toISOString().split('T')[0];
+        a.download = `bosjol-backup-${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleRestore = async () => {
+        if (!backupFile) {
+            alert("Please select a backup file first.");
+            return;
+        }
+
+        try {
+            const fileContent = await backupFile.text();
+            const backupData = JSON.parse(fileContent);
+            
+            // Basic validation
+            if (!backupData.players || !backupData.companyDetails) {
+                throw new Error("Invalid or corrupted backup file.");
+            }
+
+            await restoreFromBackup(backupData);
+            alert("Restore successful! The application will now reload.");
+            // DataContext handles reload
+        } catch (error) {
+            console.error("Restore failed:", error);
+            alert(`Restore failed: ${(error as Error).message}`);
+        } finally {
+            setIsRestoreConfirmOpen(false);
+            setBackupFile(null);
+            setRestoreConfirmText('');
+        }
+    };
 
 
     return (
@@ -359,6 +428,61 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                      </div>
                 </div>
             </DashboardCard>
+
+            <DashboardCard title="Backup & Restore" icon={<CogIcon className="w-6 h-6" />}>
+                <div className="p-6 space-y-6">
+                    <div>
+                        <h4 className="font-semibold text-gray-200 text-lg mb-2">Create Full Backup</h4>
+                        <p className="text-sm text-gray-400 mb-4">Download a single JSON file containing all application data, including players, events, inventory, settings, and more. Keep this file in a safe place.</p>
+                        <Button onClick={handleCreateBackup} variant="secondary">
+                            <CloudArrowDownIcon className="w-5 h-5 mr-2" />
+                            Download Backup File
+                        </Button>
+                    </div>
+                    <div className="pt-6 border-t border-zinc-800">
+                         <h4 className="font-semibold text-gray-200 text-lg mb-2">Restore from Backup</h4>
+                         <p className="text-sm text-gray-400 mb-4">Upload a previously created backup file to restore the entire application state. <span className="font-bold text-red-400">Warning:</span> This will completely wipe all current data before importing the backup.</p>
+                         <div className="flex flex-col sm:flex-row items-center gap-4">
+                            <label className="w-full sm:w-auto">
+                                <span className="sr-only">Choose backup file</span>
+                                <input 
+                                    type="file" 
+                                    accept=".json" 
+                                    onChange={(e) => setBackupFile(e.target.files ? e.target.files[0] : null)}
+                                    className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-zinc-800 file:text-gray-200 hover:file:bg-zinc-700"
+                                />
+                            </label>
+                            <Button onClick={() => setIsRestoreConfirmOpen(true)} disabled={!backupFile}>
+                                <UploadCloudIcon className="w-5 h-5 mr-2" />
+                                Restore from Backup
+                            </Button>
+                         </div>
+                    </div>
+                </div>
+            </DashboardCard>
+            {isRestoreConfirmOpen && (
+                <Modal isOpen={true} onClose={() => setIsRestoreConfirmOpen(false)} title="Confirm Data Restore">
+                    <p className="text-amber-300">You are about to <span className="font-bold">completely wipe all existing data</span> and replace it with the contents of the backup file: <span className="font-mono bg-zinc-800 px-1 rounded">{backupFile?.name}</span>.</p>
+                    <p className="text-red-400 font-bold mt-2">This action is irreversible.</p>
+                    <p className="text-gray-300 mt-4">To confirm, please type "RESTORE" in the box below.</p>
+                    <Input 
+                        value={restoreConfirmText}
+                        onChange={(e) => setRestoreConfirmText(e.target.value)}
+                        className="mt-2"
+                        placeholder='Type "RESTORE"'
+                    />
+                    <div className="mt-6">
+                        <Button
+                            variant="danger"
+                            className="w-full"
+                            disabled={restoreConfirmText !== 'RESTORE'}
+                            onClick={handleRestore}
+                        >
+                            Confirm and Restore Data
+                        </Button>
+                    </div>
+                </Modal>
+            )}
 
             <DashboardCard title="Danger Zone" icon={<ExclamationTriangleIcon className="w-6 h-6 text-red-500"/>}>
                 <div className="p-6">

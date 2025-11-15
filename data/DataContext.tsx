@@ -110,6 +110,7 @@ export interface DataContextType {
     deleteDoc: (collectionName: string, docId: string) => Promise<void>;
     
     deleteAllData: () => Promise<void>;
+    restoreFromBackup: (backupData: any) => Promise<void>;
     seedInitialData: () => Promise<void>;
     loading: boolean;
     isSeeding: boolean;
@@ -249,20 +250,99 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         try {
             console.log("Deleting all transactional data...");
-            const batch = db.batch();
             for (const collectionName of collectionsToDelete) {
                 const snapshot = await db.collection(collectionName).get();
+                const batch = db.batch();
                 snapshot.forEach(doc => {
                     batch.delete(doc.ref);
                 });
+                await batch.commit();
+                console.log(`Deleted collection: ${collectionName}`);
             }
-            await batch.commit();
             console.log('All transactional data deleted.');
         } catch (error) {
             console.error("Error deleting all data: ", error);
         }
     };
     
+    const restoreFromBackup = async (backupData: any) => {
+        if (!IS_LIVE_DATA) {
+            console.log("Restoring from backup for mock data environment...");
+            setPlayers(backupData.players || []);
+            setEvents(backupData.events || []);
+            setRanks(backupData.ranks || []);
+            setBadges(backupData.badges || []);
+            setLegendaryBadges(backupData.legendaryBadges || []);
+            setGamificationSettings(backupData.gamificationSettings || []);
+            setSponsors(backupData.sponsors || []);
+            setCompanyDetails(backupData.companyDetails || mock.MOCK_COMPANY_DETAILS);
+            setCreatorDetails(backupData.creatorDetails || mock.MOCK_CREATOR_DETAILS);
+            setSocialLinks(backupData.socialLinks || []);
+            setCarouselMedia(backupData.carouselMedia || []);
+            setVouchers(backupData.vouchers || []);
+            setInventory(backupData.inventory || []);
+            setSuppliers(backupData.suppliers || []);
+            setTransactions(backupData.transactions || []);
+            setLocations(backupData.locations || []);
+            setRaffles(backupData.raffles || []);
+            return;
+        }
+
+        console.log("Starting Firebase restore from backup...");
+        const collectionsToRestore = [
+            'players', 'events', 'ranks', 'badges', 'legendaryBadges', 'gamificationSettings',
+            'sponsors', 'socialLinks', 'carouselMedia', 'vouchers', 'inventory', 'suppliers',
+            'transactions', 'locations', 'raffles'
+        ];
+
+        try {
+            // Step 1: Wipe existing data
+            console.log("Wiping existing data...");
+            for (const collectionName of collectionsToRestore) {
+                const snapshot = await db.collection(collectionName).get();
+                if (snapshot.empty) continue;
+                const batch = db.batch();
+                snapshot.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+                console.log(`- Wiped collection: ${collectionName}`);
+            }
+
+            // Step 2: Restore data from backup
+            console.log("Writing new data from backup...");
+            const writeBatch = db.batch();
+            
+            for (const collectionName of collectionsToRestore) {
+                const data = backupData[collectionName];
+                if (data && Array.isArray(data)) {
+                    console.log(`- Restoring ${data.length} documents to ${collectionName}...`);
+                    data.forEach((item: any) => {
+                        const { id, ...itemData } = item;
+                        const docRef = db.collection(collectionName).doc(id);
+                        writeBatch.set(docRef, itemData);
+                    });
+                }
+            }
+
+            // Handle single-document settings
+            if (backupData.companyDetails) {
+                writeBatch.set(db.collection('settings').doc('companyDetails'), backupData.companyDetails);
+            }
+            if (backupData.creatorDetails) {
+                 writeBatch.set(db.collection('settings').doc('creatorDetails'), backupData.creatorDetails);
+            }
+
+            await writeBatch.commit();
+            console.log("Restore complete. The page will now reload.");
+            
+            // Force reload to reflect all changes
+            window.location.reload();
+
+        } catch (error) {
+            console.error("A critical error occurred during the restore process:", error);
+            throw new Error("Restore failed. Please check the console for details.");
+        }
+    };
+
 
     const value: DataContextType = {
         players, setPlayers,
@@ -288,6 +368,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         deleteDoc,
 
         deleteAllData,
+        restoreFromBackup,
         seedInitialData,
         loading,
         isSeeding,

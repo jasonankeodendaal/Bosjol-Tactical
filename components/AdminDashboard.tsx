@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, RentalSignup, CarouselMedia } from '../types';
@@ -292,7 +293,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     if (!dataContext) throw new Error("DataContext not found");
     const auth = useContext(AuthContext);
 
-    const { players, setPlayers, events, setEvents, legendaryBadges, ranks, updateDoc, addDoc, deleteDoc } = props;
+    const { players, setPlayers, events, setEvents, legendaryBadges, ranks, updateDoc, addDoc, deleteDoc, restoreFromBackup } = props;
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -434,6 +435,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 setCarouselMedia={props.setCarouselMedia}
                 onDeleteAllData={props.onDeleteAllData}
                 addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+                restoreFromBackup={restoreFromBackup}
             />}
             {activeTab === 'API Setup' && <ApiSetupTab creatorDetails={props.creatorDetails} />}
         </div>

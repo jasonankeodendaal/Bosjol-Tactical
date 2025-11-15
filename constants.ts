@@ -595,7 +595,7 @@ export const MOCK_RAFFLES: Raffle[] = [
 
 
 export const MOCK_SPONSORS: Sponsor[] = [
-    { id: 's01', name: 'Tactical Gear Co.', logoUrl: 'https://img.logoipsum.com/280.svg', email: 'contact@tacticalgear.com', phone: '555-0201', website: 'https://tacticalgear.com' },
+    { id: 's01', name: 'Tactical Gear Co.', logoUrl: 'https://img.logoipsum.com/243.svg', email: 'contact@tacticalgear.com', phone: '555-0201', website: 'https://tacticalgear.com' },
     { id: 's02', name: 'Adrenaline Fuel', logoUrl: 'https://img.logoipsum.com/244.svg', email: 'sponsorship@adrenaline.com', phone: '555-0202', website: 'https://adrenaline.com' },
     { id: 's03', name: 'Vortex Optics', logoUrl: 'https://img.logoipsum.com/245.svg', email: 'info@vortex.com', phone: '555-0203', website: 'https://vortex.com' },
     { id: 's04', name: '5.11 Tactical', logoUrl: 'https://img.logoipsum.com/246.svg', email: 'support@511.com', phone: '555-0204', website: 'https://511.com' },
@@ -651,7 +651,7 @@ export const MOCK_COMPANY_DETAILS: CompanyDetails = {
     vatNumber: '9876543210',
     logoUrl: 'https://i.ibb.co/HL2Lc6Rz/file-0000000043b061f7b655a0077343e063.png',
     loginBackgroundUrl: 'https://images.pexels.com/photos/1297799/pexels-photo-1297799.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    loginAudioUrl: '',
+    loginAudioUrl: 'https://cdn.pixabay.com/download/audio/2022/02/21/audio_a63820c787.mp3',
     playerDashboardBackgroundUrl: '',
     adminDashboardBackgroundUrl: '',
     apiServerUrl: '',

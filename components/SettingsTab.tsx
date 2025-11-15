@@ -6,7 +6,7 @@ import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { ImageUpload } from './ImageUpload';
-import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, KeyIcon } from './icons/Icons';
+import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, KeyIcon, InformationCircleIcon } from './icons/Icons';
 
 interface SettingsTabProps {
     companyDetails: CompanyDetails;
@@ -262,6 +262,19 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
             <DashboardCard title="App & Content Settings" icon={<CogIcon className="w-6 h-6" />}>
                 <div className="p-6 space-y-6">
+                     <div className="bg-blue-900/40 border border-blue-700 text-blue-200 p-4 rounded-lg">
+                        <h4 className="font-bold text-lg flex items-center gap-2"><InformationCircleIcon className="w-5 h-5"/>Data Connection Status Indicator</h4>
+                        <p className="text-sm mt-1">
+                            A small colored light is displayed in the footer to indicate the application's data source status.
+                        </p>
+                        <ul className="text-sm mt-2 space-y-1 list-disc list-inside">
+                            <li><span className="font-bold text-green-400">Green Light:</span> Connected to the live Firebase database. All data is real-time.</li>
+                            <li><span className="font-bold text-blue-400">Blue Light:</span> Connected to a custom API server (advanced). Bypasses Firebase storage limits.</li>
+                            <li><span className="font-bold text-yellow-400">Yellow Light:</span> Firebase is disabled or failed to connect. The app is running on local "mock" data. No changes will be saved.</li>
+                            <li><span className="font-bold text-gray-400">Flickering Light:</span> Indicates a lost connection to the active data source (e.g., API server is down).</li>
+                        </ul>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Input label="Minimum Signup Age" type="number" value={formData.minimumSignupAge} onChange={e => setFormData(f => ({...f, minimumSignupAge: Number(e.target.value)}))} />
                         <Input

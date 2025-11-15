@@ -1,6 +1,9 @@
 
 
 
+
+
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -9,7 +12,7 @@ import { PlayerDashboard } from './components/PlayerDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Button } from './components/Button';
 import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails } from './types';
-import { BuildingOfficeIcon, ExclamationTriangleIcon, AtSymbolIcon, XIcon, KeyIcon } from './components/icons/Icons';
+import { BuildingOfficeIcon, ExclamationTriangleIcon, AtSymbolIcon, XIcon, KeyIcon, PhoneIcon } from './components/icons/Icons';
 import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
 import { Loader } from './components/Loader';
 import { USE_FIREBASE, isFirebaseConfigured, getEnvVar, firebaseInitializationError } from './firebase';
@@ -26,7 +29,8 @@ import { Input } from './components/Input';
 const CreatorPopup: React.FC<{
     onClose: () => void;
     login: (email: string, pass: string) => Promise<boolean>;
-}> = ({ onClose, login }) => {
+    creatorDetails: CreatorDetails;
+}> = ({ onClose, login, creatorDetails }) => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +49,11 @@ const CreatorPopup: React.FC<{
             setIsLoading(false);
         }
     };
+
+    const emailHref = `mailto:${creatorDetails.email}?subject=Project%20Inquiry`;
+    const whatsappNumber = creatorDetails.whatsapp.replace(/\D/g, '');
+    const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Hello, I'm interested in your services.")}`;
+
 
     return (
         <motion.div
@@ -73,43 +82,53 @@ const CreatorPopup: React.FC<{
                     <XIcon className="w-6 h-6" />
                 </button>
 
-                <div className="flex flex-col items-center text-center p-8">
-                    <img src="https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png" alt="JSTYP.me Logo" className="h-24 w-auto mb-3" />
+                 <div className="p-8">
+                    <div className="flex flex-col items-center text-center mb-6">
+                        <img src={creatorDetails.logoUrl} alt={`${creatorDetails.name} Logo`} className="h-24 w-auto mb-3" />
+                        <h3 className="text-3xl font-bold text-white tracking-wider">{creatorDetails.name}</h3>
+                        <p className="text-md text-red-400 font-semibold italic mt-1">"{creatorDetails.tagline}"</p>
+                    </div>
                     
-                    <h3 className="text-2xl font-bold text-white tracking-wider">Creator Access</h3>
-                    <p className="text-sm text-red-400 font-semibold italic">"Jason's solution to your problems, Yes me!"</p>
+                    <p className="text-center text-gray-300 text-sm mb-6 pb-6 border-b border-zinc-700/50">{creatorDetails.bio}</p>
+
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                        <a href={emailHref} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 p-3 bg-zinc-800/50 border border-zinc-700 rounded-lg hover:bg-zinc-800 hover:border-red-500/50 transition-all">
+                            <img src="https://i.ibb.co/r2HkbjLj/image-removebg-preview-2.png" alt="Email" className="w-8 h-8"/>
+                            <span className="font-semibold text-white">Email Me</span>
+                        </a>
+                        <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 p-3 bg-zinc-800/50 border border-zinc-700 rounded-lg hover:bg-zinc-800 hover:border-red-500/50 transition-all">
+                            <img src="https://i.ibb.co/Z1YHvjgT/image-removebg-preview-1.png" alt="WhatsApp" className="w-8 h-8"/>
+                            <span className="font-semibold text-white">WhatsApp</span>
+                        </a>
+                    </div>
                     
-                     <form onSubmit={handleLogin} className="w-full max-w-xs mx-auto mt-6 space-y-4">
-                        <Input
-                            icon={<AtSymbolIcon className="w-5 h-5"/>}
-                            type="email"
-                            value={CREATOR_EMAIL}
-                            readOnly
-                            className="bg-zinc-800/50 cursor-not-allowed text-center"
-                            aria-label="Creator Email"
-                        />
-                         <Input
-                            icon={<KeyIcon className="w-5 h-5"/>}
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            autoFocus
-                        />
-                        {error && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="text-red-400 text-sm bg-red-900/40 border border-red-800/50 px-3 py-2 rounded-md"
-                            >
-                                {error}
-                            </motion.div>
-                        )}
-                        <Button type="submit" className="w-full !py-3" disabled={isLoading}>
-                            {isLoading ? 'Authenticating...' : 'Access Creator Dashboard'}
-                        </Button>
-                    </form>
+                    <div className="bg-black/30 p-3 rounded-lg border border-zinc-800/50">
+                         <h4 className="text-xs text-center text-gray-500 uppercase tracking-wider font-semibold">Creator Access</h4>
+                         <form onSubmit={handleLogin} className="mt-2 space-y-2">
+                             <Input
+                                icon={<KeyIcon className="w-4 h-4"/>}
+                                type="password"
+                                placeholder="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                autoFocus
+                                className="!py-1.5 text-xs"
+                            />
+                            {error && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="text-red-400 text-xs text-center bg-red-900/40 border border-red-800/50 px-3 py-1.5 rounded-md"
+                                >
+                                    {error}
+                                </motion.div>
+                            )}
+                            <Button type="submit" size="sm" className="w-full !py-1" disabled={isLoading}>
+                                {isLoading ? 'Authenticating...' : 'Authenticate'}
+                            </Button>
+                        </form>
+                    </div>
                 </div>
             </motion.div>
         </motion.div>
@@ -416,7 +435,7 @@ const AppContent: React.FC = () => {
     return (
         <div className="min-h-screen flex flex-col bg-transparent text-white" style={creatorBackgroundStyle}>
             <AnimatePresence>
-                {showCreatorPopup && <CreatorPopup onClose={() => setShowCreatorPopup(false)} login={login} />}
+                {showCreatorPopup && <CreatorPopup onClose={() => setShowCreatorPopup(false)} login={login} creatorDetails={creatorDetails} />}
             </AnimatePresence>
             <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
 

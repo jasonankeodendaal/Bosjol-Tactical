@@ -215,7 +215,7 @@ export const FrontPage: React.FC<{ companyDetails: CompanyDetails, socialLinks: 
                         onClick={() => setShowInfoModal(true)}
                         className="!text-xl !px-10 !py-4 shadow-lg shadow-red-900/50"
                     >
-                        SUIT UP
+                        Gear up and join the team
                     </Button>
                 </motion.div>
             </div>

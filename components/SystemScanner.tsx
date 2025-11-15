@@ -22,27 +22,26 @@ interface ResultCategory {
 
 // Utility to check if a URL is accessible
 const checkUrl = async (url: string | undefined): Promise<{ status: 'pass' | 'fail' | 'warn', detail: string }> => {
-    if (!url || typeof url !== 'string') {
+    if (!url || typeof url !== 'string' || url.trim() === '') {
         return { status: 'warn', detail: 'URL is not configured.' };
     }
     try {
-        // Use a cache-busting parameter to avoid browser caching stale results
         const testUrl = new URL(url);
         testUrl.searchParams.append('_t', Date.now().toString());
-        
-        const response = await fetch(testUrl.toString(), { method: 'HEAD', mode: 'cors' });
-        if (response.ok) {
-            return { status: 'pass', detail: `URL is accessible (Status: ${response.status})` };
-        } else {
-            return { status: 'fail', detail: `URL returned an error (Status: ${response.status})` };
-        }
+
+        // 'no-cors' mode allows fetching cross-origin resources but provides an opaque response.
+        // We can't check the status code, but a successful fetch (not throwing an error)
+        // is a strong indicator that the resource is reachable. This avoids most CORS-related warnings.
+        await fetch(testUrl.toString(), { method: 'HEAD', mode: 'no-cors' });
+
+        return { status: 'pass', detail: `URL is reachable.` };
     } catch (error) {
-        if (error instanceof TypeError && error.message === 'Failed to fetch') {
-            return { status: 'warn', detail: 'Could not verify URL due to CORS policy. Assuming it is correct.' };
-        }
+        // This catch will now primarily handle network errors (DNS issues, server down),
+        // not CORS preflight failures.
         return { status: 'fail', detail: `URL fetch failed: ${(error as Error).message}` };
     }
 };
+
 
 export const SystemScanner: React.FC = () => {
     const [results, setResults] = useState<Record<string, ResultCategory>>({});

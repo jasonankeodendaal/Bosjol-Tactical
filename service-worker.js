@@ -14,21 +14,20 @@ const STATIC_ASSETS = [
   // but they will be cached on first use by the fetch handler.
 ];
 
-// INSTALL: Cache static assets
+// INSTALL: Cache static assets and take control immediately
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME).then(cache => {
       console.log('Service Worker: Caching App Shell');
-      // Use cache.addAll() for an atomic operation.
-      // It fetches and caches in one step. If any file fails, the whole operation fails.
       return cache.addAll(STATIC_ASSETS);
     }).catch(error => {
         console.error('Service Worker: App Shell caching failed', error);
     })
   );
+  self.skipWaiting();
 });
 
-// ACTIVATE: Clean up old caches
+// ACTIVATE: Clean up old caches and claim clients
 self.addEventListener('activate', event => {
   const cacheWhitelist = [STATIC_CACHE_NAME, DYNAMIC_CACHE_NAME];
   event.waitUntil(
@@ -39,11 +38,13 @@ self.addEventListener('activate', event => {
             console.log('Service Worker: Deleting old cache', cacheName);
             return caches.delete(cacheName);
           }
+          return null;
         })
       );
-    })
+    }).then(() => self.clients.claim()) // This makes the SW take control of pages immediately
   );
 });
+
 
 // FETCH: Network falling back to cache strategy
 self.addEventListener('fetch', event => {

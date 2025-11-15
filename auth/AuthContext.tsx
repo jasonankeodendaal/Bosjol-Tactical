@@ -85,7 +85,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     // onAuthStateChanged will set user state
                     return true;
                 } catch (error) {
-                    console.error("Firebase login failed:", error);
+                    // Log the specific Firebase error code for better debugging
+                    const typedError = error as { code?: string; message?: string };
+                    console.error(`Firebase login failed with code: ${typedError.code || 'N/A'}. Message: ${typedError.message || 'Unknown error'}`);
                     return false;
                 }
             } else { // Mock login for admin/creator

@@ -8,7 +8,7 @@ import { PlayerDashboard } from './components/PlayerDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Button } from './components/Button';
 import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails } from './types';
-import { BuildingOfficeIcon, ExclamationTriangleIcon, AtSymbolIcon, XIcon } from './components/icons/Icons';
+import { BuildingOfficeIcon, ExclamationTriangleIcon, AtSymbolIcon, XIcon, KeyIcon } from './components/icons/Icons';
 import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
 import { Loader } from './components/Loader';
 import { USE_FIREBASE, isFirebaseConfigured, getEnvVar, firebaseInitializationError } from './firebase';
@@ -18,70 +18,32 @@ import { HelpSystem } from './components/Help';
 import { CreatorDashboard } from './components/CreatorDashboard';
 import { StorageStatusIndicator } from './components/StorageStatusIndicator';
 import { MockDataWatermark } from './components/MockDataWatermark';
+import { Input } from './components/Input';
 
 
 // --- Creator Popup Component and Icons ---
-const CreatorPopup: React.FC<{ onClose: () => void; }> = ({ onClose }) => {
-    // Upgraded, more detailed pre-built messages
-    const emailSubject = "Project Inquiry via Bosjol Tactical Dashboard - [Your Name/Company Name]";
-    const messageBody = `Hello JSTYP.me,
+const CreatorPopup: React.FC<{
+    onClose: () => void;
+    login: (email: string, pass: string) => Promise<boolean>;
+}> = ({ onClose, login }) => {
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const CREATOR_EMAIL = 'jstypme@gmail.com';
 
-I found your details through the Bosjol Tactical Dashboard and I'm impressed with your work. I would like to inquire about your development services for a potential project.
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError(null);
 
-To help you understand my needs better, here are some initial details:
-
----
-
-**1. Contact Information:**
-   - Full Name: 
-   - Company Name (if applicable): 
-   - Best way to reach you (Email/Phone): 
-
-**2. Project Overview:**
-   - Project Name/Title: 
-   - Project Type (e.g., New Website, Mobile App, Custom Software, E-commerce, Feature addition, etc.): 
-   - Main Goal/Objective: (What problem are you trying to solve?)
-   
-**3. Key Features & Functionality:**
-   (Please list a few core features you envision)
-   - 
-   - 
-   - 
-
-**4. Target Audience:**
-   - Who will be using this application/website?
-   
-**5. Timeline & Budget:**
-   - Ideal Project Start Date: 
-   - Desired Completion Date: 
-   - Estimated Budget Range (Optional, but helpful): (e.g., < R5k, R5k-R15k, R15k+)
-   
-**6. Additional Information:**
-   (Is there anything else you'd like to share? e.g., existing systems, design preferences, specific technologies)
-   
----
-
-I look forward to discussing this further with you.
-
-Best regards,
-
-[Your Name]
-`;
-    const emailHref = `mailto:jstypme@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(messageBody)}`;
-    
-    const whatsappMessage = `Hello JSTYP.me,
-
-I'm reaching out from the Bosjol Tactical Dashboard regarding your development services. I have a project in mind and would like to provide some initial details.
-
-*Project Inquiry:*
-- *Name:* 
-- *Project Type:* (e.g., Website, Mobile App, Custom Tool)
-- *Briefly, what is the main goal?* 
-- *What's your ideal start date?* 
-
-Please let me know when would be a good time to discuss this further. Thank you!
-`;
-    const whatsappHref = `https://wa.me/27695989427?text=${encodeURIComponent(whatsappMessage)}`;
+        const success = await login(CREATOR_EMAIL, password);
+        if (success) {
+            onClose();
+        } else {
+            setError("Invalid credentials. Please check your password and try again.");
+            setIsLoading(false);
+        }
+    };
 
     return (
         <motion.div
@@ -99,7 +61,7 @@ Please let me know when would be a good time to discuss this further. Thank you!
                 exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                 onClick={(e) => e.stopPropagation()}
-                className="relative bg-zinc-900 border border-zinc-700/50 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden"
+                className="relative bg-zinc-900 border border-zinc-700/50 rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
                 style={{
                     backgroundImage: "linear-gradient(rgba(10, 10, 10, 0.85), rgba(10, 10, 10, 0.85)), url('https://i.ibb.co/dsh2c2hp/unnamed.jpg')",
                     backgroundSize: 'cover',
@@ -110,24 +72,43 @@ Please let me know when would be a good time to discuss this further. Thank you!
                     <XIcon className="w-6 h-6" />
                 </button>
 
-                <div className="flex flex-col items-center text-center p-8 pt-12">
-                    <img src="https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png" alt="JSTYP.me Logo" className="h-28 w-auto mb-4" />
+                <div className="flex flex-col items-center text-center p-8">
+                    <img src="https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png" alt="JSTYP.me Logo" className="h-24 w-auto mb-3" />
                     
-                    <h3 className="text-3xl font-bold text-white tracking-wider">JSTYP.me</h3>
-                    <p className="text-md text-red-400 font-semibold italic">"Jason's solution to your problems, Yes me!"</p>
+                    <h3 className="text-2xl font-bold text-white tracking-wider">Creator Access</h3>
+                    <p className="text-sm text-red-400 font-semibold italic">"Jason's solution to your problems, Yes me!"</p>
                     
-                    <p className="text-sm text-gray-300 mt-6 max-w-md">
-                        Need a website, mobile app or custom tool get in touch today.. At Jstyp.me nothing is impossible, innovation is key and the mind is a open learning space. Here we build on what can not be done!
-                    </p>
-                    
-                    <div className="mt-8 pt-6 border-t border-zinc-700/50 w-full flex justify-center gap-8">
-                        <a href={emailHref} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-transform transform hover:scale-110" title="Send an Email">
-                            <img src="https://i.ibb.co/r2HkbjLj/image-removebg-preview-2.png" alt="Email" className="w-12 h-12" />
-                        </a>
-                        <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-transform transform hover:scale-110" title="Message on WhatsApp">
-                             <img src="https://i.ibb.co/Z1YHvjgT/image-removebg-preview-1.png" alt="WhatsApp" className="w-12 h-12" />
-                        </a>
-                    </div>
+                     <form onSubmit={handleLogin} className="w-full max-w-xs mx-auto mt-6 space-y-4">
+                        <Input
+                            icon={<AtSymbolIcon className="w-5 h-5"/>}
+                            type="email"
+                            value={CREATOR_EMAIL}
+                            readOnly
+                            className="bg-zinc-800/50 cursor-not-allowed text-center"
+                            aria-label="Creator Email"
+                        />
+                         <Input
+                            icon={<KeyIcon className="w-5 h-5"/>}
+                            type="password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            autoFocus
+                        />
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="text-red-400 text-sm bg-red-900/40 border border-red-800/50 px-3 py-2 rounded-md"
+                            >
+                                {error}
+                            </motion.div>
+                        )}
+                        <Button type="submit" className="w-full !py-3" disabled={isLoading}>
+                            {isLoading ? 'Authenticating...' : 'Access Creator Dashboard'}
+                        </Button>
+                    </form>
                 </div>
             </motion.div>
         </motion.div>
@@ -185,7 +166,7 @@ const AppContent: React.FC = () => {
     if (!auth) throw new Error("AuthContext not found.");
     if (!data) throw new Error("DataContext not found.");
     
-    const { isAuthenticated, user, logout, helpTopic, setHelpTopic } = auth;
+    const { isAuthenticated, user, login, logout, helpTopic, setHelpTopic } = auth;
 
     useEffect(() => {
         if (showFrontPage) {
@@ -403,7 +384,7 @@ const AppContent: React.FC = () => {
     return (
         <div className="min-h-screen flex flex-col bg-transparent text-white" style={creatorBackgroundStyle}>
             <AnimatePresence>
-                {showCreatorPopup && <CreatorPopup onClose={() => setShowCreatorPopup(false)} />}
+                {showCreatorPopup && <CreatorPopup onClose={() => setShowCreatorPopup(false)} login={login} />}
             </AnimatePresence>
             <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
 

@@ -48,6 +48,16 @@ const compressImage = (file: File, maxSizeKB: number = 200): Promise<string> => 
     });
 };
 
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = error => reject(error);
+    });
+};
+
+
 const uploadToServer = async (file: File, apiServerUrl: string): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
@@ -88,12 +98,23 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
                 // API Mode: Upload directly to the server
                 results.push(await uploadToServer(file, apiServerUrl));
             } else {
-                // Fallback Mode: Client-side compression for images only
-                if (!file.type.startsWith('image/')) {
-                    alert(`Cannot upload "${file.name}". Video, audio, and large files require setting up an External API Server in the admin settings to avoid exceeding database limits. This upload will be skipped.`);
+                // Fallback Mode: Client-side processing
+                if (file.type.startsWith('image/')) {
+                    // Compress images to save space
+                    results.push(await compressImage(file));
+                } else if (file.type.startsWith('audio/')) {
+                    // Convert small audio files to base64
+                    // Firestore documents have a 1MB limit. A 500KB audio file becomes ~667KB as base64.
+                    if (file.size > 500 * 1024) { 
+                        alert(`Audio file "${file.name}" is too large (${(file.size / 1024).toFixed(0)}KB). Please keep audio files under 500KB or use an external API server. This upload will be skipped.`);
+                        continue;
+                    }
+                    results.push(await fileToBase64(file));
+                } else {
+                    // Block other file types like video
+                    alert(`Cannot upload "${file.name}". Video and other large file types require setting up an External API Server to avoid exceeding database limits. This upload will be skipped.`);
                     continue; // Skip this file
                 }
-                results.push(await compressImage(file));
             }
         } catch (err) {
             console.error(`Failed to process file ${file.name}:`, err);

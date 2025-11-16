@@ -193,8 +193,8 @@ export const SystemScanner: React.FC = () => {
     }, [runChecks]);
 
     const { healthScore, errorCount, warningCount, noticeCount } = useMemo(() => {
-        // FIX: Flatten the array of check result arrays using .flat() for robustness and readability.
-        const all: CheckResult[] = Object.values(results).flat();
+        // FIX: Replace .flat() with a more compatible reduce-based flatten to resolve type inference errors.
+        const all: CheckResult[] = Object.values(results).reduce((acc, val) => acc.concat(val), []);
         if (all.length === 0) return { healthScore: 0, errorCount: 0, warningCount: 0, noticeCount: 0 };
 
         const passes = all.filter(c => c.status === 'pass').length;

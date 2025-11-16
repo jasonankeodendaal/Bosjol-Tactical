@@ -4,7 +4,7 @@ import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { ImageUpload } from './ImageUpload';
-import { UserCircleIcon, CodeBracketIcon, ShieldCheckIcon, InformationCircleIcon, CircleStackIcon, DocumentIcon } from './icons/Icons';
+import { UserCircleIcon, CodeBracketIcon, ShieldCheckIcon, InformationCircleIcon, CircleStackIcon, DocumentIcon, CloudArrowDownIcon } from './icons/Icons';
 import { DataContext, DataContextType } from '../data/DataContext';
 import { SystemScanner } from './SystemScanner';
 import { SetupGuideTab } from './SetupGuideTab';
@@ -217,12 +217,6 @@ export const CreatorDashboard: React.FC<
                             </div>
                             <Input label="Email" type="email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
                             <Input label="WhatsApp Number" value={formData.whatsapp} onChange={e => setFormData(f => ({ ...f, whatsapp: e.target.value }))} />
-                            <Input 
-                                label="GitHub Repository URL" 
-                                value={formData.githubUrl} 
-                                onChange={e => setFormData(f => ({ ...f, githubUrl: e.target.value }))} 
-                                placeholder="https://github.com/user/repo"
-                            />
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1.5">Logo</label>
                                 {formData.logoUrl ? (
@@ -233,6 +227,35 @@ export const CreatorDashboard: React.FC<
                                 ) : (
                                     <ImageUpload onUpload={(urls) => { if (urls.length > 0) setFormData(f => ({ ...f, logoUrl: urls[0] })); }} accept="image/*" apiServerUrl={companyDetails.apiServerUrl} />
                                 )}
+                            </div>
+                             <div className="pt-4 mt-4 border-t border-zinc-800 space-y-4">
+                                <h4 className="font-semibold text-gray-200">Source Code Links</h4>
+                                <Input 
+                                    label="GitHub Repository URL" 
+                                    value={formData.githubUrl} 
+                                    onChange={e => setFormData(f => ({ ...f, githubUrl: e.target.value }))} 
+                                    placeholder="https://github.com/user/repo"
+                                />
+                                <Input 
+                                    label="Source Code .zip URL" 
+                                    value={formData.sourceCodeZipUrl || ''} 
+                                    onChange={e => setFormData(f => ({ ...f, sourceCodeZipUrl: e.target.value }))} 
+                                    placeholder="https://.../source.zip"
+                                />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <a href={formData.githubUrl} target="_blank" rel="noopener noreferrer" className={!formData.githubUrl ? 'pointer-events-none' : ''}>
+                                        <Button variant="secondary" className="w-full" disabled={!formData.githubUrl}>
+                                            <CodeBracketIcon className="w-5 h-5 mr-2" />
+                                            View on GitHub
+                                        </Button>
+                                    </a>
+                                     <a href={formData.sourceCodeZipUrl} target="_blank" rel="noopener noreferrer" className={!formData.sourceCodeZipUrl ? 'pointer-events-none' : ''}>
+                                        <Button variant="secondary" className="w-full" disabled={!formData.sourceCodeZipUrl}>
+                                            <CloudArrowDownIcon className="w-5 h-5 mr-2" />
+                                            Download .zip
+                                        </Button>
+                                    </a>
+                                </div>
                             </div>
                              <Button onClick={handleSave} disabled={!isDirty || isSaving} className="w-full py-2 mt-4">
                                 {isSaving ? 'Saving...' : isDirty ? 'Save Profile Settings' : 'All Changes Saved'}

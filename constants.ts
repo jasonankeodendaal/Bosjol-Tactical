@@ -676,7 +676,8 @@ export const MOCK_CREATOR_DETAILS: CreatorDetails = {
     tagline: "Jason's solution to your problems, Yes me!",
     bio: "Need a website, mobile app or custom tool get in touch today.. At Jstyp.me nothing is impossible, innovation is key and the mind is a open learning space. Here we build on what can not be done!",
     logoUrl: 'https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png',
-    githubUrl: 'https://github.com/jstyp/bosjol-tactical-dashboard'
+    githubUrl: 'https://github.com/jstyp/bosjol-tactical-dashboard',
+    sourceCodeZipUrl: 'https://github.com/jstyp/bosjol-tactical-dashboard/archive/refs/heads/main.zip'
 };
 
 

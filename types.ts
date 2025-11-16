@@ -196,7 +196,6 @@ export interface Briefing {
 }
 
 export interface Rank {
-    // FIX: Add 'id' to the Rank interface to align with the data model.
     id: string;
     name: string;
     tier: string;
@@ -358,30 +357,16 @@ export interface CreatorDetails {
     bio: string;
     logoUrl: string;
     githubUrl: string;
+    sourceCodeZipUrl?: string;
 }
-
+// FIX: Define and export the ChatMessage interface.
 export interface ChatMessage {
   id: string;
   text: string;
-  createdAt: any; // firebase.firestore.Timestamp or Date
+  createdAt: Date;
   playerId: string;
   playerName: string;
   playerAvatarUrl: string;
   authUID: string;
-  role?: 'player' | 'admin' | 'creator';
-}
-
-export interface PrivateChatConversation {
-    id: string; // comprised of two sorted player IDs
-    participants: string[];
-    lastMessage: {
-        text: string;
-        timestamp: any;
-    };
-    participantDetails: {
-        [playerId: string]: {
-            name: string;
-            avatarUrl: string;
-        }
-    };
+  role: 'player' | 'admin';
 }

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { Transaction, Player, GameEvent, Location, CompanyDetails } from '../types';
@@ -45,9 +46,9 @@ const BarChart: React.FC<{ data: { label: string, event: number, rental: number,
                         </motion.div>
                         <div className="absolute -bottom-5 text-xs text-gray-400">{d.label}</div>
                          <div className="absolute -top-16 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-950 px-2 py-1 rounded text-xs text-white border border-zinc-700 whitespace-nowrap z-10">
-                            <p className="text-green-400">Events: R {d.event.toFixed(2)}</p>
-                            <p className="text-blue-400">Rentals: R {d.rental.toFixed(2)}</p>
-                            <p className="text-amber-400">Retail: R {d.retail.toFixed(2)}</p>
+                            <p className="text-green-400">Events: R {(d.event || 0).toFixed(2)}</p>
+                            <p className="text-blue-400">Rentals: R {(d.rental || 0).toFixed(2)}</p>
+                            <p className="text-amber-400">Retail: R {(d.retail || 0).toFixed(2)}</p>
                         </div>
                     </div>
                 )
@@ -245,9 +246,9 @@ export const FinanceTab: React.FC<{ transactions: Transaction[], players: Player
                 <StatCard title="Net Profit" value={`R ${metrics.netProfit.toLocaleString(undefined, {minimumFractionDigits: 2})}`} colorClass={metrics.netProfit >= 0 ? 'text-white' : 'text-red-400'} />
                 <StatCard title="Outstanding" value={`R ${metrics.outstanding.toLocaleString(undefined, {minimumFractionDigits: 2})}`} colorClass="text-amber-400" />
                 <div className="col-span-1 sm:col-span-2 lg:col-span-1 bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50 space-y-1">
-                    <div className="flex justify-between items-center text-sm"><span className="text-gray-400">Event Fees:</span> <span className="font-semibold text-green-400">R {metrics['Event Revenue'].toFixed(2)}</span></div>
-                    <div className="flex justify-between items-center text-sm"><span className="text-gray-400">Rentals:</span> <span className="font-semibold text-blue-400">R {metrics['Rental Revenue'].toFixed(2)}</span></div>
-                    <div className="flex justify-between items-center text-sm"><span className="text-gray-400">Retail:</span> <span className="font-semibold text-amber-400">R {metrics['Retail Revenue'].toFixed(2)}</span></div>
+                    <div className="flex justify-between items-center text-sm"><span className="text-gray-400">Event Fees:</span> <span className="font-semibold text-green-400">R {(metrics['Event Revenue'] || 0).toFixed(2)}</span></div>
+                    <div className="flex justify-between items-center text-sm"><span className="text-gray-400">Rentals:</span> <span className="font-semibold text-blue-400">R {(metrics['Rental Revenue'] || 0).toFixed(2)}</span></div>
+                    <div className="flex justify-between items-center text-sm"><span className="text-gray-400">Retail:</span> <span className="font-semibold text-amber-400">R {(metrics['Retail Revenue'] || 0).toFixed(2)}</span></div>
                 </div>
             </div>
 

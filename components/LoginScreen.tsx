@@ -1,4 +1,5 @@
 
+
 import React, { useContext, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../auth/AuthContext';
@@ -42,7 +43,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
       e.preventDefault();
 
       try {
-        const audio = new Audio('https://www.myinstants.com/media/sounds/cod-mw-ui-sfx-2.mp3');
+        const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_c359e9a583.mp3');
         audio.volume = 0.5;
         audio.play();
       } catch (err) {

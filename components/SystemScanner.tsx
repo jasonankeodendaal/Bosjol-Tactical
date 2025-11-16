@@ -193,8 +193,8 @@ export const SystemScanner: React.FC = () => {
     }, [runChecks]);
 
     const { healthScore, errorCount, warningCount, noticeCount } = useMemo(() => {
-        // FIX: Replace .flat() with a more compatible reduce-based flatten to resolve type inference errors.
-        const all: CheckResult[] = Object.values(results).reduce((acc, val) => acc.concat(val), []);
+        // FIX: Replaced reduce with flat() to simplify flattening the array of arrays and resolve type inference issues.
+        const all: CheckResult[] = Object.values(results).flat();
         if (all.length === 0) return { healthScore: 0, errorCount: 0, warningCount: 0, noticeCount: 0 };
 
         const passes = all.filter(c => c.status === 'pass').length;
@@ -233,20 +233,17 @@ export const SystemScanner: React.FC = () => {
                     </div>
                     <div className="lg:col-span-9 grid grid-cols-1 sm:grid-cols-3 gap-6">
                         <div className="bg-zinc-900/50 p-4 rounded-lg">
-                            {/* FIX: Replace icon with title prop with InfoTooltip component. */}
-                            <h3 className="font-semibold text-gray-300 flex items-center gap-2">Errors <InfoTooltip text="Critical issues that may break application functionality."/></h3>
+                            <h3 className="font-semibold text-gray-300 flex items-center gap-1">Errors <InfoTooltip text="Critical issues that may break application functionality."/></h3>
                             <p className="text-4xl font-bold text-red-500">{errorCount}</p>
                             <MiniLineGraph colorClass="text-red-500/50"/>
                         </div>
                         <div className="bg-zinc-900/50 p-4 rounded-lg">
-                            {/* FIX: Replace icon with title prop with InfoTooltip component. */}
-                            <h3 className="font-semibold text-gray-300 flex items-center gap-2">Warnings <InfoTooltip text="Non-critical issues that may cause degraded performance or missing content."/></h3>
+                            <h3 className="font-semibold text-gray-300 flex items-center gap-1">Warnings <InfoTooltip text="Non-critical issues that may cause degraded performance or missing content."/></h3>
                             <p className="text-4xl font-bold text-yellow-500">{warningCount}</p>
                              <MiniLineGraph colorClass="text-yellow-500/50"/>
                         </div>
                         <div className="bg-zinc-900/50 p-4 rounded-lg">
-                            {/* FIX: Replace icon with title prop with InfoTooltip component. */}
-                            <h3 className="font-semibold text-gray-300 flex items-center gap-2">Notices <InfoTooltip text="Informational messages about the system's configuration."/></h3>
+                            <h3 className="font-semibold text-gray-300 flex items-center gap-1">Notices <InfoTooltip text="Informational messages about the system's configuration."/></h3>
                             <p className="text-4xl font-bold text-blue-500">{noticeCount}</p>
                              <MiniLineGraph colorClass="text-blue-500/50"/>
                         </div>

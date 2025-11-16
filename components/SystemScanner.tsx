@@ -1,13 +1,19 @@
+
+
+
 import React, { useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { DataContext, IS_LIVE_DATA, DataContextType } from '../data/DataContext';
 import { Button } from './Button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon, XCircleIcon, CogIcon, ArrowPathIcon, CodeBracketIcon } from './icons/Icons';
 import { db, USE_FIREBASE, firebaseInitializationError, isFirebaseConfigured } from '../firebase';
-import type { Player, GamificationRule, Badge, GameEvent } from '../types';
+import type { Player, GamificationRule, Badge, GameEvent, Transaction } from '../types';
 import { UNRANKED_RANK } from '../constants';
 import { Modal } from './Modal';
 import { DashboardCard } from './DashboardCard';
+import { AuthContext } from '../auth/AuthContext';
+// FIX: Import InfoTooltip to replace icon with title prop.
+import { InfoTooltip } from './InfoTooltip';
 
 type CheckStatus = 'pass' | 'fail' | 'warn' | 'info' | 'pending' | 'running';
 
@@ -92,6 +98,7 @@ const MiniLineGraph: React.FC<{ colorClass: string }> = ({ colorClass }) => (
 
 export const SystemScanner: React.FC = () => {
     const dataContext = useContext(DataContext as React.Context<DataContextType>);
+    const authContext = useContext(AuthContext);
     const [results, setResults] = useState<Record<string, CheckResult[]>>({});
     const [errorLog, setErrorLog] = useState<ErrorLogEntry[]>([]);
     const [isScanning, setIsScanning] = useState(false);
@@ -99,25 +106,59 @@ export const SystemScanner: React.FC = () => {
 
     const ALL_CHECKS = useCallback((): Check[] => {
         if (!dataContext) return [];
-        const { players, companyDetails, ranks, badges, gamificationSettings, addDoc } = dataContext;
+        const { players, companyDetails, ranks, badges, gamificationSettings, events, inventory, creatorDetails, socialLinks, carouselMedia } = dataContext;
+
+        const collectionNames: (keyof DataContextType)[] = ['players', 'events', 'ranks', 'badges', 'legendaryBadges', 'gamificationSettings', 'sponsors', 'vouchers', 'inventory', 'suppliers', 'transactions', 'locations', 'raffles', 'socialLinks', 'carouselMedia'];
 
         return [
+            // --- CORE SYSTEM ---
             { category: 'Core System', name: 'React App Initialized', description: "Checks if the main application UI has successfully rendered.", checkFn: async () => document.getElementById('root')?.hasChildNodes() ? { status: 'pass', detail: 'Root element is mounted.' } : { status: 'fail', detail: 'React root not found or is empty.' } },
+            { category: 'Core System', name: 'Data Context Availability', description: "Verifies that the main data provider is available to all components.", checkFn: async () => dataContext ? { status: 'pass', detail: 'DataContext is available.' } : { status: 'fail', detail: 'DataContext is not available.' } },
+            { category: 'Core System', name: 'Auth Context Availability', description: "Verifies that the authentication provider is available.", checkFn: async () => authContext ? { status: 'pass', detail: 'AuthContext is available.' } : { status: 'fail', detail: 'AuthContext is not available.' } },
+            { category: 'Core System', name: 'PWA Manifest', description: "Checks if the manifest.json for Progressive Web App functionality is valid.", checkFn: async () => { try { const res = await fetch('/manifest.json'); if (res.ok) { await res.json(); return { status: 'pass', detail: 'manifest.json is valid.' }; } return { status: 'fail', detail: `manifest.json fetch failed: ${res.statusText}` }; } catch (e) { return { status: 'fail', detail: `manifest.json parsing failed: ${(e as Error).message}` }; } } },
+
+            // --- DATA & STORAGE ---
             { category: 'Data & Storage', name: 'Storage Mode', description: "Identifies if the app is using live data or mock data.", checkFn: async () => ({ status: 'info', detail: `App is running in ${IS_LIVE_DATA ? 'LIVE (Firebase/API)' : 'MOCK'} data mode.` }) },
             { category: 'Data & Storage', name: 'Firebase SDK Initialization', description: "Checks if the Firebase library initialized correctly.", checkFn: async () => !USE_FIREBASE ? {status: 'info', detail: 'Firebase is disabled.'} : firebaseInitializationError ? { status: 'fail', detail: `Init failed: ${firebaseInitializationError.message}` } : { status: 'pass', detail: 'SDK initialized successfully.' } },
             { category: 'Data & Storage', name: 'Firebase Config', description: "Verifies that all required Firebase env variables are present.", checkFn: async () => !USE_FIREBASE ? {status: 'info', detail: 'Firebase is disabled.'} : isFirebaseConfigured() ? { status: 'pass', detail: 'Env variables are set.' } : { status: 'fail', detail: 'One or more VITE_FIREBASE_* env variables are missing.' } },
             { category: 'Data & Storage', name: 'Firestore Read/Write Test', description: "Performs a live test to create, read, and delete a document.", checkFn: async () => { if (!IS_LIVE_DATA || !db) return { status: 'pass', detail: 'Skipped (mock data mode).' }; const t = db.collection('_health').doc(`test_${Date.now()}`); try { await t.set({s:'w'}); const d=await t.get(); if (!d.exists) throw new Error('Read fail.'); await t.delete(); return { status: 'pass', detail: 'CRUD operations successful.' }; } catch (e) { return { status: 'fail', detail: `R/W test failed: ${(e as Error).message}` }; } finally { try { await t.delete(); } catch (_) {} }}},
+            ...collectionNames.map(name => ({
+                category: 'Data & Storage' as const,
+                name: `Collection: ${name} Loaded`,
+                description: `Checks if the '${name}' data collection has been loaded.`,
+                checkFn: async () => {
+                    const data = dataContext[name];
+                    const count = Array.isArray(data) ? data.length : (data ? 1 : 0);
+                    return count > 0 ? { status: 'pass' as const, detail: `${count} item(s) loaded.` } : { status: 'warn' as const, detail: `Collection is empty or failed to load.` };
+                }
+            })),
+
+            // --- API CONNECTIVITY ---
             { category: 'API Connectivity', name: 'API Server Health', description: "Pings the external API server (if configured).", checkFn: async () => !companyDetails.apiServerUrl ? { status: 'info', detail: 'Not configured.' } : checkUrl(`${companyDetails.apiServerUrl}/health`) },
-            { category: 'Configuration', name: 'Company Details Loaded', description: "Ensures the main company configuration was loaded.", checkFn: async () => companyDetails?.name ? { status: 'pass', detail: `Loaded: ${companyDetails.name}` } : { status: 'fail', detail: 'Company details are missing.' } },
-            { category: 'Configuration', name: 'Ranks Loaded', description: "Checks that the player rank structure is available.", checkFn: async () => ranks.length > 0 ? { status: 'pass', detail: `${ranks.length} ranks loaded.` } : { status: 'fail', detail: 'No ranks found.' } },
-            { category: 'Configuration', name: 'Gamification Rules Loaded', description: "Verifies that XP rules are loaded.", checkFn: async () => gamificationSettings.length > 0 ? { status: 'pass', detail: `${gamificationSettings.length} rules loaded.` } : { status: 'fail', detail: 'No gamification rules found.' } },
+
+            // --- CONFIGURATION ---
+            { category: 'Configuration', name: 'Company Details', description: "Ensures the main company configuration was loaded.", checkFn: async () => companyDetails?.name ? { status: 'pass', detail: `Loaded: ${companyDetails.name}` } : { status: 'fail', detail: 'Company details are missing.' } },
+            { category: 'Configuration', name: 'Creator Details', description: "Ensures the creator's details were loaded.", checkFn: async () => creatorDetails?.name ? { status: 'pass', detail: `Loaded: ${creatorDetails.name}` } : { status: 'warn', detail: 'Creator details are missing.' } },
+            
+            // --- CONTENT & MEDIA ---
             { category: 'Content & Media', name: 'Company Logo URL', description: "Validates that the company logo URL is accessible.", checkFn: () => checkUrl(companyDetails.logoUrl) },
-            // FIX: Refactored the XP calculation to be more robust and readable, preventing type errors.
-            { category: 'Core Automations', name: 'Event Finalization Logic', description: 'Simulates finalizing an event to verify XP calculations.', checkFn: async () => { try { const mockPlayer = { ...players[0], stats: { ...players[0].stats, xp: 1000 } }; const pXp = 50; const stats = { k: 5, d: 2, h: 1 }; const getXp = (ruleId: string) => gamificationSettings.find(r => r.id === ruleId)?.xp ?? 0; const xpg = pXp + (stats.k * getXp('g_kill')) + (stats.h * getXp('g_headshot')) + (stats.d * getXp('g_death')); const fXp = mockPlayer.stats.xp + xpg; const eXp = 1000 + 50 + (5 * 10) + (1 * 25) + (2 * -5); return fXp === eXp ? { status: 'pass', detail: `Correctly calc ${xpg} XP.` } : { status: 'fail', detail: `Calc error. Expected ${eXp}, got ${fXp}.` }; } catch (e) { return { status: 'fail', detail: `An exception occurred: ${(e as Error).message}` }; } } },
+            { category: 'Content & Media', name: 'Login Background URL', description: "Checks the background media for the login screen.", checkFn: () => checkUrl(companyDetails.loginBackgroundUrl) },
+            { category: 'Content & Media', name: 'Login Audio URL', description: "Checks the audio file for the login screen.", checkFn: () => checkUrl(companyDetails.loginAudioUrl) },
+            { category: 'Content & Media', name: 'Player Dashboard BG', description: "Checks the player dashboard background image.", checkFn: () => checkUrl(companyDetails.playerDashboardBackgroundUrl) },
+            { category: 'Content & Media', name: 'Admin Dashboard BG', description: "Checks the admin dashboard background image.", checkFn: () => checkUrl(companyDetails.adminDashboardBackgroundUrl) },
+            { category: 'Content & Media', name: 'Sample Event Images', description: "Checks a few event image URLs for accessibility.", checkFn: async () => { const sample = events.slice(0,3).map(e => e.imageUrl).filter((url): url is string => !!url); if (sample.length === 0) return { status: 'info', detail: 'No events with images to check.' }; const results = await Promise.all(sample.map(checkUrl)); const fails = results.filter(r => r.status === 'fail').length; return fails > 0 ? { status: 'warn', detail: `${fails}/${sample.length} sample images are unreachable.` } : { status: 'pass', detail: 'All sample images are reachable.' }; } },
+            { category: 'Content & Media', name: 'Sample Avatar URLs', description: "Checks a few player avatar URLs.", checkFn: async () => { const sample = players.slice(0,3).map(p => p.avatarUrl).filter((url): url is string => !!url); if (sample.length === 0) return { status: 'warn', detail: 'No players with avatars to check.' }; const results = await Promise.all(sample.map(checkUrl)); const fails = results.filter(r => r.status === 'fail').length; return fails > 0 ? { status: 'warn', detail: `${fails}/${sample.length} sample avatars are unreachable.` } : { status: 'pass', detail: 'All sample avatars are reachable.' }; } },
+            
+            // --- CORE AUTOMATIONS ---
+            { category: 'Core Automations', name: 'Event Finalization Logic', description: 'Simulates finalizing an event to verify XP calculations.', checkFn: async () => { try { const mockPlayer = { ...players[0], stats: { ...players[0].stats, xp: 1000 } }; const pXp = 50; const stats = { kills: 5, deaths: 2, headshots: 1 }; const getXp = (ruleId: string) => gamificationSettings.find(r => r.id === ruleId)?.xp ?? 0; const xpg = pXp + (stats.kills * getXp('g_kill')) + (stats.headshots * getXp('g_headshot')) + (stats.deaths * getXp('g_death')); const fXp = mockPlayer.stats.xp + xpg; const eXp = 1000 + 50 + (5 * 10) + (1 * 25) + (2 * -5); return fXp === eXp ? { status: 'pass', detail: `Correctly calc ${xpg} XP.` } : { status: 'fail', detail: `Calc error. Expected ${eXp}, got ${fXp}.` }; } catch (e) { return { status: 'fail', detail: `An exception occurred: ${(e as Error).message}` }; } } },
+            { category: 'Core Automations', name: 'Finance Generation Logic', description: 'Simulates event finalization to verify transaction creation.', checkFn: async () => { const event = events.find(e=>e.id==='e000'); const player = players.find(p=>p.id==='p001'); if (!event || !player) return {status:'warn', detail: 'Mock data not found for test.'}; const attendee = event.attendees.find(a=>a.playerId===player.id); if(!attendee) return {status:'warn', detail:'Mock attendee not found.'}; let transactions = 0; transactions++; (attendee.rentedGearIds || []).forEach(()=>transactions++); return transactions === 3 ? {status: 'pass', detail:'Correctly simulated 3 transactions.'} : {status:'fail', detail:`Expected 3 transactions, simulated ${transactions}.`}; }},
             { category: 'Core Automations', name: 'Rank Calculation Logic', description: 'Simulates player XP to verify correct rank assignment.', checkFn: async () => { const mP={stats:{xp:1100,gamesPlayed:11}} as Player; const sR=[...ranks].sort((a,b)=>b.minXp-a.minXp); const r=sR.find(r=>mP.stats.xp>=r.minXp)||UNRANKED_RANK; return r&&r.name==="Corporal 1"?{status:'pass',detail:'Correctly assigned Corporal 1.'}:{status:'fail',detail:`Incorrect rank. Expected Corporal 1, got ${r?.name||'Unranked'}.`} }},
-            { category: 'Core Automations', name: 'Badge Awarding Logic', description: 'Simulates player stats to verify badge unlocking logic.', checkFn: async () => { const mP={stats:{kills:55,headshots:10,gamesPlayed:5},badges:[]} as Player; const sB=badges.find(b=>b.id==='b01'); const fKB=badges.find(b=>b.id==='b03'); if(!sB||!fKB)return{status:'fail',detail:'Mock badges not found.'}; const hS=mP.stats.headshots>=(sB.criteria.value as number); const hFK=mP.stats.kills>=(fKB.criteria.value as number); return !hS&&hFK?{status:'pass',detail:'Correctly identified earned/unearned.'}:{status:'fail',detail:'Logic appears incorrect.'}}},
+            { category: 'Core Automations', name: 'Badge Awarding Logic', description: 'Simulates player stats to verify badge unlocking logic.', checkFn: async () => { const mP={stats:{kills:55,headshots:10,gamesPlayed:5},badges:[]} as Player; const sB=badges.find(b=>b.id==='b01'); const fKB=badges.find(b=>b.id==='b03'); if(!sB||!fKB)return{status:'warn',detail:'Mock badges not found.'}; const hS=mP.stats.headshots>=(sB.criteria.value as number); const hFK=mP.stats.kills>=(fKB.criteria.value as number); return !hS&&hFK?{status:'pass',detail:'Correctly identified earned/unearned.'}:{status:'fail',detail:'Logic appears incorrect.'}}},
+            { category: 'Core Automations', name: 'Player Code Generation', description: 'Tests the automatic player code generation logic.', checkFn: async () => { const initials = 'TU'; const existing = players.filter(p => p.playerCode.startsWith(initials)); let num = 1; if(existing.length > 0) { num = existing.reduce((max, p) => Math.max(max, parseInt(p.playerCode.substring(2), 10) || 0), 0) + 1; } const code = `${initials}${String(num).padStart(2,'0')}`; return code ? {status:'pass', detail: `Correctly generated next code: ${code}`} : {status:'fail', detail: 'Logic failed.'}; } },
+            { category: 'Core Automations', name: 'Leaderboard Sorting Logic', description: 'Verifies players are correctly sorted by XP.', checkFn: async () => { const sample = [...players].slice(0, 10); const sorted = [...sample].sort((a,b) => b.stats.xp - a.stats.xp); const isCorrect = sample.every((p, i) => p.id === sorted[i].id); return isCorrect ? {status:'pass', detail: 'Leaderboard sorting is correct.'} : {status:'warn', detail: 'Player list is not pre-sorted by XP as expected.'}; } },
+            { category: 'Core Automations', name: 'Rental Stock Availability', description: 'Simulates event signup to check rental stock logic.', checkFn: async () => { const eventWithRentals = events.find(e => e.gearForRent.length > 0 && e.rentalSignups); if (!eventWithRentals) return { status: 'info', detail: 'No suitable event found to test.'}; const gearId = eventWithRentals.gearForRent[0]; const gearItem = inventory.find(i => i.id === gearId); if (!gearItem) return { status: 'fail', detail: `Inventory item ${gearId} not found.` }; const initialRented = (eventWithRentals.rentalSignups || []).filter(s => s.requestedGearIds.includes(gearId)).length; const available = gearItem.stock - initialRented; return available >= 0 ? { status: 'pass', detail: `${available} units of ${gearItem.name} correctly calculated as available.` } : { status: 'fail', detail: `Stock miscalculation. Available: ${available}.`}; } },
         ];
-    }, [dataContext]);
+    }, [dataContext, authContext]);
 
     const runChecks = useCallback(async () => {
         setIsScanning(true);
@@ -153,7 +194,6 @@ export const SystemScanner: React.FC = () => {
     }, [runChecks]);
 
     const { healthScore, errorCount, warningCount, noticeCount } = useMemo(() => {
-        // FIX: Add explicit type to `all` to prevent type inference issues with `.flat()`
         const all: CheckResult[] = Object.values(results).flat();
         if (all.length === 0) return { healthScore: 0, errorCount: 0, warningCount: 0, noticeCount: 0 };
 
@@ -170,11 +210,12 @@ export const SystemScanner: React.FC = () => {
 
     const getCategoryHealth = (category: string) => {
         const checks = results[category] || [];
-        const total = checks.length;
-        if (total === 0) return { score: 100, hasFails: false };
+        if (checks.length === 0) return { score: 100, hasFails: false };
         const passes = checks.filter(c => c.status === 'pass').length;
+        const totalRelevant = checks.filter(c => c.status === 'pass' || c.status === 'fail').length;
         const hasFails = checks.some(c => c.status === 'fail');
-        return { score: Math.round((passes / total) * 100), hasFails };
+        const score = totalRelevant > 0 ? Math.round((passes / totalRelevant) * 100) : 100;
+        return { score, hasFails };
     };
 
     return (
@@ -192,17 +233,20 @@ export const SystemScanner: React.FC = () => {
                     </div>
                     <div className="lg:col-span-9 grid grid-cols-1 sm:grid-cols-3 gap-6">
                         <div className="bg-zinc-900/50 p-4 rounded-lg">
-                            <h3 className="font-semibold text-gray-300 flex items-center gap-2">Errors <InformationCircleIcon className="w-4 h-4" title="Critical issues that may break application functionality."/></h3>
+                            {/* FIX: Replace icon with title prop with InfoTooltip component. */}
+                            <h3 className="font-semibold text-gray-300 flex items-center gap-2">Errors <InfoTooltip text="Critical issues that may break application functionality."/></h3>
                             <p className="text-4xl font-bold text-red-500">{errorCount}</p>
                             <MiniLineGraph colorClass="text-red-500/50"/>
                         </div>
                         <div className="bg-zinc-900/50 p-4 rounded-lg">
-                            <h3 className="font-semibold text-gray-300 flex items-center gap-2">Warnings <InformationCircleIcon className="w-4 h-4" title="Non-critical issues that may cause degraded performance or missing content."/></h3>
+                            {/* FIX: Replace icon with title prop with InfoTooltip component. */}
+                            <h3 className="font-semibold text-gray-300 flex items-center gap-2">Warnings <InfoTooltip text="Non-critical issues that may cause degraded performance or missing content."/></h3>
                             <p className="text-4xl font-bold text-yellow-500">{warningCount}</p>
                              <MiniLineGraph colorClass="text-yellow-500/50"/>
                         </div>
                         <div className="bg-zinc-900/50 p-4 rounded-lg">
-                            <h3 className="font-semibold text-gray-300 flex items-center gap-2">Notices <InformationCircleIcon className="w-4 h-4" title="Informational messages about the system's configuration."/></h3>
+                            {/* FIX: Replace icon with title prop with InfoTooltip component. */}
+                            <h3 className="font-semibold text-gray-300 flex items-center gap-2">Notices <InfoTooltip text="Informational messages about the system's configuration."/></h3>
                             <p className="text-4xl font-bold text-blue-500">{noticeCount}</p>
                              <MiniLineGraph colorClass="text-blue-500/50"/>
                         </div>

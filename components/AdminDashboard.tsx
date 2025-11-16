@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, RentalSignup, CarouselMedia } from '../types';
@@ -8,7 +9,7 @@ import { Input } from './Input';
 import { UsersIcon, CogIcon, CalendarIcon, TrashIcon, ShieldCheckIcon, PlusIcon, TrophyIcon, BuildingOfficeIcon, SparklesIcon, PencilIcon, XIcon, TicketIcon, AtSymbolIcon, PhoneIcon, GlobeAltIcon, ArrowLeftIcon, ArchiveBoxIcon, CurrencyDollarIcon, TruckIcon, MapPinIcon, MinusIcon, KeyIcon, Bars3Icon, ExclamationTriangleIcon, InformationCircleIcon, CreditCardIcon, CheckCircleIcon, PrinterIcon, PlusCircleIcon, CodeBracketIcon, ChatBubbleLeftRightIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
 import { Modal } from './Modal';
-import { MOCK_RANKS } from '../constants';
+import { MOCK_RANKS, UNRANKED_RANK } from '../constants';
 import { PlayerProfilePage } from './PlayerProfilePage';
 import { FinanceTab } from './FinanceTab';
 import { SuppliersTab } from './SuppliersTab';
@@ -266,7 +267,8 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
                     <div className="max-h-[60vh] overflow-y-auto pr-2">
                         <ul className="space-y-2">
                             {filteredPlayers.map(p => {
-                                const rank = ranks.find(r => r.id === p.rank.id) || p.rank;
+                                // FIX: Defensively find rank to prevent crash if p.rank is null/undefined
+                                const rank = ranks.find(r => r.id === p.rank?.id) || p.rank || UNRANKED_RANK;
                                 return (
                                     <PlayerListItem key={p.id} player={p} rank={rank} onViewPlayer={onViewPlayer} />
                                 );

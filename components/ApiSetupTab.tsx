@@ -1,13 +1,12 @@
+
+
+
 import React from 'react';
 import { DashboardCard } from './DashboardCard';
 // FIX: Add CodeBracketIcon to imports
 import { CodeBracketIcon, InformationCircleIcon } from './icons/Icons';
-import { CreatorDetails } from '../types';
+import type { CreatorDetails } from '../types';
 import { Button } from './Button';
-
-interface ApiSetupTabProps {
-    creatorDetails: CreatorDetails;
-}
 
 const CodeBlock: React.FC<{ children: React.ReactNode, language?: string }> = ({ children, language = 'bash' }) => (
     <pre className={`bg-zinc-900 p-4 rounded-lg border border-zinc-700 text-sm text-gray-200 overflow-x-auto font-mono`}>
@@ -98,6 +97,34 @@ app.listen(PORT, () => {
 });
 `;
 
+const packageJsonCode = `
+{
+  "name": "bosjol-tactical-api-server",
+  "version": "1.0.0",
+  "description": "A simple Express server for handling file uploads for the Bosjol Tactical Dashboard.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "author": "JSTYP.me",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
+`;
+
+// FIX: Define the ApiSetupTabProps interface.
+interface ApiSetupTabProps {
+    creatorDetails: CreatorDetails;
+}
+
 export const ApiSetupTab: React.FC<ApiSetupTabProps> = ({ creatorDetails }) => {
     return (
         <DashboardCard title="External API Server Setup" icon={<CodeBracketIcon className="w-6 h-6" />}>
@@ -129,16 +156,16 @@ export const ApiSetupTab: React.FC<ApiSetupTabProps> = ({ creatorDetails }) => {
                 </div>
                 
                 <div>
-                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 1: Download Server Source Code</h3>
+                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 1: Get Server Files</h3>
                      <p className="text-gray-300 mb-3">
-                        The complete, ready-to-run Node.js server is available on GitHub. Click the button below to go to the repository, then download the code as a ZIP file.
+                        You need two files to create the server: <code className="text-sm bg-zinc-700 p-1 rounded">server.js</code> (the application logic) and <code className="text-sm bg-zinc-700 p-1 rounded">package.json</code> (the list of dependencies). Create these two files in a new folder on your server PC (e.g., <code className="text-sm bg-zinc-700 p-1 rounded">C:\bosjol-api-server</code>) and copy the contents below into them.
                     </p>
-                    <a href={creatorDetails.githubUrl} target="_blank" rel="noopener noreferrer">
-                        <Button>
-                            <CodeBracketIcon className="w-5 h-5 mr-2" />
-                            Download Server Source from GitHub
-                        </Button>
-                    </a>
+                     <CodeBlock language="json">
+                        {packageJsonCode}
+                    </CodeBlock>
+                    <CodeBlock language="javascript">
+                        {serverJsCode}
+                    </CodeBlock>
                 </div>
 
                 <div>
@@ -152,26 +179,18 @@ export const ApiSetupTab: React.FC<ApiSetupTabProps> = ({ creatorDetails }) => {
 
                 <div>
                     <h3 className="text-xl font-bold text-red-400 mb-2">Step 3: Server Project Setup</h3>
-                    <p className="text-gray-300 mb-2">Unzip the downloaded source code folder onto your server. Navigate into the folder with your terminal and install the required dependencies.</p>
+                    <p className="text-gray-300 mb-2">Navigate into the folder you created with your terminal and install the required dependencies.</p>
                     <CodeBlock language="bash">
-                        {`# Navigate to the project folder you unzipped
-cd bosjol-tactical-api-server
+                        {`# Navigate to the project folder you created
+cd C:\\bosjol-api-server
 
 # Install all dependencies listed in package.json
 npm install`}
                     </CodeBlock>
                 </div>
-                
-                 <div>
-                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 4: Server Code Overview</h3>
-                    <p className="text-gray-300 mb-2">The main logic is in <code className="text-sm bg-zinc-700 p-1 rounded">server.js</code>. Here is the complete code with explanations. You don't need to change anything unless you want to customize it.</p>
-                    <CodeBlock language="javascript">
-                        {serverJsCode}
-                    </CodeBlock>
-                </div>
 
                 <div>
-                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 5: Running the Server with PM2</h3>
+                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 4: Running the Server with PM2</h3>
                     <p className="text-gray-300 mb-2">Start the server using PM2. This runs it in the background, monitors it, and restarts it automatically if it crashes or the server reboots.</p>
                     <CodeBlock language="bash">
                         {`# Start the server and give it a name
@@ -187,7 +206,7 @@ pm2 logs bosjol-api`}
                 </div>
 
                 <div>
-                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 6: Expose to the Internet (Cloudflare Tunnels)</h3>
+                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 5: Expose to the Internet (Cloudflare Tunnels)</h3>
                     <p className="text-gray-300 mb-2">To make your local server securely accessible from the dashboard, the recommended method is using a free Cloudflare Tunnel. This avoids complex router configuration and is more secure.</p>
                     <ul className="list-decimal list-inside text-gray-300 space-y-2 pl-4">
                         <li>Follow the <a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/create-local-tunnel/" target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline">Cloudflare Tunnels Quickstart Guide</a> to install <code className="text-sm bg-zinc-700 p-1 rounded">cloudflared</code> and log in.</li>
@@ -198,8 +217,20 @@ pm2 logs bosjol-api`}
                 </div>
 
                 <div>
-                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 7: Final Configuration</h3>
+                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 6: Final Configuration</h3>
                      <p className="text-gray-300 mb-2">Go to the main <span className="font-bold">'Settings'</span> tab in this dashboard. Paste the public URL you copied from Cloudflare into the <span className="font-bold">'API Server URL'</span> field and click 'Save All Settings'. The app will now automatically use your self-hosted server for all new file uploads.</p>
+                </div>
+                 <div className="mt-6 pt-6 border-t border-zinc-800">
+                    <h3 className="text-xl font-bold text-red-400 mb-2">Dashboard Source Code</h3>
+                     <p className="text-gray-300 mb-3">
+                        The full source code for this dashboard application is available on GitHub.
+                    </p>
+                    <a href={creatorDetails.githubUrl} target="_blank" rel="noopener noreferrer">
+                        <Button>
+                            <CodeBracketIcon className="w-5 h-5 mr-2" />
+                            View Dashboard Source on GitHub
+                        </Button>
+                    </a>
                 </div>
             </div>
         </DashboardCard>

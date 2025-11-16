@@ -1,6 +1,7 @@
 /** @jsxImportSource react */
 import React, { ReactNode } from 'react';
-import { motion } from 'framer-motion';
+// FIX: Import Variants type from framer-motion to resolve type error.
+import { motion, Variants } from 'framer-motion';
 
 interface DashboardCardProps {
   title: string;
@@ -12,7 +13,8 @@ interface DashboardCardProps {
 }
 
 export const DashboardCard: React.FC<DashboardCardProps> = ({ title, icon, children, className = '', fullHeight = false, titleAddon }) => {
-  const cardVariants = {
+  // FIX: Explicitly type cardVariants with the Variants type.
+  const cardVariants: Variants = {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeInOut" } }
   };

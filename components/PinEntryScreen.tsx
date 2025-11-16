@@ -102,7 +102,8 @@ export const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ player, companyD
                 {pin.map((digit, index) => (
                     <input
                         key={index}
-                        ref={el => inputsRef.current[index] = el}
+                        // FIX: Wrap the ref callback body in curly braces to ensure it returns void.
+                        ref={el => { inputsRef.current[index] = el; }}
                         type="password"
                         inputMode="numeric"
                         maxLength={1}

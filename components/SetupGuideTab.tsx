@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
@@ -170,6 +171,7 @@ const StepCard: React.FC<{ number?: number, title: string, children: React.React
 export const SetupGuideTab: React.FC = () => {
     return (
         <div className="space-y-6">
+            <p className="text-center text-amber-300 bg-amber-900/40 p-3 rounded-md border border-amber-700/50">This guide is for setting up the main <strong>Dashboard Application</strong>. For instructions on the optional file upload server, please see the <strong>API Setup</strong> tab.</p>
             <StepCard number={1} title="Prerequisites">
                 <p>Before you begin, ensure you have the following software installed on your computer. These are essential for running the project.</p>
                 <ul className="list-disc list-inside space-y-2 pl-2">

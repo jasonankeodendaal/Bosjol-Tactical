@@ -1,6 +1,7 @@
 
 import React, { memo } from 'react';
-import { motion } from 'framer-motion';
+// FIX: Import Variants type from framer-motion to resolve type error.
+import { motion, Variants } from 'framer-motion';
 import { GameEvent, EventType, EventStatus } from '../types';
 import { BadgePill } from './BadgePill';
 import { CalendarIcon } from './icons/Icons';
@@ -24,7 +25,8 @@ const eventStatusColorMap: Record<EventStatus, 'green' | 'blue' | 'red' | 'amber
 };
 
 const EventCardComponent: React.FC<EventCardProps> = ({ event }) => {
-  const cardVariants = {
+  // FIX: Explicitly type cardVariants with the Variants type.
+  const cardVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
   };

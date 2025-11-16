@@ -78,7 +78,12 @@ export const uploadFile = (
         const fileName = `${Date.now()}-${randomString}.${fileExtension}`;
         
         const storageRef = storage.ref(`${path}/${fileName}`);
-        const uploadTask = storageRef.put(file);
+        
+        const metadata = {
+            contentType: file.type,
+        };
+        
+        const uploadTask = storageRef.put(file, metadata);
 
         if (callbacks?.setUploadTask) {
             callbacks.setUploadTask(uploadTask);

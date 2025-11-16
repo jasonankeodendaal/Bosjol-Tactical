@@ -216,10 +216,10 @@ const AppContent: React.FC = () => {
 
         logoutTimer.current = window.setTimeout(() => {
             if (auth.isAuthenticated) {
-                console.log("User inactive for 10 minutes. Logging out.");
+                console.log("User inactive for 5 minutes. Logging out.");
                 logout();
             }
-        }, 10 * 60 * 1000); // 10 minutes
+        }, 5 * 60 * 1000); // 5 minutes
     }, [logout, auth.isAuthenticated]);
 
     useEffect(() => {

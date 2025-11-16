@@ -1,11 +1,12 @@
 /** @jsxImportSource react */
 import React, { useContext, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../auth/AuthContext';
 import { Button } from './Button';
 import { UserIcon, KeyIcon, ExclamationTriangleIcon, CloudArrowDownIcon } from './icons/Icons';
 import { CompanyDetails, SocialLink } from '../types';
 import { Input } from './Input';
+import { Modal } from './Modal';
 
 interface LoginScreenProps {
   companyDetails: CompanyDetails;
@@ -21,9 +22,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const { login } = auth;
   
+  const performLogin = async (shouldRemember: boolean) => {
+    setIsLoading(true);
+    setError(null);
+
+    const success = await login(identifier.trim(), password.trim(), shouldRemember);
+    if (!success) {
+        setError("Invalid credentials. Please check your details and try again.");
+        setIsLoading(false);
+    }
+    // On success, component will unmount
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
       e.preventDefault();
 
@@ -34,16 +48,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
       } catch (err) {
         console.error("Failed to play login sound:", err);
       }
+      
+      const isPlayerLogin = !identifier.includes('@');
 
-      setIsLoading(true);
-      setError(null);
-
-      const success = await login(identifier.trim(), password.trim(), rememberMe);
-      if (!success) {
-          setError("Invalid credentials. Please check your details and try again.");
+      if (rememberMe && isPlayerLogin) {
+          setShowTermsModal(true);
+      } else {
+          performLogin(rememberMe);
       }
-      setIsLoading(false);
-  }
+  };
+
+  const handleAcceptTerms = () => {
+    setShowTermsModal(false);
+    performLogin(true);
+  };
+  
+  const handleDeclineTerms = () => {
+      setShowTermsModal(false);
+      performLogin(false);
+  };
+
 
   const renderBackground = () => {
     const url = companyDetails.loginBackgroundUrl;
@@ -79,6 +103,37 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
     <div className="relative min-h-screen flex items-center justify-center bg-transparent p-4 overflow-hidden">
        {renderBackground()}
        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent z-1"></div>
+      
+       <AnimatePresence>
+            {showTermsModal && (
+                <Modal isOpen={true} onClose={handleDeclineTerms} title="Remember This Device?">
+                    <div className="text-left text-gray-300 text-sm space-y-4">
+                        <div className="flex items-center justify-center mb-4 text-center border-b border-zinc-700/50 pb-4">
+                            <KeyIcon className="w-12 h-12 text-red-500 mr-4 flex-shrink-0" />
+                            <div>
+                                <h3 className="text-2xl font-bold text-white tracking-wider">ALWAYS STAY LOGGED IN</h3>
+                                <p className="text-sm text-gray-400">Terms for 'Remember Me'</p>
+                            </div>
+                        </div>
+                        <p>
+                            By accepting, you agree to keep your session partially active on this device. Your Player ID will be stored securely in your browser.
+                        </p>
+                        <ul className="list-disc list-inside space-y-2 pl-2 bg-zinc-800/50 p-3 rounded-md border border-zinc-700/50">
+                            <li><strong>Faster Access:</strong> You will only need to enter your 4-digit PIN to log in next time.</li>
+                            <li><strong>Security:</strong> This feature is recommended only for private, trusted devices.</li>
+                            <li><strong>Opting Out:</strong> You can clear this setting at any time by clicking the main "Logout" button in the dashboard.</li>
+                        </ul>
+                        <p>
+                            Do you accept these terms and wish to stay logged in?
+                        </p>
+                    </div>
+                    <div className="flex justify-end gap-4 mt-6 pt-4 border-t border-zinc-700/50">
+                        <Button variant="secondary" onClick={handleDeclineTerms}>Decline & Login</Button>
+                        <Button variant="primary" onClick={handleAcceptTerms}>Accept & Login</Button>
+                    </div>
+                </Modal>
+            )}
+        </AnimatePresence>
 
       <motion.div
         initial={{ opacity: 0, y: -30 }}

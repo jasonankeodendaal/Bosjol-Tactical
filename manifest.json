@@ -1,3 +1,4 @@
+
 {
   "short_name": "Bosjol Tactical",
   "name": "Bosjol Tactical Dashboard",
@@ -26,7 +27,8 @@
   "start_url": "/",
   "display": "standalone",
   "display_override": [
-    "window-controls-overlay"
+    "window-controls-overlay",
+    "fullscreen"
   ],
   "theme_color": "#b91c1c",
   "background_color": "#0A0A0A",
@@ -109,21 +111,36 @@
       "short_name": "Events",
       "description": "Check upcoming and past events",
       "url": "/?tab=Events",
-      "icons": [{ "src": "https://img.icons8.com/ios-filled/96/ffffff/calendar.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "https://img.icons8.com/ios-filled/96/ffffff/calendar.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Leaderboard",
       "short_name": "Ranks",
       "description": "See how you stack up against other players",
       "url": "/?tab=Leaderboard",
-      "icons": [{ "src": "https://img.icons8.com/ios-filled/96/ffffff/trophy.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "https://img.icons8.com/ios-filled/96/ffffff/trophy.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "My Stats",
       "short_name": "Stats",
       "description": "Review your performance statistics",
       "url": "/?tab=Stats",
-      "icons": [{ "src": "https://img.icons8.com/ios-filled/96/ffffff/bar-chart.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "https://img.icons8.com/ios-filled/96/ffffff/bar-chart.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ]
 }

@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useContext } from 'react';
 import type { CompanyDetails, SocialLink, CarouselMedia } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -53,7 +54,8 @@ const UrlOrUploadField: React.FC<{
     onRemove: () => void;
     accept: string;
     previewType?: 'image' | 'audio';
-}> = ({ label, fileUrl, onUrlSet, onRemove, accept, previewType = 'image' }) => {
+    apiServerUrl?: string;
+}> = ({ label, fileUrl, onUrlSet, onRemove, accept, previewType = 'image', apiServerUrl }) => {
     const previewContent = () => {
         if (!fileUrl) return null;
         switch (previewType) {
@@ -83,7 +85,7 @@ const UrlOrUploadField: React.FC<{
                 </div>
             ) : (
                 <div className="space-y-2">
-                    <ImageUpload onUpload={(urls) => { if(urls.length > 0) onUrlSet(urls[0]); }} accept={accept} />
+                    <ImageUpload onUpload={(urls) => { if(urls.length > 0) onUrlSet(urls[0]); }} accept={accept} apiServerUrl={apiServerUrl} />
                     <div className="flex items-center gap-2">
                         <hr className="flex-grow border-zinc-600"/>
                         <span className="text-xs text-zinc-500">OR</span>
@@ -316,6 +318,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onUrlSet={(url) => setFormData(f => ({ ...f, logoUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, logoUrl: '' }))}
                         accept="image/*"
+                        apiServerUrl={dataContext.companyDetails.apiServerUrl}
                     />
                     <UrlOrUploadField
                         label="Login Screen Background"
@@ -323,6 +326,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onUrlSet={(url) => setFormData(f => ({ ...f, loginBackgroundUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, loginBackgroundUrl: '' }))}
                         accept="image/*,video/*"
+                        apiServerUrl={dataContext.companyDetails.apiServerUrl}
                     />
                      <UrlOrUploadField
                         label="Login Screen Audio"
@@ -331,6 +335,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onRemove={() => setFormData(f => ({ ...f, loginAudioUrl: '' }))}
                         accept="audio/*"
                         previewType="audio"
+                        apiServerUrl={dataContext.companyDetails.apiServerUrl}
                     />
                     <UrlOrUploadField
                         label="Player Dashboard BG"
@@ -338,6 +343,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onUrlSet={(url) => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: '' }))}
                         accept="image/*"
+                        apiServerUrl={dataContext.companyDetails.apiServerUrl}
                     />
                     <UrlOrUploadField
                         label="Admin Dashboard BG"
@@ -345,6 +351,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onUrlSet={(url) => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: '' }))}
                         accept="image/*"
+                        apiServerUrl={dataContext.companyDetails.apiServerUrl}
                     />
                 </div>
             </DashboardCard>
@@ -400,7 +407,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             <ImageUpload 
                                 onUpload={handleCarouselMediaUpload} 
                                 accept="image/*,video/*" 
-                                multiple 
+                                multiple
+                                apiServerUrl={dataContext.companyDetails.apiServerUrl} 
                             />
                              <div className="flex items-center gap-2">
                                 <hr className="flex-grow border-zinc-600"/><span className="text-xs text-zinc-500">OR</span><hr className="flex-grow border-zinc-600" />
@@ -439,7 +447,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                         </div>
                                     ) : (
                                         <div className="space-y-2">
-                                            <ImageUpload onUpload={(urls) => { if (urls.length > 0) handleSocialLinkChange(link.id, 'iconUrl', urls[0]) }} accept="image/*" />
+                                            <ImageUpload onUpload={(urls) => { if (urls.length > 0) handleSocialLinkChange(link.id, 'iconUrl', urls[0]) }} accept="image/*" apiServerUrl={dataContext.companyDetails.apiServerUrl} />
                                             <div className="flex items-center gap-2">
                                                 <hr className="flex-grow border-zinc-600" /><span className="text-xs text-zinc-500">OR</span><hr className="flex-grow border-zinc-600" />
                                             </div>

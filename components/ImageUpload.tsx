@@ -15,7 +15,7 @@ type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
 const compressImage = (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
-        const MAX_WIDTH = 1920; // Max width for the image
+        const MAX_WIDTH = 1600; // Max width for the image
         const QUALITY = 0.7; // JPEG quality
         
         const reader = new FileReader();
@@ -98,9 +98,9 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
         try {
             let fileToUpload: Blob = file;
             const isImage = file.type.startsWith('image/') && !file.type.endsWith('gif');
-            const isLarge = file.size > 500 * 1024; // Compress if > 500KB
+            const isLargeImage = isImage && file.size > 500 * 1024; // Compress if image > 500KB
 
-            if (isImage && isLarge) {
+            if (isLargeImage) {
                 setMessage(`Compressing ${file.name}...`);
                 setProgress(0);
                 try {

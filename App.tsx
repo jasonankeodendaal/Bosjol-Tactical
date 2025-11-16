@@ -307,54 +307,57 @@ const AppContent: React.FC = () => {
     
     // Centralized background audio management
     useEffect(() => {
-        const audioUrl = companyDetails.loginAudioUrl;
-
-        // This effect manages a single audio element for the app's lifetime.
+        // Ensure audio element exists
         if (!audioRef.current) {
             audioRef.current = new Audio();
             audioRef.current.loop = true;
         }
         const audio = audioRef.current;
-
+        const audioUrl = companyDetails.loginAudioUrl;
         const shouldPlay = !showFrontPage;
 
-        // Case 1: No URL or we are on a screen where audio should be paused.
+        const handleCanPlay = () => {
+            if (shouldPlay) {
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => console.log("Audio play failed due to browser policy:", error));
+                }
+            }
+        };
+
+        // Always clean up previous listeners before attaching new ones
+        audio.removeEventListener('canplaythrough', handleCanPlay);
+
+        // Case 1: Audio should stop or is not configured
         if (!audioUrl || !shouldPlay) {
             if (!audio.paused) {
                 audio.pause();
             }
-            // If the URL was intentionally cleared, also remove the src attribute.
+            // If the URL was intentionally cleared, also remove the src attribute
             if (!audioUrl && audio.src) {
                 audio.removeAttribute('src');
-                audio.load(); // This stops buffering and cleans up.
+                audio.load(); // Stop buffering
             }
-            return;
+            return; // Exit early
         }
 
-        // Case 2: A URL exists and we should be playing.
-        let playPromise: Promise<void> | undefined;
-        
-        // If the source URL is different from the current one, we need to update it.
+        // Case 2: A URL exists and audio should be playing
+        audio.volume = !isAuthenticated ? 0.5 : 0.2;
+
+        // If the source URL is different, update it and wait for it to be playable
         if (audio.src !== audioUrl) {
             audio.src = audioUrl;
-            audio.load(); // Explicitly load the new source.
+            audio.load(); // This will trigger 'canplaythrough' when ready
+            audio.addEventListener('canplaythrough', handleCanPlay, { once: true });
+        } else if (audio.paused && shouldPlay) {
+            // If src is already correct but it's paused, try playing it
+            handleCanPlay();
         }
-        
-        // Now, ensure it plays if it's supposed to.
-        // We check if it's paused because it might already be playing the correct tune.
-        if (audio.paused) {
-            playPromise = audio.play();
-        }
-        
-        // Adjust volume based on whether user is on login screen or dashboard.
-        audio.volume = !isAuthenticated ? 0.5 : 0.2;
-        
-        if (playPromise) {
-            playPromise.catch(error => {
-                // This catch is important for browsers that block autoplay.
-                console.log("Audio autoplay was prevented or the file failed to load.", error);
-            });
-        }
+
+        // Cleanup on effect change
+        return () => {
+            audio.removeEventListener('canplaythrough', handleCanPlay);
+        };
     }, [showFrontPage, isAuthenticated, companyDetails.loginAudioUrl]);
 
 

@@ -1,6 +1,7 @@
 
 
-import React, { useState } from 'react';
+
+import React, { useState, useContext } from 'react';
 import type { Rank, Badge, LegendaryBadge, GamificationRule, GamificationSettings } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -8,6 +9,7 @@ import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, Plu
 import { Modal } from './Modal';
 import { ImageUpload } from './ImageUpload';
 import { DashboardCard } from './DashboardCard';
+import { DataContext } from '../data/DataContext';
 
 
 interface ProgressionTabProps {
@@ -90,6 +92,7 @@ const BadgeEditorModal: React.FC<{
     onClose: () => void,
     onSave: (badge: Omit<Badge, 'id'> | Badge) => void
 }> = ({ badge, onClose, onSave }) => {
+    const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
         name: badge?.name || '',
         description: badge?.description || '',
@@ -118,7 +121,7 @@ const BadgeEditorModal: React.FC<{
             <div className="space-y-4">
                 <Input label="Badge Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                 <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} />
-                <ImageUpload onUpload={(urls) => { if(urls.length) setFormData(f => ({...f, iconUrl: urls[0]}))}} accept="image/*" />
+                <ImageUpload onUpload={(urls) => { if(urls.length) setFormData(f => ({...f, iconUrl: urls[0]}))}} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
                 {formData.iconUrl && <img src={formData.iconUrl} alt="icon preview" className="w-16 h-16"/>}
                 <div className="grid grid-cols-2 gap-4">
                     <select value={formData.criteriaType} onChange={e => setFormData(f => ({...f, criteriaType: e.target.value as Badge['criteria']['type']}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
@@ -143,6 +146,7 @@ const LegendaryBadgeEditorModal: React.FC<{
     onClose: () => void,
     onSave: (badge: Omit<LegendaryBadge, 'id'> | LegendaryBadge) => void
 }> = ({ badge, onClose, onSave }) => {
+    const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
         name: badge?.name || '',
         description: badge?.description || '',
@@ -165,7 +169,7 @@ const LegendaryBadgeEditorModal: React.FC<{
                 <Input label="Badge Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                 <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} />
                 <Input label="How to Obtain" value={formData.howToObtain} onChange={e => setFormData(f => ({ ...f, howToObtain: e.target.value }))} />
-                <ImageUpload onUpload={(urls) => { if(urls.length) setFormData(f => ({...f, iconUrl: urls[0]}))}} accept="image/*" />
+                <ImageUpload onUpload={(urls) => { if(urls.length) setFormData(f => ({...f, iconUrl: urls[0]}))}} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
                 {formData.iconUrl && <img src={formData.iconUrl} alt="icon preview" className="w-16 h-16"/>}
             </div>
             <div className="mt-6">

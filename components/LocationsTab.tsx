@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+
+import React, { useState, useContext } from 'react';
 import type { Location } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
@@ -7,6 +8,7 @@ import { Input } from './Input';
 import { Modal } from './Modal';
 import { ImageUpload } from './ImageUpload';
 import { MapPinIcon, PlusIcon, PencilIcon, TrashIcon, AtSymbolIcon, PhoneIcon, XIcon, GlobeAltIcon } from './icons/Icons';
+import { DataContext } from '../data/DataContext';
 
 interface LocationsTabProps {
     locations: Location[];
@@ -17,6 +19,7 @@ interface LocationsTabProps {
 }
 
 const LocationEditorModal: React.FC<{ location: Partial<Location>, onClose: () => void, onSave: (l: Location | Omit<Location, 'id'>) => void }> = ({ location, onClose, onSave }) => {
+    const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
         name: location.name || '',
         description: location.description || '',
@@ -77,7 +80,7 @@ const LocationEditorModal: React.FC<{ location: Partial<Location>, onClose: () =
                                 </div>
                             ) : (
                                 <div className="flex-grow">
-                                     <ImageUpload onUpload={(urls) => handleImageUpload(index, urls[0])} accept="image/*" />
+                                     <ImageUpload onUpload={(urls) => handleImageUpload(index, urls[0])} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
                                 </div>
                             )}
                            </div>

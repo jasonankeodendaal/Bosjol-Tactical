@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 // FIX: Add EventAttendee to the type imports to resolve error on line 76.
 import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -10,6 +10,7 @@ import { MOCK_EVENT_THEMES, EVENT_STATUSES, EVENT_TYPES } from '../constants';
 import { ImageUpload } from './ImageUpload';
 import { BadgePill } from './BadgePill';
 import { InfoTooltip } from './InfoTooltip';
+import { DataContext } from '../data/DataContext';
 
 interface ManageEventPageProps {
     event?: GameEvent;
@@ -46,6 +47,7 @@ const defaultEvent: Omit<GameEvent, 'id'> = {
 export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     event, players, inventory, gamificationSettings, onBack, onSave, onDelete, setPlayers, setTransactions
 }) => {
+    const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState<Omit<GameEvent, 'id'>>(() => {
         if (!event) return defaultEvent;
         // Ensure date is in 'YYYY-MM-DD' format for the input
@@ -259,7 +261,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                             <Button variant="danger" size="sm" onClick={() => setFormData(f => ({ ...f, imageUrl: '' }))}>Remove</Button>
                                         </div>
                                     ) : (
-                                        <ImageUpload onUpload={(urls) => { if (urls.length > 0) setFormData(f => ({ ...f, imageUrl: urls[0] })); }} accept="image/*" />
+                                        <ImageUpload onUpload={(urls) => { if (urls.length > 0) setFormData(f => ({ ...f, imageUrl: urls[0] })); }} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
                                     )}
                                 </div>
                             </div>

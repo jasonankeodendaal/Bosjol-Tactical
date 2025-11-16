@@ -13,6 +13,7 @@ import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
 import { Leaderboard } from './Leaderboard';
 import { AuthContext } from '../auth/AuthContext';
+import { DataContext } from '../data/DataContext';
 
 
 const getRankForPlayer = (player: Player, ranks: Rank[]): Rank => {
@@ -634,6 +635,7 @@ const LeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players'>>
 
 const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate'>> = ({ player, onPlayerUpdate }) => {
     const [isUploading, setIsUploading] = useState(false);
+    const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
         name: player.name,
         surname: player.surname,
@@ -751,7 +753,7 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
              {isUploading && (
                  <Modal isOpen={true} onClose={() => setIsUploading(false)} title="Upload New Avatar">
                     <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
-                        <ImageUpload onUpload={handleAvatarUpload} accept="image/png, image/jpeg, image/gif" />
+                        <ImageUpload onUpload={handleAvatarUpload} accept="image/png, image/jpeg, image/gif" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
                     </div>
                 </Modal>
             )}

@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+
+import React, { useState, useContext } from 'react';
 import type { Sponsor } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
@@ -7,6 +8,7 @@ import { Input } from './Input';
 import { Modal } from './Modal';
 import { ImageUpload } from './ImageUpload';
 import { SparklesIcon, PlusIcon, PencilIcon, TrashIcon } from './icons/Icons';
+import { DataContext } from '../data/DataContext';
 
 interface SponsorsTabProps {
     sponsors: Sponsor[];
@@ -17,6 +19,7 @@ interface SponsorsTabProps {
 }
 
 const SponsorEditorModal: React.FC<{ sponsor: Partial<Sponsor>, onClose: () => void, onSave: (s: Sponsor | Omit<Sponsor, 'id'>) => void }> = ({ sponsor, onClose, onSave }) => {
+    const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
         name: sponsor.name || '',
         logoUrl: sponsor.logoUrl || '',
@@ -47,7 +50,7 @@ const SponsorEditorModal: React.FC<{ sponsor: Partial<Sponsor>, onClose: () => v
                             <Button variant="danger" size="sm" onClick={() => setFormData(f => ({ ...f, logoUrl: '' }))}>Remove</Button>
                         </div>
                     ) : (
-                        <ImageUpload onUpload={(urls) => { if (urls.length > 0) setFormData(f => ({ ...f, logoUrl: urls[0] })); }} accept="image/*" />
+                        <ImageUpload onUpload={(urls) => { if (urls.length > 0) setFormData(f => ({ ...f, logoUrl: urls[0] })); }} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
                     )}
                 </div>
             </div>

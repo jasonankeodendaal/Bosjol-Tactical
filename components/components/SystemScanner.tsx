@@ -47,7 +47,7 @@ const SOLUTIONS_MAP: Record<string, { problem: string; solution: React.ReactNode
     },
     'Firestore Read/Write Test': {
         problem: "A live test to create, read, update, and delete a temporary document in Firestore failed. This indicates a permission issue.",
-        solution: <p>This is likely due to restrictive Firestore Security Rules. 1. Go to your Firebase console -> Firestore -> Rules. 2. Ensure your rules allow authenticated users (or the specific admin user) to read and write to the collections. You can find a recommended ruleset in the 'Firebase Rules' tab of the Creator Dashboard.</p>
+        solution: <p>This is likely due to restrictive Firestore Security Rules. 1. Go to your Firebase console → Firestore → Rules. 2. Ensure your rules allow authenticated users (or the specific admin user) to read and write to the collections. You can find a recommended ruleset in the 'Firebase Rules' tab of the Creator Dashboard.</p>
     },
     'API Server Health': {
         problem: "The application cannot reach the configured external API server. The server may be down or the URL may be incorrect.",
@@ -59,7 +59,7 @@ const SOLUTIONS_MAP: Record<string, { problem: string; solution: React.ReactNode
     },
     'Company Logo URL': {
         problem: "The URL for the company logo is either not configured or points to an unreachable address.",
-        solution: <p>The logo will appear broken throughout the app. 1. Go to Admin Dashboard -> Settings -> Branding & Visuals. 2. Under 'Company Logo', re-upload the image or paste a valid, publicly accessible URL. 3. Save the settings.</p>
+        solution: <p>The logo will appear broken throughout the app. 1. Go to Admin Dashboard → Settings → Branding & Visuals. 2. Under 'Company Logo', re-upload the image or paste a valid, publicly accessible URL. 3. Save the settings.</p>
     }
 };
 
@@ -291,7 +291,8 @@ export const SystemScanner: React.FC = () => {
         critical: { text: 'Critical Errors Detected', color: 'text-red-400', bgColor: 'bg-red-500' },
     };
     const currentStatus = statusInfo[overallStatus];
-    const allChecks = Object.values(results).flatMap(cat => cat.checks);
+    // FIX: Add type assertion for 'cat' to resolve 'unknown' type error when accessing 'checks'.
+    const allChecks = Object.values(results).flatMap(cat => (cat as ResultCategory).checks);
     const checkCounts = {
         total: allChecks.length,
         pass: allChecks.filter(c => c.status === 'pass').length,
@@ -342,7 +343,8 @@ export const SystemScanner: React.FC = () => {
                     <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                         {
                         Object.entries(results).map(([key, category]) => {
-                            const cat = category;
+                            // FIX: Add type assertion for 'category' to resolve 'unknown' type errors on subsequent property access.
+                            const cat = category as ResultCategory;
                             const hasFail = cat.checks.some(c => c.status === 'fail');
                             const hasWarn = cat.checks.some(c => c.status === 'warn');
                             const categoryStatus: CheckStatus = hasFail ? 'fail' : hasWarn ? 'warn' : 'pass';

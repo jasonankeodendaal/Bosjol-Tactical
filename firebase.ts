@@ -91,11 +91,8 @@ export const uploadFile = (
                 }
             },
             (error) => {
-                 if (error.code === 'storage/canceled') {
-                    reject(new Error('Upload canceled by user.'));
-                } else {
-                    reject(error);
-                }
+                 // Reject with the original error object for better handling
+                 reject(error);
             },
             async () => {
                 try {

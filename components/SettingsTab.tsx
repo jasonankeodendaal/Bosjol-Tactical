@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect, useContext } from 'react';
 import type { CompanyDetails, SocialLink, CarouselMedia } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -10,6 +11,7 @@ import { ImageUpload } from './ImageUpload';
 import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, KeyIcon, InformationCircleIcon, CloudArrowDownIcon, UploadCloudIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { DataContext } from '../data/DataContext';
+import { UrlOrUploadField } from './UrlOrUploadField';
 
 interface SettingsTabProps {
     companyDetails: CompanyDetails;
@@ -44,61 +46,6 @@ const formatBytes = (bytes: number, decimals = 2) => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-};
-
-
-const UrlOrUploadField: React.FC<{
-    label: string;
-    fileUrl: string | undefined;
-    onUrlSet: (url: string) => void;
-    onRemove: () => void;
-    accept: string;
-    previewType?: 'image' | 'audio';
-    apiServerUrl?: string;
-}> = ({ label, fileUrl, onUrlSet, onRemove, accept, previewType = 'image', apiServerUrl }) => {
-    const previewContent = () => {
-        if (!fileUrl) return null;
-        switch (previewType) {
-            case 'image':
-                return <img src={fileUrl} alt="preview" className="w-16 h-16 object-contain rounded-md bg-zinc-800 p-1" />;
-            case 'audio':
-                return (
-                    <div className="w-16 h-16 flex items-center justify-center rounded-md bg-zinc-800 p-1">
-                        <MusicalNoteIcon className="w-8 h-8 text-gray-400" />
-                    </div>
-                );
-            default:
-                return null;
-        }
-    };
-
-    return (
-        <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1.5">{label}</label>
-            {fileUrl ? (
-                <div className="flex items-center gap-3 bg-zinc-900/50 p-2 rounded-lg border border-zinc-700/50">
-                    {previewContent()}
-                    <p className="text-xs text-gray-400 truncate flex-grow">File configured</p>
-                    <Button variant="danger" size="sm" onClick={onRemove} className="!p-2 flex-shrink-0">
-                        <TrashIcon className="w-4 h-4" />
-                    </Button>
-                </div>
-            ) : (
-                <div className="space-y-2">
-                    <ImageUpload onUpload={(urls) => { if(urls.length > 0) onUrlSet(urls[0]); }} accept={accept} apiServerUrl={apiServerUrl} />
-                    <div className="flex items-center gap-2">
-                        <hr className="flex-grow border-zinc-600"/>
-                        <span className="text-xs text-zinc-500">OR</span>
-                        <hr className="flex-grow border-zinc-600"/>
-                    </div>
-                    <Input 
-                        placeholder="Paste direct URL"
-                        onBlur={(e) => { if(e.target.value) onUrlSet(e.target.value); }}
-                    />
-                </div>
-            )}
-        </div>
-    );
 };
 
 

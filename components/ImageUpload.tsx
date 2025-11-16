@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloudIcon, CheckCircleIcon, XCircleIcon, CogIcon } from './icons/Icons';
+import { UploadCloudIcon, CheckCircleIcon, XCircleIcon } from './icons/Icons';
 import { uploadFile, firebase } from '../firebase';
 import { Button } from './Button';
 
@@ -12,62 +12,7 @@ interface FileUploadProps {
   apiServerUrl?: string;
 }
 
-type UploadStatus = 'idle' | 'preparing' | 'uploading' | 'success' | 'error';
-const OPTIMIZATION_THRESHOLD_BYTES = 500 * 1024; // 500KB
-
-const workerScript = `
-  const MAX_WIDTH = 1920;
-  const MAX_HEIGHT = 1920;
-  const QUALITY = 0.8;
-
-  self.onmessage = async (event) => {
-    const file = event.data.file;
-
-    if (!file || !file.type.startsWith('image/')) {
-        self.postMessage({ blob: file, error: 'Not an image file.' });
-        return;
-    }
-
-    try {
-        const imageBitmap = await self.createImageBitmap(file);
-        
-        let width = imageBitmap.width;
-        let height = imageBitmap.height;
-
-        if (width <= MAX_WIDTH && height <= MAX_HEIGHT) {
-            self.postMessage({ blob: file });
-            imageBitmap.close();
-            return;
-        }
-
-        if (width > height) {
-            if (width > MAX_WIDTH) {
-                height = Math.round(height * (MAX_WIDTH / width));
-                width = MAX_WIDTH;
-            }
-        } else {
-            if (height > MAX_HEIGHT) {
-                width = Math.round(width * (MAX_HEIGHT / height));
-                height = MAX_HEIGHT;
-            }
-        }
-
-        const canvas = new OffscreenCanvas(width, height);
-        const ctx = canvas.getContext('2d');
-        if (!ctx) throw new Error('Could not get OffscreenCanvas context.');
-
-        ctx.drawImage(imageBitmap, 0, 0, width, height);
-        const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: QUALITY });
-        
-        self.postMessage({ blob });
-        imageBitmap.close();
-
-    } catch (e) {
-        self.postMessage({ blob: file, fallback: true, error: e.message });
-    }
-  };
-`;
-
+type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
 const formatBytes = (bytes: number, decimals = 2) => {
     if (bytes === 0) return '0 Bytes';
@@ -84,32 +29,17 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadTask, setUploadTask] = useState<firebase.storage.UploadTask | null>(null);
   const [progressData, setProgressData] = useState({ transferred: 0, total: 0 });
-  const workerRef = useRef<Worker | null>(null);
 
-  useEffect(() => {
-    const blob = new Blob([workerScript], { type: 'application/javascript' });
-    const url = URL.createObjectURL(blob);
-    workerRef.current = new Worker(url);
-    URL.revokeObjectURL(url);
-
-    return () => {
-        if (workerRef.current) {
-            workerRef.current.terminate();
-            workerRef.current = null;
-        }
-    };
-  }, []);
-
-  const performUpload = async (fileToUpload: Blob, name: string): Promise<string> => {
+  const performUpload = async (fileToUpload: File): Promise<string> => {
       setStatus('uploading');
-      setMessage(`Uploading ${name}...`);
+      setMessage(`Uploading ${fileToUpload.name}...`);
       setProgressData({ transferred: 0, total: fileToUpload.size });
       setUploadTask(null);
 
       if (apiServerUrl) {
-          setMessage(`Uploading ${name}... (Progress not available for API server)`);
+          setMessage(`Uploading ${fileToUpload.name}... (Progress not available for API server)`);
           const formData = new FormData();
-          formData.append('file', fileToUpload, name);
+          formData.append('file', fileToUpload, fileToUpload.name);
           const response = await fetch(`${apiServerUrl}/upload`, {
               method: 'POST',
               body: formData,
@@ -121,7 +51,7 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
           const { url } = await response.json();
           return url;
       } else {
-          return uploadFile(fileToUpload, name, 'uploads', {
+          return uploadFile(fileToUpload, fileToUpload.name, 'uploads', {
               onProgress: (snapshot) => {
                   setProgressData({
                       transferred: snapshot.bytesTransferred,
@@ -132,7 +62,6 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
           });
       }
   };
-
 
   const resetState = (delay: number) => {
     setTimeout(() => {
@@ -157,57 +86,25 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
     if (!files || files.length === 0) return;
     
     const filesArray = multiple ? Array.from(files) : [files[0]];
-    setStatus('preparing');
-    setMessage(`Preparing ${filesArray.length} file(s)...`);
-
-    const processingPromises = filesArray.map(file => {
-      return new Promise<{blob: Blob, name: string}>((resolve) => {
-        const isOptimizableImage = file.type.startsWith('image/') && !file.type.endsWith('gif') && file.size > OPTIMIZATION_THRESHOLD_BYTES;
-        
-        if (isOptimizableImage && workerRef.current) {
-            const worker = workerRef.current;
-            
-            const handleMessage = (event: MessageEvent) => {
-                if (event.data.error) console.warn('Image optimization fallback:', event.data.error);
-                worker.removeEventListener('message', handleMessage);
-                worker.removeEventListener('error', handleError);
-                resolve({ blob: event.data.blob || file, name: file.name });
-            };
-            const handleError = (e: ErrorEvent) => {
-                console.error("Worker error during optimization:", e.message);
-                worker.removeEventListener('message', handleMessage);
-                worker.removeEventListener('error', handleError);
-                resolve({ blob: file, name: file.name });
-            };
-            
-            worker.addEventListener('message', handleMessage);
-            worker.addEventListener('error', handleError);
-            worker.postMessage({ file });
-        } else {
-            resolve({ blob: file, name: file.name });
-        }
-      });
-    });
     
-    const filesToUpload = await Promise.all(processingPromises);
     const results: string[] = [];
 
-    for (const { blob, name } of filesToUpload) {
+    for (const file of filesArray) {
         try {
-            const url = await performUpload(blob, name);
+            const url = await performUpload(file);
             results.push(url);
-        } catch (err) {
-            console.error(`Failed to process file ${name}:`, err);
-            const errorMessage = (err as Error).message;
-            if (errorMessage.includes('canceled by user')) {
+        } catch (err: any) {
+            console.error(`Failed to process file ${file.name}:`, err);
+            // Use more robust error code checking for cancellation
+            if (err.code === 'storage/canceled') {
                 setStatus('idle');
                 setMessage('');
             } else {
                 setStatus('error');
-                setMessage(errorMessage);
+                setMessage(err.message);
                 resetState(3000);
             }
-            return;
+            return; // Stop processing further files on error/cancel
         }
     }
 
@@ -242,14 +139,6 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
 
   const renderContent = () => {
     switch(status) {
-        case 'preparing':
-             return (
-                <div className="flex flex-col items-center justify-center p-4 text-center">
-                    <CogIcon className="w-8 h-8 text-blue-400 animate-spin mb-2"/>
-                    <p className="text-sm font-semibold text-blue-300">Optimizing...</p>
-                    <p className="text-xs text-gray-400 truncate max-w-full px-2">{message}</p>
-                </div>
-            );
         case 'uploading':
             const percentage = progressData.total > 0 ? Math.round((progressData.transferred / progressData.total) * 100) : (apiServerUrl ? 50 : 0);
             return (

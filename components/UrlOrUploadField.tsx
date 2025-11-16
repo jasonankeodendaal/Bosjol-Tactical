@@ -32,6 +32,13 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
         }
     };
 
+    const handleUrlInput = (e: React.FocusEvent<HTMLInputElement> | React.KeyboardEvent<HTMLInputElement>) => {
+        const inputElement = e.target as HTMLInputElement;
+        if (inputElement.value) {
+            onUrlSet(inputElement.value);
+        }
+    };
+
     return (
         <div>
             <label className="block text-sm font-medium text-gray-400 mb-1.5">{label}</label>
@@ -53,7 +60,13 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
                     </div>
                     <Input 
                         placeholder="Paste direct URL"
-                        onBlur={(e) => { if(e.target.value) onUrlSet(e.target.value); }}
+                        onBlur={handleUrlInput}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleUrlInput(e);
+                            }
+                        }}
                     />
                 </div>
             )}

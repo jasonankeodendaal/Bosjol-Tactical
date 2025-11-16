@@ -1,3 +1,5 @@
+
+
 import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { DataContext, IS_LIVE_DATA } from '../data/DataContext';
 import { Button } from './Button';
@@ -61,7 +63,6 @@ const SOLUTIONS_MAP: Record<string, { problem: string; solution: React.ReactNode
         problem: "The URL for the company logo is either not configured or points to an unreachable address.",
         solution: <p>The logo will appear broken throughout the app. 1. Go to Admin Dashboard -> Settings -> Branding & Visuals. 2. Under 'Company Logo', re-upload the image or paste a valid, publicly accessible URL. 3. Save the settings.</p>
     }
-    // Add other solutions as needed...
 };
 
 
@@ -111,7 +112,7 @@ const HealthScoreHistoryChart: React.FC<{ history: { time: number; score: number
             <defs>
                 <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#ef4444" stopOpacity="0.5" />
-                    <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+                    <stop offset="100%" stopOpacity="0" />
                 </linearGradient>
             </defs>
             <polyline fill="url(#lineGradient)" stroke="#ef4444" strokeWidth="2" points={`0,${height} ${points} ${width},${height}`} />
@@ -121,8 +122,8 @@ const HealthScoreHistoryChart: React.FC<{ history: { time: number; score: number
 };
 
 const StatusDistributionChart: React.FC<{ data: Record<CheckStatus, number> }> = ({ data }) => {
-    // FIX: Explicitly typed accumulator and value in reduce to prevent 'unknown' type error.
-    const total = Object.values(data).reduce((sum: number, val: number) => sum + val, 0);
+    // FIX: Safely reduce object values by checking their type, preventing an error where `val` could be `unknown`.
+    const total = Object.values(data).reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
     if (total === 0) return null;
     
     const radius = 40;
@@ -142,7 +143,8 @@ const StatusDistributionChart: React.FC<{ data: Record<CheckStatus, number> }> =
             <svg width="100" height="100" viewBox="0 0 100 100">
                 <g transform="rotate(-90 50 50)">
                     {items.map(({ status, color }) => {
-                        if (data[status] === 0) return null;
+                        // FIX: Use a truthiness check `!data[status]` to correctly narrow the type of `data[status]` to a number for subsequent calculations.
+                        if (!data[status]) return null;
                         const dash = (data[status] / total) * circumference;
                         const strokeDasharray = `${dash} ${circumference - dash}`;
                         const strokeDashoffset = -accumulatedOffset;
@@ -186,7 +188,7 @@ export const SystemScanner: React.FC = () => {
 
     const runScan = useCallback(async () => {
         if (!dataContext) return;
-        const { players, events, companyDetails, ranks, gamificationSettings, carouselMedia, socialLinks, sponsors, creatorDetails } = dataContext;
+        const { companyDetails, ranks, gamificationSettings, events, creatorDetails } = dataContext;
         
         const checks = [
             { category: 'Core System', name: 'React App Initialized', checkFn: async () => document.getElementById('root')?.hasChildNodes() ? { status: 'pass' as CheckStatus, detail: 'Root element is mounted.' } : { status: 'fail' as CheckStatus, detail: 'React root not found or is empty.' } },
@@ -232,7 +234,6 @@ export const SystemScanner: React.FC = () => {
         else if (warns > 0) setOverallStatus('degraded');
         else setOverallStatus('operational');
 
-        // FIX: Cast `category` to `ResultCategory` to resolve type errors. This ensures type safety when TypeScript infers `unknown` from `Object.entries`.
         const categoriesWithIssues = Object.entries(tempResults).reduce((acc, [key, category]) => {
             const cat = category as ResultCategory;
             if (cat.checks.some(c => c.status === 'fail' || c.status === 'warn')) {
@@ -302,8 +303,6 @@ export const SystemScanner: React.FC = () => {
         fail: allChecks.filter(c => c.status === 'fail').length,
         info: allChecks.filter(c => c.status === 'info').length,
     };
-    // FIX: Exclude the 'total' property from the data passed to the chart
-    // to prevent it from being double-counted in the chart's own total calculation.
     const { total, ...statusCounts } = checkCounts;
 
     return (

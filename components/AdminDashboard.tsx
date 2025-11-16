@@ -217,6 +217,11 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
 }
 
 const PlayerListItem = React.memo(({ player, rank, onViewPlayer }: { player: Player; rank: Rank; onViewPlayer: (id: string) => void }) => {
+    const kills = player.stats?.kills || 0;
+    const deaths = player.stats?.deaths || 0;
+    const xp = player.stats?.xp || 0;
+    const kdr = deaths > 0 ? kills / deaths : kills;
+
     return (
         <li onClick={() => onViewPlayer(player.id)} className="flex items-center p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer border border-transparent hover:border-red-600/50">
             <img src={player.avatarUrl} alt={player.name} className="w-12 h-12 rounded-full object-cover mr-4" />
@@ -230,8 +235,8 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer }: { player: Pla
                 </div>
             </div>
             <div className="text-right">
-                <p className="font-bold text-red-400 text-lg">{player.stats.xp.toLocaleString()} XP</p>
-                <p className="text-xs text-gray-500">K/D: {(player.stats.deaths > 0 ? player.stats.kills / player.stats.deaths : player.stats.kills).toFixed(2)}</p>
+                <p className="font-bold text-red-400 text-lg">{xp.toLocaleString()} XP</p>
+                <p className="text-xs text-gray-500">K/D: {kdr.toFixed(2)}</p>
             </div>
         </li>
     );

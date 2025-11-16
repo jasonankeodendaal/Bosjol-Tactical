@@ -116,8 +116,8 @@ const HealthScoreHistoryChart: React.FC<{ history: { time: number; score: number
 };
 
 const StatusDistributionChart: React.FC<{ data: Record<CheckStatus, number> }> = ({ data }) => {
-    // FIX: Ensure 'val' is treated as a number in the reduce function to prevent type errors.
-    const total = Object.values(data).reduce((sum: number, val) => sum + (typeof val === 'number' ? val : 0), 0);
+    // FIX: Replaced reduce with a filter and reduce chain to fix an arithmetic operation type error by ensuring only numbers are summed.
+    const total = Object.values(data).filter(val => typeof val === 'number').reduce((sum, val) => sum + val, 0);
     if (total === 0) return null;
     
     const radius = 40;

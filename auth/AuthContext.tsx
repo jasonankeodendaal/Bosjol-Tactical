@@ -131,8 +131,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 }
                 return false;
             } catch (error) {
+                const typedError = error as { code?: string; message: string };
+                let userMessage = `Login failed: ${typedError.message}.`;
+
+                if (typedError.code === 'permission-denied') {
+                    userMessage += "\n\nThis is a 'permission-denied' error. It almost always means your Firestore Security Rules are not set up correctly. Please ensure the rules allow an authenticated user to update the 'activeAuthUID' field on a player's document.";
+                } else {
+                    userMessage += "\n\nPlease check the console for more details.";
+                }
+                
                 console.error("Player Firestore login failed:", error);
-                alert(`Login failed: ${(error as Error).message}. This might be a database permissions issue. Please check the Firestore rules.`);
+                alert(userMessage);
                 return false;
             }
         } else { // Mock player login

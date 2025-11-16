@@ -84,6 +84,9 @@ const NewPlayerModal: React.FC<{
         
         const newPlayerCode = `${initials}${String(newNumber).padStart(2, '0')}`;
         
+        const sortedRanks = [...ranks].sort((a, b) => a.minXp - b.minXp);
+        const defaultRank = sortedRanks[0] || UNRANKED_RANK;
+
         const newPlayerData: Omit<Player, 'id'> = {
             name: formData.name,
             surname: formData.surname,
@@ -95,7 +98,7 @@ const NewPlayerModal: React.FC<{
             idNumber: formData.idNumber,
             role: 'player',
             callsign: formData.name, // Default callsign to first name
-            rank: ranks.length > 0 ? ranks[0] : UNRANKED_RANK,
+            rank: defaultRank,
             status: 'Active',
             avatarUrl: `https://api.dicebear.com/8.x/bottts/svg?seed=${formData.name}${formData.surname}`, // Default avatar
             stats: { kills: 0, deaths: 0, headshots: 0, gamesPlayed: 0, xp: 0 },

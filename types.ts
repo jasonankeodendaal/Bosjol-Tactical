@@ -99,13 +99,11 @@ export interface Admin extends User {
 export interface AuthContextType {
   user: User | Player | Admin | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string, rememberMe?: boolean) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (user: User | Player | Admin) => void; 
   helpTopic: string;
   setHelpTopic: Dispatch<SetStateAction<string>>;
-  rememberedPlayerId: string | null;
-  clearRememberedPlayer: () => void;
 }
 
 export type EventType = 'Training' | 'Mission' | 'Briefing' | 'Maintenance';
@@ -359,7 +357,8 @@ export interface CreatorDetails {
     githubUrl: string;
     sourceCodeZipUrl?: string;
 }
-// FIX: Define and export the ChatMessage interface.
+
+// FIX: Added ChatMessage interface to resolve missing type error in PlayerChatsTab.tsx
 export interface ChatMessage {
   id: string;
   text: string;
@@ -368,5 +367,5 @@ export interface ChatMessage {
   playerName: string;
   playerAvatarUrl: string;
   authUID: string;
-  role: 'player' | 'admin';
+  role: Role;
 }

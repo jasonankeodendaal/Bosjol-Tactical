@@ -297,7 +297,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     </div>
                     
                     <div className="md:col-span-2 pt-6 border-t border-zinc-800">
-                         <h4 className="font-semibold text-gray-200 mb-4 text-lg flex items-center gap-2"><CreditCardIcon className="w-5 h-5"/>Financial Details</h4>
+                         <h4 className="font-semibold text-gray-200 mb-2 text-lg flex items-center gap-2"><CreditCardIcon className="w-5 h-5"/>Financial Details</h4>
+                         <p className="text-sm text-gray-400 mb-4">
+                            The Account Number and Routing/Branch Number fields are optional and for internal reference only.
+                         </p>
                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <Input label="Bank Name" value={formData.bankInfo.bankName} onChange={e => setFormData(f => ({ ...f, bankInfo: {...f.bankInfo, bankName: e.target.value} }))} />
                             <Input label="Account Number" value={formData.bankInfo.accountNumber} onChange={e => setFormData(f => ({ ...f, bankInfo: {...f.bankInfo, accountNumber: e.target.value} }))} />

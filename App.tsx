@@ -18,6 +18,7 @@ import { Input } from './components/Input';
 
 // --- Lazy Load Components for Code Splitting ---
 const LoginScreen = lazy(() => import('./components/LoginScreen').then(module => ({ default: module.LoginScreen })));
+const PinEntryScreen = lazy(() => import('./components/PinEntryScreen').then(module => ({ default: module.PinEntryScreen })));
 const PlayerDashboard = lazy(() => import('./components/PlayerDashboard').then(module => ({ default: module.PlayerDashboard })));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
 const FrontPage = lazy(() => import('./components/FrontPage').then(module => ({ default: module.FrontPage })));
@@ -171,15 +172,19 @@ const AppContent: React.FC = () => {
     if (!auth) throw new Error("AuthContext not found.");
     if (!data) throw new Error("DataContext not found.");
     
-    const { isAuthenticated, user, login, logout, helpTopic, setHelpTopic } = auth;
+    const { isAuthenticated, user, login, logout, helpTopic, setHelpTopic, rememberedPlayerId, clearRememberedPlayer } = auth;
+    const rememberedPlayer = data.players.find(p => p.id === rememberedPlayerId);
 
     useEffect(() => {
-        if (showFrontPage) {
+        if (rememberedPlayer && !isAuthenticated) {
+            setHelpTopic('login-screen'); // Or a new pin-entry help topic
+            setShowFrontPage(false);
+        } else if (showFrontPage) {
             setHelpTopic('front-page');
         } else if (!isAuthenticated) {
             setHelpTopic('login-screen');
         }
-    }, [showFrontPage, isAuthenticated, setHelpTopic]);
+    }, [showFrontPage, isAuthenticated, setHelpTopic, rememberedPlayer]);
 
     if (USE_FIREBASE && !isFirebaseConfigured()) {
         return (
@@ -200,14 +205,6 @@ const AppContent: React.FC = () => {
         // Fallback to mock data is handled by DataContext, just show the UI
         console.error("Firebase Initialization Error:", firebaseInitializationError.message);
     }
-    
-
-    useEffect(() => {
-      // Per user request, always log out on refresh to ensure the session starts
-      // from the front page, preventing accidental session continuation.
-      logout();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // This should only run once when the app component mounts.
     
     // Inactivity logout logic
     const logoutTimer = useRef<number | null>(null);
@@ -268,7 +265,7 @@ const AppContent: React.FC = () => {
         }
         const audio = audioRef.current;
         const audioUrl = companyDetails.loginAudioUrl;
-        const shouldPlay = !showFrontPage;
+        const shouldPlay = !showFrontPage && !rememberedPlayer;
 
         const handleCanPlay = () => {
             if (shouldPlay) {
@@ -312,7 +309,7 @@ const AppContent: React.FC = () => {
         return () => {
             audio.removeEventListener('canplaythrough', handleCanPlay);
         };
-    }, [showFrontPage, isAuthenticated, companyDetails.loginAudioUrl]);
+    }, [showFrontPage, isAuthenticated, companyDetails.loginAudioUrl, rememberedPlayer]);
 
 
     const currentPlayer = players.find(p => p.id === user?.id);
@@ -371,16 +368,6 @@ const AppContent: React.FC = () => {
         );
     }
 
-    const renderPublicContent = () => (
-        <>
-            {showFrontPage ? (
-                <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} />
-            ) : (
-                <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />
-            )}
-        </>
-    );
-
     if (loading) {
         return <Loader />;
     }
@@ -409,9 +396,15 @@ const AppContent: React.FC = () => {
             <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
 
             <Suspense fallback={<Loader />}>
-                {!isAuthenticated || !user ? (
+                {!isAuthenticated && rememberedPlayer ? (
+                    <PinEntryScreen player={rememberedPlayer} onSwitchUser={clearRememberedPlayer} companyDetails={companyDetails} />
+                ) : !isAuthenticated || !user ? (
                     <>
-                        {renderPublicContent()}
+                         {showFrontPage ? (
+                            <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} />
+                        ) : (
+                            <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />
+                        )}
                         <PublicPageFloatingIcons 
                             onHelpClick={() => setShowHelp(true)} 
                             onCreatorClick={() => setShowCreatorPopup(true)} 

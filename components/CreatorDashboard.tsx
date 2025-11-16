@@ -1,17 +1,18 @@
 
 
 
+
 import React, { useState, useEffect, useContext } from 'react';
 import type { CreatorDetails } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { ImageUpload } from './ImageUpload';
-// FIX: Add CircleStackIcon to imports
-import { UserCircleIcon, CodeBracketIcon, ShieldCheckIcon, InformationCircleIcon, CircleStackIcon } from './icons/Icons';
+import { UserCircleIcon, CodeBracketIcon, ShieldCheckIcon, InformationCircleIcon, CircleStackIcon, DocumentIcon } from './icons/Icons';
 import { DataContext, DataContextType } from '../data/DataContext';
 import { SystemScanner } from './SystemScanner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SetupGuideTab } from './SetupGuideTab';
 
 const firebaseRulesContent = `
 rules_version = '2';
@@ -274,13 +275,20 @@ export const CreatorDashboard: React.FC<
         { id: 'monitor', label: 'System Monitor', icon: <CodeBracketIcon className="w-5 h-5"/> },
         { id: 'data', label: 'Raw Data Editor', icon: <CircleStackIcon className="w-5 h-5"/> },
         { id: 'rules', label: 'Firebase Rules', icon: <ShieldCheckIcon className="w-5 h-5"/> },
+        { id: 'setup', label: 'Setup Guide', icon: <DocumentIcon className="w-5 h-5"/> },
     ];
     
      useEffect(() => {
         if(setHelpTopic) {
-            const helpTopic = activeTab === 'monitor' ? 'creator-dashboard-monitor' :
-                              activeTab === 'data' ? 'creator-dashboard-data' : 'admin-dashboard-api-setup'; // Placeholder
-            setHelpTopic(helpTopic);
+            let topic;
+            switch(activeTab) {
+                case 'monitor': topic = 'creator-dashboard-monitor'; break;
+                case 'data': topic = 'creator-dashboard-data'; break;
+                case 'rules': topic = 'firestore-rules-explained'; break;
+                case 'setup': topic = 'creator-dashboard-setup'; break;
+                default: topic = '';
+            }
+            setHelpTopic(topic);
         }
     }, [activeTab, setHelpTopic]);
 
@@ -309,6 +317,7 @@ export const CreatorDashboard: React.FC<
                         {activeTab === 'monitor' && <SystemScanner />}
                         {activeTab === 'data' && <RawDataEditor />}
                         {activeTab === 'rules' && <FirebaseRulesTab setShowHelp={setShowHelp} setHelpTopic={setHelpTopic} />}
+                        {activeTab === 'setup' && <SetupGuideTab />}
                     </div>
                 </div>
 

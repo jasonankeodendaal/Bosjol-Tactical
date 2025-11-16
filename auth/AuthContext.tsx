@@ -16,6 +16,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | Player | Admin | null>(null);
     const [loading, setLoading] = useState(true);
     const [helpTopic, setHelpTopic] = useState('front-page');
+    const [rememberedPlayerId, setRememberedPlayerId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const storedId = localStorage.getItem('rememberedPlayerId');
+        if (storedId) {
+            setRememberedPlayerId(storedId);
+        }
+    }, []);
+
 
     useEffect(() => {
         if (!USE_FIREBASE || !auth || !db) {
@@ -74,7 +83,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return () => unsubscribe();
     }, []);
 
-    const login = async (username: string, password: string): Promise<boolean> => {
+    const login = async (username: string, password: string, rememberMe: boolean = false): Promise<boolean> => {
         const cleanUsername = username.trim();
         const cleanPassword = password.trim();
         
@@ -121,8 +130,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     const authUID = userCredential.user?.uid;
 
                     if (authUID) {
+                        const updatedPlayerData = { ...playerData, activeAuthUID: authUID };
                         await db.collection('players').doc(playerData.id).update({ activeAuthUID: authUID });
-                        setUser({ ...playerData, activeAuthUID: authUID });
+                        setUser(updatedPlayerData);
+                        if (rememberMe) {
+                            localStorage.setItem('rememberedPlayerId', playerData.id);
+                            setRememberedPlayerId(playerData.id);
+                        }
                     } else {
                         throw new Error("Failed to get UID from anonymous session.");
                     }
@@ -139,6 +153,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             );
             if (player) {
                 setUser(player);
+                 if (rememberMe) {
+                    localStorage.setItem('rememberedPlayerId', player.id);
+                    setRememberedPlayerId(player.id);
+                }
                 return true;
             }
             return false;
@@ -151,7 +169,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // This will sign out any logged-in Firebase user, regardless of whether they are anonymous or email/password.
             await auth.signOut();
         }
+        localStorage.removeItem('rememberedPlayerId');
+        setRememberedPlayerId(null);
         setUser(null);
+    };
+
+    const clearRememberedPlayer = () => {
+        localStorage.removeItem('rememberedPlayerId');
+        setRememberedPlayerId(null);
     };
 
     const updateUser = (updatedUser: User | Player | Admin) => {
@@ -163,7 +188,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, updateUser, helpTopic, setHelpTopic }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, updateUser, helpTopic, setHelpTopic, rememberedPlayerId, clearRememberedPlayer }}>
             {children}
         </AuthContext.Provider>
     );

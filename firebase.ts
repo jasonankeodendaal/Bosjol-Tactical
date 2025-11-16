@@ -1,7 +1,6 @@
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
-import 'firebase/compat/storage';
 
 // Vite exposes environment variables on `import.meta.env`.
 // These variables are replaced at build time. They MUST be prefixed with `VITE_`
@@ -58,57 +57,5 @@ try {
 
 export const auth = app ? firebase.auth() : null;
 export const db = app ? firebase.firestore() : null;
-export const storage = app ? firebase.storage() : null;
-
-export const uploadFile = (
-    file: Blob,
-    originalName: string,
-    path: string = 'uploads',
-    callbacks?: {
-        onProgress?: (snapshot: firebase.storage.UploadTaskSnapshot) => void;
-        setUploadTask?: (task: firebase.storage.UploadTask) => void;
-    }
-): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        if (!storage) {
-            return reject(new Error("Firebase Storage is not initialized."));
-        }
-        const fileExtension = originalName.split('.').pop() || 'bin';
-        const randomString = Math.random().toString(36).substring(2);
-        const fileName = `${Date.now()}-${randomString}.${fileExtension}`;
-        
-        const storageRef = storage.ref(`${path}/${fileName}`);
-        
-        const metadata = {
-            contentType: file.type,
-        };
-        
-        const uploadTask = storageRef.put(file, metadata);
-
-        if (callbacks?.setUploadTask) {
-            callbacks.setUploadTask(uploadTask);
-        }
-
-        uploadTask.on('state_changed',
-            (snapshot) => {
-                if (callbacks?.onProgress) {
-                    callbacks.onProgress(snapshot);
-                }
-            },
-            (error) => {
-                 // Reject with the original error object for better handling
-                 reject(error);
-            },
-            async () => {
-                try {
-                    const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-                    resolve(downloadURL);
-                } catch (error) {
-                    reject(error);
-                }
-            }
-        );
-    });
-};
 
 export { firebase };

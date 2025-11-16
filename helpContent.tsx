@@ -426,6 +426,28 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             }
         ]
     },
+    'creator-dashboard-setup': {
+        title: "Creator: Setup Guide",
+        description: "This tab provides a comprehensive, step-by-step guide to setting up the Bosjol Tactical Dashboard from scratch. It's designed to be a single source of truth for a full installation.",
+        sections: [
+            {
+                heading: "What This Guide Covers",
+                content: (
+                    <ul className="list-disc list-inside space-y-1">
+                        <li><strong>Prerequisites:</strong> Software you need to have installed first.</li>
+                        <li><strong>Firebase Setup:</strong> How to create and configure a new Firebase project, which acts as the backend database and storage.</li>
+                        <li><strong>Local Project Setup:</strong> How to download the code and connect it to your new Firebase project.</li>
+                        <li><strong>Security & Users:</strong> How to apply the necessary security rules and create the initial Admin/Creator user accounts.</li>
+                        <li><strong>Running & Seeding:</strong> How to start the application for the first time and let it automatically populate the database with initial data.</li>
+                    </ul>
+                )
+            },
+            {
+                heading: "Using the Guide",
+                content: "Each step provides clear instructions and code snippets that you can copy and paste directly into your terminal or configuration files. Follow the steps in order to ensure a smooth setup process."
+            }
+        ]
+    },
     // Page-specific Topics
     'admin-player-profile': {
         title: "Admin: Manage Player Profile",
@@ -493,7 +515,7 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
                     <ul className="list-disc list-inside space-y-2">
                         <li><strong>Default Deny:</strong> The rules start by denying all access to everyone. Permissions are then explicitly granted on a case-by-case basis. This is a secure 'whitelist' approach.</li>
                         <li><strong>Admin / Creator (Authenticated):</strong> These users are logged in via Firebase Authentication with their specific emails. They have broad write permissions to manage the application.</li>
-                        <li><strong>Public / Player (Unauthenticated):</strong> From Firestore's perspective, players using the Player Code/PIN login are 'unauthenticated' because they do not have a Firebase Auth account. Therefore, any data they need to see must be publicly readable. Crucially, they have **NO write access** to anything.</li>
+                        <li><strong>Public / Player (Unauthenticated):</strong> From Firestore's perspective, players using the Player Code/PIN login are 'unauthenticated' because they do not have a Firebase Auth account. Therefore, any data they need to see must be publicly readable. Crucially, they have <strong>NO write access</strong> to anything.</li>
                     </ul>
                 )
             },

@@ -102,11 +102,30 @@ export const ApiSetupTab: React.FC<ApiSetupTabProps> = ({ creatorDetails }) => {
     return (
         <DashboardCard title="External API Server Setup" icon={<CodeBracketIcon className="w-6 h-6" />}>
             <div className="p-6 space-y-6">
-                <div className="bg-amber-900/40 border border-amber-700 text-amber-200 p-4 rounded-lg">
-                    <h4 className="font-bold text-lg flex items-center gap-2"><InformationCircleIcon className="w-5 h-5"/>Why Set This Up?</h4>
-                    <p className="text-sm mt-1">
-                        By default, this dashboard uses Firebase Storage for file uploads, which is reliable but has limitations and costs. For advanced users who want full control over their data, a self-hosted API server is the solution. It completely bypasses Firebase's 1MB document size limit, allowing you to upload large videos, audio, and high-res images without errors. This guide provides a simple Node.js Express server to handle these uploads.
+                <div>
+                    <h3 className="text-xl font-bold text-red-400 mb-2">The Concept: Your PC as a Private Cloud</h3>
+                    <p className="text-gray-300 mb-3">
+                        Have you ever wanted to use a local folder on a dedicated, always-on PC as your global storage for all uploads? This guide shows you exactly how to achieve that.
                     </p>
+                    <div className="bg-amber-900/40 border border-amber-700 text-amber-200 p-4 rounded-lg space-y-4">
+                        <div>
+                            <h4 className="font-bold text-lg flex items-center gap-2"><InformationCircleIcon className="w-5 h-5"/>How It Works (In Simple Terms)</h4>
+                            <p className="text-sm mt-1">
+                                Web browsers can't directly access local computer folders for security reasons. Instead, we turn your dedicated PC into a secure, private server that the dashboard can talk to.
+                            </p>
+                            <ol className="list-decimal list-inside text-sm mt-3 space-y-2 pl-2">
+                                <li><strong>The PC Becomes a Server:</strong> You'll run a small application (provided in this guide) on your PC. This application is the *only* thing that can read and write to your chosen local folder (e.g., <code className="text-sm bg-zinc-700 p-1 rounded">C:\bosjol-uploads</code>).</li>
+                                <li><strong>The Dashboard Communicates with Your Server:</strong> When a user uploads a file, the dashboard sends it securely over the internet to your server application. Your server then saves the file into your local folder. To display a file, the dashboard asks your server for it.</li>
+                                <li><strong>Making It Global with a Tunnel:</strong> We use a free and secure service called Cloudflare Tunnels. It creates a public web address that safely "tunnels" into your PC, allowing the dashboard to find your server from anywhere in the world without complex network setup.</li>
+                            </ol>
+                        </div>
+                        <div>
+                             <h4 className="font-bold text-lg flex items-center gap-2">Why Do This?</h4>
+                              <p className="text-sm mt-1">
+                                By default, the dashboard stores files as text inside the database, which has a 1MB size limit. This self-hosted server setup completely <span className="font-bold">bypasses that limit</span>, allowing you to upload large videos, high-resolution images, and long audio files while keeping the files physically stored on your own hardware.
+                            </p>
+                        </div>
+                    </div>
                 </div>
                 
                 <div>

@@ -1,8 +1,7 @@
 /** @jsxImportSource react */
 import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloudIcon, CheckCircleIcon, XCircleIcon } from './icons/Icons';
-import { uploadFile, firebase } from '../firebase';
+import { UploadCloudIcon, CheckCircleIcon, XCircleIcon, CogIcon } from './icons/Icons';
 import { Button } from './Button';
 
 interface FileUploadProps {
@@ -23,21 +22,85 @@ const formatBytes = (bytes: number, decimals = 2) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
+const compressAndEncode = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            if (!event.target?.result) {
+                return reject(new Error("FileReader failed to read file."));
+            }
+            const img = new Image();
+            img.src = event.target.result as string;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    return reject(new Error('Could not get canvas context'));
+                }
+
+                let { width, height } = img;
+                const MAX_DIMENSION = 1280; // Resize large images to a max of 1280px on one side
+
+                if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+                    if (width > height) {
+                        height = Math.round((height * MAX_DIMENSION) / width);
+                        width = MAX_DIMENSION;
+                    } else {
+                        width = Math.round((width * MAX_DIMENSION) / height);
+                        height = MAX_DIMENSION;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+
+                let quality = 0.9;
+                const FIRESTORE_LIMIT_BYTES = 950 * 1024; // ~950KB to be safe for Firestore doc limit
+
+                // Using a loop instead of recursion to avoid stack depth issues.
+                for (let i = 0; i < 10; i++) {
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    const sizeInBytes = Math.round((dataUrl.length * 3) / 4);
+                    
+                    if (sizeInBytes <= FIRESTORE_LIMIT_BYTES) {
+                        return resolve(dataUrl);
+                    }
+                    
+                    quality -= 0.1;
+                    if (quality < 0.1) {
+                        break; // Stop if quality gets too low
+                    }
+                }
+                
+                // Final check
+                const finalDataUrl = canvas.toDataURL('image/jpeg', quality > 0 ? quality : 0.1);
+                const finalSizeInBytes = Math.round((finalDataUrl.length * 3) / 4);
+                if (finalSizeInBytes > FIRESTORE_LIMIT_BYTES) {
+                     reject(new Error(`Image is too large to compress under 1MB. Size after max compression: ${formatBytes(finalSizeInBytes)}`));
+                } else {
+                    resolve(finalDataUrl);
+                }
+            };
+            img.onerror = (error) => reject(error);
+        };
+        reader.onerror = (error) => reject(error);
+    });
+};
+
+
 export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, apiServerUrl }) => {
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [message, setMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadTask, setUploadTask] = useState<firebase.storage.UploadTask | null>(null);
-  const [progressData, setProgressData] = useState({ transferred: 0, total: 0 });
 
   const performUpload = async (fileToUpload: File): Promise<string> => {
       setStatus('uploading');
-      setMessage(`Uploading ${fileToUpload.name}...`);
-      setProgressData({ transferred: 0, total: fileToUpload.size });
-      setUploadTask(null);
+      setMessage(`Processing ${fileToUpload.name}...`);
 
       if (apiServerUrl) {
-          setMessage(`Uploading ${fileToUpload.name}... (Progress not available for API server)`);
+          setMessage(`Uploading ${fileToUpload.name}...`);
           const formData = new FormData();
           formData.append('file', fileToUpload, fileToUpload.name);
           const response = await fetch(`${apiServerUrl}/upload`, {
@@ -51,36 +114,37 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
           const { url } = await response.json();
           return url;
       } else {
-          return uploadFile(fileToUpload, fileToUpload.name, 'uploads', {
-              onProgress: (snapshot) => {
-                  setProgressData({
-                      transferred: snapshot.bytesTransferred,
-                      total: snapshot.totalBytes,
-                  });
-              },
-              setUploadTask: setUploadTask,
-          });
+          // New logic for Firestore base64 upload
+          if (fileToUpload.type.startsWith('image/')) {
+              try {
+                  const dataUrl = await compressAndEncode(fileToUpload);
+                  return dataUrl;
+              } catch (error) {
+                  throw new Error(`Failed to compress image: ${(error as Error).message}`);
+              }
+          } else {
+              return new Promise((resolve, reject) => {
+                  const FIRESTORE_LIMIT_BYTES = 950 * 1024;
+                  if (fileToUpload.size > FIRESTORE_LIMIT_BYTES) {
+                      return reject(new Error(`File is too large (${formatBytes(fileToUpload.size)}). Only images can be compressed. Max size for non-image files is ~950KB.`));
+                  }
+                  const reader = new FileReader();
+                  reader.readAsDataURL(fileToUpload);
+                  reader.onload = () => resolve(reader.result as string);
+                  reader.onerror = (error) => reject(error);
+              });
+          }
       }
   };
+
 
   const resetState = (delay: number) => {
     setTimeout(() => {
         setStatus('idle');
         setMessage('');
-        setProgressData({ transferred: 0, total: 0 });
         if (fileInputRef.current) fileInputRef.current.value = "";
     }, delay);
   }
-
-  const handleCancel = () => {
-    if (uploadTask) {
-        uploadTask.cancel();
-    } else {
-        setStatus('idle');
-        setMessage('');
-        setProgressData({ transferred: 0, total: 0 });
-    }
-  };
 
   const handleFilesChange = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -95,16 +159,10 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
             results.push(url);
         } catch (err: any) {
             console.error(`Failed to process file ${file.name}:`, err);
-            // Use more robust error code checking for cancellation
-            if (err.code === 'storage/canceled') {
-                setStatus('idle');
-                setMessage('');
-            } else {
-                setStatus('error');
-                setMessage(err.message);
-                resetState(3000);
-            }
-            return; // Stop processing further files on error/cancel
+            setStatus('error');
+            setMessage(err.message);
+            resetState(3000);
+            return; // Stop processing further files on error
         }
     }
 
@@ -140,26 +198,11 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
   const renderContent = () => {
     switch(status) {
         case 'uploading':
-            const percentage = progressData.total > 0 ? Math.round((progressData.transferred / progressData.total) * 100) : (apiServerUrl ? 50 : 0);
             return (
                 <div className="w-full flex flex-col items-center justify-center p-4 text-center">
+                    <CogIcon className="w-8 h-8 text-gray-400 animate-spin mb-3" />
                     <p className="text-sm font-semibold text-gray-200 mb-2 truncate max-w-full px-2">{message}</p>
-                    {progressData.total > 0 && (
-                        <>
-                            <div className="w-full bg-zinc-700 rounded-full h-2.5">
-                                <motion.div
-                                    className="bg-red-500 h-2.5 rounded-full"
-                                    animate={{ width: `${percentage}%` }}
-                                    transition={{ duration: 0.3, ease: "linear" }}
-                                />
-                            </div>
-                            <div className="w-full flex justify-between items-center text-xs text-gray-400 mt-2">
-                                <span>{formatBytes(progressData.transferred)} / {formatBytes(progressData.total)}</span>
-                                <span>{percentage}%</span>
-                            </div>
-                        </>
-                    )}
-                     <Button variant="secondary" size="sm" className="mt-4" onClick={handleCancel}>Cancel</Button>
+                    <p className="text-xs text-gray-500">Please wait, this may take a moment...</p>
                 </div>
             );
         case 'success':

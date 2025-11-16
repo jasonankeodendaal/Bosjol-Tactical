@@ -100,12 +100,14 @@ export interface Admin extends User {
 export interface AuthContextType {
   user: User | Player | Admin | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string, rememberMe?: boolean) => Promise<boolean>;
   logout: () => void;
   updateUser: (user: User | Player | Admin) => void; 
   helpTopic: string;
   // FIX: Use the imported Dispatch and SetStateAction types, removing the need for the React namespace.
   setHelpTopic: Dispatch<SetStateAction<string>>;
+  rememberedPlayerId: string | null;
+  clearRememberedPlayer: () => void;
 }
 
 export type EventType = 'Training' | 'Mission' | 'Briefing' | 'Maintenance';

@@ -20,6 +20,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const { login } = auth;
   
@@ -37,7 +38,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
       setIsLoading(true);
       setError(null);
 
-      const success = await login(identifier.trim(), password.trim());
+      const success = await login(identifier.trim(), password.trim(), rememberMe);
       if (!success) {
           setError("Invalid credentials. Please check your details and try again.");
       }
@@ -115,6 +116,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
                 required
                 autoComplete="current-password"
             />
+            
+            <div className="flex items-center justify-start pt-2">
+              <input
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"
+              />
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-300">
+                Remember this device
+              </label>
+            </div>
 
             {error && (
                 <motion.div 

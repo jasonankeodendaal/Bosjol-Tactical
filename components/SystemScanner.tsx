@@ -116,7 +116,8 @@ const HealthScoreHistoryChart: React.FC<{ history: { time: number; score: number
 };
 
 const StatusDistributionChart: React.FC<{ data: Record<CheckStatus, number> }> = ({ data }) => {
-    const total = Object.values(data).reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
+    // FIX: Ensure 'val' is treated as a number in the reduce function to prevent type errors.
+    const total = Object.values(data).reduce((sum: number, val) => sum + (typeof val === 'number' ? val : 0), 0);
     if (total === 0) return null;
     
     const radius = 40;
@@ -290,7 +291,8 @@ export const SystemScanner: React.FC = () => {
         critical: { text: 'Critical Errors Detected', color: 'text-red-400', bgColor: 'bg-red-500' },
     };
     const currentStatus = statusInfo[overallStatus];
-    const allChecks = Object.values(results).flatMap(cat => cat.checks);
+    // FIX: Add type assertion for 'cat' to resolve 'unknown' type error when accessing 'checks'.
+    const allChecks = Object.values(results).flatMap(cat => (cat as ResultCategory).checks);
     const checkCounts = {
         total: allChecks.length,
         pass: allChecks.filter(c => c.status === 'pass').length,
@@ -341,7 +343,8 @@ export const SystemScanner: React.FC = () => {
                     <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                         {
                         Object.entries(results).map(([key, category]) => {
-                            const cat = category;
+                            // FIX: Add type assertion for 'category' to resolve 'unknown' type errors on subsequent property access.
+                            const cat = category as ResultCategory;
                             const hasFail = cat.checks.some(c => c.status === 'fail');
                             const hasWarn = cat.checks.some(c => c.status === 'warn');
                             const categoryStatus: CheckStatus = hasFail ? 'fail' : hasWarn ? 'warn' : 'pass';

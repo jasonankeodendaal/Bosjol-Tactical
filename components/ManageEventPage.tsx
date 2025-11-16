@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
-// FIX: Add EventAttendee to the type imports to resolve error on line 76.
 import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
-// FIX: Add CurrencyDollarIcon and CogIcon to the icon imports to resolve errors.
 import { ArrowLeftIcon, CalendarIcon, UserIcon, TrashIcon, CheckCircleIcon, CreditCardIcon, PlusIcon, ChartBarIcon, ExclamationTriangleIcon, TrophyIcon, MinusIcon, CurrencyDollarIcon, CogIcon } from './icons/Icons';
 import { MOCK_EVENT_THEMES, EVENT_STATUSES, EVENT_TYPES } from '../constants';
 import { BadgePill } from './BadgePill';

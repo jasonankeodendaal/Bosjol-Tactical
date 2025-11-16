@@ -1,4 +1,5 @@
 
+
 import React, { useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { DataContext, IS_LIVE_DATA, DataContextType } from '../data/DataContext';
 import { Button } from './Button';
@@ -192,9 +193,8 @@ export const SystemScanner: React.FC = () => {
     }, [runChecks]);
 
     const { healthScore, errorCount, warningCount, noticeCount } = useMemo(() => {
-        // FIX: Replaced array flattening logic to be more robust. The previous method using reduce
-        // could cause type errors in some TypeScript environments. This approach is safer.
-        const all: CheckResult[] = ([] as CheckResult[]).concat(...Object.values(results));
+        // FIX: Flatten the array of check result arrays using .flat() for robustness and readability.
+        const all: CheckResult[] = Object.values(results).flat();
         if (all.length === 0) return { healthScore: 0, errorCount: 0, warningCount: 0, noticeCount: 0 };
 
         const passes = all.filter(c => c.status === 'pass').length;

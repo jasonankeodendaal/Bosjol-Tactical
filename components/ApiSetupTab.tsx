@@ -3,7 +3,6 @@
 
 import React from 'react';
 import { DashboardCard } from './DashboardCard';
-// FIX: Add CodeBracketIcon to imports
 import { CodeBracketIcon, InformationCircleIcon } from './icons/Icons';
 import type { CreatorDetails } from '../types';
 import { Button } from './Button';
@@ -120,7 +119,6 @@ const packageJsonCode = `
 }
 `;
 
-// FIX: Define the ApiSetupTabProps interface.
 interface ApiSetupTabProps {
     creatorDetails: CreatorDetails;
 }

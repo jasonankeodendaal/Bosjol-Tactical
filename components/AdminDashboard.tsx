@@ -267,8 +267,10 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
                     <div className="max-h-[60vh] overflow-y-auto pr-2">
                         <ul className="space-y-2">
                             {filteredPlayers.map(p => {
-                                // FIX: Defensively find rank to prevent crash if p.rank is null/undefined
-                                const rank = ranks.find(r => r.id === p.rank?.id) || p.rank || UNRANKED_RANK;
+                                // Robustly find rank to prevent crashes from malformed player data.
+                                // Handles if p.rank is an object, a string ID, null, or undefined.
+                                const rankId = typeof p.rank === 'string' ? p.rank : p.rank?.id;
+                                const rank = ranks.find(r => r.id === rankId) || UNRANKED_RANK;
                                 return (
                                     <PlayerListItem key={p.id} player={p} rank={rank} onViewPlayer={onViewPlayer} />
                                 );

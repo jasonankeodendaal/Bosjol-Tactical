@@ -55,19 +55,31 @@ const compressVideo = (file: File, onProgress: (progress: number) => void): Prom
         const video = document.createElement('video');
         video.muted = true;
         video.style.display = 'none';
+        let compressionTimeout: number | undefined;
 
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (event) => {
-            if (!event.target?.result) {
-                document.body.removeChild(video);
-                return reject(new Error("Couldn't read video file."));
+        const cleanup = () => {
+            if (compressionTimeout) clearTimeout(compressionTimeout);
+            video.remove(); // Removes from DOM if attached
+            // Revoke object URL to free memory
+            if (video.src.startsWith('blob:')) {
+                URL.revokeObjectURL(video.src);
             }
-            video.src = event.target.result as string;
+            // Remove listeners
+            video.onloadedmetadata = null;
+            video.onerror = null;
+            video.onplay = null;
+            video.onended = null;
         };
-        reader.onerror = (err) => {
-            document.body.removeChild(video);
-            reject(err);
+
+        // Set a timeout for the whole operation
+        compressionTimeout = window.setTimeout(() => {
+            cleanup();
+            reject(new Error("Video optimization timed out. The file may be corrupt or too large."));
+        }, 60000); // 60-second timeout
+
+        video.onerror = () => {
+            cleanup();
+            reject(new Error("Failed to load video file. It may be corrupt or in an unsupported format."));
         };
         
         video.onloadedmetadata = () => {
@@ -92,43 +104,39 @@ const compressVideo = (file: File, onProgress: (progress: number) => void): Prom
             canvas.width = videoWidth;
             canvas.height = videoHeight;
             const ctx = canvas.getContext('2d');
-            if (!ctx) return reject(new Error('Could not get canvas context'));
+            if (!ctx) {
+                cleanup();
+                return reject(new Error('Could not get canvas context'));
+            }
             
             const recordedChunks: Blob[] = [];
-            const canvasStream = canvas.captureStream(30); // 30 fps
+            const canvasStream = canvas.captureStream(30);
             
             if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported('video/webm')) {
-                 document.body.removeChild(video);
-                 return reject(new Error('Video recording (MediaRecorder) is not supported in this browser.'));
+                cleanup();
+                return reject(new Error('Video recording (MediaRecorder) is not supported in this browser.'));
             }
             
             const mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9') ? 'video/webm; codecs=vp9' : 'video/webm';
             
-            const mediaRecorder = new MediaRecorder(canvasStream, {
-                mimeType,
-                videoBitsPerSecond: 2 * 1024 * 1024 // 2 Mbps bitrate
-            });
+            const mediaRecorder = new MediaRecorder(canvasStream, { mimeType, videoBitsPerSecond: 2 * 1024 * 1024 });
 
             mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) {
-                    recordedChunks.push(e.data);
-                }
+                if (e.data.size > 0) recordedChunks.push(e.data);
             };
 
             mediaRecorder.onstop = () => {
-                document.body.removeChild(video);
+                cleanup();
                 resolve(new Blob(recordedChunks, { type: 'video/webm' }));
             };
 
             mediaRecorder.onerror = (e) => {
-                 document.body.removeChild(video);
-                 reject(e);
+                cleanup();
+                reject(e);
             }
 
             const drawFrame = () => {
-                if (video.paused || video.ended) {
-                    return;
-                }
+                if (video.paused || video.ended) return;
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 onProgress(Math.min(100, (video.currentTime / video.duration) * 100));
                 requestAnimationFrame(drawFrame);
@@ -140,16 +148,20 @@ const compressVideo = (file: File, onProgress: (progress: number) => void): Prom
             };
             
             video.onended = () => {
-                mediaRecorder.stop();
+                if (mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
                 onProgress(100);
             };
 
             video.play().catch(e => {
-                document.body.removeChild(video);
+                cleanup();
                 reject(new Error(`Video playback failed: ${e.message}. Compression cannot start.`));
             });
         };
         
+        // Use Object URL instead of Data URL for better performance with large files
+        video.src = URL.createObjectURL(file);
         document.body.appendChild(video);
     });
 };

@@ -106,6 +106,14 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
                         <h3 className="font-bold text-lg text-white mb-1">Location</h3>
                         <p>{event.location}</p>
                     </div>
+                     {event.audioBriefingUrl && (
+                        <div>
+                            <h3 className="font-bold text-lg text-white mb-2">Audio Briefing</h3>
+                            <audio controls src={event.audioBriefingUrl}>
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+                    )}
                     <div>
                         <h3 className="font-bold text-lg text-white mb-1">Briefing</h3>
                         <p>{event.description}</p>

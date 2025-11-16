@@ -168,6 +168,7 @@ export interface GameEvent {
   absentPlayers: string[];
   status: EventStatus;
   imageUrl?: string;
+  audioBriefingUrl?: string;
   gameFee: number;
   gearForRent: InventoryItem[];
   teams?: {

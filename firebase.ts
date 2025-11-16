@@ -61,10 +61,13 @@ export const db = app ? firebase.firestore() : null;
 export const storage = app ? firebase.storage() : null;
 
 export const uploadFile = (
-    file: Blob, 
-    originalName: string, 
+    file: Blob,
+    originalName: string,
     path: string = 'uploads',
-    onProgress?: (percentage: number) => void
+    callbacks?: {
+        onProgress?: (snapshot: firebase.storage.UploadTaskSnapshot) => void;
+        setUploadTask?: (task: firebase.storage.UploadTask) => void;
+    }
 ): Promise<string> => {
     return new Promise((resolve, reject) => {
         if (!storage) {
@@ -77,16 +80,23 @@ export const uploadFile = (
         const storageRef = storage.ref(`${path}/${fileName}`);
         const uploadTask = storageRef.put(file);
 
-        uploadTask.on('state_changed', 
+        if (callbacks?.setUploadTask) {
+            callbacks.setUploadTask(uploadTask);
+        }
+
+        uploadTask.on('state_changed',
             (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                if (onProgress) {
-                    onProgress(progress);
+                if (callbacks?.onProgress) {
+                    callbacks.onProgress(snapshot);
                 }
-            }, 
+            },
             (error) => {
-                reject(error);
-            }, 
+                 if (error.code === 'storage/canceled') {
+                    reject(new Error('Upload canceled by user.'));
+                } else {
+                    reject(error);
+                }
+            },
             async () => {
                 try {
                     const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();

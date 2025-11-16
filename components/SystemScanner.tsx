@@ -121,7 +121,7 @@ const HealthScoreHistoryChart: React.FC<{ history: { time: number; score: number
 };
 
 const StatusDistributionChart: React.FC<{ data: Record<CheckStatus, number> }> = ({ data }) => {
-    // FIX: Explicitly type accumulator and value in reduce to prevent 'unknown' type error.
+    // FIX: Explicitly typed accumulator and value in reduce to prevent 'unknown' type error.
     const total = Object.values(data).reduce((sum: number, val: number) => sum + val, 0);
     if (total === 0) return null;
     
@@ -302,6 +302,9 @@ export const SystemScanner: React.FC = () => {
         fail: allChecks.filter(c => c.status === 'fail').length,
         info: allChecks.filter(c => c.status === 'info').length,
     };
+    // FIX: Exclude the 'total' property from the data passed to the chart
+    // to prevent it from being double-counted in the chart's own total calculation.
+    const { total, ...statusCounts } = checkCounts;
 
     return (
         <DashboardCard title="Live System Monitor" icon={<CodeBracketIcon className="w-6 h-6" />}>
@@ -334,7 +337,7 @@ export const SystemScanner: React.FC = () => {
                     </div>
                      <div className="bg-zinc-800/50 p-3 rounded-lg border border-zinc-700/50">
                         <h5 className="font-semibold text-center text-gray-300 mb-2">Status Distribution</h5>
-                        <StatusDistributionChart data={checkCounts} />
+                        <StatusDistributionChart data={statusCounts} />
                     </div>
                  </div>
                 

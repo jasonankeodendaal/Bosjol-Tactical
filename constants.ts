@@ -139,6 +139,7 @@ const initialEvents: GameEvent[] = [
     absentPlayers: [],
     status: 'Upcoming',
     imageUrl: 'https://images.pexels.com/photos/163822/soldier-airsoft-gun-weapon-163822.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    audioBriefingUrl: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_73b9e4a841.mp3',
     theme: 'Modern Warfare',
     rules: 'Standard ROE. Suppressors recommended. NVG is mandatory. One medic per squad.',
     participationXp: 50,

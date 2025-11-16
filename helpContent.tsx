@@ -364,4 +364,18 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
                     <ul className="list-disc list-inside space-y-1">
                         <li><strong>Manual Scanning:</strong> All system checks are now triggered manually. Use the 'Scan' buttons to check the entire system, a specific category, or an individual item.</li>
                         <li><strong>Live Activity Log:</strong> Displays a feed of scan activities and any errors detected by your manual scans.</li>
-                        <li><strong>Overall Health:</strong> Shows a high-level status (Operational
+                        <li><strong>Overall Health:</strong> Shows a high-level status (Operational, Degraded, or Critical) based on the scan results.</li>
+                    </ul>
+                )
+            },
+            {
+                heading: "Raw Data Editor Tab",
+                content: "This provides direct, unfiltered access to the raw JSON data for any collection in the database. It is an extremely powerful but dangerous tool. Incorrectly formatted JSON or invalid data structures can break the application. Use with extreme caution."
+            },
+            {
+                heading: "Firebase Rules Tab",
+                content: "Displays the required Firestore and Storage security rules for the application to function correctly. These rules prevent unauthorized data access and manipulation (e.g., a player editing their own XP)."
+            }
+        ]
+    }
+};

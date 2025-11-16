@@ -1,142 +1,87 @@
-
 import React, { useState, useEffect, useContext } from 'react';
 import type { CreatorDetails } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { ImageUpload } from './ImageUpload';
-import { UserCircleIcon, CodeBracketIcon } from './icons/Icons';
+import { UserCircleIcon, CodeBracketIcon, ShieldCheckIcon } from './icons/Icons';
 import { DataContext } from '../data/DataContext';
 import { SystemScanner } from './SystemScanner';
 
-const firestoreRulesContent = `
+const firebaseRulesContent = `
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
   
     function isAdmin() {
-      // Allow access if the user is authenticated and their corresponding document in the 'admins' collection has the role 'admin'.
-      // Note: This rule assumes your admin user's UID in Firebase Auth matches the document ID in the 'admins' collection.
-      // If you are only using email/password for admin, you might need a different check, but this is a secure standard.
-      return request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
-
+    
     function isOwner(userId) {
-      // Check if the requesting user's ID matches the document ID they are trying to access.
       return request.auth.uid == userId;
     }
-    
-    function isAuthenticated() {
-      // Check if the user is signed in.
-      return request.auth != null;
-    }
 
-    // --- DEFAULT & ADMIN RULES ---
-
-    // Default deny all access unless explicitly allowed by a more specific rule below.
-    // Admins get universal read/write access to everything. This is a powerful override.
-    match /{document=**} {
-      allow read, write: if isAdmin();
-    }
-    
-    // --- PUBLIC & SEMI-PUBLIC RULES ---
-    
-    // Allow anyone (even unauthenticated users) to read settings needed for the login/front page.
-    // Only admins can change these settings.
     match /settings/{docId} {
-        allow read: if true;
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    match /(ranks|badges|...)/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    match /players/{playerId} {
+      allow get: if request.auth != null && (isOwner(playerId) || isAdmin());
+      allow list: if request.auth != null;
+      allow update: if request.auth != null && (isOwner(playerId) || isAdmin());
+      allow create, delete: if isAdmin();
+    }
+    
+    match /(events|vouchers|...)/{docId} {
+        allow read: if request.auth != null;
         allow write: if isAdmin();
     }
-    match /socialLinks/{docId} {
-        allow read: if true;
-        allow write: if isAdmin();
-    }
-    match /carouselMedia/{docId} {
-        allow read: if true;
-        allow write: if isAdmin();
-    }
-    
-    // --- PLAYER-SPECIFIC RULES ---
-    
-    match /players/{userId} {
-      // Any authenticated user (players, admins) can read any player's profile data (for leaderboards, etc.).
-      allow read: if isAuthenticated();
-      
-      // A player can only update their OWN document.
-      // CRITICAL: They are NOT allowed to update sensitive fields like stats, rank, role, xp, xpAdjustments, playerCode, badges, legendaryBadges, matchHistory, etc.
-      // This prevents players from cheating by modifying their own progression data.
-      allow update: if isOwner(userId) && 
-                    !(request.resource.data.diff(resource.data).affectedKeys()
-                      .hasAny(['stats', 'rank', 'role', 'xp', 'xpAdjustments', 'playerCode', 'badges', 'legendaryBadges', 'matchHistory']));
-    }
-    
-    // Any authenticated user can read event details. Only admins can create/update them.
-    match /events/{eventId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin(); // Includes create, update, delete
-    }
-    
-    // --- READ-ONLY FOR AUTHENTICATED USERS ---
-    // All authenticated players need to be able to read these collections for the dashboard to function.
-    // Only admins can modify them (covered by the `match /{document=**}` rule above).
-    match /ranks/{docId} { allow read: if isAuthenticated(); }
-    match /badges/{docId} { allow read: if isAuthenticated(); }
-    match /legendaryBadges/{docId} { allow read: if isAuthenticated(); }
-    match /gamificationSettings/{docId} { allow read: if isAuthenticated(); }
-    match /sponsors/{docId} { allow read: if isAuthenticated(); }
-    match /inventory/{docId} { allow read: if isAuthenticated(); }
-    match /suppliers/{docId} { allow read: if isAuthenticated(); }
-    match /locations/{docId} { allow read: if isAuthenticated(); }
-    match /raffles/{docId} { allow read: if isAuthenticated(); }
-    match /vouchers/{docId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    
-    // --- ADMIN-ONLY COLLECTIONS ---
-    // Transactions are admin-only for both read and write, as they contain financial data.
-    match /transactions/{docId} { 
-        allow read, write: if isAdmin(); 
-    }
-    
-    // --- SYSTEM HEALTH CHECK ---
-    // A special collection for the System Scanner to test Firestore connectivity.
-    // Allows any authenticated user to perform a temporary read/write test.
-    match /_health/{docId} {
-        allow read, write: if isAuthenticated();
+
+    match /_health/{testId} {
+      allow write, delete: if request.auth != null;
+      allow read: if request.auth != null;
     }
   }
 }
-`.trim();
+`;
 
+const FirebaseRulesTab: React.FC = () => {
+    const [copyStatus, setCopyStatus] = useState('Copy Rules');
 
-const FirebaseRulesCard: React.FC = () => {
-    const [copyStatus, setCopyStatus] = useState('Copy');
-    
     const handleCopy = () => {
-        navigator.clipboard.writeText(firestoreRulesContent).then(() => {
-            setCopyStatus('Copied!');
-            setTimeout(() => setCopyStatus('Copy'), 2000);
-        }, () => {
-            setCopyStatus('Failed!');
-            setTimeout(() => setCopyStatus('Copy'), 2000);
-        });
+        navigator.clipboard.writeText(firebaseRulesContent.trim());
+        setCopyStatus('Copied!');
+        setTimeout(() => setCopyStatus('Copy Rules'), 2000);
     };
 
     return (
-        <DashboardCard title="Firestore Security Rules" icon={<CodeBracketIcon className="w-6 h-6" />}>
-            <div className="p-4">
-                <p className="text-sm text-gray-400 mb-3">Copy these rules and paste them into your Firebase project's Firestore rules editor to secure your database.</p>
+        <DashboardCard title="Firestore Security Rules Reference" icon={<ShieldCheckIcon className="w-6 h-6" />}>
+            <div className="p-6 space-y-4">
+                <p className="text-sm text-gray-300">
+                    These are the recommended security rules for the Bosjol Tactical application. They ensure that players can only edit their own data, while admins have full control. You can copy these rules and paste them directly into your Firebase project's Firestore rules editor.
+                </p>
                 <div className="relative">
-                    <pre className="bg-zinc-900 p-3 rounded-lg border border-zinc-700 text-xs text-gray-300 overflow-auto h-64 font-mono">
-                        <code>{firestoreRulesContent}</code>
+                    <pre className="bg-zinc-900 p-4 rounded-lg border border-zinc-700 text-sm text-gray-200 overflow-x-auto font-mono max-h-96">
+                        <code>
+                            {firebaseRulesContent.trim()}
+                        </code>
                     </pre>
-                    <Button size="sm" variant="secondary" onClick={handleCopy} className="absolute top-2 right-2">
+                    <Button size="sm" variant="secondary" className="absolute top-3 right-3" onClick={handleCopy}>
                         {copyStatus}
                     </Button>
                 </div>
             </div>
         </DashboardCard>
     );
-}
+};
+
 
 export const CreatorDashboard: React.FC = () => {
     const dataContext = useContext(DataContext);
@@ -146,6 +91,7 @@ export const CreatorDashboard: React.FC = () => {
 
     const [formData, setFormData] = useState(creatorDetails);
     const [isSaving, setIsSaving] = useState(false);
+    const [activeTab, setActiveTab] = useState('monitor');
 
     useEffect(() => {
         setFormData(creatorDetails);
@@ -158,21 +104,44 @@ export const CreatorDashboard: React.FC = () => {
             alert("Creator details updated successfully!");
         } catch (error) {
             console.error("Failed to save creator details:", error);
-            // FIX: Replaced template literal with string concatenation to avoid potential parsing issues with some tools.
-            alert('An error occurred: ' + (error as Error).message);
+            alert(`An error occurred: ${(error as Error).message}`);
         } finally {
             setIsSaving(false);
         }
     };
 
     const isDirty = JSON.stringify(formData) !== JSON.stringify(creatorDetails);
+    
+    const tabs = [
+        { id: 'monitor', label: 'System Monitor', icon: <CodeBracketIcon className="w-5 h-5"/> },
+        { id: 'rules', label: 'Firebase Rules', icon: <ShieldCheckIcon className="w-5 h-5"/> },
+    ];
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Content: System Scanner */}
-                <div className="lg:col-span-2">
-                    <SystemScanner />
+                {/* Main Content Area with Tabs */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="flex border-b border-zinc-800">
+                        {tabs.map(tab => (
+                             <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`${
+                                    activeTab === tab.id
+                                        ? 'border-red-500 text-red-400'
+                                        : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'
+                                } flex items-center gap-2 whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors uppercase tracking-wider`}
+                            >
+                                {tab.icon}
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div>
+                        {activeTab === 'monitor' && <SystemScanner />}
+                        {activeTab === 'rules' && <FirebaseRulesTab />}
+                    </div>
                 </div>
 
                 {/* Sidebar: Creator Settings */}
@@ -200,8 +169,6 @@ export const CreatorDashboard: React.FC = () => {
                             </div>
                         </div>
                     </DashboardCard>
-                    
-                    <FirebaseRulesCard />
 
                     <DashboardCard title="App Source Code" icon={<CodeBracketIcon className="w-6 h-6" />}>
                         <div className="p-6">
@@ -215,8 +182,8 @@ export const CreatorDashboard: React.FC = () => {
                         </div>
                     </DashboardCard>
                     
-                    <div className="sticky top-24 z-20">
-                        <Button onClick={handleSave} disabled={!isDirty || isSaving} className="w-full py-3 text-lg shadow-lg">
+                    <div className="sticky top-24 z-10">
+                        <Button onClick={handleSave} disabled={!isDirty || isSaving} className="w-full py-3 text-lg">
                             {isSaving ? 'Saving...' : isDirty ? 'Save Creator Settings' : 'All Changes Saved'}
                         </Button>
                     </div>

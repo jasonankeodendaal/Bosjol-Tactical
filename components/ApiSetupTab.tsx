@@ -1,11 +1,13 @@
-
-
-
 import React from 'react';
 import { DashboardCard } from './DashboardCard';
+// FIX: Add CodeBracketIcon to imports
 import { CodeBracketIcon, InformationCircleIcon } from './icons/Icons';
 import { CreatorDetails } from '../types';
 import { Button } from './Button';
+
+interface ApiSetupTabProps {
+    creatorDetails: CreatorDetails;
+}
 
 const CodeBlock: React.FC<{ children: React.ReactNode, language?: string }> = ({ children, language = 'bash' }) => (
     <pre className={`bg-zinc-900 p-4 rounded-lg border border-zinc-700 text-sm text-gray-200 overflow-x-auto font-mono`}>
@@ -95,11 +97,6 @@ app.listen(PORT, () => {
     console.log(\`Static files served from: /uploads\`);
 });
 `;
-
-// FIX: Define ApiSetupTabProps to resolve TypeScript error.
-interface ApiSetupTabProps {
-    creatorDetails: CreatorDetails;
-}
 
 export const ApiSetupTab: React.FC<ApiSetupTabProps> = ({ creatorDetails }) => {
     return (

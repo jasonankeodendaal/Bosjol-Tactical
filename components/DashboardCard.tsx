@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 import React, { ReactNode } from 'react';
-import { motion, Variants } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface DashboardCardProps {
   title: string;
@@ -12,7 +12,6 @@ interface DashboardCardProps {
 }
 
 export const DashboardCard: React.FC<DashboardCardProps> = ({ title, icon, children, className = '', fullHeight = false, titleAddon }) => {
-  // FIX: Replaced cubic-bezier array with a string literal ("easeInOut") to fix framer-motion typing issue.
   const cardVariants = {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeInOut" } }

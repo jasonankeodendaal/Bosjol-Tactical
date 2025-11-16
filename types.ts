@@ -370,3 +370,18 @@ export interface ChatMessage {
   authUID: string;
   role?: 'player' | 'admin' | 'creator';
 }
+
+export interface PrivateChatConversation {
+    id: string; // comprised of two sorted player IDs
+    participants: string[];
+    lastMessage: {
+        text: string;
+        timestamp: any;
+    };
+    participantDetails: {
+        [playerId: string]: {
+            name: string;
+            avatarUrl: string;
+        }
+    };
+}

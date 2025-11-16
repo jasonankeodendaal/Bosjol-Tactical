@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { Transaction, Player, GameEvent, Location, CompanyDetails } from '../types';
@@ -269,7 +270,7 @@ export const FinanceTab: React.FC<{ transactions: Transaction[], players: Player
                                              <div className="flex justify-between items-center">
                                                 <p className="font-semibold text-white truncate text-sm">{t.description}</p>
                                                 <p className={`font-bold text-lg ${t.type === 'Expense' ? 'text-red-400' : 'text-green-400'}`}>
-                                                    {t.type === 'Expense' ? '-' : '+'} R{t.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                                                    {t.type === 'Expense' ? '-' : ''} R{t.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
                                                 </p>
                                              </div>
                                             <div className="flex justify-between items-center text-xs text-gray-400 mt-1">

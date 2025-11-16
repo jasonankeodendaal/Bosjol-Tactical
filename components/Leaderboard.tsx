@@ -4,10 +4,9 @@ import type { Player } from '../types';
 import { CrownIcon } from './icons/Icons';
 
 // RankedPlayerListItem Component
-const RankedPlayerListItem: React.FC<{ player: Player, rank: number, isCurrentUser?: boolean, variants: any }> = memo(({ player, rank, isCurrentUser, variants }) => {
+const RankedPlayerListItem: React.FC<{ player: Player, rank: number, isCurrentUser?: boolean }> = memo(({ player, rank, isCurrentUser }) => {
     return (
-        <motion.li
-            variants={variants}
+        <li
             className={`flex items-center p-3 rounded-lg transition-colors bg-zinc-800/40 border border-transparent ${isCurrentUser ? 'bg-red-500/20 !border-red-500/30' : 'hover:bg-zinc-800/80'}`}
         >
             <div className={`text-center w-10 font-bold text-xl ${rank <= 3 ? 'text-amber-400' : isCurrentUser ? 'text-red-400' : 'text-gray-400'}`}>{rank}</div>
@@ -20,7 +19,7 @@ const RankedPlayerListItem: React.FC<{ player: Player, rank: number, isCurrentUs
                 <p className={`font-bold text-xl ${isCurrentUser ? 'text-red-300' : 'text-gray-100'}`}>{player.stats.xp.toLocaleString()}</p>
                 <p className="text-xs text-gray-500">Rank Points</p>
             </div>
-        </motion.li>
+        </li>
     );
 });
 
@@ -57,15 +56,6 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
     const topThree = sortedPlayers.slice(0, 3);
     const rest = sortedPlayers.slice(3);
 
-    const listVariants = {
-        visible: { transition: { staggerChildren: 0.05 } },
-        hidden: {},
-    };
-    const itemVariants = {
-        visible: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
-        hidden: { opacity: 0, x: -20 },
-    };
-
     return (
         <div className="flex flex-col h-full">
             <div className="leaderboard-podium-bg">
@@ -81,22 +71,16 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
                 </motion.div>
             </div>
             <div className="flex-grow overflow-y-auto p-4">
-                 <motion.ul 
-                    className="space-y-2"
-                    variants={listVariants}
-                    initial="hidden"
-                    animate="visible"
-                >
+                 <ul className="space-y-2">
                     {rest.map((player, index) => (
                         <RankedPlayerListItem 
                             key={player.id} 
                             player={player} 
                             rank={index + 4}
                             isCurrentUser={player.id === currentPlayerId}
-                            variants={itemVariants}
                         />
                     ))}
-                </motion.ul>
+                </ul>
             </div>
         </div>
     );

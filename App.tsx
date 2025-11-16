@@ -1,4 +1,4 @@
-/** @jsxImportSource react */
+
 import React, { useContext, useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';

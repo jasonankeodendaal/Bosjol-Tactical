@@ -1,6 +1,6 @@
-/** @jsxImportSource react */
+
 import React, { memo } from 'react';
-import { motion, Variants } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { GameEvent, EventType, EventStatus } from '../types';
 import { BadgePill } from './BadgePill';
 import { CalendarIcon } from './icons/Icons';
@@ -24,7 +24,6 @@ const eventStatusColorMap: Record<EventStatus, 'green' | 'blue' | 'red' | 'amber
 };
 
 const EventCardComponent: React.FC<EventCardProps> = ({ event }) => {
-  // FIX: Replaced cubic-bezier array with a string literal ("easeOut") to fix framer-motion typing issue.
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }

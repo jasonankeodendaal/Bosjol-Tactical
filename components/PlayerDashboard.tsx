@@ -1,4 +1,4 @@
-/** @jsxImportSource react */
+
 import React, { useState, useEffect, useMemo, useContext, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Rank, Badge, LegendaryBadge, Raffle, Location } from '../types';
@@ -56,8 +56,18 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
     const isSignedUp = event.signedUpPlayers.includes(player.id);
     const [selectedGear, setSelectedGear] = useState<string[]>([]);
     const [note, setNote] = useState('');
-    const [totalCost, setTotalCost] = useState(event.gameFee);
     const dataContext = useContext(DataContext);
+
+    const availableGear = useMemo(() => {
+        if (!dataContext) return [];
+        return event.gearForRent.map(itemId => {
+            const item = dataContext.inventory.find(i => i.id === itemId);
+            if (!item) return null;
+            const price = event.rentalPriceOverrides?.[itemId] ?? item.salePrice;
+            return { ...item, salePrice: price }; // Return item with a potentially overridden price
+        }).filter((item): item is InventoryItem => item !== null);
+    }, [dataContext, event]);
+
 
     const alreadyRentedCount = useMemo(() => {
         const counts: Record<string, number> = {};
@@ -79,16 +89,13 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
         return counts;
     }, [event.attendees, event.rentalSignups, player.id, isSignedUp]);
 
-    const gearCost = useMemo(() => {
-        return selectedGear.reduce((sum, gearId) => {
-            const item = event.gearForRent.find(g => g.id === gearId);
+    const totalCost = useMemo(() => {
+        const gearCost = selectedGear.reduce((sum, gearId) => {
+            const item = availableGear.find(g => g.id === gearId);
             return sum + (item?.salePrice || 0);
         }, 0);
-    }, [selectedGear, event.gearForRent]);
-
-    useEffect(() => {
-        setTotalCost(event.gameFee + gearCost);
-    }, [gearCost, event.gameFee]);
+        return event.gameFee + gearCost;
+    }, [selectedGear, availableGear, event.gameFee]);
     
     const locationDetails = useMemo(() => locations.find(l => l.name === event.location), [locations, event.location]);
 
@@ -172,11 +179,11 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
                                     <span>Game Fee:</span>
                                     <span className="font-semibold text-white">R{event.gameFee.toFixed(2)} (Payable on-site)</span>
                                 </div>
-                                {event.gearForRent.length > 0 && (
+                                {availableGear.length > 0 && (
                                     <div>
                                         <h4 className="font-semibold text-gray-200 mb-2">Rent Gear</h4>
                                         <div className="space-y-2">
-                                            {event.gearForRent.map(item => {
+                                            {availableGear.map(item => {
                                                 const availableStock = item.stock - (alreadyRentedCount[item.id] || 0);
                                                 const isAvailable = availableStock > 0;
                                                 return (
@@ -225,12 +232,12 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
                             <span>Game Fee:</span>
                             <span className="font-semibold">R{event.gameFee.toFixed(2)}</span>
                         </div>
-                        {gearCost > 0 && (
+                        
                             <div className="flex justify-between items-center text-gray-300">
                                 <span>Rental Gear:</span>
-                                <span className="font-semibold">R{gearCost.toFixed(2)}</span>
+                                <span className="font-semibold">R{(totalCost - event.gameFee).toFixed(2)}</span>
                             </div>
-                        )}
+                        
                         <div className="flex justify-between items-center text-lg font-bold text-white pt-1 border-t border-zinc-700/50 mt-1">
                             <span>Total Due:</span>
                             <span className="text-green-400">R{totalCost.toFixed(2)}</span>

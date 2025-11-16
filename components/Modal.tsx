@@ -1,4 +1,4 @@
-/** @jsxImportSource react */
+
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XIcon } from './icons/Icons';

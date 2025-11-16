@@ -376,7 +376,7 @@ const AppContent: React.FC = () => {
 
     if(user?.role === 'creator') {
         creatorBackgroundStyle = {
-             backgroundImage: "linear-gradient(rgba(10, 10, 10, 0.85), rgba(10, 10, 10, 0.85)), url('https://i.ibb.co/dsh2c2hp/unnamed.jpg')",
+             backgroundImage: "linear-gradient(rgba(10, 10, 10, 0.7), rgba(10, 10, 10, 0.7)), url('https://i.ibb.co/dsh2c2hp/unnamed.jpg')",
              backgroundSize: 'cover',
              backgroundPosition: 'center',
              backgroundAttachment: 'fixed',

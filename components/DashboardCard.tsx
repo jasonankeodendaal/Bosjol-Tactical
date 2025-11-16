@@ -25,7 +25,7 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({ title, icon, child
       animate="visible"
       whileHover={{ y: -5, boxShadow: '0 10px 20px rgba(185, 28, 28, 0.2)' }}
       transition={{ type: 'spring', stiffness: 300 }}
-      className={`bg-zinc-900/70 backdrop-blur-sm border border-zinc-800/80 rounded-lg shadow-lg flex flex-col ${fullHeight ? 'h-full' : ''} ${className}`}
+      className={`bg-zinc-950/80 backdrop-blur-md border border-zinc-800/60 rounded-lg shadow-lg flex flex-col ${fullHeight ? 'h-full' : ''} ${className}`}
     >
       <header className="flex items-center p-5 border-b border-red-600/30 bg-black/20">
         <div className="text-red-500 mr-4">{icon}</div>

@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { motion } from 'framer-motion';
 import type { Player } from '../types';
 import { CrownIcon } from './icons/Icons';
 
 // RankedPlayerListItem Component
-const RankedPlayerListItem: React.FC<{ player: Player, rank: number, isCurrentUser?: boolean, variants: any }> = ({ player, rank, isCurrentUser, variants }) => {
+const RankedPlayerListItem: React.FC<{ player: Player, rank: number, isCurrentUser?: boolean, variants: any }> = memo(({ player, rank, isCurrentUser, variants }) => {
     return (
         <motion.li
             variants={variants}
@@ -22,7 +22,7 @@ const RankedPlayerListItem: React.FC<{ player: Player, rank: number, isCurrentUs
             </div>
         </motion.li>
     );
-};
+});
 
 // PodiumPlayer Component
 const PodiumPlayer: React.FC<{ player: Player, rank: 1 | 2 | 3, delay: number }> = ({ player, rank, delay }) => {

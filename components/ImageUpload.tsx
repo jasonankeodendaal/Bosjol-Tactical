@@ -11,112 +11,45 @@ interface FileUploadProps {
   apiServerUrl?: string;
 }
 
-type UploadStatus = 'idle' | 'compressing' | 'uploading' | 'success' | 'error';
+type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
-const compressImage = (file: File, maxSizeKB: number = 200): Promise<Blob> => {
+const compressImage = (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
-        const MAX_WIDTH = 1920;
+        const MAX_WIDTH = 1920; // Max width for the image
+        const QUALITY = 0.7; // JPEG quality
+        
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = (event) => {
-            if (!event.target?.result) return reject(new Error("Couldn't read file."));
             const img = new Image();
+            if (!event.target?.result) {
+                return reject(new Error("Couldn't read file for compression."));
+            }
             img.src = event.target.result as string;
             img.onload = () => {
                 let { width, height } = img;
-                if (width > height && width > MAX_WIDTH) {
-                    height *= MAX_WIDTH / width;
+                if (width > MAX_WIDTH) {
+                    height = (height * MAX_WIDTH) / width;
                     width = MAX_WIDTH;
-                } else if (height > MAX_WIDTH) {
-                    width *= MAX_WIDTH / height;
-                    height = MAX_WIDTH;
                 }
                 const canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
-                if (!ctx) return reject(new Error('Could not get canvas context.'));
+                if (!ctx) return reject(new Error('Could not get canvas context'));
                 ctx.drawImage(img, 0, 0, width, height);
-                
-                const performCompression = (quality: number) => {
-                    canvas.toBlob((blob) => {
-                        if (!blob) return reject(new Error('Canvas to Blob failed.'));
-                        if (blob.size / 1024 <= maxSizeKB || quality <= 0.1) {
-                            resolve(blob);
-                        } else {
-                            performCompression(quality - 0.1);
-                        }
-                    }, 'image/jpeg', quality);
-                };
-                performCompression(0.9);
+                canvas.toBlob(
+                    (blob) => blob ? resolve(blob) : reject(new Error('Canvas to Blob failed')),
+                    'image/jpeg',
+                    QUALITY
+                );
             };
-            img.onerror = (err) => reject(new Error(`Image load error: ${err}`));
+            img.onerror = (err) => reject(err);
         };
-        reader.onerror = (err) => reject(new Error(`File read error: ${err}`));
+        reader.onerror = (err) => reject(err);
     });
 };
 
-const compressAudio = (file: File, targetBitrate: number = 64000): Promise<Blob> => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            // @ts-ignore
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const arrayBuffer = await file.arrayBuffer();
-            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
-            const mediaStreamDestination = audioCtx.createMediaStreamDestination();
-            const source = audioCtx.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(mediaStreamDestination);
-            
-            const mimeType = 'audio/webm;codecs=opus';
-            if (!MediaRecorder.isTypeSupported(mimeType)) {
-                console.warn(`${mimeType} is not supported. Falling back to original file.`);
-                if (file.size > 500 * 1024) {
-                    return reject(new Error(`Audio file is too large (${(file.size / 1024).toFixed(0)}KB) and your browser doesn't support compression. Please keep audio under 500KB.`));
-                }
-                return resolve(file);
-            }
-
-            const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream, {
-                mimeType,
-                audioBitsPerSecond: targetBitrate,
-            });
-
-            const chunks: Blob[] = [];
-            mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
-                    chunks.push(event.data);
-                }
-            };
-
-            mediaRecorder.onstop = async () => {
-                const compressedBlob = new Blob(chunks, { type: mimeType });
-                
-                if (compressedBlob.size > 500 * 1024) {
-                     return reject(new Error(`Even after compression, the audio file is too large (${(compressedBlob.size / 1024).toFixed(0)}KB). Please upload a shorter audio clip.`));
-                }
-                resolve(compressedBlob);
-                await audioCtx.close();
-            };
-
-            source.onended = () => {
-                mediaRecorder.stop();
-            };
-            
-            mediaRecorder.start();
-            source.start();
-
-        } catch (error) {
-            console.error("Audio compression failed:", error);
-            console.warn("Falling back to original file due to an error.");
-            if (file.size > 500 * 1024) {
-                return reject(new Error(`Audio processing failed. The original file is too large (${(file.size / 1024).toFixed(0)}KB). Please keep audio under 500KB.`));
-            }
-            resolve(file);
-        }
-    });
-};
 
 export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, apiServerUrl }) => {
   const [status, setStatus] = useState<UploadStatus>('idle');
@@ -157,29 +90,32 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
   const handleFilesChange = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     
-    setMessage(multiple ? `${files.length} file(s) selected` : files[0].name);
-
+    setStatus('uploading');
     const filesArray = multiple ? Array.from(files) : [files[0]];
     const results: string[] = [];
 
     for (const file of filesArray) {
         try {
             let fileToUpload: Blob = file;
+            const isImage = file.type.startsWith('image/') && !file.type.endsWith('gif');
+            const isLarge = file.size > 500 * 1024; // Compress if > 500KB
 
-            if (!apiServerUrl) {
-                setStatus('compressing');
-                if (file.type.startsWith('image/')) {
+            if (isImage && isLarge) {
+                setMessage(`Compressing ${file.name}...`);
+                setProgress(0);
+                try {
                     fileToUpload = await compressImage(file);
-                } else if (file.type.startsWith('audio/')) {
-                    fileToUpload = await compressAudio(file);
+                } catch (compressionError) {
+                    console.warn('Image compression failed, uploading original file.', compressionError);
+                    // fallback to original file
                 }
             }
-            
+
             if (fileToUpload.size > 25 * 1024 * 1024) {
-                 throw new Error(`"${file.name}" is too large (> 25MB).`);
+                 throw new Error(`File is too large (> 25MB).`);
             }
             
-            setStatus('uploading');
+            setMessage(`Uploading ${file.name}...`);
             const uploader = apiServerUrl ? (blob: Blob, name: string) => handleCustomUpload(blob, name) : uploadFile;
             
             const url = await uploader(fileToUpload, file.name, 'uploads', (p) => setProgress(Math.round(p)));
@@ -226,18 +162,10 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
 
   const renderContent = () => {
     switch(status) {
-        case 'compressing':
-            return (
-                <div className="flex flex-col items-center justify-center text-center">
-                    <div className="w-6 h-6 border-2 border-zinc-500 border-t-white rounded-full animate-spin mb-3"></div>
-                    <p className="text-sm font-semibold text-gray-200">Compressing...</p>
-                    <p className="text-xs text-gray-400 truncate max-w-full px-2">{message}</p>
-                </div>
-            )
         case 'uploading':
             return (
                 <div className="w-full flex flex-col items-center justify-center p-4 text-center">
-                    <p className="text-sm font-semibold text-gray-200 mb-2">Uploading...</p>
+                    <p className="text-sm font-semibold text-gray-200 mb-2 truncate max-w-full px-2">{message}</p>
                     <div className="w-full bg-zinc-700 rounded-full h-2.5">
                         <motion.div
                             className="bg-red-500 h-2.5 rounded-full"
@@ -246,7 +174,7 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
                             transition={{ duration: 0.3, ease: "linear" }}
                         />
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">{progress}%</p>
+                    {progress > 0 && <p className="text-xs text-gray-400 mt-2">{progress}%</p>}
                 </div>
             );
         case 'success':

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { motion, Variants } from 'framer-motion';
 import { GameEvent, EventType, EventStatus } from '../types';
 import { BadgePill } from './BadgePill';
@@ -22,7 +22,7 @@ const eventStatusColorMap: Record<EventStatus, 'green' | 'blue' | 'red' | 'amber
     'Cancelled': 'red',
 };
 
-export const EventCard: React.FC<EventCardProps> = ({ event }) => {
+const EventCardComponent: React.FC<EventCardProps> = ({ event }) => {
   // FIX: Replaced cubic-bezier array with a string literal ("easeOut") to fix framer-motion typing issue.
   // FIX: Explicitly typed cardVariants with Variants from framer-motion to resolve typing error on `ease` property.
   const cardVariants: Variants = {
@@ -57,3 +57,5 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
     </motion.div>
   );
 };
+
+export const EventCard = memo(EventCardComponent);

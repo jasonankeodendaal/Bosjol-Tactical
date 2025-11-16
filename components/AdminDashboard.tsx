@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect, useRef, useMemo, useContext } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, RentalSignup, CarouselMedia } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -216,6 +216,27 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     );
 }
 
+const PlayerListItem = React.memo(({ player, rank, onViewPlayer }: { player: Player; rank: Rank; onViewPlayer: (id: string) => void }) => {
+    return (
+        <li onClick={() => onViewPlayer(player.id)} className="flex items-center p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer border border-transparent hover:border-red-600/50">
+            <img src={player.avatarUrl} alt={player.name} className="w-12 h-12 rounded-full object-cover mr-4" />
+            <div className="flex-grow">
+                <p className="font-bold text-white">{player.name} "{player.callsign}" {player.surname}</p>
+                <div className="flex items-center text-sm text-gray-400">
+                    <img src={rank.iconUrl} alt={rank.name} className="w-5 h-5 mr-1.5"/>
+                    <span>{rank.name}</span>
+                    <span className="mx-2">|</span>
+                    <span className="font-mono">{player.playerCode}</span>
+                </div>
+            </div>
+            <div className="text-right">
+                <p className="font-bold text-red-400 text-lg">{player.stats.xp.toLocaleString()} XP</p>
+                <p className="text-xs text-gray-500">K/D: {(player.stats.deaths > 0 ? player.stats.kills / player.stats.deaths : player.stats.kills).toFixed(2)}</p>
+            </div>
+        </li>
+    );
+});
+
 const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' | 'ranks' | 'companyDetails'> & { onViewPlayer: (id: string) => void }> = ({ players, addPlayerDoc, ranks, companyDetails, onViewPlayer }) => {
     const [showNewPlayerModal, setShowNewPlayerModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -248,22 +269,7 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
                             {filteredPlayers.map(p => {
                                 const rank = ranks.find(r => r.id === p.rank.id) || p.rank;
                                 return (
-                                    <li key={p.id} onClick={() => onViewPlayer(p.id)} className="flex items-center p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer border border-transparent hover:border-red-600/50">
-                                        <img src={p.avatarUrl} alt={p.name} className="w-12 h-12 rounded-full object-cover mr-4" />
-                                        <div className="flex-grow">
-                                            <p className="font-bold text-white">{p.name} "{p.callsign}" {p.surname}</p>
-                                            <div className="flex items-center text-sm text-gray-400">
-                                                <img src={rank.iconUrl} alt={rank.name} className="w-5 h-5 mr-1.5"/>
-                                                <span>{rank.name}</span>
-                                                <span className="mx-2">|</span>
-                                                <span className="font-mono">{p.playerCode}</span>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-bold text-red-400 text-lg">{p.stats.xp.toLocaleString()} XP</p>
-                                            <p className="text-xs text-gray-500">K/D: {(p.stats.deaths > 0 ? p.stats.kills / p.stats.deaths : p.stats.kills).toFixed(2)}</p>
-                                        </div>
-                                    </li>
+                                    <PlayerListItem key={p.id} player={p} rank={rank} onViewPlayer={onViewPlayer} />
                                 );
                             })}
                         </ul>
@@ -318,10 +324,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         }
     }, [activeTab, view, auth]);
 
-    const handleViewPlayer = (id: string) => {
+    const handleViewPlayer = useCallback((id: string) => {
         setSelectedPlayerId(id);
         setView('player_profile');
-    };
+    }, []);
 
     const handleManageEvent = (id: string | null) => {
         setSelectedEventId(id);

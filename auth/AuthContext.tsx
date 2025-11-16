@@ -10,7 +10,7 @@ interface AuthProviderProps {
 }
 
 const ADMIN_EMAIL = 'bosjoltactical@gmail.com';
-const CREATOR_PIN = '1723'; // Hardcoded PIN for the creator
+const CREATOR_EMAIL = 'jstypme@gmail.com';
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | Player | Admin | null>(null);
@@ -44,15 +44,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         await auth.signOut();
                         setUser(null);
                     }
+                } else if (email === CREATOR_EMAIL) {
+                    try {
+                        const creatorDoc = await db.collection("settings").doc("creatorDetails").get();
+                        if (creatorDoc.exists) {
+                            setUser({ id: 'creator', role: 'creator', ...creatorDoc.data() } as CreatorDetails & { role: 'creator', id: string });
+                        } else {
+                             setUser({ id: 'creator', name: 'Creator', role: 'creator' });
+                        }
+                    } catch (error) {
+                         console.error("Error fetching creator profile:", error);
+                         await auth.signOut();
+                         setUser(null);
+                    }
                 } else {
-                    // Non-admin Firebase user, sign them out
+                    // Non-admin/creator Firebase user, sign them out
                     await auth.signOut();
                     setUser(null);
                 }
             } else {
-                // No Firebase user, clear admin state but not player/creator state
+                // No Firebase user, clear admin/creator state but not player state
                 setUser(currentUser => {
-                    if (currentUser?.role === 'admin') {
+                    if (currentUser?.role === 'admin' || currentUser?.role === 'creator') {
                         return null;
                     }
                     return currentUser;
@@ -68,17 +81,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const cleanUsername = username.trim();
         const cleanPassword = password.trim();
         
-        // Handle Creator PIN login first
-        if (cleanUsername === 'creator' && cleanPassword === CREATOR_PIN) {
-             setUser({ id: 'creator', name: 'Creator', role: 'creator' });
-             return true;
-        }
-
-        // Handle Admin login
-        if (cleanUsername.toLowerCase() === ADMIN_EMAIL) {
+        // Handle Admin or Creator Firebase login
+        const emailUsername = cleanUsername.toLowerCase();
+        if (emailUsername === ADMIN_EMAIL || emailUsername === CREATOR_EMAIL) {
             if (USE_FIREBASE && auth) {
                 try {
-                    await auth.signInWithEmailAndPassword(cleanUsername, cleanPassword);
+                    await auth.signInWithEmailAndPassword(emailUsername, cleanPassword);
                     // onAuthStateChanged will set user state
                     return true;
                 } catch (error) {
@@ -86,8 +94,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     console.error(`Firebase login failed with code: ${typedError.code || 'N/A'}. Message: ${typedError.message || 'Unknown error'}`);
                     return false;
                 }
-            } else { // Mock admin login
-                if (cleanPassword === '1234') {
+            } else { // Mock admin login (creator has no mock login)
+                if (emailUsername === ADMIN_EMAIL && cleanPassword === '1234') {
                     setUser(MOCK_ADMIN);
                     return true;
                 }
@@ -129,8 +137,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     const logout = async () => {
-        // Only sign out from Firebase if the logged-in user is an admin
-        if (USE_FIREBASE && auth && auth.currentUser && user?.role === 'admin') {
+        // Only sign out from Firebase if the logged-in user is an admin or creator
+        if (USE_FIREBASE && auth && auth.currentUser && (user?.role === 'admin' || user?.role === 'creator')) {
             await auth.signOut();
         }
         setUser(null);

@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 
 export interface HelpTopic {
@@ -32,20 +33,20 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
     },
     'login-screen': {
         title: "Authentication Terminal",
-        description: "This screen secures access to the dashboard. Both Players and Administrators log in here, but use different credentials.",
+        description: "This screen secures access to the dashboard. Players, Administrators, and the Creator log in here using different credentials.",
         sections: [
             {
                 heading: "Login Credentials",
                 content: (
                     <ul className="list-disc list-inside space-y-1">
                         <li><strong>Players:</strong> Log in using the unique <strong>Player Code</strong> assigned to you by an admin (e.g., 'JM01') and your personal 4-digit <strong>PIN</strong>.</li>
-                        <li><strong>Administrators:</strong> Log in using your registered <strong>Admin Email</strong> and your Firebase account <strong>Password</strong>.</li>
+                        <li><strong>Administrators & Creator:</strong> Log in using your registered <strong>Admin/Creator Email</strong> and your Firebase account <strong>Password</strong>.</li>
                     </ul>
                 )
             },
             {
                 heading: "Automations & Security",
-                content: "The system automatically detects whether the identifier is an email (for admin login) or a player code. After 10 minutes of inactivity, you will be automatically logged out for security purposes."
+                content: "The system automatically detects whether the identifier is an email or a player code. After 10 minutes of inactivity, you will be automatically logged out for security purposes."
             }
         ]
     },
@@ -329,17 +330,7 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             }
         ]
     },
-    'admin-dashboard-leaderboard': {
-        title: "Admin: Global Leaderboard",
-        description: "View the global player rankings.",
-        sections: [
-            {
-                heading: "Live Rankings",
-                content: "This shows the same real-time leaderboard that players see, allowing you to monitor player progression and standings at a glance."
-            }
-        ]
-    },
-     'admin-dashboard-settings': {
+    'admin-dashboard-settings': {
         title: "Admin: System Settings",
         description: "Configure the global settings and appearance of the entire application.",
         sections: [
@@ -372,6 +363,66 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             {
                 heading: "Guide",
                 content: "The guide provides step-by-step instructions, including prerequisites, server code, and deployment recommendations using PM2 and Cloudflare Tunnels to make your local server publicly accessible."
+            }
+        ]
+    },
+    'creator-dashboard-monitor': {
+        title: "Creator: System Powerhouse",
+        description: "The System Monitor is a multi-tabbed, interactive 'powerhouse' tool for continuous diagnostics, deep system analysis, and data management.",
+        sections: [
+            {
+                heading: "Live Status Tab",
+                content: (
+                    <ul className="list-disc list-inside space-y-1">
+                        <li><strong>Continuous Monitoring:</strong> When enabled, this feature runs critical system checks every 60 seconds to catch issues as they happen.</li>
+                        <li><strong>Live Activity Log:</strong> Displays a real-time feed of scan activities and any errors detected by the continuous scan.</li>
+                        <li><strong>Overall Health:</strong> Shows a high-level status (Operational, Degraded, Critical) and key metrics at a glance.</li>
+                    </ul>
+                )
+            },
+            {
+                heading: "Full Diagnostics Tab",
+                content: (
+                     <ul className="list-disc list-inside space-y-1">
+                        <li><strong>Granular Scanning:</strong> Manually trigger scans for individual checks, entire categories (like 'Core Automations'), or the whole system.</li>
+                        <li><strong>In-Depth Checks:</strong> Includes new tests that simulate core application logic, such as the Event Finalization automation, player creation, and file uploads, to ensure all functions are working as expected.</li>
+                        <li><strong>Detailed Solutions:</strong> Every check that fails or returns a warning provides an in-depth, actionable solution to guide you in fixing the problem.</li>
+                    </ul>
+                )
+            },
+            {
+                heading: "Error History Tab",
+                content: "Provides a persistent log of every error detected by the scanner during the current session. Each entry includes a timestamp, the name of the failed check, its category, and a detailed error message, creating a comprehensive audit trail of system issues."
+            }
+        ]
+    },
+     'creator-dashboard-data': {
+        title: "Creator: Raw Data Editor",
+        description: "This is a powerful 'God mode' tool that provides direct, unfiltered access to the application's database.",
+        sections: [
+            {
+                heading: "Functionality",
+                content: (
+                     <ul className="list-disc list-inside space-y-1">
+                        <li><strong>Select Collection:</strong> Use the dropdown menu to choose any data collection from the database (e.g., 'players', 'events', 'settings').</li>
+                        <li><strong>View & Edit JSON:</strong> The raw data for the selected collection is displayed in JSON format. You can edit this data directly in the text area.</li>
+                        <li><strong>Save Changes:</strong> Clicking 'Save' will attempt to apply your changes directly to the database.</li>
+                    </ul>
+                )
+            },
+            {
+                heading: "WARNING: Use With Extreme Caution",
+                content: (
+                    <div className="bg-red-900/40 border border-red-700 text-red-200 p-3 rounded-lg">
+                        <p className="font-bold">This is a tool for advanced debugging only.</p>
+                        <ul className="list-disc list-inside space-y-1 mt-2">
+                            <li>Editing data here bypasses all application logic and validation.</li>
+                            <li>Incorrectly formatted JSON will cause the save to fail.</li>
+                            <li>Altering data structures (e.g., deleting a required field like 'name' from a player) can crash the application for users.</li>
+                            <li><strong>Always create a backup from the Admin 'Settings' tab before making any changes here.</strong></li>
+                        </ul>
+                    </div>
+                )
             }
         ]
     },
@@ -428,6 +479,82 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
                             <li>All automated progression systems (Ranks, Badges, Leaderboard) are instantly updated with the new data.</li>
                         </ul>
                     </div>
+                )
+            }
+        ]
+    },
+    'firestore-rules-explained': {
+        title: "Firestore Security Rules Explained",
+        description: "Firestore Security Rules are the most important layer of defense for your application's data. They live on Google's servers and determine who can read, write, or delete data. These rules protect your app from unauthorized access and prevent players from cheating by modifying their own stats.",
+        sections: [
+            {
+                heading: "Core Principles & User Roles",
+                content: (
+                    <ul className="list-disc list-inside space-y-2">
+                        <li><strong>Default Deny:</strong> The rules start by denying all access to everyone. Permissions are then explicitly granted on a case-by-case basis. This is a secure 'whitelist' approach.</li>
+                        <li><strong>Admin / Creator (Authenticated):</strong> These users are logged in via Firebase Authentication with their specific emails. They have broad write permissions to manage the application.</li>
+                        <li><strong>Public / Player (Unauthenticated):</strong> From Firestore's perspective, players using the Player Code/PIN login are 'unauthenticated' because they do not have a Firebase Auth account. Therefore, any data they need to see must be publicly readable. Crucially, they have **NO write access** to anything.</li>
+                    </ul>
+                )
+            },
+            {
+                heading: "Rule Breakdown by Data Collection",
+                content: (
+                     <ul className="list-disc list-inside space-y-2">
+                        <li>
+                            <strong>Publicly Readable Data</strong> (`players`, `events`, `ranks`, `badges`, `inventory`, `settings`, etc.):
+                            <ul className="list-['-_'] list-inside ml-4 mt-1">
+                                <li><strong>Read Access:</strong> <span className="font-semibold text-green-400">ALLOWED</span> for everyone. This is necessary so the player dashboard can function. Players need to read event lists, their own stats, leaderboards, etc.</li>
+                                <li><strong>Write Access:</strong> <span className="font-semibold text-red-400">DENIED</span> for everyone except the Admin and Creator. This is the core security measure to prevent cheating.</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Admin-Only Data</strong> (`transactions`, `admins`):
+                            <ul className="list-['-_'] list-inside ml-4 mt-1">
+                                <li><strong>Read & Write Access:</strong> <span className="font-semibold text-red-400">DENIED</span> for everyone except the Admin and Creator. This protects sensitive financial and administrative data.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                )
+            },
+             {
+                heading: "Securing Player Actions (The 'Why')",
+                content: (
+                     <div>
+                        <p className="mb-2">If players had write access, a user could bypass the app's interface and send a request directly to Firestore to give themselves 1,000,000 XP. The security rules prevent this entirely.</p>
+                        <p className="font-bold text-amber-300">Player actions are only saved by an Admin or the Creator.</p>
+                        <ul className="list-disc list-inside space-y-2 mt-2">
+                            <li><strong>Profile Updates:</strong> A player can change their details in the 'Settings' tab, but the security rules will <span className="font-semibold text-red-400">BLOCK</span> this change from being saved to the database. Only an Admin, viewing the player's profile in the Admin Dashboard, can actually save the changes.</li>
+                            <li><strong>Event Signup:</strong> Similarly, a player's signup is a request. An Admin must use the 'Manage Event' page to 'Check In' the player, which officially adds them as an attendee.</li>
+                            <li><strong>XP & Stats:</strong> XP is <span className="font-bold">only</span> awarded when an Admin finalizes an event. The Admin enters live stats (kills, deaths) and clicks 'Finalize'. The app, running with the Admin's secure credentials, then updates the stats for all attendees. A player can never change their own XP.</li>
+                        </ul>
+                    </div>
+                )
+            },
+            {
+                heading: "Summary of Permissions",
+                content: (
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="border-b border-zinc-600">
+                                <th className="p-2">User Role</th>
+                                <th className="p-2">Read Access</th>
+                                <th className="p-2">Write Access</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                             <tr className="border-b border-zinc-700">
+                                <td className="p-2 font-bold text-red-400">Admin / Creator</td>
+                                <td className="p-2 text-green-400">Everything</td>
+                                <td className="p-2 text-green-400">Everything</td>
+                            </tr>
+                            <tr>
+                                <td className="p-2 font-bold text-blue-400">Player / Public</td>
+                                <td className="p-2 text-green-400">Most application data (events, player stats, ranks, etc.)</td>
+                                <td className="p-2 text-red-400">Nothing</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 )
             }
         ]

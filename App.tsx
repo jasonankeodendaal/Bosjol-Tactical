@@ -1,3 +1,5 @@
+
+
 import React, { useContext, useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -25,27 +27,9 @@ const CreatorDashboard = lazy(() => import('./components/CreatorDashboard').then
 // --- Creator Popup Component and Icons ---
 const CreatorPopup: React.FC<{
     onClose: () => void;
-    login: (email: string, pass: string) => Promise<boolean>;
     creatorDetails: CreatorDetails;
-}> = ({ onClose, login, creatorDetails }) => {
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setError(null);
-
-        const success = await login("creator", password); // Use a fixed identifier for creator PIN login
-        if (success) {
-            onClose();
-        } else {
-            setError("Invalid PIN. Please try again.");
-            setIsLoading(false);
-        }
-    };
-
+}> = ({ onClose, creatorDetails }) => {
+    
     const clientInquiryTemplate = `Hello JSTYP.me,
 
 I came across your work on the Bosjol Tactical Dashboard and I'm interested in discussing a potential project.
@@ -105,7 +89,7 @@ Thank you, I look forward to hearing from you.
                     
                     <p className="text-center text-gray-300 text-sm mb-6 pb-6 border-b border-zinc-700/50">{creatorDetails.bio}</p>
 
-                    <div className="grid grid-cols-2 gap-4 mb-8">
+                    <div className="grid grid-cols-2 gap-4 mb-6">
                         <a href={emailHref} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 p-3 bg-zinc-800/50 border border-zinc-700 rounded-lg hover:bg-zinc-800 hover:border-red-500/50 transition-all">
                             <img src="https://i.ibb.co/r2HkbjLj/image-removebg-preview-2.png" alt="Email" className="w-8 h-8"/>
                             <span className="font-semibold text-white">Email Me</span>
@@ -115,36 +99,7 @@ Thank you, I look forward to hearing from you.
                             <span className="font-semibold text-white">WhatsApp</span>
                         </a>
                     </div>
-                    
-                    <div className="bg-black/30 p-3 rounded-lg border border-zinc-800/50">
-                         <h4 className="text-xs text-center text-gray-500 uppercase tracking-wider font-semibold">Creator Access</h4>
-                         <form onSubmit={handleLogin} className="mt-2 space-y-2">
-                             <Input
-                                icon={<KeyIcon className="w-4 h-4"/>}
-                                type="password"
-                                placeholder="PIN"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                autoFocus
-                                className="!py-1.5 text-xs"
-                                inputMode="numeric"
-                                pattern="\d*"
-                            />
-                            {error && (
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="text-red-400 text-xs text-center bg-red-900/40 border border-red-800/50 px-3 py-1.5 rounded-md"
-                                >
-                                    {error}
-                                </motion.div>
-                            )}
-                            <Button type="submit" size="sm" className="w-full !py-1" disabled={isLoading}>
-                                {isLoading ? 'Authenticating...' : 'Authenticate'}
-                            </Button>
-                        </form>
-                    </div>
+                     <p className="text-xs text-center text-gray-500 uppercase tracking-wider font-semibold">Creator Access via Login Screen</p>
                 </div>
             </motion.div>
         </motion.div>
@@ -302,7 +257,6 @@ const AppContent: React.FC = () => {
         updateDoc,
         addDoc,
         creatorDetails,
-        setCreatorDetails
     } = data;
     
     // Centralized background audio management
@@ -450,7 +404,7 @@ const AppContent: React.FC = () => {
     return (
         <div className="min-h-screen flex flex-col bg-transparent text-white" style={creatorBackgroundStyle}>
             <AnimatePresence>
-                {showCreatorPopup && <CreatorPopup onClose={() => setShowCreatorPopup(false)} login={login} creatorDetails={creatorDetails} />}
+                {showCreatorPopup && <CreatorPopup onClose={() => setShowCreatorPopup(false)} creatorDetails={creatorDetails} />}
             </AnimatePresence>
             <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
 
@@ -525,7 +479,11 @@ const AppContent: React.FC = () => {
                                         addPlayerDoc={(playerData) => addDoc('players', playerData)}
                                         onDeleteAllData={handleDeleteAllData}
                                     /> : user.role === 'creator' ?
-                                    <CreatorDashboard />
+                                    <CreatorDashboard 
+                                        {...data}
+                                        setShowHelp={setShowHelp} 
+                                        setHelpTopic={setHelpTopic} 
+                                    />
                                     : null
                                 }
                             </div>

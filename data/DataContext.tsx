@@ -112,6 +112,28 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
     return [data, updateData, loading] as const;
 }
 
+const MOCK_DATA_MAP = {
+    ranks: mock.MOCK_RANKS,
+    badges: mock.MOCK_BADGES,
+    legendaryBadges: mock.MOCK_LEGENDARY_BADGES,
+    gamificationSettings: mock.MOCK_GAMIFICATION_SETTINGS,
+    companyDetails: mock.MOCK_COMPANY_DETAILS,
+    creatorDetails: mock.MOCK_CREATOR_DETAILS,
+    players: mock.MOCK_PLAYERS,
+    events: mock.MOCK_EVENTS,
+    vouchers: mock.MOCK_VOUCHERS,
+    inventory: mock.MOCK_INVENTORY,
+    suppliers: mock.MOCK_SUPPLIERS,
+    transactions: mock.MOCK_TRANSACTIONS,
+    locations: mock.MOCK_LOCATIONS,
+    raffles: mock.MOCK_RAFFLES,
+    sponsors: mock.MOCK_SPONSORS,
+    socialLinks: mock.MOCK_SOCIAL_LINKS,
+    carouselMedia: mock.MOCK_CAROUSEL_MEDIA,
+};
+type SeedableCollection = keyof typeof MOCK_DATA_MAP;
+
+
 // --- START OF TYPE DEFINITION ---
 export interface DataContextType {
     players: Player[]; setPlayers: (d: Player[] | ((p: Player[]) => Player[])) => void;
@@ -140,6 +162,7 @@ export interface DataContextType {
     deleteAllData: () => Promise<void>;
     restoreFromBackup: (backupData: any) => Promise<void>;
     seedInitialData: () => Promise<void>;
+    seedCollection: (collectionName: SeedableCollection) => Promise<void>;
     loading: boolean;
     isSeeding: boolean;
 }
@@ -231,6 +254,29 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
     // --- END GENERIC CRUD ---
+    const seedCollection = async (collectionName: SeedableCollection) => {
+        if (!IS_LIVE_DATA) return;
+        const dataToSeed = MOCK_DATA_MAP[collectionName];
+        if (!dataToSeed) {
+            console.error(`No mock data found for collection: ${collectionName}`);
+            return;
+        }
+
+        console.log(`Seeding collection: ${collectionName}...`);
+        const batch = db.batch();
+        
+        if (Array.isArray(dataToSeed)) {
+             dataToSeed.forEach((item: any) => {
+                const { id, ...data } = item;
+                batch.set(db.collection(collectionName).doc(id), data);
+            });
+        } else { // It's a single document for 'settings'
+            batch.set(db.collection('settings').doc(collectionName), dataToSeed);
+        }
+
+        await batch.commit();
+        console.log(`Successfully seeded ${collectionName}.`);
+    };
 
     const seedInitialData = async () => {
         if (!IS_LIVE_DATA) return;
@@ -429,6 +475,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         deleteAllData,
         restoreFromBackup,
         seedInitialData,
+        seedCollection,
         loading,
         isSeeding,
     };

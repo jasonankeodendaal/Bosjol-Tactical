@@ -1,249 +1,236 @@
 import React, { useState, useContext, useEffect, useCallback } from 'react';
-import { DataContext, IS_LIVE_DATA } from '../data/DataContext';
+import { DataContext, IS_LIVE_DATA, DataContextType } from '../data/DataContext';
 import { Button } from './Button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon, XCircleIcon, CogIcon, CodeBracketIcon, ArrowPathIcon } from './icons/Icons';
-import { db, USE_FIREBASE, firebaseInitializationError, isFirebaseConfigured } from '../firebase';
+import { CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon, XCircleIcon, CogIcon, CodeBracketIcon, ArrowPathIcon, ClockIcon } from './icons/Icons';
+import { db, USE_FIREBASE, firebaseInitializationError, isFirebaseConfigured, uploadFile } from '../firebase';
 import { DashboardCard } from './DashboardCard';
+import type { Player, GamificationRule, Badge } from '../types';
+import { UNRANKED_RANK } from '../constants';
 
-type CheckStatus = 'pass' | 'fail' | 'warn' | 'info';
+type CheckStatus = 'pass' | 'fail' | 'warn' | 'info' | 'pending' | 'running';
 type OverallStatus = 'operational' | 'degraded' | 'critical' | 'pending';
+type ScannerTab = 'status' | 'diagnostics' | 'history';
+
+interface Check {
+    category: string;
+    name: string;
+    description: string;
+    checkFn: () => Promise<{ status: CheckStatus, detail: string }>;
+}
 
 interface CheckResult {
     text: string;
+    description: string;
     status: CheckStatus;
     detail: string;
 }
 
-interface ResultCategory {
-    title: string;
-    checks: CheckResult[];
+interface ErrorLogEntry {
+    timestamp: Date;
+    checkName: string;
+    category: string;
+    detail: string;
 }
 
-const SOLUTIONS_MAP: Record<string, { problem: string; solution: React.ReactNode }> = {
-    'React App Initialized': {
-        problem: "The main React application component failed to render inside its root container.",
-        solution: <p>This is a critical rendering failure. 1. Check the browser console for JavaScript errors. 2. Ensure the `index.html` file has a `&lt;div id="root"&gt;&lt;/div&gt;`. 3. Verify that `index.tsx` is correctly targeting this root element.</p>
-    },
-    'PWA Manifest Check': {
-        problem: "The Progressive Web App manifest file (`manifest.json`) is either missing, malformed, or couldn't be fetched.",
-        solution: <p>The manifest is required for PWA features like 'Add to Home Screen'. 1. Ensure `manifest.json` exists in the public root folder. 2. Validate its syntax using an online JSON validator. 3. Check that it includes essential keys like `name`, `short_name`, `icons`, and `start_url`.</p>
-    },
-    'Service Worker Registration Status': {
-        problem: "The Service Worker script, which enables offline functionality, is not registered or active.",
-        solution: <p>This can happen on the very first visit or if the script fails. 1. Ensure `service-worker.js` exists in the public root. 2. Check the browser console for registration errors. 3. Try a hard refresh (Ctrl+Shift+R) to force re-registration.</p>
-    },
-    'Firebase SDK Initialization': {
-        problem: "The Firebase SDK failed to initialize. This usually points to incorrect configuration credentials.",
-        solution: <p>This is a critical error when in Firebase mode. 1. Double-check all `VITE_FIREBASE_*` variables in your environment file (`.env.local`). 2. Verify the credentials in your Firebase project settings match what's in your environment file. 3. Check for any typos in the variable names.</p>
-    },
-    'Firebase Config': {
-        problem: "The application is configured to use Firebase, but one or more necessary environment variables are missing.",
-        solution: <p>The app cannot connect to Firebase without the full configuration. 1. Ensure your `.env.local` file (for development) or hosting provider's environment variables include all required `VITE_FIREBASE_*` keys. 2. Make sure you haven't misspelled any variable names.</p>
-    },
-    'Firestore Connectivity': {
-        problem: "The application successfully initialized the Firebase SDK but cannot establish a connection to the Firestore database.",
-        solution: <p>This blocks all data operations. 1. Check your server's internet connection. 2. Go to your Firebase project console and ensure the Firestore Database is enabled and created. 3. Check your Firestore Security Rules to ensure they aren't blocking all read/write access.</p>
-    },
-    'Firestore Read/Write Test': {
-        problem: "A live test to create, read, update, and delete a temporary document in Firestore failed. This indicates a permission issue.",
-        solution: <p>This is likely due to restrictive Firestore Security Rules. 1. Go to your Firebase console → Firestore → Rules. 2. Ensure your rules allow authenticated users (or the specific admin user) to read and write to the collections. You can find a recommended ruleset in the 'Firebase Rules' tab of the Creator Dashboard.</p>
-    },
-    'API Server Health': {
-        problem: "The application cannot reach the configured external API server. The server may be down or the URL may be incorrect.",
-        solution: <p>File uploads will fail. 1. Verify the API server is running (e.g., using `pm2 status`). 2. Check the server logs for errors (`pm2 logs [app_name]`). 3. Ensure the 'API Server URL' in the Admin Settings is correct and publicly accessible. 4. If using a tunnel (like Cloudflare), ensure the tunnel is active and pointing to the correct local port.</p>
-    },
-    'Company Details Loaded': {
-        problem: "The core `companyDetails` document could not be loaded from the database.",
-        solution: <p>This is a critical configuration issue. If this is a new project, the initial data seeding may have failed. If this is an existing project, the document may have been accidentally deleted. Use the 'Restore from Backup' feature in the Admin Settings if you have a backup file.</p>
-    },
-    'Company Logo URL': {
-        problem: "The URL for the company logo is either not configured or points to an unreachable address.",
-        solution: <p>The logo will appear broken throughout the app. 1. Go to Admin Dashboard → Settings → Branding & Visuals. 2. Under 'Company Logo', re-upload the image or paste a valid, publicly accessible URL. 3. Save the settings.</p>
-    }
+const SOLUTIONS_MAP: Record<string, { problem: string; solution: React.ReactNode; fixable?: boolean }> = {
+    'React App Initialized': { problem: "The main React application component failed to render inside its root container.", solution: <p>This is a critical rendering failure. 1. Check the browser console for JavaScript errors. 2. Ensure the `index.html` file has a `&lt;div id="root"&gt;&lt;/div&gt;`. 3. Verify that `index.tsx` is correctly targeting this root element.</p> },
+    'PWA Manifest Check': { problem: "The Progressive Web App manifest file (`manifest.json`) is either missing, malformed, or couldn't be fetched.", solution: <p>The manifest is required for PWA features like 'Add to Home Screen'. 1. Ensure `manifest.json` exists in the public root folder. 2. Validate its syntax using an online JSON validator. 3. Check that it includes essential keys like `name`, `short_name`, `icons`, and `start_url`.</p> },
+    'Service Worker Registration Status': { problem: "The Service Worker script, which enables offline functionality, is not registered or active.", solution: <p>This can happen on the very first visit or if the script fails. 1. Ensure `service-worker.js` exists in the public root. 2. Check the browser console for registration errors. 3. Try a hard refresh (Ctrl+Shift+R) to force re-registration.</p> },
+    'Firebase SDK Initialization': { problem: "The Firebase SDK failed to initialize. This usually points to incorrect configuration credentials.", solution: <p>This is a critical error when in Firebase mode. 1. Double-check all `VITE_FIREBASE_*` variables in your environment file (`.env.local`). 2. Verify the credentials in your Firebase project settings match what's in your environment file. 3. Check for any typos in the variable names.</p> },
+    'Firebase Config': { problem: "The application is configured to use Firebase, but one or more necessary environment variables are missing.", solution: <p>The app cannot connect to Firebase without the full configuration. 1. Ensure your `.env.local` file (for development) or hosting provider's environment variables include all required `VITE_FIREBASE_*` keys. 2. Make sure you haven't misspelled any variable names.</p> },
+    'Firestore Connectivity': { problem: "The application successfully initialized the Firebase SDK but cannot establish a connection to the Firestore database.", solution: <p>This blocks all data operations. 1. Check your server's internet connection. 2. Go to your Firebase project console and ensure the Firestore Database is enabled and created. 3. Check your Firestore Security Rules to ensure they aren't blocking all read/write access.</p> },
+    'Firestore Read/Write Test': { problem: "A live test to create, read, update, and delete a temporary document in Firestore failed. This indicates a permission issue.", solution: <p>This is likely due to restrictive Firestore Security Rules. 1. Go to your Firebase console → Firestore → Rules. 2. Ensure your rules allow authenticated users (Admin or Creator) to read and write. You can find the correct ruleset in the 'Firebase Rules' tab. <strong>Note:</strong> You must be logged in as the Admin or Creator to run this test successfully, as it requires a real Firebase Auth session.</p> },
+    'API Server Health': { problem: "The application cannot reach the configured external API server. The server may be down or the URL may be incorrect.", solution: <p>File uploads will fail. 1. Verify the API server is running (e.g., using `pm2 status`). 2. Check the server logs for errors (`pm2 logs [app_name]`). 3. Ensure the 'API Server URL' in the Admin Settings is correct and publicly accessible. 4. If using a tunnel (like Cloudflare), ensure the tunnel is active and pointing to the correct local port.</p> },
+    'Company Details Loaded': { problem: "The core `companyDetails` document could not be loaded from the database.", solution: <p>This is a critical configuration issue. If this is a new project, the initial data seeding may have failed. If this is an existing project, the document may have been accidentally deleted. Use the 'Restore from Backup' feature in the Admin Settings if you have a backup file.</p>, fixable: true },
+    'Ranks Loaded': { problem: "The player rank structure could not be loaded from the database.", solution: <p>Player progression will not work. This data may be missing from the `ranks` collection. You can try re-seeding this specific collection using the 'Fix It' button.</p>, fixable: true },
+    'Gamification Rules Loaded': { problem: "XP rules for in-game actions could not be loaded.", solution: <p>Automatic XP calculation will fail. This data may be missing from the `gamificationSettings` collection. You can try re-seeding this specific collection using the 'Fix It' button.</p>, fixable: true },
+    'Company Logo URL': { problem: "The URL for the company logo is either not configured or points to an unreachable address.", solution: <p>The logo will appear broken throughout the app. 1. Go to Admin Dashboard → Settings → Branding & Visuals. 2. Under 'Company Logo', re-upload the image or paste a valid, publicly accessible URL. 3. Save the settings.</p> },
 };
 
 const checkUrl = async (url: string | undefined): Promise<{ status: 'pass' | 'fail' | 'warn', detail: string }> => {
-    if (!url || typeof url !== 'string' || url.trim() === '') {
-        return { status: 'warn', detail: 'URL is not configured.' };
-    }
-    if (url.startsWith('data:')) {
-        return { status: 'pass', detail: 'URL is a valid data URI.' };
-    }
+    if (!url || typeof url !== 'string' || url.trim() === '') return { status: 'warn', detail: 'URL is not configured.' };
+    if (url.startsWith('data:')) return { status: 'pass', detail: 'URL is a valid data URI.' };
     try {
-        await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-        return { status: 'pass', detail: `URL is reachable.` };
+        const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+        // 'no-cors' responses have status 0, but a response means it's likely reachable.
+        return { status: 'pass', detail: 'URL is reachable.' };
     } catch (error) {
-        return { status: 'fail', detail: `URL fetch failed.` };
+        return { status: 'fail', detail: 'URL fetch failed.' };
     }
 };
 
-const StatCard: React.FC<{ title: string; value: number | string; color: string }> = ({ title, value, color }) => (
-    <div className="bg-zinc-800/50 p-3 rounded-lg text-center border border-zinc-700/50 flex-1">
-        <p className={`text-3xl font-bold ${color}`}>{value}</p>
-        <p className="text-xs text-gray-400 uppercase tracking-wider">{title}</p>
-    </div>
-);
+// --- Mock Test Functions ---
+const testEventFinalizationLogic = (players: Player[], settings: GamificationRule[]): { status: CheckStatus, detail: string } => {
+    try {
+        const mockPlayer = { ...players[0], stats: { ...players[0].stats, xp: 1000 } };
+        const participationXp = 50;
+        const liveStats = { kills: 5, deaths: 2, headshots: 1 };
+        const rules = new Map(settings.map(r => [r.id, r.xp]));
+        const getXp = (id: string) => rules.get(id) ?? 0;
 
-const HealthScoreHistoryChart: React.FC<{ history: { time: number; score: number }[] }> = ({ history }) => {
-    if (history.length < 2) return <div className="h-24 flex items-center justify-center text-gray-500 text-sm">Awaiting more data...</div>;
-    const width = 300, height = 80;
-    const maxScore = 100, minScore = 0;
-    const maxTime = Math.max(...history.map(p => p.time));
-    const minTime = Math.min(...history.map(p => p.time));
-    const timeRange = maxTime - minTime;
+        let xpGained = participationXp;
+        xpGained += liveStats.kills * getXp('g_kill');
+        xpGained += liveStats.headshots * getXp('g_headshot');
+        xpGained += liveStats.deaths * getXp('g_death');
+        
+        const finalXp = mockPlayer.stats.xp + xpGained;
+        const expectedXp = 1000 + 50 + (5 * 10) + (1 * 25) + (2 * -5); // Based on mock gamification settings
 
-    const points = history
-        .map(p => {
-            const x = timeRange > 0 ? ((p.time - minTime) / timeRange) * width : width / 2;
-            const y = height - ((p.score - minScore) / (maxScore - minScore)) * height;
-            return `${x},${y}`;
-        })
-        .join(' ');
-    
-    return (
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto">
-            <defs>
-                <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ef4444" stopOpacity="0.5" />
-                    <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
-                </linearGradient>
-            </defs>
-            <polyline fill="url(#lineGradient)" stroke="#ef4444" strokeWidth="2" points={`0,${height} ${points} ${width},${height}`} />
-            <polyline fill="none" stroke="#ef4444" strokeWidth="2" points={points} />
-        </svg>
-    );
+        if (finalXp === expectedXp) {
+            return { status: 'pass', detail: `Correctly calculated ${xpGained} XP.` };
+        } else {
+            return { status: 'fail', detail: `Calculation error. Expected ${expectedXp}, got ${finalXp}.` };
+        }
+    } catch (e) {
+        return { status: 'fail', detail: `An exception occurred: ${(e as Error).message}` };
+    }
 };
 
-const StatusDistributionChart: React.FC<{ data: Record<CheckStatus, number> }> = ({ data }) => {
-    // FIX: Replaced reduce with a filter and reduce chain to fix an arithmetic operation type error by ensuring only numbers are summed.
-    const total = Object.values(data).filter(val => typeof val === 'number').reduce((sum, val) => sum + val, 0);
-    if (total === 0) return null;
-    
-    const radius = 40;
-    const circumference = 2 * Math.PI * radius;
-
-    const items = [
-        { status: 'pass', color: '#22c55e' },
-        { status: 'warn', color: '#f59e0b' },
-        { status: 'fail', color: '#ef4444' },
-        { status: 'info', color: '#3b82f6' },
-    ] as const;
-
-    let accumulatedOffset = 0;
-
-    return (
-        <div className="flex items-center justify-center gap-6">
-            <svg width="100" height="100" viewBox="0 0 100 100">
-                <g transform="rotate(-90 50 50)">
-                    {items.map(({ status, color }) => {
-                        if (data[status] === 0) return null;
-                        const dash = (data[status] / total) * circumference;
-                        const strokeDasharray = `${dash} ${circumference - dash}`;
-                        const strokeDashoffset = -accumulatedOffset;
-                        accumulatedOffset += dash;
-
-                        return (
-                            <circle
-                                key={status}
-                                cx="50" cy="50" r={radius}
-                                fill="transparent"
-                                stroke={color}
-                                strokeWidth="10"
-                                strokeDasharray={strokeDasharray}
-                                strokeDashoffset={strokeDashoffset}
-                            />
-                        );
-                    })}
-                </g>
-            </svg>
-            <div className="text-sm space-y-1">
-                {items.map(({ status, color }) => data[status] > 0 && (
-                    <div key={status} className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: color }} />
-                        <span className="text-gray-300 capitalize">{status}: {data[status]}</span>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
+const testRankCalculation = (ranks: any[]): { status: CheckStatus, detail: string } => {
+    const mockPlayer: Player = { stats: { xp: 1100, gamesPlayed: 11 } } as Player;
+    const sortedRanks = [...ranks].sort((a, b) => b.minXp - a.minXp);
+    const rank = sortedRanks.find(r => mockPlayer.stats.xp >= r.minXp) || UNRANKED_RANK;
+    if (rank && rank.name === "Corporal 1") {
+        return { status: 'pass', detail: 'Correctly assigned Corporal 1 for 1100 XP.' };
+    }
+    return { status: 'fail', detail: `Incorrect rank. Expected Corporal 1, got ${rank?.name || 'Unranked'}.` };
 };
 
+const testBadgeAwarding = (badges: Badge[]): { status: CheckStatus, detail: string } => {
+    const mockPlayer: Player = { stats: { kills: 55, headshots: 10, gamesPlayed: 5 }, badges: [] } as Player;
+    const sharpshooterBadge = badges.find(b => b.id === 'b01'); // 50 headshots
+    const firstKillBadge = badges.find(b => b.id === 'b03'); // 1 kill
+    
+    if (!sharpshooterBadge || !firstKillBadge) return { status: 'fail', detail: 'Mock badges not found.' };
+
+    const hasSharpshooter = mockPlayer.stats.headshots >= (sharpshooterBadge.criteria.value as number);
+    const hasFirstKill = mockPlayer.stats.kills >= (firstKillBadge.criteria.value as number);
+
+    if (!hasSharpshooter && hasFirstKill) {
+        return { status: 'pass', detail: 'Correctly identified earned and unearned badges.' };
+    }
+    return { status: 'fail', detail: 'Logic for awarding badges seems incorrect.' };
+};
 
 export const SystemScanner: React.FC = () => {
-    const [results, setResults] = useState<Record<string, ResultCategory>>({});
+    const dataContext = useContext(DataContext as React.Context<DataContextType>);
+    const [results, setResults] = useState<Record<string, CheckResult[]>>({});
     const [overallStatus, setOverallStatus] = useState<OverallStatus>('pending');
     const [lastScanTime, setLastScanTime] = useState<Date | null>(null);
     const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
     const [healthHistory, setHealthHistory] = useState<{time: number; score: number}[]>([]);
-    
-    const dataContext = useContext(DataContext);
+    const [isScanning, setIsScanning] = useState(false);
+    const [activeTab, setActiveTab] = useState<ScannerTab>('status');
+    const [errorLog, setErrorLog] = useState<ErrorLogEntry[]>([]);
+    const [isLiveScanning, setIsLiveScanning] = useState(true);
 
-    const runScan = useCallback(async () => {
-        if (!dataContext) return;
-        const { players, events, companyDetails, ranks, gamificationSettings, creatorDetails } = dataContext;
-        
-        const checks = [
-            { category: 'Core System', name: 'React App Initialized', checkFn: async () => document.getElementById('root')?.hasChildNodes() ? { status: 'pass' as CheckStatus, detail: 'Root element is mounted.' } : { status: 'fail' as CheckStatus, detail: 'React root not found or is empty.' } },
-            { category: 'Core System', name: 'Data Context Ready', checkFn: async () => dataContext ? { status: 'pass' as CheckStatus, detail: 'DataContext is available.' } : { status: 'fail' as CheckStatus, detail: 'DataContext is missing.' } },
-            { category: 'Core System', name: 'PWA Manifest Check', checkFn: async () => { try { const r = await fetch('/manifest.json'); if (!r.ok) return { status: 'fail', detail: `manifest.json not found (Status: ${r.status})` }; const m = await r.json(); return (m.name && m.icons) ? { status: 'pass', detail: `Manifest "${m.name}" loaded.` } : { status: 'warn', detail: 'Manifest missing "name" or "icons".' }; } catch (e) { return { status: 'fail', detail: `Failed to fetch/parse manifest: ${(e as Error).message}` }; } }},
-            { category: 'Service Worker', name: 'Browser Support', checkFn: async () => 'serviceWorker' in navigator ? { status: 'pass' as CheckStatus, detail: 'Service Worker API is supported.' } : { status: 'fail' as CheckStatus, detail: 'Service Worker API not supported.' } },
-            { category: 'Service Worker', name: 'Registration Status', checkFn: async () => { if (!('serviceWorker' in navigator)) return { status: 'fail' as CheckStatus, detail: 'Browser does not support Service Workers.' }; const r = await navigator.serviceWorker.getRegistration(); return r ? { status: 'pass' as CheckStatus, detail: `Scope: ${r.scope}` } : { status: 'warn' as CheckStatus, detail: 'No active registration found.' }; }},
-            { category: 'Data & Storage', name: 'Storage Mode', checkFn: async () => ({ status: 'info' as CheckStatus, detail: `App is running in ${IS_LIVE_DATA ? 'LIVE (Firebase/API)' : 'MOCK'} data mode.` }) },
-            { category: 'Data & Storage', name: 'Firebase SDK Initialization', checkFn: async () => !USE_FIREBASE ? {status: 'info' as CheckStatus, detail: 'Firebase is disabled.'} : firebaseInitializationError ? { status: 'fail' as CheckStatus, detail: `Init failed: ${firebaseInitializationError.message}` } : { status: 'pass' as CheckStatus, detail: 'SDK initialized successfully.' } },
-            { category: 'Data & Storage', name: 'Firebase Config', checkFn: async () => !USE_FIREBASE ? {status: 'info'as CheckStatus, detail: 'Firebase is disabled.'} : isFirebaseConfigured() ? { status: 'pass' as CheckStatus, detail: 'Env variables are set.' } : { status: 'fail' as CheckStatus, detail: 'One or more VITE_FIREBASE_* env variables are missing.' } },
-            { category: 'Data & Storage', name: 'Firestore Connectivity', checkFn: async () => !IS_LIVE_DATA ? { status: 'pass' as CheckStatus, detail: 'Skipped (mock data mode).' } : !db ? {status: 'fail' as CheckStatus, detail: 'DB object not initialized.'} : db.collection('settings').doc('companyDetails').get().then(() => ({ status: 'pass' as CheckStatus, detail: 'Successfully connected.' })).catch(e => ({ status: 'fail' as CheckStatus, detail: `Connection failed: ${e.message}` })) },
-            { category: 'Data & Storage', name: 'Firestore Read/Write Test', checkFn: async () => { if (!IS_LIVE_DATA || !db) return { status: 'pass', detail: 'Skipped (mock data mode).' }; const t = db.collection('_health').doc(`test_${Date.now()}`); try { await t.set({s:'w'}); const d=await t.get(); if (!d.exists) throw new Error('Read fail.'); await t.delete(); return { status: 'pass', detail: 'CRUD operations successful.' }; } catch (e) { return { status: 'fail', detail: `R/W test failed: ${(e as Error).message}` }; } finally { try { await t.delete(); } catch (_) {} }}},
-            { category: 'Data & Storage', name: 'API Server Health', checkFn: async () => !companyDetails.apiServerUrl ? { status: 'info' as CheckStatus, detail: 'Not configured.' } : checkUrl(`${companyDetails.apiServerUrl}/health`) },
-            { category: 'Configuration', name: 'Company Details Loaded', checkFn: async () => companyDetails?.name ? { status: 'pass' as CheckStatus, detail: `Loaded: ${companyDetails.name}` } : { status: 'fail' as CheckStatus, detail: 'Company details are missing.' } },
-            { category: 'Configuration', name: 'Creator Details Loaded', checkFn: async () => creatorDetails?.name ? { status: 'pass' as CheckStatus, detail: `Loaded: ${creatorDetails.name}` } : { status: 'warn' as CheckStatus, detail: 'Creator details are missing.' } },
-            { category: 'Configuration', name: 'Ranks Loaded', checkFn: async () => ranks.length > 0 ? { status: 'pass' as CheckStatus, detail: `${ranks.length} ranks loaded.` } : { status: 'fail' as CheckStatus, detail: 'No ranks found.' } },
-            { category: 'Configuration', name: 'Gamification Rules Loaded', checkFn: async () => gamificationSettings.length > 0 ? { status: 'pass' as CheckStatus, detail: `${gamificationSettings.length} rules loaded.` } : { status: 'fail' as CheckStatus, detail: 'No gamification rules found.' } },
-            { category: 'Content & Media', name: 'Company Logo URL', checkFn: () => checkUrl(companyDetails.logoUrl) },
-            { category: 'Content & Media', name: 'Login Screen Background', checkFn: () => checkUrl(companyDetails.loginBackgroundUrl) },
-            { category: 'Content & Media', name: 'Event Images (Sample)', checkFn: () => { const e = events.find(ev => ev.imageUrl); return e ? checkUrl(e.imageUrl) : { status: 'info' as CheckStatus, detail: 'No events with images.' }; } },
-            { category: 'Live Metrics', name: 'Total Registered Players', checkFn: async () => ({ status: 'info', detail: `${players.length} players found in the database.` }) },
-            { category: 'Live Metrics', name: 'Active Events', checkFn: async () => ({ status: 'info', detail: `${events.filter(e => e.status === 'Upcoming' || e.status === 'In Progress').length} events are upcoming or in progress.` }) },
-            { category: 'Live Metrics', name: 'API Server Latency', checkFn: async () => { if (!companyDetails.apiServerUrl) return {status: 'info', detail: 'Not configured.'}; const start = Date.now(); try { await fetch(`${companyDetails.apiServerUrl}/health`); const latency = Date.now() - start; return {status: latency < 500 ? 'pass' : 'warn', detail: `${latency}ms response time.`}; } catch(e) { return {status: 'fail', detail: 'Server is unreachable.'}; }} },
+    const ALL_CHECKS = useCallback((): Check[] => {
+        if (!dataContext) return [];
+        const { players, events, companyDetails, ranks, badges, gamificationSettings, creatorDetails, seedCollection, addDoc } = dataContext;
+
+        return [
+            { category: 'Core System', name: 'React App Initialized', description: "Checks if the main application UI has successfully rendered.", checkFn: async () => document.getElementById('root')?.hasChildNodes() ? { status: 'pass', detail: 'Root element is mounted.' } : { status: 'fail', detail: 'React root not found or is empty.' } },
+            { category: 'Core System', name: 'Data Context Ready', description: "Verifies the central data management system is available.", checkFn: async () => dataContext ? { status: 'pass', detail: 'DataContext is available.' } : { status: 'fail', detail: 'DataContext is missing.' } },
+            { category: 'Core System', name: 'PWA Manifest Check', description: "Ensures the Progressive Web App manifest is valid.", checkFn: async () => { try { const r = await fetch('/manifest.json'); if (!r.ok) return { status: 'fail', detail: `manifest.json not found (Status: ${r.status})` }; const m = await r.json(); return (m.name && m.icons) ? { status: 'pass', detail: `Manifest "${m.name}" loaded.` } : { status: 'warn', detail: 'Manifest missing "name" or "icons".' }; } catch (e) { return { status: 'fail', detail: `Failed to fetch/parse manifest: ${(e as Error).message}` }; } }},
+            { category: 'Service Worker', name: 'Browser Support', description: "Checks if the browser is capable of running service workers.", checkFn: async () => 'serviceWorker' in navigator ? { status: 'pass', detail: 'Service Worker API is supported.' } : { status: 'fail', detail: 'Service Worker API not supported.' } },
+            { category: 'Service Worker', name: 'Registration Status', description: "Verifies that the service worker is actively running.", checkFn: async () => { if (!('serviceWorker' in navigator)) return { status: 'fail', detail: 'Browser does not support Service Workers.' }; const r = await navigator.serviceWorker.getRegistration(); return r ? { status: 'pass', detail: `Scope: ${r.scope}` } : { status: 'warn', detail: 'No active registration found.' }; }},
+            { category: 'Data & Storage', name: 'Storage Mode', description: "Identifies if the app is using live data or mock data.", checkFn: async () => ({ status: 'info', detail: `App is running in ${IS_LIVE_DATA ? 'LIVE (Firebase/API)' : 'MOCK'} data mode.` }) },
+            { category: 'Data & Storage', name: 'Firebase SDK Initialization', description: "Checks if the Firebase library initialized correctly.", checkFn: async () => !USE_FIREBASE ? {status: 'info', detail: 'Firebase is disabled.'} : firebaseInitializationError ? { status: 'fail', detail: `Init failed: ${firebaseInitializationError.message}` } : { status: 'pass', detail: 'SDK initialized successfully.' } },
+            { category: 'Data & Storage', name: 'Firebase Config', description: "Verifies that all required Firebase env variables are present.", checkFn: async () => !USE_FIREBASE ? {status: 'info', detail: 'Firebase is disabled.'} : isFirebaseConfigured() ? { status: 'pass', detail: 'Env variables are set.' } : { status: 'fail', detail: 'One or more VITE_FIREBASE_* env variables are missing.' } },
+            { category: 'Data & Storage', name: 'Firestore Connectivity', description: "Attempts a basic connection to the Firestore database.", checkFn: async () => !IS_LIVE_DATA ? { status: 'pass', detail: 'Skipped (mock data mode).' } : !db ? {status: 'fail', detail: 'DB object not initialized.'} : db.collection('settings').doc('companyDetails').get().then(() => ({ status: 'pass', detail: 'Successfully connected.' })).catch(e => ({ status: 'fail', detail: `Connection failed: ${(e as Error).message}` })) },
+            { category: 'Data & Storage', name: 'Firestore Read/Write Test', description: "Performs a live test to create, read, and delete a document.", checkFn: async () => { if (!IS_LIVE_DATA || !db) return { status: 'pass', detail: 'Skipped (mock data mode).' }; const t = db.collection('_health').doc(`test_${Date.now()}`); try { await t.set({s:'w'}); const d=await t.get(); if (!d.exists) throw new Error('Read fail.'); await t.delete(); return { status: 'pass', detail: 'CRUD operations successful.' }; } catch (e) { return { status: 'fail', detail: `R/W test failed: ${(e as Error).message}` }; } finally { try { await t.delete(); } catch (_) {} }}},
+            { category: 'Data & Storage', name: 'API Server Health', description: "Pings the external API server (if configured).", checkFn: async () => !companyDetails.apiServerUrl ? { status: 'info', detail: 'Not configured.' } : checkUrl(`${companyDetails.apiServerUrl}/health`) },
+            { category: 'Data & Storage', name: 'File Upload Test', description: "Performs a test upload to storage.", checkFn: async () => { if (!IS_LIVE_DATA) return { status: 'pass', detail: 'Skipped (mock mode).'}; try { const testBlob = new Blob(['test'], {type: 'text/plain'}); await uploadFile(testBlob, 'test.txt', '_health'); return { status: 'pass', detail: 'Simulated upload successful.'}; } catch(e) {return {status: 'fail', detail: `Upload failed: ${(e as Error).message}`}}}},
+            { category: 'Configuration', name: 'Company Details Loaded', description: "Ensures the main company configuration was loaded.", checkFn: async () => companyDetails?.name ? { status: 'pass', detail: `Loaded: ${companyDetails.name}` } : { status: 'fail', detail: 'Company details are missing.' } },
+            { category: 'Configuration', name: 'Creator Details Loaded', description: "Ensures the creator's profile information was loaded.", checkFn: async () => creatorDetails?.name ? { status: 'pass', detail: `Loaded: ${creatorDetails.name}` } : { status: 'warn', detail: 'Creator details are missing.' } },
+            { category: 'Configuration', name: 'Ranks Loaded', description: "Checks that the player rank structure is available.", checkFn: async () => ranks.length > 0 ? { status: 'pass', detail: `${ranks.length} ranks loaded.` } : { status: 'fail', detail: 'No ranks found.' } },
+            { category: 'Configuration', name: 'Gamification Rules Loaded', description: "Verifies that XP rules are loaded.", checkFn: async () => gamificationSettings.length > 0 ? { status: 'pass', detail: `${gamificationSettings.length} rules loaded.` } : { status: 'fail', detail: 'No gamification rules found.' } },
+            { category: 'Content & Media', name: 'Company Logo URL', description: "Validates that the company logo URL is accessible.", checkFn: () => checkUrl(companyDetails.logoUrl) },
+            { category: 'Content & Media', name: 'Login Screen Background', description: "Validates the login screen background URL.", checkFn: () => checkUrl(companyDetails.loginBackgroundUrl) },
+            { category: 'Core Automations', name: 'Event Finalization Logic', description: 'Simulates finalizing an event to verify XP calculations.', checkFn: async () => testEventFinalizationLogic(players, gamificationSettings) },
+            { category: 'Core Automations', name: 'Rank Calculation Logic', description: 'Simulates player XP to verify correct rank assignment.', checkFn: async () => testRankCalculation(ranks) },
+            { category: 'Core Automations', name: 'Badge Awarding Logic', description: 'Simulates player stats to verify badge unlocking logic.', checkFn: async () => testBadgeAwarding(badges) },
+            { category: 'Admin Functions', name: 'Player Creation Logic', description: 'Simulates creating a new player to check for errors.', checkFn: async () => { try { await addDoc('players', {name: 'Test', stats: {xp: 0}}); return {status: 'pass', detail: 'Player creation function is available.'}} catch(e) {return {status: 'fail', detail: `Function failed: ${(e as Error).message}`}}}},
         ];
-
-        const tempResults: Record<string, ResultCategory> = {};
-        for (const { category, name, checkFn } of checks) {
-            const result = await checkFn();
-            if (!tempResults[category]) tempResults[category] = { title: category, checks: [] };
-            const typedResult = result as { status: CheckStatus; detail: string };
-            tempResults[category].checks.push({ text: name, ...typedResult });
-        }
-        
-        setResults(tempResults);
-        setLastScanTime(new Date());
-
-        const allChecks = Object.values(tempResults).flatMap((cat: ResultCategory) => cat.checks);
-        const fails = allChecks.filter(c => c.status === 'fail').length;
-        const warns = allChecks.filter(c => c.status === 'warn').length;
-        const total = allChecks.length;
-        
-        const healthScore = total > 0 ? ((total - fails - warns * 0.5) / total) * 100 : 100;
-        setHealthHistory(prev => [...prev.slice(-19), { time: Date.now(), score: Math.max(0, healthScore) }]);
-
-        if (fails > 0) setOverallStatus('critical');
-        else if (warns > 0) setOverallStatus('degraded');
-        else setOverallStatus('operational');
-
-        const categoriesWithIssues = Object.entries(tempResults).reduce((acc, [key, category]) => {
-            const cat = category as ResultCategory;
-            if (cat.checks.some(c => c.status === 'fail' || c.status === 'warn')) {
-                acc[key] = true;
-            }
-            return acc;
-        }, {} as Record<string, boolean>);
-        setOpenCategories(prev => ({ ...prev, ...categoriesWithIssues }));
-
     }, [dataContext]);
 
+    const runChecks = useCallback(async (checksToRun: Check[]) => {
+        setIsScanning(true);
+        for (const { category, name, description } of checksToRun) {
+            setResults(prev => {
+                const updatedCategory = [...(prev[category] || [])];
+                const idx = updatedCategory.findIndex(c => c.text === name);
+                const newCheck: CheckResult = { text: name, description, status: 'running', detail: 'Running check...' };
+                if (idx > -1) updatedCategory[idx] = newCheck; else updatedCategory.push(newCheck);
+                return {...prev, [category]: updatedCategory};
+            });
+        }
+        
+        for (const { category, name, description, checkFn } of checksToRun) {
+            const result = await checkFn();
+            
+            setResults(prev => {
+                const updatedCategory = [...(prev[category] || [])];
+                const idx = updatedCategory.findIndex(c => c.text === name);
+                const finalCheck = { text: name, description, ...result };
+                if (idx > -1) updatedCategory[idx] = finalCheck; else updatedCategory.push(finalCheck);
+                if (finalCheck.status === 'fail' || finalCheck.status === 'warn') {
+                    setErrorLog(log => [{ timestamp: new Date(), checkName: name, category, detail: finalCheck.detail }, ...log].slice(0, 50));
+                }
+                return {...prev, [category]: updatedCategory};
+            });
+        }
+        
+        setLastScanTime(new Date());
+        setIsScanning(false);
+    }, []);
+
     useEffect(() => {
-        runScan();
-    }, [runScan]);
+        const groupedChecks: Record<string, CheckResult[]> = {};
+        for(const { category, name, description } of ALL_CHECKS()) {
+            if (!groupedChecks[category]) groupedChecks[category] = [];
+            groupedChecks[category].push({ text: name, description, status: 'pending', detail: 'Awaiting scan...' });
+        }
+        setResults(groupedChecks);
+        setOpenCategories(Object.keys(groupedChecks).reduce((acc, key) => ({...acc, [key]: false}), {}));
+        runChecks(ALL_CHECKS());
+    }, [ALL_CHECKS, runChecks]);
+
+    useEffect(() => {
+        // FIX: Use .flat() for better type inference and add explicit type annotation to fix 'unknown' type errors.
+        const allChecks: CheckResult[] = Object.values(results).flat();
+        if (allChecks.length === 0) return;
+
+        const fails = allChecks.filter(c => c.status === 'fail').length;
+        const warns = allChecks.filter(c => c.status === 'warn').length;
+        const totalSignificant = allChecks.filter(c => c.status === 'pass' || c.status === 'fail' || c.status === 'warn').length;
+        
+        const healthScore = totalSignificant > 0 ? ((totalSignificant - fails - warns * 0.5) / totalSignificant) * 100 : 100;
+
+        if (allChecks.every(c => c.status === 'pending' || c.status === 'running')) {
+            setOverallStatus('pending');
+        } else if (fails > 0) {
+            setOverallStatus('critical');
+        } else if (warns > 0) {
+            setOverallStatus('degraded');
+        } else {
+            setOverallStatus('operational');
+        }
+        
+        if(allChecks.length > 0 && allChecks.every(c => c.status !== 'pending' && c.status !== 'running')) {
+            setHealthHistory(prev => [...prev.slice(-19), { time: Date.now(), score: Math.max(0, healthScore) }]);
+        }
+
+    }, [results]);
+    
+    useEffect(() => {
+        if (!isLiveScanning) return;
+        const criticalChecks = ALL_CHECKS().filter(c => ['Core System', 'Data & Storage'].includes(c.category));
+        const interval = setInterval(() => runChecks(criticalChecks), 60000);
+        return () => clearInterval(interval);
+    }, [isLiveScanning, ALL_CHECKS, runChecks]);
+
 
     const StatusIcon: React.FC<{ status: CheckStatus }> = ({ status }) => {
         const icons: Record<CheckStatus, React.ReactNode> = {
@@ -251,137 +238,116 @@ export const SystemScanner: React.FC = () => {
             fail: <XCircleIcon className="w-5 h-5 text-red-500 flex-shrink-0" />,
             warn: <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500 flex-shrink-0" />,
             info: <InformationCircleIcon className="w-5 h-5 text-blue-500 flex-shrink-0" />,
+            pending: <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-gray-500"></div></div>,
+            running: <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center"><CogIcon className="w-4 h-4 text-gray-400 animate-spin"/></div>,
         };
         return icons[status] || null;
     };
     
-    const SolutionDisplay: React.FC<{ checkName: string }> = ({ checkName }) => {
-        const [isOpen, setIsOpen] = useState(false);
-        const solution = SOLUTIONS_MAP[checkName];
-        if (!solution) return null;
-        
-        return (
-            <div className="mt-2 pl-8">
-                <Button variant="secondary" size="sm" onClick={() => setIsOpen(!isOpen)}>{isOpen ? 'Hide' : 'Show'} Solution</Button>
-                <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden"
-                    >
-                        <div className="mt-2 p-3 bg-zinc-900/50 rounded-md border border-zinc-700">
-                             <h5 className="font-bold text-red-400">Problem</h5>
-                             <p className="text-sm text-gray-300 mb-2">{solution.problem}</p>
-                             <h5 className="font-bold text-green-400">Solution</h5>
-                             <div className="text-sm text-gray-300 prose prose-sm prose-invert max-w-none">{solution.solution}</div>
-                        </div>
-                    </motion.div>
-                )}
-                </AnimatePresence>
-            </div>
-        );
-    };
-
     const statusInfo: Record<OverallStatus, { text: string; color: string; bgColor: string }> = {
-        pending: { text: 'Initializing Scan...', color: 'text-gray-400', bgColor: 'bg-gray-500' },
+        pending: { text: 'Awaiting Scan...', color: 'text-gray-400', bgColor: 'bg-gray-500' },
         operational: { text: 'All Systems Operational', color: 'text-green-400', bgColor: 'bg-green-500' },
         degraded: { text: 'Degraded Performance', color: 'text-yellow-400', bgColor: 'bg-yellow-500' },
         critical: { text: 'Critical Errors Detected', color: 'text-red-400', bgColor: 'bg-red-500' },
     };
     const currentStatus = statusInfo[overallStatus];
-    // FIX: Add type assertion for 'cat' to resolve 'unknown' type error when accessing 'checks'.
-    const allChecks = Object.values(results).flatMap(cat => (cat as ResultCategory).checks);
-    const checkCounts = {
-        total: allChecks.length,
-        pass: allChecks.filter(c => c.status === 'pass').length,
-        warn: allChecks.filter(c => c.status === 'warn').length,
-        fail: allChecks.filter(c => c.status === 'fail').length,
-        info: allChecks.filter(c => c.status === 'info').length,
-    };
-    const { total, ...statusCounts } = checkCounts;
 
     return (
-        <DashboardCard title="Live System Monitor" icon={<CodeBracketIcon className="w-6 h-6" />}>
-            <div className="p-4 space-y-4">
-                 <div className="p-3 bg-zinc-950/50 rounded-lg border border-zinc-700/50">
-                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="relative flex items-center justify-center">
-                                <span className={`absolute inline-flex h-3 w-3 rounded-full ${currentStatus.bgColor} opacity-75 animate-ping`}></span>
-                                <span className={`relative inline-flex rounded-full h-3 w-3 ${currentStatus.bgColor}`}></span>
-                            </div>
-                            <h4 className={`text-lg font-bold ${currentStatus.color}`}>{currentStatus.text}</h4>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <p className="text-xs text-gray-500">Last check: {lastScanTime ? lastScanTime.toLocaleTimeString() : 'Pending...'}</p>
-                            <Button size="sm" variant="secondary" onClick={runScan} className="!p-1.5"><ArrowPathIcon className="w-4 h-4"/></Button>
-                        </div>
-                    </div>
-                     <div className="flex flex-wrap gap-2 mt-3">
-                        <StatCard title="Total Checks" value={checkCounts.total} color="text-white"/>
-                        <StatCard title="Passed" value={checkCounts.pass} color="text-green-400"/>
-                        <StatCard title="Warnings" value={checkCounts.warn} color="text-yellow-400"/>
-                        <StatCard title="Failures" value={checkCounts.fail} color="text-red-400"/>
-                    </div>
-                 </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-zinc-800/50 p-3 rounded-lg border border-zinc-700/50">
-                         <h5 className="font-semibold text-center text-gray-300 mb-2">Health Score Over Time</h5>
-                         <HealthScoreHistoryChart history={healthHistory}/>
-                    </div>
-                     <div className="bg-zinc-800/50 p-3 rounded-lg border border-zinc-700/50">
-                        <h5 className="font-semibold text-center text-gray-300 mb-2">Status Distribution</h5>
-                        <StatusDistributionChart data={statusCounts} />
-                    </div>
-                 </div>
-                
-                {overallStatus === 'pending' ? (
-                     <div className="text-center p-8"><CogIcon className="w-12 h-12 text-gray-500 mx-auto animate-spin"/><p className="mt-2 text-gray-400">Running diagnostics...</p></div>
-                ) : (
-                    <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
-                        {
-                        Object.entries(results).map(([key, category]) => {
-                            // FIX: Add type assertion for 'category' to resolve 'unknown' type errors on subsequent property access.
-                            const cat = category as ResultCategory;
-                            const hasFail = cat.checks.some(c => c.status === 'fail');
-                            const hasWarn = cat.checks.some(c => c.status === 'warn');
-                            const categoryStatus: CheckStatus = hasFail ? 'fail' : hasWarn ? 'warn' : 'pass';
-                            const isOpen = openCategories[key] ?? false;
-
-                            return (
-                                <div key={key} className="bg-zinc-800/50 rounded-lg border border-zinc-700/50">
-                                    <button className="w-full flex items-center justify-between p-3 text-left" onClick={() => setOpenCategories(p => ({ ...p, [key]: !isOpen }))} aria-expanded={isOpen}>
-                                        <div className="flex items-center gap-3"><StatusIcon status={categoryStatus} /><span className="font-semibold text-white">{cat.title}</span></div>
-                                        <span className={`transform transition-transform ${isOpen ? 'rotate-90' : 'rotate-0'}`}>{'>'}</span>
-                                    </button>
-                                    <AnimatePresence>
-                                        {isOpen && (
-                                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                                                <div className="border-t border-zinc-700/50 p-3 space-y-3">
-                                                    {cat.checks.map((check, i) => (
-                                                        <div key={i}>
-                                                            <div className="flex items-start gap-3 text-sm">
-                                                                <StatusIcon status={check.status} />
-                                                                <div>
-                                                                    <p className="text-gray-200">{check.text}</p>
-                                                                    <p className="text-xs text-gray-400">{check.detail}</p>
-                                                                </div>
-                                                            </div>
-                                                            {(check.status === 'fail' || check.status === 'warn') && <SolutionDisplay checkName={check.text} />}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
+        <div className="space-y-4">
+            <div className="flex border-b border-zinc-700">
+                {(['status', 'diagnostics', 'history'] as ScannerTab[]).map(tab => (
+                    <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-sm font-semibold transition-colors ${activeTab === tab ? 'text-red-400 border-b-2 border-red-500' : 'text-gray-400 hover:text-white'}`}>
+                        {tab.charAt(0).toUpperCase() + tab.slice(1)} {tab === 'history' && errorLog.length > 0 && `(${errorLog.length})`}
+                    </button>
+                ))}
             </div>
-        </DashboardCard>
+            
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    {activeTab === 'status' && (
+                         <div className="p-4 bg-zinc-950/50 rounded-lg border border-zinc-700/50 space-y-4">
+                            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex items-center justify-center">
+                                        <span className={`absolute inline-flex h-3 w-3 rounded-full ${currentStatus.bgColor} ${isScanning ? 'opacity-75 animate-ping' : ''}`}></span>
+                                        <span className={`relative inline-flex rounded-full h-3 w-3 ${currentStatus.bgColor}`}></span>
+                                    </div>
+                                    <h4 className={`text-lg font-bold ${currentStatus.color}`}>{isScanning ? 'Scanning...' : currentStatus.text}</h4>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-xs text-gray-500">Last full scan: {lastScanTime ? lastScanTime.toLocaleTimeString() : 'N/A'}</p>
+                                    <Button size="sm" variant="secondary" onClick={() => runChecks(ALL_CHECKS())} disabled={isScanning} className="!p-1.5"><ArrowPathIcon className="w-4 h-4"/></Button>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 bg-zinc-800 p-2 rounded-md">
+                                <input type="checkbox" id="live-scan" checked={isLiveScanning} onChange={e => setIsLiveScanning(e.target.checked)} className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"/>
+                                <label htmlFor="live-scan" className="text-sm text-gray-300">Enable Continuous Monitoring (scans critical systems every 60s)</label>
+                            </div>
+                            <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                                <h5 className="text-sm font-semibold text-gray-400">Recent Activity</h5>
+                                {errorLog.slice(0, 5).map((log, i) => (
+                                     <div key={i} className="flex items-start gap-2 text-xs p-2 bg-red-900/20 rounded-md">
+                                        <ExclamationTriangleIcon className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0"/>
+                                        <div>
+                                            <p className="text-red-400">
+                                                <span className="font-bold">{log.checkName}</span> failed at {log.timestamp.toLocaleTimeString()}
+                                            </p>
+                                            <p className="text-gray-300">{log.detail}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {activeTab === 'diagnostics' && (
+                        <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-2">
+                             {/* FIX: Add a type assertion to fix 'unknown' type error on .map() */}
+                             {(Object.entries(results) as [string, CheckResult[]][]).map(([category, checks]) => (
+                                <div key={category} className="bg-zinc-800/50 rounded-lg border border-zinc-700/50">
+                                    <div className="flex items-center justify-between p-3 text-left">
+                                        <div className="flex items-center gap-3"><span className="font-semibold text-white">{category}</span></div>
+                                        <Button size="sm" variant="secondary" onClick={() => runChecks(ALL_CHECKS().filter(c => c.category === category))} disabled={isScanning}>Scan Category</Button>
+                                    </div>
+                                    <div className="border-t border-zinc-700/50 p-3 space-y-3">
+                                        {checks.map((check, i) => (
+                                            <div key={i}>
+                                                <div className="flex items-start gap-3 text-sm">
+                                                    <StatusIcon status={check.status} />
+                                                    <div className="flex-grow">
+                                                        <p className="text-gray-200 font-semibold">{check.text}</p>
+                                                        <p className="text-xs text-gray-500 italic mt-0.5">{check.description}</p>
+                                                        <p className="text-xs text-gray-400 mt-1">{check.detail}</p>
+                                                    </div>
+                                                    <Button size="sm" variant="secondary" className="!px-2 !py-1" onClick={() => runChecks([ALL_CHECKS().find(c => c.name === check.text)!])} disabled={isScanning}><ArrowPathIcon className="w-4 h-4"/></Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {activeTab === 'history' && (
+                        <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-2">
+                             {errorLog.length > 0 ? errorLog.map((log, i) => (
+                                <div key={i} className="bg-zinc-800/50 p-3 rounded-lg border border-zinc-700/50">
+                                    <div className="flex justify-between items-start text-xs">
+                                        <p className="font-bold text-red-400">{log.category} / {log.checkName}</p>
+                                        <p className="text-gray-500 flex items-center gap-1"><ClockIcon className="w-3 h-3"/>{log.timestamp.toLocaleString()}</p>
+                                    </div>
+                                    <p className="text-sm text-gray-300 mt-1">{log.detail}</p>
+                                </div>
+                             )) : <p className="text-center text-gray-500 p-8">No errors have been logged in this session.</p>}
+                        </div>
+                    )}
+                </motion.div>
+            </AnimatePresence>
+        </div>
     );
 };

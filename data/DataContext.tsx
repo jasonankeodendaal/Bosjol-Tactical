@@ -23,11 +23,23 @@ function useCollection<T extends {id: string}>(collectionName: string, mockData:
             setLoading(true);
             const q = db.collection(collectionName);
             const unsubscribe = q.onSnapshot((querySnapshot) => {
-                const items: T[] = [];
+                const newItems: T[] = [];
                 querySnapshot.forEach((doc) => {
-                    items.push({ id: doc.id, ...doc.data() } as unknown as T);
+                    newItems.push({ id: doc.id, ...doc.data() } as unknown as T);
                 });
-                setData(items);
+
+                setData(prevItems => {
+                    // Sort by ID to ensure consistent order for stringify comparison
+                    const sortById = (a: T, b: T) => a.id.localeCompare(b.id);
+                    const sortedPrev = [...prevItems].sort(sortById);
+                    const sortedNew = [...newItems].sort(sortById);
+
+                    if (JSON.stringify(sortedPrev) === JSON.stringify(sortedNew)) {
+                        return prevItems; // Data is the same, return previous state to prevent re-render
+                    }
+                    return newItems; // Data has changed, update state
+                });
+
                 setLoading(false);
             }, (error) => {
                 console.error(`Error fetching ${collectionName}: `, error);
@@ -57,7 +69,16 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
             const unsubscribe = docRef.onSnapshot((docSnap) => {
                 if (docSnap.exists) {
                     const firestoreData = docSnap.data() || {};
-                    setData({ ...mockData, ...firestoreData } as T);
+                    const newData = { ...mockData, ...firestoreData };
+
+                    setData(prevData => {
+                        // Perform deep comparison to prevent unnecessary re-renders
+                        if (JSON.stringify(prevData) === JSON.stringify(newData)) {
+                            return prevData;
+                        }
+                        return newData as T;
+                    });
+
                 } else {
                     console.warn(`Document ${docId} not found in ${collectionName}. Waiting for seed.`);
                 }

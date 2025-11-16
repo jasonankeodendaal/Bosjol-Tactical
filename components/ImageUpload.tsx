@@ -50,6 +50,110 @@ const compressImage = (file: File): Promise<Blob> => {
     });
 };
 
+const compressVideo = (file: File, onProgress: (progress: number) => void): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        video.muted = true;
+        video.style.display = 'none';
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            if (!event.target?.result) {
+                document.body.removeChild(video);
+                return reject(new Error("Couldn't read video file."));
+            }
+            video.src = event.target.result as string;
+        };
+        reader.onerror = (err) => {
+            document.body.removeChild(video);
+            reject(err);
+        };
+        
+        video.onloadedmetadata = () => {
+            const MAX_DIMENSION = 720;
+            let { videoWidth, videoHeight } = video;
+            const aspectRatio = videoWidth / videoHeight;
+            
+            if (videoWidth > MAX_DIMENSION || videoHeight > MAX_DIMENSION) {
+                if (videoWidth > videoHeight) {
+                    videoWidth = MAX_DIMENSION;
+                    videoHeight = videoWidth / aspectRatio;
+                } else {
+                    videoHeight = MAX_DIMENSION;
+                    videoWidth = videoHeight * aspectRatio;
+                }
+            }
+            
+            videoWidth = Math.round(videoWidth);
+            videoHeight = Math.round(videoHeight);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = videoWidth;
+            canvas.height = videoHeight;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return reject(new Error('Could not get canvas context'));
+            
+            const recordedChunks: Blob[] = [];
+            const canvasStream = canvas.captureStream(30); // 30 fps
+            
+            if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported('video/webm')) {
+                 document.body.removeChild(video);
+                 return reject(new Error('Video recording (MediaRecorder) is not supported in this browser.'));
+            }
+            
+            const mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9') ? 'video/webm; codecs=vp9' : 'video/webm';
+            
+            const mediaRecorder = new MediaRecorder(canvasStream, {
+                mimeType,
+                videoBitsPerSecond: 2 * 1024 * 1024 // 2 Mbps bitrate
+            });
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                    recordedChunks.push(e.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                document.body.removeChild(video);
+                resolve(new Blob(recordedChunks, { type: 'video/webm' }));
+            };
+
+            mediaRecorder.onerror = (e) => {
+                 document.body.removeChild(video);
+                 reject(e);
+            }
+
+            const drawFrame = () => {
+                if (video.paused || video.ended) {
+                    return;
+                }
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                onProgress(Math.min(100, (video.currentTime / video.duration) * 100));
+                requestAnimationFrame(drawFrame);
+            };
+            
+            video.onplay = () => {
+                mediaRecorder.start();
+                drawFrame();
+            };
+            
+            video.onended = () => {
+                mediaRecorder.stop();
+                onProgress(100);
+            };
+
+            video.play().catch(e => {
+                document.body.removeChild(video);
+                reject(new Error(`Video playback failed: ${e.message}. Compression cannot start.`));
+            });
+        };
+        
+        document.body.appendChild(video);
+    });
+};
+
 
 export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, apiServerUrl }) => {
   const [status, setStatus] = useState<UploadStatus>('idle');
@@ -98,17 +202,27 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
         try {
             let fileToUpload: Blob = file;
             const isImage = file.type.startsWith('image/') && !file.type.endsWith('gif');
+            const isVideo = file.type.startsWith('video/');
             const isLargeImage = isImage && file.size > 500 * 1024; // Compress if image > 500KB
 
             if (isLargeImage) {
-                setMessage(`Compressing ${file.name}...`);
+                setMessage(`Compressing image: ${file.name}...`);
                 setProgress(0);
                 try {
                     fileToUpload = await compressImage(file);
                 } catch (compressionError) {
                     console.warn('Image compression failed, uploading original file.', compressionError);
-                    // fallback to original file
                 }
+            } else if (isVideo) {
+                 setMessage(`Optimizing video: ${file.name}...`);
+                 setProgress(0);
+                 try {
+                     fileToUpload = await compressVideo(file, (p) => setProgress(Math.round(p)));
+                 } catch (compressionError) {
+                     console.warn('Video optimization failed, uploading original file.', compressionError);
+                     setMessage(`Optimization failed. Uploading original...`);
+                     await new Promise(res => setTimeout(res, 1500));
+                 }
             }
 
             if (fileToUpload.size > 25 * 1024 * 1024) {

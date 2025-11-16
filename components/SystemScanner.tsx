@@ -198,8 +198,8 @@ export const SystemScanner: React.FC = () => {
     }, [ALL_CHECKS, runChecks]);
 
     useEffect(() => {
-        // FIX: Use .flat() for better type inference and add explicit type annotation to fix 'unknown' type errors.
-        const allChecks: CheckResult[] = Object.values(results).flat();
+        // FIX: Add a type assertion to help TypeScript correctly infer the type of the flattened array.
+        const allChecks: CheckResult[] = (Object.values(results) as CheckResult[][]).flat();
         if (allChecks.length === 0) return;
 
         const fails = allChecks.filter(c => c.status === 'fail').length;

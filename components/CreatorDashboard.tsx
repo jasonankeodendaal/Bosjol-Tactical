@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useContext } from 'react';
 import type { CreatorDetails } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -40,9 +41,65 @@ service cloud.firestore {
     // --- Publicly Readable Collections ---
     // These must be readable by anyone (including unauthenticated players)
     // for the dashboard to function. Write access is strictly limited.
-    match /(settings|socialLinks|carouselMedia|players|events|ranks|badges|legendaryBadges|gamificationSettings|sponsors|inventory|suppliers|locations|raffles|vouchers)/{docId} {
+    match /settings/{docId} {
       allow read: if true;
-      allow write: if isAdmin() || isCreator(); // Allow creator to edit settings too
+      allow write: if isAdmin() || isCreator();
+    }
+    match /socialLinks/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+    }
+    match /carouselMedia/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+    }
+    match /players/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+    }
+    match /events/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+    }
+    match /ranks/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+    }
+    match /badges/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+    }
+    match /legendaryBadges/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+    }
+    match /gamificationSettings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+    }
+    match /sponsors/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+    }
+    match /inventory/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+    }
+    match /suppliers/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+    }
+    match /locations/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+    }
+    match /raffles/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+    }
+    match /vouchers/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
     }
     
     // --- Admin-Only Collections ---

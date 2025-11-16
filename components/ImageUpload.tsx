@@ -1,15 +1,17 @@
 /** @jsxImportSource react */
 import React, { useState, useRef, useCallback } from 'react';
-import { UploadCloudIcon } from './icons/Icons';
+import { motion, AnimatePresence } from 'framer-motion';
+import { UploadCloudIcon, CheckCircleIcon, XCircleIcon } from './icons/Icons';
 import { uploadFile } from '../firebase';
 
 interface FileUploadProps {
   onUpload: (urls: string[]) => void;
   accept: string;
   multiple?: boolean;
-  onProgress?: (percent: number) => void;
   apiServerUrl?: string;
 }
+
+type UploadStatus = 'idle' | 'compressing' | 'uploading' | 'success' | 'error';
 
 const compressImage = (file: File, maxSizeKB: number = 200): Promise<Blob> => {
     return new Promise((resolve, reject) => {
@@ -116,12 +118,19 @@ const compressAudio = (file: File, targetBitrate: number = 64000): Promise<Blob>
     });
 };
 
-export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, onProgress, apiServerUrl }) => {
-  const [fileName, setFileName] = useState<string | null>(null);
+export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, apiServerUrl }) => {
+  const [status, setStatus] = useState<UploadStatus>('idle');
+  const [progress, setProgress] = useState(0);
+  const [message, setMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCustomUpload = async (file: Blob, name: string): Promise<string> => {
     if (!apiServerUrl) throw new Error("API Server URL is not configured.");
+    
+    // Fetch does not support progress reporting for uploads easily.
+    // For this implementation, we will not have granular progress for custom servers.
+    setProgress(50); // Set to an intermediate state
+
     const formData = new FormData();
     formData.append('file', file, name);
     const response = await fetch(`${apiServerUrl}/upload`, {
@@ -136,24 +145,29 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
     return url;
 };
 
+  const resetState = () => {
+    setTimeout(() => {
+        setStatus('idle');
+        setProgress(0);
+        setMessage('');
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    }, 2000);
+  }
+
   const handleFilesChange = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    onProgress?.(0);
-    setFileName(multiple ? `${files.length} file(s) selected` : files[0].name);
+    
+    setMessage(multiple ? `${files.length} file(s) selected` : files[0].name);
 
-    const filesArray = Array.from(files);
+    const filesArray = multiple ? Array.from(files) : [files[0]];
     const results: string[] = [];
-    let processedCount = 0;
-
-    const uploader = apiServerUrl ? handleCustomUpload : uploadFile;
 
     for (const file of filesArray) {
         try {
             let fileToUpload: Blob = file;
 
-            // Only compress images and audio if we are using Firebase storage to save space.
-            // A self-hosted server might have different storage constraints.
             if (!apiServerUrl) {
+                setStatus('compressing');
                 if (file.type.startsWith('image/')) {
                     fileToUpload = await compressImage(file);
                 } else if (file.type.startsWith('audio/')) {
@@ -161,32 +175,35 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
                 }
             }
             
-            // Limit for non-image/audio files on Firebase, or any file on custom server
-            if (fileToUpload.size > 25 * 1024 * 1024) { // 25MB limit
-                 alert(`Cannot upload "${file.name}". Files larger than 25MB are not supported for direct upload.`);
-                 continue;
+            if (fileToUpload.size > 25 * 1024 * 1024) {
+                 throw new Error(`"${file.name}" is too large (> 25MB).`);
             }
             
-            const url = await uploader(fileToUpload, file.name);
+            setStatus('uploading');
+            const uploader = apiServerUrl ? (blob: Blob, name: string) => handleCustomUpload(blob, name) : uploadFile;
+            
+            const url = await uploader(fileToUpload, file.name, 'uploads', (p) => setProgress(Math.round(p)));
             results.push(url);
 
         } catch (err) {
             console.error(`Failed to process file ${file.name}:`, err);
-            alert(`Error processing "${file.name}": ${(err as Error).message}`);
-        } finally {
-            processedCount++;
-            const percent = Math.round((processedCount / filesArray.length) * 100);
-            onProgress?.(percent);
+            setStatus('error');
+            setMessage((err as Error).message);
+            resetState();
+            return;
         }
     }
 
     if (results.length > 0) {
+        setStatus('success');
+        setMessage(multiple ? `${results.length} files uploaded!` : 'Upload complete!');
+        setProgress(100);
         onUpload(results);
     }
-    // Reset file input to allow re-uploading the same file
-    if (fileInputRef.current) fileInputRef.current.value = "";
     
-}, [onUpload, multiple, onProgress, apiServerUrl]);
+    resetState();
+    
+}, [onUpload, multiple, apiServerUrl]);
 
   const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       handleFilesChange(event.target.files);
@@ -202,22 +219,82 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
   }
 
   const handleClick = () => {
-    fileInputRef.current?.click();
+    if (status === 'idle') {
+        fileInputRef.current?.click();
+    }
   };
+
+  const renderContent = () => {
+    switch(status) {
+        case 'compressing':
+            return (
+                <div className="flex flex-col items-center justify-center text-center">
+                    <div className="w-6 h-6 border-2 border-zinc-500 border-t-white rounded-full animate-spin mb-3"></div>
+                    <p className="text-sm font-semibold text-gray-200">Compressing...</p>
+                    <p className="text-xs text-gray-400 truncate max-w-full px-2">{message}</p>
+                </div>
+            )
+        case 'uploading':
+            return (
+                <div className="w-full flex flex-col items-center justify-center p-4 text-center">
+                    <p className="text-sm font-semibold text-gray-200 mb-2">Uploading...</p>
+                    <div className="w-full bg-zinc-700 rounded-full h-2.5">
+                        <motion.div
+                            className="bg-red-500 h-2.5 rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progress}%` }}
+                            transition={{ duration: 0.3, ease: "linear" }}
+                        />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">{progress}%</p>
+                </div>
+            );
+        case 'success':
+            return (
+                <div className="flex flex-col items-center justify-center text-center">
+                    <CheckCircleIcon className="w-8 h-8 text-green-500 mb-2"/>
+                    <p className="text-sm font-semibold text-green-400">{message}</p>
+                </div>
+            )
+        case 'error':
+            return (
+                 <div className="flex flex-col items-center justify-center text-center p-4">
+                    <XCircleIcon className="w-8 h-8 text-red-500 mb-2"/>
+                    <p className="text-sm font-semibold text-red-400">Upload Failed</p>
+                    <p className="text-xs text-gray-400 truncate max-w-full">{message}</p>
+                </div>
+            )
+        case 'idle':
+        default:
+            return (
+                <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
+                    <UploadCloudIcon className="w-8 h-8 mb-4 text-gray-500" />
+                    <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                    <p className="text-xs text-gray-500 truncate max-w-full px-2">{`Accepted: ${accept}`}</p>
+                </div>
+            )
+    }
+  }
 
   return (
     <div className="flex flex-col items-center justify-center w-full">
       <div
-        className="flex flex-col items-center justify-center w-full min-h-32 border-2 border-zinc-700 border-dashed rounded-lg cursor-pointer bg-zinc-800 hover:bg-zinc-700/50 transition-colors"
+        className={`flex flex-col items-center justify-center w-full min-h-32 border-2 border-zinc-700 border-dashed rounded-lg bg-zinc-800 ${status === 'idle' ? 'cursor-pointer hover:bg-zinc-700/50' : 'cursor-default'} transition-colors relative overflow-hidden`}
         onClick={handleClick}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
+        onDrop={status === 'idle' ? onDrop : undefined}
+        onDragOver={status === 'idle' ? onDragOver : undefined}
       >
-        <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
-            <UploadCloudIcon className="w-8 h-8 mb-4 text-gray-500" />
-            <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-            <p className="text-xs text-gray-500 truncate max-w-full px-2">{fileName || `Accepted: ${accept}`}</p>
-        </div>
+        <AnimatePresence mode="wait">
+            <motion.div
+                key={status}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+            >
+                {renderContent()}
+            </motion.div>
+        </AnimatePresence>
         <input 
             ref={fileInputRef} 
             type="file" 
@@ -225,6 +302,7 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
             onChange={onFileChange}
             accept={accept}
             multiple={multiple}
+            disabled={status !== 'idle'}
         />
       </div>
     </div>

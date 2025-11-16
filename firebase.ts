@@ -60,18 +60,43 @@ export const auth = app ? firebase.auth() : null;
 export const db = app ? firebase.firestore() : null;
 export const storage = app ? firebase.storage() : null;
 
-export const uploadFile = async (file: Blob, originalName: string, path: string = 'uploads'): Promise<string> => {
-    if (!storage) {
-        throw new Error("Firebase Storage is not initialized.");
-    }
-    const fileExtension = originalName.split('.').pop() || 'bin';
-    const randomString = Math.random().toString(36).substring(2);
-    const fileName = `${Date.now()}-${randomString}.${fileExtension}`;
-    
-    const storageRef = storage.ref(`${path}/${fileName}`);
-    const snapshot = await storageRef.put(file);
-    const downloadURL = await snapshot.ref.getDownloadURL();
-    return downloadURL;
+export const uploadFile = (
+    file: Blob, 
+    originalName: string, 
+    path: string = 'uploads',
+    onProgress?: (percentage: number) => void
+): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        if (!storage) {
+            return reject(new Error("Firebase Storage is not initialized."));
+        }
+        const fileExtension = originalName.split('.').pop() || 'bin';
+        const randomString = Math.random().toString(36).substring(2);
+        const fileName = `${Date.now()}-${randomString}.${fileExtension}`;
+        
+        const storageRef = storage.ref(`${path}/${fileName}`);
+        const uploadTask = storageRef.put(file);
+
+        uploadTask.on('state_changed', 
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                if (onProgress) {
+                    onProgress(progress);
+                }
+            }, 
+            (error) => {
+                reject(error);
+            }, 
+            async () => {
+                try {
+                    const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                    resolve(downloadURL);
+                } catch (error) {
+                    reject(error);
+                }
+            }
+        );
+    });
 };
 
 export { firebase };

@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect, useContext } from 'react';
 import type { CompanyDetails, SocialLink, CarouselMedia } from '../types';
 import { DashboardCard } from './DashboardCard';

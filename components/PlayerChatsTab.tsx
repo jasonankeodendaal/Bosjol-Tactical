@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { db, USE_FIREBASE, firebase } from '../firebase';
 import { AuthContext } from '../auth/AuthContext';
 import { DashboardCard } from './DashboardCard';
-import { ChatBubbleLeftRightIcon, PaperAirplaneIcon, TrashIcon } from './icons/Icons';
+import { ChatBubbleLeftRightIcon, PaperAirplaneIcon, TrashIcon, FaceSmileIcon } from './icons/Icons';
 import { Button } from './Button';
 import { Input } from './Input';
 import type { ChatMessage, Player, Admin } from '../types';
@@ -31,7 +31,11 @@ const PlayerChatsTab: React.FC = () => {
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
+    const [showEmojis, setShowEmojis] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const emojiPickerRef = useRef<HTMLDivElement>(null);
+
+    const emojis = ['💀', '💥', '🎯', '🔥', '👍', '👎', '😂', '😭', '🤯', '🙏', '🏃', '💣', '🔫', '🏆', '💯'];
     
     const currentUser = auth?.user as Player | Admin;
     const isAdmin = currentUser?.role === 'admin';
@@ -66,6 +70,19 @@ const PlayerChatsTab: React.FC = () => {
         });
 
         return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+                setShowEmojis(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
     }, []);
     
     const handleSubmit = async (e: React.FormEvent) => {
@@ -103,6 +120,10 @@ const PlayerChatsTab: React.FC = () => {
                 console.error("Error deleting message:", error);
             }
         }
+    };
+
+    const handleEmojiClick = (emoji: string) => {
+        setNewMessage(prev => prev + emoji);
     };
 
     if (!currentUser) {
@@ -152,8 +173,34 @@ const PlayerChatsTab: React.FC = () => {
                     </AnimatePresence>
                     <div ref={messagesEndRef} />
                 </div>
-                <div className="p-4 border-t border-zinc-800">
+                <div className="p-4 border-t border-zinc-800 relative" ref={emojiPickerRef}>
+                    <AnimatePresence>
+                        {showEmojis && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute bottom-full left-4 mb-2 w-64 bg-zinc-900 border border-zinc-700 rounded-lg p-2 shadow-lg grid grid-cols-5 gap-1"
+                            >
+                                {emojis.map(emoji => (
+                                    <button
+                                        key={emoji}
+                                        type="button"
+                                        onClick={() => handleEmojiClick(emoji)}
+                                        className="text-2xl rounded-md p-1 hover:bg-zinc-700 transition-colors"
+                                        aria-label={`Insert ${emoji} emoji`}
+                                    >
+                                        {emoji}
+                                    </button>
+                                ))}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                     <form onSubmit={handleSubmit} className="flex items-center gap-3">
+                        <Button type="button" variant="secondary" className="!p-3 flex-shrink-0" onClick={() => setShowEmojis(s => !s)} aria-label="Open emoji picker">
+                            <FaceSmileIcon className="w-5 h-5" />
+                        </Button>
                         <Input 
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
@@ -162,7 +209,7 @@ const PlayerChatsTab: React.FC = () => {
                             disabled={isSending}
                             autoComplete="off"
                         />
-                        <Button type="submit" disabled={isSending || !newMessage.trim()} className="!px-4">
+                        <Button type="submit" disabled={isSending || !newMessage.trim()} className="!px-4 flex-shrink-0">
                             <PaperAirplaneIcon className="w-5 h-5" />
                         </Button>
                     </form>

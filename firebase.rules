@@ -2,108 +2,96 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // --- Helper Functions ---
 
-    // isAdmin: Checks if the signed-in user is the designated administrator by their email.
+    // ---------------------------
+    // Helper Functions
+    // ---------------------------
+
+    // Checks if the requesting user is an authenticated admin.
+    // Assumes an 'admins' collection where document IDs match Firebase Auth UIDs.
     function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'bosjoltactical@gmail.com';
+      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // isCreator: Checks if the signed-in user is the designated creator by their email.
-    function isCreator() {
-      return request.auth != null && request.auth.token.email == 'jstypme@gmail.com';
-    }
-
-    // --- Default Security Posture ---
-
-    // By default, deny all reads and writes to the entire database.
+    // ---------------------------
+    // Default Security Rule
+    // ---------------------------
+    
+    // By default, deny all reads and writes to all documents.
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // --- Publicly Readable Collections ---
-    // These must be readable by anyone (including unauthenticated players)
-    // for the dashboard to function. Write access is strictly limited.
-    match /settings/{docId} {
-      allow read: if true;
-      allow write: if isAdmin() || isCreator();
-    }
-    match /socialLinks/{docId} {
-      allow read: if true;
-      allow write: if isAdmin() || isCreator();
-    }
-    match /carouselMedia/{docId} {
-      allow read: if true;
-      allow write: if isAdmin() || isCreator();
-    }
-    match /players/{docId} {
-      allow read: if true;
-      allow write: if isAdmin() || isCreator();
-    }
-    match /events/{docId} {
-      allow read: if true;
-      allow write: if isAdmin() || isCreator();
-    }
-    match /ranks/{docId} {
-      allow read: if true;
-      allow write: if isAdmin() || isCreator();
-    }
-    match /badges/{docId} {
-      allow read: if true;
-      allow write: if isAdmin() || isCreator();
-    }
-    match /legendaryBadges/{docId} {
-      allow read: if true;
-      allow write: if isAdmin() || isCreator();
-    }
-    match /gamificationSettings/{docId} {
-      allow read: if true;
-      allow write: if isAdmin() || isCreator();
-    }
-    match /sponsors/{docId} {
-      allow read: if true;
-      allow write: if isAdmin() || isCreator();
-    }
+    // ---------------------------
+    // Public & System Collections
+    // (Readable by anyone, only writable by admins)
+    // ---------------------------
+
+    // System configuration for progression
+    match /ranks/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /badges/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /legendaryBadges/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /gamificationSettings/{docId} { allow read: if true; allow write: if isAdmin(); }
+
+    // Public-facing content
+    match /sponsors/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /locations/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /socialLinks/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /carouselMedia/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /raffles/{docId} { allow read: if true; allow write: if isAdmin(); }
+    
+    // Players need to read inventory to see available rental gear.
     match /inventory/{docId} {
       allow read: if true;
-      allow write: if isAdmin() || isCreator();
-    }
-    match /suppliers/{docId} {
-      allow read: if true;
-      allow write: if isAdmin() || isCreator();
-    }
-    match /locations/{docId} {
-      allow read: if true;
-      allow write: if isAdmin() || isCreator();
-    }
-    match /raffles/{docId} {
-      allow read: if true;
-      allow write: if isAdmin() || isCreator();
-    }
-    match /vouchers/{docId} {
-      allow read: if true;
-      allow write: if isAdmin() || isCreator();
+      allow write: if isAdmin();
     }
     
-    // --- Admin-Only Collections ---
-
-    // The 'transactions' collection contains sensitive financial data.
-    match /transactions/{transactionId} {
-      allow read, write: if isAdmin() || isCreator(); 
+    // Global app settings
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // The 'admins' collection contains admin user data.
+    // ---------------------------
+    // Core Operational Collections
+    // ---------------------------
+
+    // Players collection: Publicly readable for leaderboards and profiles.
+    // Only admins can create, update, or delete player data.
+    match /players/{playerId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Events collection: Publicly readable for event lists.
+    // IMPORTANT: Only admins can write. This secures the data but will
+    // prevent the client-side player signup feature from working.
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // ---------------------------
+    // Admin-Only Collections
+    // ---------------------------
+
+    // Admins collection can only be managed by other admins.
     match /admins/{adminId} {
-      allow read, write: if isAdmin() || isCreator();
+      allow read, write: if isAdmin();
     }
+
+    // These collections contain sensitive or internal data.
+    match /suppliers/{docId} { allow read, write: if isAdmin(); }
+    match /transactions/{docId} { allow read, write: if isAdmin(); }
+    match /vouchers/{docId} { allow read, write: if isAdmin(); }
     
-    // --- Special Rules ---
+    // ---------------------------
+    // Utility Collections
+    // ---------------------------
     
-    // The _health collection is used for the System Scanner's R/W test.
-    // It requires an authenticated Admin or Creator session.
-    match /_health/{testId} {
-        allow read, write: if isAdmin() || isCreator();
+    // Used by the System Scanner for health checks by admins/creators.
+    match /_system_health_check/{docId} {
+      allow read, write: if isAdmin();
     }
   }
-}}
+}

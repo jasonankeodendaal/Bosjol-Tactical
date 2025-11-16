@@ -24,7 +24,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: firebase.User | null) => {
-            if (firebaseUser) {
+            if (firebaseUser && !firebaseUser.isAnonymous) {
                  const email = firebaseUser.email?.toLowerCase();
 
                 if (email === ADMIN_EMAIL) {
@@ -62,15 +62,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     await auth.signOut();
                     setUser(null);
                 }
-            } else {
-                // No Firebase user, clear admin/creator state but not player state
-                setUser(currentUser => {
-                    if (currentUser?.role === 'admin' || currentUser?.role === 'creator') {
-                        return null;
-                    }
-                    return currentUser;
-                });
+            } else if (!firebaseUser) {
+                // No Firebase user, clear admin/creator/player state
+                setUser(null);
             }
+            // If firebaseUser is anonymous, we don't need to do anything here,
+            // because the user state is already set with player data during login.
             setLoading(false);
         });
 
@@ -104,7 +101,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         
         // Player login logic
-        if (USE_FIREBASE && db) {
+        if (USE_FIREBASE && db && auth) {
             try {
                 const playersRef = db.collection("players");
                 const q = playersRef.where("playerCode", "==", cleanUsername.toUpperCase()).limit(1);
@@ -116,7 +113,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 const playerData = { id: playerDoc.id, ...playerDoc.data() } as Player;
                 
                 if (playerData.pin === cleanPassword) {
-                    setUser(playerData);
+                    // If a user (admin or previous anonymous) is already logged in, sign them out.
+                    if (auth.currentUser) {
+                        await auth.signOut();
+                    }
+                    const userCredential = await auth.signInAnonymously();
+                    const authUID = userCredential.user?.uid;
+
+                    if (authUID) {
+                        await db.collection('players').doc(playerData.id).update({ activeAuthUID: authUID });
+                        setUser({ ...playerData, activeAuthUID: authUID });
+                    } else {
+                        throw new Error("Failed to get UID from anonymous session.");
+                    }
                     return true;
                 }
                 return false;
@@ -137,8 +146,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     const logout = async () => {
-        // Only sign out from Firebase if the logged-in user is an admin or creator
-        if (USE_FIREBASE && auth && auth.currentUser && (user?.role === 'admin' || user?.role === 'creator')) {
+        // For both anonymous player sessions and admin/creator sessions
+        if (USE_FIREBASE && auth && auth.currentUser) {
+            // This will sign out any logged-in Firebase user, regardless of whether they are anonymous or email/password.
             await auth.signOut();
         }
         setUser(null);

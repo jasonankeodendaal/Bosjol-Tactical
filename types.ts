@@ -87,6 +87,7 @@ export interface Player extends User {
   medicalNotes?: string;
   bio?: string;
   preferredRole?: PlayerRole;
+  activeAuthUID?: string;
 }
 
 export interface Admin extends User {
@@ -354,4 +355,14 @@ export interface CreatorDetails {
     bio: string;
     logoUrl: string;
     githubUrl: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  text: string;
+  createdAt: any; // firebase.firestore.Timestamp
+  playerId: string;
+  playerName: string;
+  playerAvatarUrl: string;
+  authUID: string;
 }

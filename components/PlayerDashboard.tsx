@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo, useContext } from 'react';
+import React, { useState, useEffect, useMemo, useContext, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Rank, Badge, LegendaryBadge, Raffle } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
-import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon } from './icons/Icons';
+import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, ChatBubbleLeftRightIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
 import { MOCK_RANKS, MOCK_WEAPONS, MOCK_EQUIPMENT, MOCK_PLAYER_ROLES, UNRANKED_RANK, MOCK_BADGES } from '../constants';
 import { ImageUpload } from './ImageUpload';
@@ -14,7 +14,9 @@ import { InfoTooltip } from './InfoTooltip';
 import { Leaderboard } from './Leaderboard';
 import { AuthContext } from '../auth/AuthContext';
 import { DataContext } from '../data/DataContext';
+import { Loader } from './Loader';
 
+const PlayerChatsTab = lazy(() => import('./PlayerChatsTab'));
 
 const getRankForPlayer = (player: Player, ranks: Rank[]): Rank => {
     if (player.stats.gamesPlayed < 10) {
@@ -37,7 +39,7 @@ interface PlayerDashboardProps {
     ranks: Rank[];
 }
 
-type Tab = 'Overview' | 'Events' | 'Raffles' | 'Stats' | 'Achievements' | 'Leaderboard' | 'Settings';
+type Tab = 'Overview' | 'Events' | 'Chats' | 'Raffles' | 'Stats' | 'Achievements' | 'Leaderboard' | 'Settings';
 
 const ProgressBar: React.FC<{ value: number; max: number; isThin?: boolean }> = ({ value, max, isThin=false }) => {
     const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -213,6 +215,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     const tabs: {name: Tab, icon: React.ReactNode}[] = [
         {name: 'Overview', icon: <HomeIcon className="w-5 h-5"/>},
         {name: 'Events', icon: <CalendarIcon className="w-5 h-5"/>},
+        {name: 'Chats', icon: <ChatBubbleLeftRightIcon className="w-5 h-5"/>},
         {name: 'Raffles', icon: <TicketIcon className="w-5 h-5"/>},
         {name: 'Stats', icon: <ChartBarIcon className="w-5 h-5"/>},
         {name: 'Achievements', icon: <TrophyIcon className="w-5 h-5"/>},
@@ -859,7 +862,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, player
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab') as Tab | null;
-        const validTabs: Tab[] = ['Overview', 'Events', 'Raffles', 'Stats', 'Achievements', 'Leaderboard', 'Settings'];
+        const validTabs: Tab[] = ['Overview', 'Events', 'Chats', 'Raffles', 'Stats', 'Achievements', 'Leaderboard', 'Settings'];
         if (tab && validTabs.includes(tab)) {
             setActiveTab(tab);
         }
@@ -874,14 +877,16 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, player
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-            
-            {activeTab === 'Overview' && <OverviewTab player={player} events={events} sponsors={sponsors} ranks={ranks} />}
-            {activeTab === 'Events' && <EventsTab player={player} events={events} onEventSignUp={onEventSignUp} />}
-            {activeTab === 'Raffles' && <RafflesTab player={player} raffles={raffles} players={players} />}
-            {activeTab === 'Stats' && <StatsTab player={player} events={events} />}
-            {activeTab === 'Achievements' && <AchievementsTab player={player} ranks={ranks} />}
-            {activeTab === 'Leaderboard' && <LeaderboardTab player={player} players={players} />}
-            {activeTab === 'Settings' && <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />}
+            <Suspense fallback={<Loader />}>
+                {activeTab === 'Overview' && <OverviewTab player={player} events={events} sponsors={sponsors} ranks={ranks} />}
+                {activeTab === 'Events' && <EventsTab player={player} events={events} onEventSignUp={onEventSignUp} />}
+                {activeTab === 'Chats' && <PlayerChatsTab />}
+                {activeTab === 'Raffles' && <RafflesTab player={player} raffles={raffles} players={players} />}
+                {activeTab === 'Stats' && <StatsTab player={player} events={events} />}
+                {activeTab === 'Achievements' && <AchievementsTab player={player} ranks={ranks} />}
+                {activeTab === 'Leaderboard' && <LeaderboardTab player={player} players={players} />}
+                {activeTab === 'Settings' && <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />}
+            </Suspense>
         </div>
     );
 };

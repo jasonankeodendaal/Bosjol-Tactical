@@ -117,18 +117,31 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const [formData, setFormData] = useState(() => normalizeCompanyDetails(companyDetails));
     const [socialLinksData, setSocialLinksData] = useState(socialLinks);
     const [carouselMediaData, setCarouselMediaData] = useState(carouselMedia);
-    const [carouselUploadProgress, setCarouselUploadProgress] = useState<number | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
     
     const [backupFile, setBackupFile] = useState<File | null>(null);
     const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false);
     const [restoreConfirmText, setRestoreConfirmText] = useState('');
     
+    // This effect syncs local form state with context state, but ONLY if the form isn't dirty.
+    // This prevents external updates from overwriting local unsaved changes.
     useEffect(() => {
-        setFormData(normalizeCompanyDetails(companyDetails));
-        setSocialLinksData(socialLinks);
-        setCarouselMediaData(carouselMedia);
-    }, [companyDetails, socialLinks, carouselMedia]);
+        if (!isDirty) {
+            setFormData(normalizeCompanyDetails(companyDetails));
+            setSocialLinksData(socialLinks);
+            setCarouselMediaData(carouselMedia);
+        }
+    }, [companyDetails, socialLinks, carouselMedia, isDirty]);
+
+    // This effect calculates and sets the dirty state whenever local or context state changes.
+    useEffect(() => {
+        const dirty = JSON.stringify(formData) !== JSON.stringify(normalizeCompanyDetails(companyDetails)) ||
+                        JSON.stringify(socialLinksData) !== JSON.stringify(socialLinks) ||
+                        JSON.stringify(carouselMediaData) !== JSON.stringify(carouselMedia);
+        setIsDirty(dirty);
+    }, [formData, companyDetails, socialLinksData, socialLinks, carouselMediaData, carouselMedia]);
+
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -203,10 +216,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         setCarouselMediaData(prev => prev.filter(media => media.id !== id));
     };
     
-    const isDirty = JSON.stringify(formData) !== JSON.stringify(normalizeCompanyDetails(companyDetails)) ||
-                    JSON.stringify(socialLinksData) !== JSON.stringify(socialLinks) ||
-                    JSON.stringify(carouselMediaData) !== JSON.stringify(carouselMedia);
-
     const handleCreateBackup = () => {
         const backupData = {
             players: dataContext.players,
@@ -392,12 +401,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 onUpload={handleCarouselMediaUpload} 
                                 accept="image/*,video/*" 
                                 multiple 
-                                onProgress={(percent) => {
-                                    setCarouselUploadProgress(percent);
-                                    if (percent === 100) {
-                                        setTimeout(() => setCarouselUploadProgress(null), 1500);
-                                    }
-                                }}
                             />
                              <div className="flex items-center gap-2">
                                 <hr className="flex-grow border-zinc-600"/><span className="text-xs text-zinc-500">OR</span><hr className="flex-grow border-zinc-600" />
@@ -417,16 +420,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 }}>Add URL</Button>
                             </div>
                         </div>
-                         {carouselUploadProgress !== null && (
-                            <div className="mt-2">
-                                <p className="text-sm text-gray-400 mb-1 text-center">
-                                    {carouselUploadProgress < 100 ? `Processing... ${carouselUploadProgress}%` : 'Upload Complete!'}
-                                </p>
-                                <div className="w-full bg-zinc-700 rounded-full h-2.5">
-                                    <div className="bg-red-500 h-2.5 rounded-full transition-all duration-300" style={{ width: `${carouselUploadProgress}%` }}></div>
-                                </div>
-                            </div>
-                        )}
                     </div>
                      <div className="pt-6 border-t border-zinc-800">
                         <h4 className="font-semibold text-gray-200 mb-4 text-lg">Social Links</h4>

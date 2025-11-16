@@ -169,8 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // This will sign out any logged-in Firebase user, regardless of whether they are anonymous or email/password.
             await auth.signOut();
         }
-        localStorage.removeItem('rememberedPlayerId');
-        setRememberedPlayerId(null);
+        clearRememberedPlayer();
         setUser(null);
     };
 

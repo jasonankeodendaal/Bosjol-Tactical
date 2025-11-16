@@ -1,5 +1,4 @@
-
-
+/** @jsxImportSource react */
 import React, { useContext, useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -69,7 +68,7 @@ Thank you, I look forward to hearing from you.
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 className="relative bg-zinc-900 border border-zinc-700/50 rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
                 style={{
                     backgroundImage: "linear-gradient(rgba(10, 10, 10, 0.85), rgba(10, 10, 10, 0.85)), url('https://i.ibb.co/dsh2c2hp/unnamed.jpg')",
@@ -465,6 +464,7 @@ const AppContent: React.FC = () => {
                                         legendaryBadges={data.legendaryBadges}
                                         raffles={data.raffles}
                                         ranks={data.ranks}
+                                        locations={data.locations}
                                     /> : user.role === 'admin' ?
                                     <AdminDashboard 
                                         // Pass all data and functions from context to AdminDashboard

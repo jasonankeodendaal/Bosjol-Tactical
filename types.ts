@@ -1,5 +1,4 @@
 import { IconProps } from "@phosphor-icons/react";
-// FIX: Import Dispatch and SetStateAction from React to resolve missing React namespace errors.
 import type { Dispatch, SetStateAction } from 'react';
 
 export type Role = 'player' | 'admin' | 'creator';
@@ -104,7 +103,6 @@ export interface AuthContextType {
   logout: () => void;
   updateUser: (user: User | Player | Admin) => void; 
   helpTopic: string;
-  // FIX: Use the imported Dispatch and SetStateAction types, removing the need for the React namespace.
   setHelpTopic: Dispatch<SetStateAction<string>>;
   rememberedPlayerId: string | null;
   clearRememberedPlayer: () => void;
@@ -173,7 +171,8 @@ export interface GameEvent {
   imageUrl?: string;
   audioBriefingUrl?: string;
   gameFee: number;
-  gearForRent: InventoryItem[];
+  gearForRent: string[]; // Array of InventoryItem IDs
+  rentalPriceOverrides?: { [itemId: string]: number };
   teams?: {
     alpha: string[];
     bravo: string[];
@@ -182,6 +181,8 @@ export interface GameEvent {
   rentalSignups?: RentalSignup[];
   liveStats?: Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>>;
   gameDurationSeconds?: number;
+  eventBadges?: string[]; // Array of LegendaryBadge IDs
+  awardedBadges?: { [playerId: string]: string[] }; // { 'p001': ['badgeId1'], 'p002': ['badgeId2'] }
 }
 
 
@@ -362,9 +363,10 @@ export interface CreatorDetails {
 export interface ChatMessage {
   id: string;
   text: string;
-  createdAt: any; // firebase.firestore.Timestamp
+  createdAt: any; // firebase.firestore.Timestamp or Date
   playerId: string;
   playerName: string;
   playerAvatarUrl: string;
   authUID: string;
+  role?: 'player' | 'admin' | 'creator';
 }

@@ -1,9 +1,10 @@
+/** @jsxImportSource react */
 import React, { useState, useEffect, useMemo, useContext, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Rank, Badge, LegendaryBadge, Raffle } from '../types';
+import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Rank, Badge, LegendaryBadge, Raffle, Location } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
-import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, ChatBubbleLeftRightIcon } from './icons/Icons';
+import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, ChatBubbleLeftRightIcon, MapPinIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
 import { MOCK_RANKS, MOCK_WEAPONS, MOCK_EQUIPMENT, MOCK_PLAYER_ROLES, UNRANKED_RANK, MOCK_BADGES } from '../constants';
 import { ImageUpload } from './ImageUpload';
@@ -37,6 +38,7 @@ interface PlayerDashboardProps {
     legendaryBadges: LegendaryBadge[];
     raffles: Raffle[];
     ranks: Rank[];
+    locations: Location[];
 }
 
 type Tab = 'Overview' | 'Events' | 'Chats' | 'Raffles' | 'Stats' | 'Achievements' | 'Leaderboard' | 'Settings';
@@ -50,11 +52,12 @@ const ProgressBar: React.FC<{ value: number; max: number; isThin?: boolean }> = 
     );
 };
 
-const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: () => void, onSignUp: (id: string, requestedGearIds: string[], note: string) => void }> = ({ event, player, onClose, onSignUp }) => {
+const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: () => void, onSignUp: (id: string, requestedGearIds: string[], note: string) => void, locations: Location[] }> = ({ event, player, onClose, onSignUp, locations }) => {
     const isSignedUp = event.signedUpPlayers.includes(player.id);
     const [selectedGear, setSelectedGear] = useState<string[]>([]);
     const [note, setNote] = useState('');
     const [totalCost, setTotalCost] = useState(event.gameFee);
+    const dataContext = useContext(DataContext);
 
     const alreadyRentedCount = useMemo(() => {
         const counts: Record<string, number> = {};
@@ -86,6 +89,8 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
     useEffect(() => {
         setTotalCost(event.gameFee + gearCost);
     }, [gearCost, event.gameFee]);
+    
+    const locationDetails = useMemo(() => locations.find(l => l.name === event.location), [locations, event.location]);
 
 
     const handleGearToggle = (itemId: string) => {
@@ -105,13 +110,30 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
                 </div>
                 <div className="space-y-4 text-gray-300">
                     <div>
-                        <h3 className="font-bold text-lg text-white mb-1">Location</h3>
-                        <p>{event.location}</p>
+                        <h3 className="font-bold text-lg text-white mb-2">Location</h3>
+                        {locationDetails ? (
+                            <div className="bg-zinc-800/50 p-3 rounded-lg border border-zinc-700/50">
+                                <p className="font-semibold text-gray-200">{locationDetails.name}</p>
+                                <p className="text-xs text-gray-400">{locationDetails.address}</p>
+                                {locationDetails.pinLocationUrl && (
+                                    <a href={locationDetails.pinLocationUrl} target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline text-xs flex items-center gap-1 mt-1">
+                                        <MapPinIcon className="w-3 h-3"/> Open in Maps
+                                    </a>
+                                )}
+                                {locationDetails.imageUrls.length > 0 && (
+                                    <div className="flex space-x-2 overflow-x-auto mt-2 pb-1">
+                                        {locationDetails.imageUrls.map((url, i) => (
+                                            <img key={i} src={url} alt={`Location view ${i+1}`} className="w-24 h-16 object-cover rounded-md flex-shrink-0" />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : <p>{event.location}</p>}
                     </div>
                      {event.audioBriefingUrl && (
                         <div>
                             <h3 className="font-bold text-lg text-white mb-2">Audio Briefing</h3>
-                            <audio controls src={event.audioBriefingUrl}>
+                            <audio controls src={event.audioBriefingUrl} className="w-full">
                                 Your browser does not support the audio element.
                             </audio>
                         </div>
@@ -124,6 +146,23 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
                         <h3 className="font-bold text-lg text-white mb-1">Rules of Engagement</h3>
                         <p>{event.rules}</p>
                     </div>
+                    {event.eventBadges && event.eventBadges.length > 0 && dataContext?.legendaryBadges && (
+                         <div>
+                            <h3 className="font-bold text-lg text-white mb-2">Event Commendations</h3>
+                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {event.eventBadges.map(badgeId => {
+                                    const badge = dataContext.legendaryBadges.find(b => b.id === badgeId);
+                                    if (!badge) return null;
+                                    return (
+                                        <div key={badgeId} className="bg-zinc-800/50 p-2 rounded-lg text-center border border-amber-700/50" title={badge.description}>
+                                            <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 mx-auto"/>
+                                            <p className="text-xs font-semibold text-amber-300 mt-1 truncate">{badge.name}</p>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
                      
                     {!isSignedUp && (
                         <div className="pt-4 border-t border-zinc-700/50">
@@ -476,9 +515,10 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sp
     )
 };
 
-const EventsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'onEventSignUp'>> = ({ player, events, onEventSignUp }) => {
+const EventsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'onEventSignUp' | 'locations'>> = ({ player, events, onEventSignUp, locations }) => {
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');
+    const dataContext = useContext(DataContext);
 
     const filteredEvents = useMemo(() => {
         const sorted = [...events].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -509,7 +549,7 @@ const EventsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'onEv
                     </div>
                 )) : <p className="text-center text-gray-500 py-4 sm:col-span-full">No {filter} events found.</p>}
             </div>
-             {eventForModal && <EventDetailsModal event={eventForModal} player={player} onClose={() => setSelectedEventId(null)} onSignUp={onEventSignUp} />}
+             {eventForModal && <EventDetailsModal event={eventForModal} player={player} onClose={() => setSelectedEventId(null)} onSignUp={onEventSignUp} locations={locations} />}
         </div>
     )
 }
@@ -855,9 +895,10 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'raffles' | 'pl
     );
 }
 
-export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, players, sponsors, onPlayerUpdate, events, onEventSignUp, legendaryBadges, raffles, ranks }) => {
+export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, players, sponsors, onPlayerUpdate, events, onEventSignUp, legendaryBadges, raffles, ranks, locations }) => {
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
     const auth = useContext(AuthContext);
+    const dataContext = useContext(DataContext);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -879,7 +920,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, player
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             <Suspense fallback={<Loader />}>
                 {activeTab === 'Overview' && <OverviewTab player={player} events={events} sponsors={sponsors} ranks={ranks} />}
-                {activeTab === 'Events' && <EventsTab player={player} events={events} onEventSignUp={onEventSignUp} />}
+                {activeTab === 'Events' && <EventsTab player={player} events={events} onEventSignUp={onEventSignUp} locations={locations} />}
                 {activeTab === 'Chats' && <PlayerChatsTab />}
                 {activeTab === 'Raffles' && <RafflesTab player={player} raffles={raffles} players={players} />}
                 {activeTab === 'Stats' && <StatsTab player={player} events={events} />}

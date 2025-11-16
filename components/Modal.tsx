@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XIcon } from './icons/Icons';
@@ -25,7 +26,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
             className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-lg"
           >
             <div className="flex justify-between items-center p-5 border-b border-zinc-800">

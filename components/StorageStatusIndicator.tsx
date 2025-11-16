@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { USE_FIREBASE, firebaseInitializationError } from '../firebase';
+import { USE_FIREBASE, firebaseInitializationError, firebaseConfig } from '../firebase';
 
 interface StorageStatusIndicatorProps {
     apiServerUrl?: string;
@@ -38,12 +38,13 @@ export const StorageStatusIndicator: React.FC<StorageStatusIndicatorProps> = ({ 
         };
     }, [apiServerUrl]);
 
-    const getStatus = (): { mode: 'api' | 'firebase' | 'mock', isLive: boolean, tooltip: string } => {
+    const getStatus = (): { mode: 'api' | 'firebase' | 'mock', isLive: boolean, tooltip: string, label: string | null } => {
         if (apiServerUrl) {
             return {
                 mode: 'api',
                 isLive: isApiLive,
                 tooltip: isApiLive ? 'Live API Server Connected' : 'API Server Connection Failed',
+                label: 'API'
             };
         }
         if (USE_FIREBASE && !firebaseInitializationError) {
@@ -51,16 +52,18 @@ export const StorageStatusIndicator: React.FC<StorageStatusIndicatorProps> = ({ 
                 mode: 'firebase',
                 isLive: true,
                 tooltip: 'Live Firebase Connection Active',
+                label: firebaseConfig.projectId
             };
         }
         return {
             mode: 'mock',
             isLive: true,
             tooltip: 'Running on Local Mock Data',
+            label: 'Mock Data'
         };
     };
 
-    const { mode, isLive, tooltip } = getStatus();
+    const { mode, isLive, tooltip, label } = getStatus();
 
     const colorClasses = {
         api: 'bg-blue-500',
@@ -77,9 +80,10 @@ export const StorageStatusIndicator: React.FC<StorageStatusIndicatorProps> = ({ 
     const animationClass = isLive ? '' : 'animate-flicker';
 
     return (
-        <div className="relative group flex items-center justify-center" title={tooltip}>
+        <div className="relative group flex items-center justify-center gap-2" title={tooltip}>
+            {label && <span className="text-gray-500 text-[10px] hidden sm:inline-block font-mono">{label}</span>}
             <div className={`w-3 h-3 rounded-full transition-all ${colorClasses[mode]} ${isLive ? shadowClasses[mode] : ''} ${animationClass}`} />
-            <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block px-2 py-1 bg-zinc-800 text-white text-xs rounded-md shadow-lg whitespace-nowrap">
+            <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block px-2 py-1 bg-zinc-800 text-white text-xs rounded-md shadow-lg whitespace-nowrap z-50">
                 {tooltip}
             </span>
         </div>

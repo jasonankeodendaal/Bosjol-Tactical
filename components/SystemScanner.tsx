@@ -35,7 +35,6 @@ interface ErrorLogEntry {
 
 const SOLUTIONS_MAP: Record<string, { problem: string; solution: React.ReactNode; fixable?: boolean }> = {
     'React App Initialized': { problem: "The main React application component failed to render inside its root container.", solution: <p>This is a critical rendering failure. 1. Check the browser console for JavaScript errors. 2. Ensure the `index.html` file has a `&lt;div id="root"&gt;&lt;/div&gt;`. 3. Verify that `index.tsx` is correctly targeting this root element.</p> },
-    'Service Worker Registration Status': { problem: "The Service Worker script, which enables offline functionality, is not registered or active.", solution: <p>This can happen on the very first visit or if the script fails. 1. Ensure `service-worker.js` exists in the public root. 2. Check the browser console for registration errors. 3. Try a hard refresh (Ctrl+Shift+R) to force re-registration.</p> },
     'Firebase SDK Initialization': { problem: "The Firebase SDK failed to initialize. This usually points to incorrect configuration credentials.", solution: <p>This is a critical error when in Firebase mode. 1. Double-check all `VITE_FIREBASE_*` variables in your environment file (`.env.local`). 2. Verify the credentials in your Firebase project settings match what's in your environment file. 3. Check for any typos in the variable names.</p> },
     'Firebase Config': { problem: "The application is configured to use Firebase, but one or more necessary environment variables are missing.", solution: <p>The app cannot connect to Firebase without the full configuration. 1. Ensure your `.env.local` file (for development) or hosting provider's environment variables include all required `VITE_FIREBASE_*` keys. 2. Make sure you haven't misspelled any variable names.</p> },
     'Firestore Connectivity': { problem: "The application successfully initialized the Firebase SDK but cannot establish a connection to the Firestore database.", solution: <p>This blocks all data operations. 1. Check your server's internet connection. 2. Go to your Firebase project console and ensure the Firestore Database is enabled and created. 3. Check your Firestore Security Rules to ensure they aren't blocking all read/write access.</p> },
@@ -117,22 +116,18 @@ export const SystemScanner: React.FC = () => {
     const [results, setResults] = useState<Record<string, CheckResult[]>>({});
     const [overallStatus, setOverallStatus] = useState<OverallStatus>('pending');
     const [lastScanTime, setLastScanTime] = useState<Date | null>(null);
-    const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
-    const [healthHistory, setHealthHistory] = useState<{time: number; score: number}[]>([]);
     const [isScanning, setIsScanning] = useState(false);
     const [activeTab, setActiveTab] = useState<ScannerTab>('status');
     const [errorLog, setErrorLog] = useState<ErrorLogEntry[]>([]);
-    const [isLiveScanning, setIsLiveScanning] = useState(true);
 
     const ALL_CHECKS = useCallback((): Check[] => {
         if (!dataContext) return [];
-        const { players, events, companyDetails, ranks, badges, gamificationSettings, creatorDetails, seedCollection, addDoc } = dataContext;
+        const { players, companyDetails, ranks, badges, gamificationSettings, creatorDetails, addDoc } = dataContext;
 
         return [
             { category: 'Core System', name: 'React App Initialized', description: "Checks if the main application UI has successfully rendered.", checkFn: async () => document.getElementById('root')?.hasChildNodes() ? { status: 'pass', detail: 'Root element is mounted.' } : { status: 'fail', detail: 'React root not found or is empty.' } },
             { category: 'Core System', name: 'Data Context Ready', description: "Verifies the central data management system is available.", checkFn: async () => dataContext ? { status: 'pass', detail: 'DataContext is available.' } : { status: 'fail', detail: 'DataContext is missing.' } },
             { category: 'Service Worker', name: 'Browser Support', description: "Checks if the browser is capable of running service workers.", checkFn: async () => 'serviceWorker' in navigator ? { status: 'pass', detail: 'Service Worker API is supported.' } : { status: 'fail', detail: 'Service Worker API not supported.' } },
-            { category: 'Service Worker', name: 'Registration Status', description: "Verifies that the service worker is actively running.", checkFn: async () => { if (!('serviceWorker' in navigator)) return { status: 'fail', detail: 'Browser does not support Service Workers.' }; const r = await navigator.serviceWorker.getRegistration(); return r ? { status: 'pass', detail: `Scope: ${r.scope}` } : { status: 'warn', detail: 'No active registration found.' }; }},
             { category: 'Data & Storage', name: 'Storage Mode', description: "Identifies if the app is using live data or mock data.", checkFn: async () => ({ status: 'info', detail: `App is running in ${IS_LIVE_DATA ? 'LIVE (Firebase/API)' : 'MOCK'} data mode.` }) },
             { category: 'Data & Storage', name: 'Firebase SDK Initialization', description: "Checks if the Firebase library initialized correctly.", checkFn: async () => !USE_FIREBASE ? {status: 'info', detail: 'Firebase is disabled.'} : firebaseInitializationError ? { status: 'fail', detail: `Init failed: ${firebaseInitializationError.message}` } : { status: 'pass', detail: 'SDK initialized successfully.' } },
             { category: 'Data & Storage', name: 'Firebase Config', description: "Verifies that all required Firebase env variables are present.", checkFn: async () => !USE_FIREBASE ? {status: 'info', detail: 'Firebase is disabled.'} : isFirebaseConfigured() ? { status: 'pass', detail: 'Env variables are set.' } : { status: 'fail', detail: 'One or more VITE_FIREBASE_* env variables are missing.' } },
@@ -190,21 +185,16 @@ export const SystemScanner: React.FC = () => {
             groupedChecks[category].push({ text: name, description, status: 'pending', detail: 'Awaiting scan...' });
         }
         setResults(groupedChecks);
-        setOpenCategories(Object.keys(groupedChecks).reduce((acc, key) => ({...acc, [key]: false}), {}));
         runChecks(ALL_CHECKS());
     }, [ALL_CHECKS, runChecks]);
 
     useEffect(() => {
-        // FIX: Add a type assertion to help TypeScript correctly infer the type of the flattened array.
         const allChecks: CheckResult[] = (Object.values(results) as CheckResult[][]).flat();
         if (allChecks.length === 0) return;
 
         const fails = allChecks.filter(c => c.status === 'fail').length;
         const warns = allChecks.filter(c => c.status === 'warn').length;
-        const totalSignificant = allChecks.filter(c => c.status === 'pass' || c.status === 'fail' || c.status === 'warn').length;
         
-        const healthScore = totalSignificant > 0 ? ((totalSignificant - fails - warns * 0.5) / totalSignificant) * 100 : 100;
-
         if (allChecks.every(c => c.status === 'pending' || c.status === 'running')) {
             setOverallStatus('pending');
         } else if (fails > 0) {
@@ -214,20 +204,8 @@ export const SystemScanner: React.FC = () => {
         } else {
             setOverallStatus('operational');
         }
-        
-        if(allChecks.length > 0 && allChecks.every(c => c.status !== 'pending' && c.status !== 'running')) {
-            setHealthHistory(prev => [...prev.slice(-19), { time: Date.now(), score: Math.max(0, healthScore) }]);
-        }
 
     }, [results]);
-    
-    useEffect(() => {
-        if (!isLiveScanning) return;
-        const criticalChecks = ALL_CHECKS().filter(c => ['Core System', 'Data & Storage'].includes(c.category));
-        const interval = setInterval(() => runChecks(criticalChecks), 10 * 60 * 1000); // 10 minutes
-        return () => clearInterval(interval);
-    }, [isLiveScanning, ALL_CHECKS, runChecks]);
-
 
     const StatusIcon: React.FC<{ status: CheckStatus }> = ({ status }) => {
         const icons: Record<CheckStatus, React.ReactNode> = {
@@ -282,13 +260,9 @@ export const SystemScanner: React.FC = () => {
                                     <Button size="sm" variant="secondary" onClick={() => runChecks(ALL_CHECKS())} disabled={isScanning} className="!p-1.5"><ArrowPathIcon className="w-4 h-4"/></Button>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 bg-zinc-800 p-2 rounded-md">
-                                <input type="checkbox" id="live-scan" checked={isLiveScanning} onChange={e => setIsLiveScanning(e.target.checked)} className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"/>
-                                <label htmlFor="live-scan" className="text-sm text-gray-300">Enable Continuous Monitoring (scans critical systems every 10 minutes)</label>
-                            </div>
                             <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                                 <h5 className="text-sm font-semibold text-gray-400">Recent Activity</h5>
-                                {errorLog.slice(0, 5).map((log, i) => (
+                                {errorLog.length > 0 ? errorLog.slice(0, 5).map((log, i) => (
                                      <div key={i} className="flex items-start gap-2 text-xs p-2 bg-red-900/20 rounded-md">
                                         <ExclamationTriangleIcon className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0"/>
                                         <div>
@@ -298,13 +272,12 @@ export const SystemScanner: React.FC = () => {
                                             <p className="text-gray-300">{log.detail}</p>
                                         </div>
                                     </div>
-                                ))}
+                                )) : <p className="text-sm text-center text-gray-500 p-4">No issues detected in this session.</p>}
                             </div>
                         </div>
                     )}
                     {activeTab === 'diagnostics' && (
                         <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-2">
-                             {/* FIX: Add a type assertion to fix 'unknown' type error on .map() */}
                              {(Object.entries(results) as [string, CheckResult[]][]).map(([category, checks]) => (
                                 <div key={category} className="bg-zinc-800/50 rounded-lg border border-zinc-700/50">
                                     <div className="flex items-center justify-between p-3 text-left">

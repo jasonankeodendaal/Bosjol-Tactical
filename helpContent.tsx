@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 
 export interface HelpTopic {
@@ -46,7 +44,7 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             },
             {
                 heading: "Automations & Security",
-                content: "The system automatically detects whether the identifier is an email or a player code. After 10 minutes of inactivity, you will be automatically logged out for security purposes."
+                content: "The system automatically detects whether the identifier is an email or a player code. After 5 minutes of inactivity, you will be automatically logged out for security purposes."
             }
         ]
     },
@@ -83,15 +81,29 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
         sections: [
             {
                 heading: "Event Schedule",
-                content: "Toggle between 'Upcoming' and 'Past' events. Click on any event card to view its full details, including location, rules, and fees."
+                content: "Toggle between 'Upcoming' and 'Past' events. Click on any event card to view its full details, including location details with map links, audio briefings, rules, and fees."
             },
             {
                 heading: "Event Registration",
-                content: "In the event details modal for an upcoming event, you can register your attendance. You can also select rental gear if available. The total cost is calculated for you."
+                content: "In the event details modal for an upcoming event, you can register your attendance. You can also select rental gear (prices may be specific to the event) and see which special commendations can be earned. The total cost is calculated for you."
             },
             {
                 heading: "Automations",
                 content: "The availability of rental gear is updated in real-time. If an item is fully booked by other players, it will show as 'Out of Stock', preventing overbooking."
+            }
+        ]
+    },
+    'player-dashboard-chats': {
+        title: "Player Dashboard: Chats",
+        description: "Communicate with all other operators and admins in real-time.",
+        sections: [
+            {
+                heading: "Global Comms Channel",
+                content: "This is a live, global chat room for everyone in the organization. Messages you send will be visible to all players and administrators."
+            },
+            {
+                heading: "Message Display",
+                content: "Your messages will appear on the right, while messages from other operators will appear on the left. Admin messages are clearly marked."
             }
         ]
     },
@@ -145,7 +157,7 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             },
             {
                 heading: "Legendary Commendations",
-                content: "These are rare and prestigious awards given out manually by admins for exceptional performance, sportsmanship, or tactical brilliance."
+                content: "These are rare and prestigious awards given out manually by admins for exceptional performance, sportsmanship, or tactical brilliance. You can also see which special commendations can be earned in specific events."
             },
             {
                 heading: "Automations",
@@ -200,7 +212,7 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             },
             {
                 heading: "Event Management",
-                content: "From the manage event page, you can edit all event details, check in players, track live stats during a game, manage payments, and finalize the event to award XP."
+                content: "From the manage event page, you can edit all event details, record an audio briefing, link rental gear with custom prices, check in players, track live stats, manage payments, and finalize the event to award XP."
             }
         ]
     },
@@ -224,11 +236,15 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
     },
     'admin-dashboard-chats': {
         title: "Admin: Operator Communications",
-        description: "This is the future hub for real-time communication within the application.",
+        description: "Monitor and participate in the global communication channel.",
         sections: [
             {
-                heading: "Under Development",
-                content: "This feature is currently being developed. In a future update, this tab will provide tools for live chat, direct messaging with players, and broadcasting announcements, creating a fully integrated communication platform within the dashboard."
+                heading: "Live Chat",
+                content: "View the real-time global chat between all players. As an admin, your messages will be distinctively marked."
+            },
+            {
+                heading: "Moderation",
+                content: "You have the ability to delete any message from the chat by hovering over it and clicking the trash icon. This action is permanent."
             }
         ]
     },
@@ -242,7 +258,7 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             },
             {
                 heading: "Standard & Legendary Badges",
-                content: "Create and manage the badges players can earn. Standard badges have automated criteria (e.g., 50 kills), while Legendary badges are awarded manually from a player's profile."
+                content: "Create and manage the badges players can earn. Standard badges have automated criteria (e.g., 50 kills), while Legendary badges are awarded manually from a player's profile or can be linked to specific events."
             }
         ]
     },
@@ -252,7 +268,7 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
         sections: [
             {
                 heading: "Inventory List",
-                content: "View, add, edit, and delete all items. You can set stock levels, pricing, category, condition, and whether an item is available for rental."
+                content: "View, add, edit, and delete all items. You can set stock levels, pricing, category, condition, and whether an item is available for rental. This inventory is used when adding rental gear to events."
             },
             {
                 heading: "Automations",
@@ -368,15 +384,15 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
     },
     'creator-dashboard-monitor': {
         title: "Creator: System Powerhouse",
-        description: "The System Monitor is a multi-tabbed, interactive 'powerhouse' tool for continuous diagnostics, deep system analysis, and data management.",
+        description: "The System Monitor is a multi-tabbed, interactive 'powerhouse' tool for diagnostics, deep system analysis, and data management.",
         sections: [
             {
                 heading: "Live Status Tab",
                 content: (
                     <ul className="list-disc list-inside space-y-1">
-                        <li><strong>Continuous Monitoring:</strong> When enabled, this feature runs critical system checks every 60 seconds to catch issues as they happen.</li>
-                        <li><strong>Live Activity Log:</strong> Displays a real-time feed of scan activities and any errors detected by the continuous scan.</li>
-                        <li><strong>Overall Health:</strong> Shows a high-level status (Operational, Degraded, Critical) and key metrics at a glance.</li>
+                        <li><strong>Manual Scanning:</strong> All system checks are now triggered manually. Use the 'Scan' buttons to check the entire system, a specific category, or an individual item.</li>
+                        <li><strong>Live Activity Log:</strong> Displays a feed of scan activities and any errors detected by your manual scans.</li>
+                        <li><strong>Overall Health:</strong> Shows a high-level status (Operational, Degraded, Critical) and key metrics at a glance based on the last scan results.</li>
                     </ul>
                 )
             },
@@ -385,7 +401,7 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
                 content: (
                      <ul className="list-disc list-inside space-y-1">
                         <li><strong>Granular Scanning:</strong> Manually trigger scans for individual checks, entire categories (like 'Core Automations'), or the whole system.</li>
-                        <li><strong>In-Depth Checks:</strong> Includes new tests that simulate core application logic, such as the Event Finalization automation, player creation, and file uploads, to ensure all functions are working as expected.</li>
+                        <li><strong>In-Depth Checks:</strong> Includes tests that simulate core application logic, such as the Event Finalization automation, player creation, and file uploads, to ensure all functions are working as expected.</li>
                         <li><strong>Detailed Solutions:</strong> Every check that fails or returns a warning provides an in-depth, actionable solution to guide you in fixing the problem.</li>
                     </ul>
                 )
@@ -472,12 +488,16 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
         description: "This is the control center for a single event, from setup to finalization.",
         sections: [
             {
-                heading: "Event Details",
-                content: "Edit all core information about the event, such as its title, date, location, rules, and associated fees and XP."
+                heading: "Event Details & Media",
+                content: "Edit all core information about the event, such as its title, date, location, and rules. You can also upload an event image and record an audio briefing directly from your microphone."
+            },
+            {
+                heading: "Rental Gear & Badges",
+                content: "Link specific rental items from your inventory to the event, and set custom rental prices for them. You can also select which Legendary Badges can be earned during this event."
             },
             {
                 heading: "Attendees Management",
-                content: "When the event is 'Upcoming', you can see a list of players who have signed up. When you are ready to start, change the event status to 'In Progress'. You can then 'Check In' players from the signup list, moving them to the 'Checked In' list."
+                content: "When the event is 'Upcoming', you can see a list of players who have signed up. When you are ready to start, change the event status to 'In Progress'. You can then 'Check In' players from the signup list, moving them to the 'Attendees' list."
             },
             {
                 heading: "Payment Tracking",

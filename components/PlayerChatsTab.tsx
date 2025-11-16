@@ -2,10 +2,10 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { db, USE_FIREBASE, firebase } from '../firebase';
 import { AuthContext } from '../auth/AuthContext';
 import { DashboardCard } from './DashboardCard';
-import { ChatBubbleLeftRightIcon, PaperAirplaneIcon } from './icons/Icons';
+import { ChatBubbleLeftRightIcon, PaperAirplaneIcon, TrashIcon } from './icons/Icons';
 import { Button } from './Button';
 import { Input } from './Input';
-import type { ChatMessage, Player } from '../types';
+import type { ChatMessage, Player, Admin } from '../types';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const timeSince = (date: Date): string => {
@@ -33,7 +33,8 @@ const PlayerChatsTab: React.FC = () => {
     const [isSending, setIsSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     
-    const player = auth?.user as Player;
+    const currentUser = auth?.user as Player | Admin;
+    const isAdmin = currentUser?.role === 'admin';
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -41,12 +42,11 @@ const PlayerChatsTab: React.FC = () => {
 
     useEffect(() => {
         if (!USE_FIREBASE || !db) {
-            // Handle mock data mode if needed, for now just show empty.
             setIsLoading(false);
             return;
         }
 
-        const q = db.collection('chats').orderBy('createdAt', 'asc').limitToLast(50);
+        const q = db.collection('chats').orderBy('createdAt', 'asc').limitToLast(100);
 
         const unsubscribe = q.onSnapshot(querySnapshot => {
             const msgs: ChatMessage[] = [];
@@ -55,7 +55,6 @@ const PlayerChatsTab: React.FC = () => {
                 msgs.push({
                     id: doc.id,
                     ...data,
-                    // Convert Firestore Timestamp to JS Date
                     createdAt: data.createdAt?.toDate()
                 } as ChatMessage);
             });
@@ -71,16 +70,18 @@ const PlayerChatsTab: React.FC = () => {
     
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newMessage.trim() || !player?.activeAuthUID || !db) return;
+        const authUID = (currentUser as Player)?.activeAuthUID || (firebase.auth().currentUser?.uid);
+        if (!newMessage.trim() || !authUID || !db) return;
 
         setIsSending(true);
         const messageData = {
             text: newMessage.trim(),
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            playerId: player.id,
-            playerName: player.name,
-            playerAvatarUrl: player.avatarUrl,
-            authUID: player.activeAuthUID,
+            playerId: currentUser.id,
+            playerName: currentUser.name,
+            playerAvatarUrl: (currentUser as Player).avatarUrl,
+            authUID: authUID,
+            role: currentUser.role,
         };
         
         try {
@@ -88,14 +89,24 @@ const PlayerChatsTab: React.FC = () => {
             setNewMessage('');
         } catch (error) {
             console.error("Error sending message:", error);
-            // Optionally show an error to the user
         } finally {
             setIsSending(false);
         }
     };
 
-    if (!player) {
-        return <div className="text-center p-8">Error: No player data found.</div>
+    const handleDelete = async (messageId: string) => {
+        if (!isAdmin || !db) return;
+        if (confirm('Are you sure you want to delete this message?')) {
+            try {
+                await db.collection('chats').doc(messageId).delete();
+            } catch (error) {
+                console.error("Error deleting message:", error);
+            }
+        }
+    };
+
+    if (!currentUser) {
+        return <div className="text-center p-8">Error: No user data found.</div>
     }
 
     if (isLoading) {
@@ -114,19 +125,26 @@ const PlayerChatsTab: React.FC = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0 }}
-                                className={`flex items-end gap-2 ${msg.playerId === player.id ? 'justify-end' : ''}`}
+                                className={`flex items-end gap-2 group ${msg.playerId === currentUser.id ? 'justify-end' : ''}`}
                             >
-                                {msg.playerId !== player.id && (
+                                {msg.playerId !== currentUser.id && (
                                     <img src={msg.playerAvatarUrl} alt={msg.playerName} className="w-8 h-8 rounded-full object-cover self-start flex-shrink-0" />
                                 )}
-                                <div className={`flex flex-col ${msg.playerId === player.id ? 'items-end' : 'items-start'}`}>
-                                    <div className={`p-3 rounded-lg max-w-xs md:max-w-md ${msg.playerId === player.id ? 'bg-red-600 text-white rounded-br-none' : 'bg-zinc-800 text-gray-200 rounded-bl-none'}`}>
-                                        {msg.playerId !== player.id && <p className="text-xs font-bold text-red-400 mb-1">{msg.playerName}</p>}
+                                <div className={`flex flex-col ${msg.playerId === currentUser.id ? 'items-end' : 'items-start'}`}>
+                                    <div className={`relative p-3 rounded-lg max-w-xs md:max-w-md ${msg.playerId === currentUser.id ? 'bg-red-600 text-white rounded-br-none' : 'bg-zinc-800 text-gray-200 rounded-bl-none'}`}>
+                                        {isAdmin && (
+                                            <button onClick={() => handleDelete(msg.id)} className="absolute -top-2 -right-2 bg-red-800 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <TrashIcon className="w-3 h-3"/>
+                                            </button>
+                                        )}
+                                        {(msg.playerId !== currentUser.id || msg.role === 'admin') && (
+                                          <p className={`text-xs font-bold mb-1 ${msg.role === 'admin' ? 'text-amber-300' : 'text-red-400'}`}>{msg.playerName} {msg.role === 'admin' && ' (Admin)'}</p>
+                                        )}
                                         <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                                     </div>
                                      <p className="text-xs text-gray-500 mt-1 px-1">{timeSince(msg.createdAt)}</p>
                                 </div>
-                                {msg.playerId === player.id && (
+                                {msg.playerId === currentUser.id && (
                                     <img src={msg.playerAvatarUrl} alt={msg.playerName} className="w-8 h-8 rounded-full object-cover self-start flex-shrink-0" />
                                 )}
                             </motion.div>

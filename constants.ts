@@ -14,7 +14,6 @@ export const MOCK_LEGENDARY_BADGES: LegendaryBadge[] = [
 ];
 
 export const UNRANKED_RANK: Rank = { 
-    // FIX: Add id to conform to the updated Rank interface.
     id: 'rank_unranked',
     name: 'Unranked',
     tier: 'N/A',
@@ -24,7 +23,6 @@ export const UNRANKED_RANK: Rank = {
 };
 
 // New 30-rank structure
-// FIX: Add unique id properties to all ranks to conform to the Rank interface.
 export const MOCK_RANKS: Rank[] = [
     // Tier 1 - Recruit
     { id: "rank_t01_1", tier: "Tier 1 – Recruit", name: "Trainee", minXp: 0, iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png", unlocks: ["Basic Loadout"] },
@@ -132,7 +130,7 @@ const initialEvents: GameEvent[] = [
     type: 'Mission',
     date: '2023-10-28T18:00:00Z',
     startTime: "18:00",
-    location: 'Verdansk',
+    location: 'Verdansk CQB Arena',
     description: 'Infiltrate the enemy stronghold under the cover of darkness. Your primary objective is to retrieve sensitive intel from a heavily guarded command post. Secondary objectives include disrupting enemy communications and sabotaging their supply lines. Expect heavy resistance.',
     attendees: [],
     signedUpPlayers: ['p001', 'p003'],
@@ -144,7 +142,11 @@ const initialEvents: GameEvent[] = [
     rules: 'Standard ROE. Suppressors recommended. NVG is mandatory. One medic per squad.',
     participationXp: 50,
     gameFee: 300,
-    gearForRent: MOCK_INVENTORY.filter(i => i.isRental).slice(0, 3),
+    gearForRent: ['g01', 'g02', 'g05'],
+    rentalPriceOverrides: {
+        'g01': 200, // Discounted M4A1
+    },
+    eventBadges: ['leg03'], // Last Man Standing can be earned here
     rentalSignups: [],
     xpOverrides: {
       g_kill: 20, // Double kill XP for this event
@@ -159,7 +161,7 @@ const initialEvents: GameEvent[] = [
     type: 'Training',
     date: '2023-11-02T10:00:00Z',
     startTime: "10:00",
-    location: 'Killhouse',
+    location: 'Verdansk CQB Arena',
     description: 'Hone your close-quarters combat skills in a series of intense training drills. Focus will be on room clearing, door breaching, and team communication in tight spaces. All skill levels welcome.',
     attendees: [],
     signedUpPlayers: ['p001', 'p002', 'p003'],
@@ -203,7 +205,7 @@ const initialEvents: GameEvent[] = [
     type: 'Mission',
     date: '2023-10-20T18:00:00Z',
     startTime: "18:00",
-    location: 'Al Mazrah',
+    location: 'Al Mazrah Desert Outpost',
     description: 'Successful HVT extraction under heavy fire. Operators infiltrated a desert compound, neutralized threats, and exfiltrated the high-value target before enemy reinforcements could arrive.',
     attendees: [
         { playerId: 'p001', paymentStatus: 'Paid (Card)', rentedGearIds: ['g01', 'g05'], voucherCode: 'LOYALTY50' },
@@ -217,7 +219,7 @@ const initialEvents: GameEvent[] = [
     rules: 'HVT must be extracted alive. All hostiles are cleared for engagement.',
     participationXp: 100,
     gameFee: 350,
-    gearForRent: MOCK_INVENTORY.filter(i => i.isRental),
+    gearForRent: MOCK_INVENTORY.filter(i => i.isRental).map(i => i.id),
     rentalSignups: [],
     liveStats: {
         'p001': { kills: 8, deaths: 3, headshots: 2 },

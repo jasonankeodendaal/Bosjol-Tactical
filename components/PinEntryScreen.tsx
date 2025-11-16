@@ -16,7 +16,7 @@ export const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ player, companyD
   const auth = useContext(AuthContext);
   if (!auth) throw new Error("AuthContext not found");
 
-  const [pin, setPin] = useState(['', '', '', '']);
+  const [pin, setPin] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
@@ -35,7 +35,7 @@ export const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ player, companyD
       setPin(newPin);
 
       // Move focus to next input
-      if (value !== '' && index < 3) {
+      if (value !== '' && index < 5) {
         inputsRef.current[index + 1]?.focus();
       }
     }
@@ -50,8 +50,8 @@ export const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ player, companyD
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const fullPin = pin.join('');
-    if (fullPin.length !== 4) {
-      setError("PIN must be 4 digits.");
+    if (fullPin.length !== 6) {
+      setError("PIN must be 6 digits.");
       return;
     }
     
@@ -66,10 +66,10 @@ export const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ player, companyD
     setIsLoading(true);
     setError(null);
 
-    const success = await login(player.playerCode, fullPin, true); // Always remember if using PIN screen
+    const success = await login(player.playerCode, fullPin);
     if (!success) {
       setError("Invalid PIN. Please try again.");
-      setPin(['', '', '', '']);
+      setPin(['', '', '', '', '', '']);
       inputsRef.current[0]?.focus();
     }
     setIsLoading(false);
@@ -98,11 +98,10 @@ export const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ player, companyD
         <p className="text-gray-400 mb-8">Enter your PIN to continue</p>
         
         <form onSubmit={handleLogin}>
-            <div className="flex justify-center gap-3 mb-6" aria-label="PIN Code Entry">
+            <div className="flex justify-center gap-2 mb-6" aria-label="PIN Code Entry">
                 {pin.map((digit, index) => (
                     <input
                         key={index}
-                        // FIX: Wrap the ref callback body in curly braces to ensure it returns void.
                         ref={el => { inputsRef.current[index] = el; }}
                         type="password"
                         inputMode="numeric"

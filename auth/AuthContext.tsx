@@ -132,6 +132,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 return false;
             } catch (error) {
                 console.error("Player Firestore login failed:", error);
+                alert(`Login failed: ${(error as Error).message}. This might be a database permissions issue. Please check the Firestore rules.`);
                 return false;
             }
         } else { // Mock player login

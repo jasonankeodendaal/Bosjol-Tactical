@@ -182,7 +182,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
 
     const ResetPinModal: React.FC<{ onClose: () => void, onSave: (newPin: string) => void }> = ({ onClose, onSave }) => {
         const [newPin, setNewPin] = useState('');
-        const isValid = /^\d{4}$/.test(newPin);
+        const isValid = /^\d{6}$/.test(newPin);
 
         const handleSave = () => {
             if (isValid) {
@@ -194,19 +194,19 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
             <Modal isOpen={true} onClose={onClose} title={`Reset PIN for ${player.name}`}>
                 <div className="space-y-4">
                     <Input
-                        label="New 4-Digit PIN"
+                        label="New 6-Digit PIN"
                         type="text"
                         value={newPin}
                         onChange={e => {
                             const val = e.target.value.replace(/\D/g, '');
-                            if (val.length <= 4) {
+                            if (val.length <= 6) {
                                 setNewPin(val);
                             }
                         }}
-                        maxLength={4}
-                        placeholder="Enter a new 4-digit PIN"
+                        maxLength={6}
+                        placeholder="Enter a new 6-digit PIN"
                         inputMode="numeric"
-                        pattern="\d{4}"
+                        pattern="\d{6}"
                     />
                 </div>
                 <div className="mt-6">
@@ -258,17 +258,17 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                                         <Input label="ID Number" value={formData.idNumber} onChange={e => setFormData(f => ({...f, idNumber: e.target.value}))} />
                                     </div>
                                     <Input
-                                        label="4-Digit PIN"
+                                        label="6-Digit PIN"
                                         type="text"
                                         value={formData.pin}
                                         onChange={e => {
                                             const val = e.target.value.replace(/\D/g, '');
-                                            if (val.length <= 4) {
+                                            if (val.length <= 6) {
                                                 setFormData(f => ({ ...f, pin: val }));
                                             }
                                         }}
-                                        maxLength={4}
-                                        pattern="\d{4}"
+                                        maxLength={6}
+                                        pattern="\d{6}"
                                         inputMode="numeric"
                                     />
                                     <Input label="Email" value={formData.email} onChange={e => setFormData(f => ({...f, email: e.target.value}))}/>
@@ -305,7 +305,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <label className="text-sm font-medium text-gray-400">PIN Code</label>
-                                                <p className="font-mono text-lg text-red-400 tracking-widest">{showPin ? player.pin : '****'}</p>
+                                                <p className="font-mono text-lg text-red-400 tracking-widest">{showPin ? player.pin : '******'}</p>
                                             </div>
                                             <div className="flex gap-2">
                                                 <Button size="sm" variant="secondary" onClick={() => setShowPin(!showPin)}>{showPin ? 'Hide' : 'Show'}</Button>

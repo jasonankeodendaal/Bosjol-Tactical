@@ -56,13 +56,19 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // --- Publicly Readable Collections ---
-    // These collections must be readable by anyone for the app to function.
-    // Write access is strictly limited to prevent cheating or unauthorized modification.
+    // --- Special Rules for Collections ---
+    match /players/{playerId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+      // A logged-in user can update ONLY the activeAuthUID field on any player document.
+      // This is required for the anonymous login flow to work without server-side code.
+      allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['activeAuthUID']);
+    }
+    
+    // --- Publicly Readable, Admin/Creator Writable Collections ---
     match /settings/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /socialLinks/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /carouselMedia/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
-    match /players/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /events/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /ranks/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /badges/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
@@ -79,7 +85,7 @@ service cloud.firestore {
     match /transactions/{transactionId} { allow read, write: if isAdmin() || isCreator(); }
     match /admins/{adminId} { allow read, write: if isAdmin() || isCreator(); }
     
-    // --- Special Rules ---
+    // --- System Collections ---
     match /_health/{testId} { allow read, write: if isAdmin() || isCreator(); }
   }
 }
@@ -267,7 +273,7 @@ export const SetupGuideTab: React.FC = () => {
                  <ul className="list-disc list-inside space-y-2 pl-2">
                     <li><strong>Creator Login:</strong> Use <InlineCode>jstypme@gmail.com</InlineCode> and the password you set.</li>
                     <li><strong>Admin Login:</strong> Use <InlineCode>bosjoltactical@gmail.com</InlineCode> and the password you set (e.g., <InlineCode>1234</InlineCode>).</li>
-                    <li><strong>Player Login:</strong> Use a pre-seeded player's credentials, for example, Player Code: <InlineCode>P001</InlineCode> and PIN: <InlineCode>1111</InlineCode>.</li>
+                    <li><strong>Player Login:</strong> Use a pre-seeded player's credentials, for example, Player Code: <InlineCode>P001</InlineCode> and PIN: <InlineCode>111111</InlineCode>.</li>
                 </ul>
             </StepCard>
 

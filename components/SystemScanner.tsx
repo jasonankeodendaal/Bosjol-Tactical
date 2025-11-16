@@ -191,8 +191,9 @@ export const SystemScanner: React.FC = () => {
     }, [runChecks]);
 
     const { healthScore, errorCount, warningCount, noticeCount } = useMemo(() => {
-        // FIX: Flatten the nested array of results. Using concat with a spread operator for robust type inference.
-        const all: CheckResult[] = ([] as CheckResult[]).concat(...Object.values(results));
+        // FIX: The use of .flat() was causing a type inference issue in some TypeScript environments.
+        // Replaced with .reduce() to robustly flatten the array of arrays while maintaining type safety.
+        const all: CheckResult[] = Object.values(results).reduce((acc, val) => acc.concat(val), []);
         if (all.length === 0) return { healthScore: 0, errorCount: 0, warningCount: 0, noticeCount: 0 };
 
         const passes = all.filter(c => c.status === 'pass').length;

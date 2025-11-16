@@ -357,15 +357,3 @@ export interface CreatorDetails {
     githubUrl: string;
     sourceCodeZipUrl?: string;
 }
-
-// FIX: Added ChatMessage interface to resolve missing type error in PlayerChatsTab.tsx
-export interface ChatMessage {
-  id: string;
-  text: string;
-  createdAt: Date;
-  playerId: string;
-  playerName: string;
-  playerAvatarUrl: string;
-  authUID: string;
-  role: Role;
-}

@@ -39,8 +39,9 @@ const NewPlayerModal: React.FC<{
     onClose: () => void;
     players: Player[];
     companyDetails: CompanyDetails;
+    ranks: Rank[];
     addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<void>;
-}> = ({ onClose, players, companyDetails, addPlayerDoc }) => {
+}> = ({ onClose, players, companyDetails, ranks, addPlayerDoc }) => {
     const [formData, setFormData] = useState({
         name: '',
         surname: '',
@@ -58,8 +59,8 @@ const NewPlayerModal: React.FC<{
             alert('Please fill in all required fields.');
             return;
         }
-        if (!/^\d{4}$/.test(formData.pin)) {
-            alert('PIN must be 4 digits.');
+        if (!/^\d{6}$/.test(formData.pin)) {
+            alert('PIN must be 6 digits.');
             return;
         }
         if (ageNum < companyDetails.minimumSignupAge) {
@@ -94,7 +95,7 @@ const NewPlayerModal: React.FC<{
             idNumber: formData.idNumber,
             role: 'player',
             callsign: formData.name, // Default callsign to first name
-            rank: MOCK_RANKS[0],
+            rank: ranks.length > 0 ? ranks[0] : UNRANKED_RANK,
             status: 'Active',
             avatarUrl: `https://api.dicebear.com/8.x/bottts/svg?seed=${formData.name}${formData.surname}`, // Default avatar
             stats: { kills: 0, deaths: 0, headshots: 0, gamesPlayed: 0, xp: 0 },
@@ -109,9 +110,13 @@ const NewPlayerModal: React.FC<{
                 tactical: 'Flashbang',
             },
         };
-
-        await addPlayerDoc(newPlayerData);
-        onClose();
+        try {
+            await addPlayerDoc(newPlayerData);
+            onClose();
+        } catch (error) {
+            console.error("Failed to create new player:", error);
+            alert(`Error: Could not create player. Please check the console for details. Message: ${(error as Error).message}`);
+        }
     };
 
     return (
@@ -127,7 +132,7 @@ const NewPlayerModal: React.FC<{
                     <Input label="Age" type="number" value={formData.age} onChange={e => setFormData(f => ({ ...f, age: e.target.value }))} />
                     <Input label="ID Number" value={formData.idNumber} onChange={e => setFormData(f => ({ ...f, idNumber: e.target.value }))} />
                 </div>
-                <Input label="4-Digit PIN" type="password" value={formData.pin} onChange={e => setFormData(f => ({ ...f, pin: e.target.value.replace(/\D/g, '') }))} maxLength={4} />
+                <Input label="6-Digit PIN" type="password" value={formData.pin} onChange={e => setFormData(f => ({ ...f, pin: e.target.value.replace(/\D/g, '') }))} maxLength={6} />
             </div>
             <div className="mt-6">
                 <Button className="w-full" onClick={handleSave}>Create Player</Button>
@@ -252,7 +257,7 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
 
     return (
         <div>
-            {showNewPlayerModal && <NewPlayerModal onClose={() => setShowNewPlayerModal(false)} players={players} addPlayerDoc={addPlayerDoc} companyDetails={companyDetails} />}
+            {showNewPlayerModal && <NewPlayerModal onClose={() => setShowNewPlayerModal(false)} players={players} addPlayerDoc={addPlayerDoc} companyDetails={companyDetails} ranks={ranks} />}
             <DashboardCard title="Player Management" icon={<UsersIcon className="w-6 h-6" />}>
                 <div className="p-4">
                     <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">

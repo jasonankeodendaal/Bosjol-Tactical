@@ -32,11 +32,19 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if false;
     }
+    
+    match /players/{playerId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCreator();
+      // A logged-in user can update ONLY the activeAuthUID field on any player document.
+      // This is required for the anonymous login flow to work without server-side code.
+      allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['activeAuthUID']);
+    }
 
+    // Publicly readable, Admin/Creator writable collections
     match /settings/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /socialLinks/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /carouselMedia/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
-    match /players/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /events/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /ranks/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /badges/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
@@ -48,11 +56,8 @@ service cloud.firestore {
     match /locations/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /raffles/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /vouchers/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
-    match /chats/{messageId} {
-      allow read: if true;
-      allow write: if request.auth != null;
-      allow delete: if isAdmin() || isCreator();
-    }
+    
+    // Admin/Creator only collections
     match /transactions/{transactionId} { allow read, write: if isAdmin() || isCreator(); }
     match /admins/{adminId} { allow read, write: if isAdmin() || isCreator(); }
     match /_health/{testId} { allow read, write: if isAdmin() || isCreator(); }

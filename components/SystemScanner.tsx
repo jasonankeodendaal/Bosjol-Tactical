@@ -121,7 +121,8 @@ const HealthScoreHistoryChart: React.FC<{ history: { time: number; score: number
 };
 
 const StatusDistributionChart: React.FC<{ data: Record<CheckStatus, number> }> = ({ data }) => {
-    const total = Object.values(data).reduce((sum, val) => sum + val, 0);
+    // FIX: Explicitly type accumulator and value in reduce to prevent 'unknown' type error.
+    const total = Object.values(data).reduce((sum: number, val: number) => sum + val, 0);
     if (total === 0) return null;
     
     const radius = 40;
@@ -231,9 +232,10 @@ export const SystemScanner: React.FC = () => {
         else if (warns > 0) setOverallStatus('degraded');
         else setOverallStatus('operational');
 
-// FIX: Cast `category` to `ResultCategory` to resolve type error when accessing `.checks`. This is necessary because TypeScript's `Object.entries` may infer the value as `unknown`.
+        // FIX: Cast `category` to `ResultCategory` to resolve type errors. This ensures type safety when TypeScript infers `unknown` from `Object.entries`.
         const categoriesWithIssues = Object.entries(tempResults).reduce((acc, [key, category]) => {
-            if ((category as ResultCategory).checks.some(c => c.status === 'fail' || c.status === 'warn')) {
+            const cat = category as ResultCategory;
+            if (cat.checks.some(c => c.status === 'fail' || c.status === 'warn')) {
                 acc[key] = true;
             }
             return acc;
@@ -292,7 +294,7 @@ export const SystemScanner: React.FC = () => {
         critical: { text: 'Critical Errors Detected', color: 'text-red-400', bgColor: 'bg-red-500' },
     };
     const currentStatus = statusInfo[overallStatus];
-    const allChecks = Object.values(results).flatMap(cat => cat.checks);
+    const allChecks = Object.values(results).flatMap(cat => (cat as ResultCategory).checks);
     const checkCounts = {
         total: allChecks.length,
         pass: allChecks.filter(c => c.status === 'pass').length,
@@ -340,7 +342,7 @@ export const SystemScanner: React.FC = () => {
                      <div className="text-center p-8"><CogIcon className="w-12 h-12 text-gray-500 mx-auto animate-spin"/><p className="mt-2 text-gray-400">Running diagnostics...</p></div>
                 ) : (
                     <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
-                        {/*// FIX: Remove explicit type annotation and use a cast for `category` to resolve type errors. This ensures type safety when TypeScript infers `unknown` from `Object.entries`.*/
+                        {
                         Object.entries(results).map(([key, category]) => {
                             const cat = category as ResultCategory;
                             const hasFail = cat.checks.some(c => c.status === 'fail');

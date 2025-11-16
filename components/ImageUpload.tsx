@@ -166,6 +166,79 @@ const compressVideo = (file: File, onProgress: (progress: number) => void): Prom
     });
 };
 
+const compressAudio = (file: File, onProgress: (progress: number) => void): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const reader = new FileReader();
+
+        reader.onload = async (event) => {
+            try {
+                if (!event.target?.result) {
+                    return reject(new Error("Couldn't read audio file data."));
+                }
+                onProgress(10); // Decoding started
+                const audioBuffer = await audioContext.decodeAudioData(event.target.result as ArrayBuffer);
+                onProgress(30); // Decoding finished
+
+                const destination = audioContext.createMediaStreamDestination();
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(destination);
+                
+                const recordedChunks: Blob[] = [];
+                const mimeType = 'audio/webm';
+                if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported(mimeType)) {
+                    audioContext.close();
+                    return reject(new Error('Audio recording to WebM is not supported in this browser.'));
+                }
+                
+                const mediaRecorder = new MediaRecorder(destination.stream, { mimeType });
+                
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    onProgress(100);
+                    source.disconnect();
+                    audioContext.close();
+                    const finalBlob = new Blob(recordedChunks, { type: mimeType });
+                    if (finalBlob.size > 0) {
+                        resolve(finalBlob);
+                    } else {
+                        reject(new Error('Audio compression resulted in an empty file.'));
+                    }
+                };
+                
+                mediaRecorder.onerror = (e) => {
+                    audioContext.close();
+                    reject(e);
+                };
+
+                source.onended = () => {
+                    if (mediaRecorder.state === 'recording') {
+                        mediaRecorder.stop();
+                    }
+                };
+
+                source.start();
+                mediaRecorder.start();
+
+            } catch (e) {
+                audioContext.close();
+                console.error("Audio processing failed:", e);
+                reject(new Error("Failed to process audio file. It may be corrupt or in an unsupported format."));
+            }
+        };
+
+        reader.onerror = (err) => {
+            audioContext.close();
+            reject(err)
+        };
+        reader.readAsArrayBuffer(file);
+    });
+};
+
 
 export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, apiServerUrl }) => {
   const [status, setStatus] = useState<UploadStatus>('idle');
@@ -215,7 +288,9 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
             let fileToUpload: Blob = file;
             const isImage = file.type.startsWith('image/') && !file.type.endsWith('gif');
             const isVideo = file.type.startsWith('video/');
+            const isAudio = file.type.startsWith('audio/');
             const isLargeImage = isImage && file.size > 500 * 1024; // Compress if image > 500KB
+            const isLargeOrUncompressedAudio = isAudio && (file.type === 'audio/wav' || file.type === 'audio/x-wav' || file.size > 2 * 1024 * 1024);
 
             if (isLargeImage) {
                 setMessage(`Compressing image: ${file.name}...`);
@@ -235,6 +310,16 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
                      setMessage(`Optimization failed. Uploading original...`);
                      await new Promise(res => setTimeout(res, 1500));
                  }
+            } else if (isLargeOrUncompressedAudio) {
+                setMessage(`Optimizing audio: ${file.name}...`);
+                setProgress(0);
+                try {
+                    fileToUpload = await compressAudio(file, (p) => setProgress(p));
+                } catch (compressionError) {
+                    console.warn('Audio optimization failed, uploading original file.', compressionError);
+                    setMessage(`Optimization failed. Uploading original...`);
+                    await new Promise(res => setTimeout(res, 1500));
+                }
             }
 
             if (fileToUpload.size > 25 * 1024 * 1024) {

@@ -106,12 +106,12 @@
         95% { clip-path: polygon(0 75%, 100% 75%, 100% 76%, 0 76%); }
         100% { clip-path: polygon(0 55%, 100% 55%, 100% 56%, 0 56%); }
       }
-      @keyframes scroll {
+      @keyframes marquee {
         from { transform: translateX(0); }
         to { transform: translateX(-50%); }
       }
-      .scrolling-wrapper {
-        animation: scroll 40s linear infinite;
+      .animate-marquee {
+        animation: marquee 40s linear infinite;
       }
       @keyframes prestige-glow {
         0% { box-shadow: 0 0 5px #ef4444, 0 0 10px #ef4444, 0 0 15px #b91c1c; }

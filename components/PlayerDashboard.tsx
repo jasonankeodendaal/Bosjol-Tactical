@@ -568,10 +568,10 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sp
                 {/* Sponsors */}
                 <DashboardCard title="Sponsors" icon={<SparklesIcon className="w-6 h-6" />} fullHeight>
                     <div className="p-4">
-                        <div className="overflow-hidden relative h-20">
+                        <div className="overflow-hidden relative h-32">
                              <div className="flex animate-marquee">
                                 {[...sponsors, ...sponsors].map((sponsor, i) => (
-                                    <div key={`${sponsor.id}-${i}`} className="flex-shrink-0 w-48 h-20 flex items-center justify-center p-2" onClick={() => setSelectedSponsor(sponsor)}>
+                                    <div key={`${sponsor.id}-${i}`} className="flex-shrink-0 w-64 h-32 flex items-center justify-center p-4" onClick={() => setSelectedSponsor(sponsor)}>
                                         <img src={sponsor.logoUrl} alt={sponsor.name} className="max-h-full max-w-full object-contain cursor-pointer" />
                                     </div>
                                 ))}

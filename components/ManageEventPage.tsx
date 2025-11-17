@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
-import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee, Signup } from '../types';
+import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee, Signup, CompanyDetails } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -23,6 +23,7 @@ interface ManageEventPageProps {
     signups: Signup[];
     setDoc: (collectionName: string, docId: string, data: object) => Promise<void>;
     deleteDoc: (collectionName: string, docId: string) => Promise<void>;
+    companyDetails: CompanyDetails;
 }
 
 const defaultEvent: Omit<GameEvent, 'id'> = {
@@ -44,7 +45,7 @@ const defaultEvent: Omit<GameEvent, 'id'> = {
 };
 
 export const ManageEventPage: React.FC<ManageEventPageProps> = ({
-    event, players, inventory, gamificationSettings, onBack, onSave, onDelete, setPlayers, setTransactions, signups, setDoc, deleteDoc
+    event, players, inventory, gamificationSettings, onBack, onSave, onDelete, setPlayers, setTransactions, signups, setDoc, deleteDoc, companyDetails
 }) => {
     const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState<Omit<GameEvent, 'id'>>(() => {
@@ -288,6 +289,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                     onUrlSet={(url) => setFormData(f => ({...f, imageUrl: url}))}
                                     onRemove={() => setFormData(f => ({...f, imageUrl: ''}))}
                                     accept="image/*"
+                                    apiServerUrl={companyDetails.apiServerUrl}
                                 />
                                 <UrlOrUploadField
                                     label="Audio Briefing"
@@ -296,6 +298,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                     onRemove={() => setFormData(f => ({...f, audioBriefingUrl: ''}))}
                                     accept="audio/*"
                                     previewType="audio"
+                                    apiServerUrl={companyDetails.apiServerUrl}
                                 />
                             </div>
                         </div>

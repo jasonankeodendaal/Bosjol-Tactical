@@ -310,11 +310,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Input label="Minimum Signup Age" type="number" value={formData.minimumSignupAge} onChange={e => setFormData(f => ({...f, minimumSignupAge: Number(e.target.value)}))} />
-                        <Input
-                            label="Android APK URL"
-                            value={formData.apkUrl || ''}
-                            onChange={(e) => setFormData(f => ({ ...f, apkUrl: e.target.value }))}
-                            placeholder="https://.../app.apk"
+                        <UrlOrUploadField
+                            label="Android APK File"
+                            fileUrl={formData.apkUrl}
+                            onUrlSet={(url) => setFormData(f => ({ ...f, apkUrl: url }))}
+                            onRemove={() => setFormData(f => ({ ...f, apkUrl: '' }))}
+                            accept=".apk,application/vnd.android.package-archive"
+                            apiServerUrl={formData.apiServerUrl}
                         />
                     </div>
                     <div>

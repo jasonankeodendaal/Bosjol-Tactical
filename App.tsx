@@ -1,3 +1,4 @@
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -182,7 +183,7 @@ const PromotionModal: React.FC<{
                         </>}
                     </motion.div>
 
-                    <div className="rank-item next"><!-- Placeholder for next rank if needed --></div>
+                    <div className="rank-item next">{/* Placeholder for next rank if needed */}</div>
                 </div>
 
                 {newRank && <h2 className="rank-item-header">Rank Up</h2>}

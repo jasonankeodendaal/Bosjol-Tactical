@@ -2,7 +2,6 @@
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
-import 'firebase/compat/storage';
 
 // Vite exposes environment variables on `import.meta.env`.
 // These variables are replaced at build time. They MUST be prefixed with `VITE_`
@@ -20,7 +19,6 @@ export const firebaseConfig = {
   apiKey: (import.meta as any).env.VITE_FIREBASE_API_KEY,
   authDomain: (import.meta as any).env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: (import.meta as any).env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: (import.meta as any).env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: (import.meta as any).env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: (import.meta as any).env.VITE_FIREBASE_APP_ID,
 };
@@ -29,8 +27,7 @@ export const isFirebaseConfigured = () => {
     return !!(
         firebaseConfig.apiKey &&
         firebaseConfig.authDomain &&
-        firebaseConfig.projectId &&
-        firebaseConfig.storageBucket
+        firebaseConfig.projectId
     );
 };
 
@@ -59,6 +56,6 @@ try {
 
 export const auth = app ? firebase.auth() : null;
 export const db = app ? firebase.firestore() : null;
-export const storage = app ? firebase.storage() : null;
+export const storage = null;
 
 export { firebase };

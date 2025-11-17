@@ -9,7 +9,7 @@ import { Button } from './Button';
 import { Input } from './Input';
 import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, PlusIcon, XIcon, InformationCircleIcon } from './icons/Icons';
 import { Modal } from './Modal';
-import { ImageUpload } from './ImageUpload';
+import { UrlOrUploadField } from './UrlOrUploadField';
 import { DashboardCard } from './DashboardCard';
 import { DataContext } from '../data/DataContext';
 
@@ -94,7 +94,6 @@ const BadgeEditorModal: React.FC<{
     onClose: () => void,
     onSave: (badge: Omit<Badge, 'id'> | Badge) => void
 }> = ({ badge, onClose, onSave }) => {
-    const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
         name: badge?.name || '',
         description: badge?.description || '',
@@ -123,8 +122,13 @@ const BadgeEditorModal: React.FC<{
             <div className="space-y-4">
                 <Input label="Badge Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                 <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} />
-                <ImageUpload onUpload={(urls) => { if(urls.length) setFormData(f => ({...f, iconUrl: urls[0]}))}} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
-                {formData.iconUrl && <img src={formData.iconUrl} alt="icon preview" className="w-16 h-16"/>}
+                <UrlOrUploadField
+                    label="Badge Icon"
+                    fileUrl={formData.iconUrl}
+                    onUrlSet={(url) => setFormData(f => ({...f, iconUrl: url}))}
+                    onRemove={() => setFormData(f => ({...f, iconUrl: ''}))}
+                    accept="image/*"
+                />
                 <div className="grid grid-cols-2 gap-4">
                     <select value={formData.criteriaType} onChange={e => setFormData(f => ({...f, criteriaType: e.target.value as Badge['criteria']['type']}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
                         <option value="kills">Kills</option>
@@ -148,7 +152,6 @@ const LegendaryBadgeEditorModal: React.FC<{
     onClose: () => void,
     onSave: (badge: Omit<LegendaryBadge, 'id'> | LegendaryBadge) => void
 }> = ({ badge, onClose, onSave }) => {
-    const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
         name: badge?.name || '',
         description: badge?.description || '',
@@ -171,8 +174,13 @@ const LegendaryBadgeEditorModal: React.FC<{
                 <Input label="Badge Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                 <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} />
                 <Input label="How to Obtain" value={formData.howToObtain} onChange={e => setFormData(f => ({ ...f, howToObtain: e.target.value }))} />
-                <ImageUpload onUpload={(urls) => { if(urls.length) setFormData(f => ({...f, iconUrl: urls[0]}))}} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
-                {formData.iconUrl && <img src={formData.iconUrl} alt="icon preview" className="w-16 h-16"/>}
+                <UrlOrUploadField
+                    label="Badge Icon"
+                    fileUrl={formData.iconUrl}
+                    onUrlSet={(url) => setFormData(f => ({...f, iconUrl: url}))}
+                    onRemove={() => setFormData(f => ({...f, iconUrl: ''}))}
+                    accept="image/*"
+                />
             </div>
             <div className="mt-6">
                 <Button onClick={handleSave} className="w-full">Save Badge</Button>
@@ -189,6 +197,7 @@ const TierEditorModal: React.FC<{
     const [formData, setFormData] = useState({
         name: tier?.name || '',
         description: tier?.description || '',
+        tierBadgeUrl: tier?.tierBadgeUrl || '',
     });
 
     const handleSave = () => {
@@ -206,6 +215,13 @@ const TierEditorModal: React.FC<{
             <div className="space-y-4">
                 <Input label="Tier Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                 <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} />
+                <UrlOrUploadField
+                    label="Tier Badge"
+                    fileUrl={formData.tierBadgeUrl}
+                    onUrlSet={(url) => setFormData(f => ({...f, tierBadgeUrl: url}))}
+                    onRemove={() => setFormData(f => ({...f, tierBadgeUrl: ''}))}
+                    accept="image/*"
+                />
             </div>
             <div className="mt-6">
                 <Button onClick={handleSave} className="w-full">Save Tier</Button>
@@ -220,7 +236,6 @@ const RankEditorModal: React.FC<{
     onClose: () => void,
     onSave: (rank: (Omit<SubRank, 'id'> | SubRank) & { tierId: string }) => void
 }> = ({ rank, tiers, onClose, onSave }) => {
-    const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
         name: rank?.name || '',
         tierId: rank?.tierId || (tiers.length > 0 ? tiers[0].id : ''),
@@ -258,11 +273,13 @@ const RankEditorModal: React.FC<{
                 </div>
                 <Input label="Minimum XP Required" type="number" value={formData.minXp} onChange={e => setFormData(f => ({...f, minXp: Number(e.target.value)}))} />
                 <Input label="Perks (comma-separated)" value={formData.perks} onChange={e => setFormData(f => ({...f, perks: e.target.value}))} />
-                <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Rank Icon</label>
-                    <ImageUpload onUpload={(urls) => { if(urls.length) setFormData(f => ({...f, iconUrl: urls[0]}))}} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
-                    {formData.iconUrl && <img src={formData.iconUrl} alt="Rank Icon Preview" className="w-16 h-16 mt-2"/>}
-                </div>
+                <UrlOrUploadField
+                    label="Rank Icon"
+                    fileUrl={formData.iconUrl}
+                    onUrlSet={(url) => setFormData(f => ({...f, iconUrl: url}))}
+                    onRemove={() => setFormData(f => ({...f, iconUrl: ''}))}
+                    accept="image/*"
+                />
             </div>
             <div className="mt-6">
                 <Button onClick={handleSave} className="w-full">Save Rank</Button>
@@ -404,6 +421,7 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
                             <div className="space-y-2 max-h-60 overflow-y-auto">
                                 {rankTiers.map(tier => (
                                     <div key={tier.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg">
+                                        <img src={tier.tierBadgeUrl} alt={tier.name} className="w-10 h-10 object-contain"/>
                                         <p className="font-bold text-white flex-grow">{tier.name}</p>
                                         <Button size="sm" variant="secondary" onClick={() => setEditingTier(tier)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
                                         <Button size="sm" variant="danger" onClick={() => setDeletingTier(tier)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>

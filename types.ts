@@ -1,3 +1,5 @@
+
+
 import { IconProps } from "@phosphor-icons/react";
 import type { Dispatch, SetStateAction } from 'react';
 
@@ -205,6 +207,7 @@ export interface RankTier {
   id: string;
   name: string;
   description: string;
+  tierBadgeUrl: string;
   subranks: SubRank[];
 }
 
@@ -341,8 +344,8 @@ export interface CompanyDetails {
     loginAudioUrl?: string;
     playerDashboardBackgroundUrl?: string;
     adminDashboardBackgroundUrl?: string;
-    apiServerUrl?: string;
     apkUrl?: string;
+    apiServerUrl?: string;
     bankInfo: {
         bankName: string;
         accountNumber: string;
@@ -350,6 +353,15 @@ export interface CompanyDetails {
     };
     fixedEventRules?: string;
     minimumSignupAge: number;
+}
+
+export interface ApiGuideStep {
+  id: string;
+  title: string;
+  content: string;
+  codeBlock?: string;
+  codeLanguage?: string;
+  fileName?: string;
 }
 
 export interface CreatorDetails {
@@ -362,4 +374,5 @@ export interface CreatorDetails {
     logoUrl: string;
     githubUrl: string;
     sourceCodeZipUrl?: string;
+    apiSetupGuide: ApiGuideStep[];
 }

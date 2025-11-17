@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
@@ -77,20 +78,6 @@ service cloud.firestore {
     match /_health/{testId} { allow read, write: if isAdmin() || isCreator(); }
   }
 }
-`;
-
-const corsJsonContent = `
-[
-  {
-    "origin": ["*"],
-    "method": ["GET", "PUT", "POST", "DELETE", "HEAD"],
-    "responseHeader": [
-      "Content-Type",
-      "x-goog-resumable"
-    ],
-    "maxAgeSeconds": 3600
-  }
-]
 `;
 
 const CodeBlock: React.FC<{ children: React.ReactNode, title: string }> = ({ children, title }) => {
@@ -190,13 +177,6 @@ VITE_FIREBASE_APP_ID="your-app-id"
                             <li>Start in <strong>Production mode</strong>. Choose a server location closest to you.</li>
                         </ol>
                     </li>
-                    <li>
-                        <strong>Storage:</strong>
-                         <ol className="list-decimal list-inside pl-6">
-                            <li>Go to the 'Storage' section and click 'Get started'.</li>
-                            <li>Start in <strong>Production mode</strong>. Use the default bucket location.</li>
-                        </ol>
-                    </li>
                  </ul>
             </StepCard>
 
@@ -208,25 +188,7 @@ VITE_FIREBASE_APP_ID="your-app-id"
                 </CodeBlock>
             </StepCard>
 
-            <StepCard number={5} title="Configure Storage for Uploads (CORS)">
-                <p>To allow file uploads directly from the browser (like changing a profile picture), you must configure Cross-Origin Resource Sharing (CORS) on your Cloud Storage bucket.</p>
-                <ol className="list-decimal list-inside space-y-2 pl-4">
-                    <li>Install the Google Cloud CLI, which includes the <code className="text-sm bg-zinc-700 p-1 rounded">gsutil</code> tool. Follow the <a href="https://cloud.google.com/sdk/docs/install" target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline">official installation guide</a>.</li>
-                    <li>Create a file named <code className="text-sm bg-zinc-700 p-1 rounded">cors.json</code> on your computer and paste the following content into it:</li>
-                </ol>
-                <CodeBlock title="cors.json">
-                    {corsJsonContent}
-                </CodeBlock>
-                <ol className="list-decimal list-inside space-y-2 pl-4" start={3}>
-                    <li>Run the following command in your terminal, replacing <code className="text-sm bg-zinc-700 p-1 rounded">your-project-id.appspot.com</code> with your actual Firebase Storage Bucket URL (found in the 'Storage' section of your Firebase console).</li>
-                </ol>
-                <CodeBlock title="Terminal">
-                    {`gsutil cors set cors.json gs://your-project-id.appspot.com`}
-                </CodeBlock>
-                 <p>This command tells your storage bucket to accept upload requests from any web page, which is necessary for the dashboard to function correctly.</p>
-            </StepCard>
-            
-             <StepCard number={6} title="Create Admin & Creator Users">
+            <StepCard number={5} title="Create Admin & Creator Users">
                 <p>Go to 'Authentication' -&gt; 'Users' and click 'Add user'. Manually create two users:</p>
                  <ul className="list-disc list-inside space-y-2 pl-2">
                     <li><strong>Admin User:</strong> Email: <code className="text-sm bg-zinc-700 p-1 rounded">bosjoltactical@gmail.com</code>. Set a secure password.</li>
@@ -235,7 +197,7 @@ VITE_FIREBASE_APP_ID="your-app-id"
                  <p>The application is hard-coded to recognize these two emails as privileged users. After creating them, you can log in with their credentials.</p>
             </StepCard>
 
-            <StepCard number={7} title="Initial Data Seeding">
+            <StepCard number={6} title="Initial Data Seeding">
                 <p>When you run the app for the first time connected to a new, empty Firestore database, it will automatically detect this and "seed" all the initial mock data (players, events, settings, etc.) into your live database. You will see a "Seeding initial database..." loading screen. After it completes, the app will reload, and you will be running on your own live Firebase backend.</p>
             </StepCard>
         </div>

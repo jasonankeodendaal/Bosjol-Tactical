@@ -1,14 +1,15 @@
 
 
+
 import React, { useState, useContext } from 'react';
 import type { Sponsor } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
-import { ImageUpload } from './ImageUpload';
 import { SparklesIcon, PlusIcon, PencilIcon, TrashIcon } from './icons/Icons';
 import { DataContext } from '../data/DataContext';
+import { UrlOrUploadField } from './UrlOrUploadField';
 
 interface SponsorsTabProps {
     sponsors: Sponsor[];
@@ -42,17 +43,13 @@ const SponsorEditorModal: React.FC<{ sponsor: Partial<Sponsor>, onClose: () => v
                     <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} />
                 </div>
                 <Input label="Website" value={formData.website} onChange={e => setFormData(f => ({ ...f, website: e.target.value }))} placeholder="https://..." />
-                <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Sponsor Logo</label>
-                    {formData.logoUrl ? (
-                        <div className="flex items-center gap-2">
-                            <img src={formData.logoUrl} alt="logo preview" className="w-24 h-24 object-contain rounded-md bg-zinc-800 p-1" />
-                            <Button variant="danger" size="sm" onClick={() => setFormData(f => ({ ...f, logoUrl: '' }))}>Remove</Button>
-                        </div>
-                    ) : (
-                        <ImageUpload onUpload={(urls) => { if (urls.length > 0) setFormData(f => ({ ...f, logoUrl: urls[0] })); }} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
-                    )}
-                </div>
+                <UrlOrUploadField
+                    label="Sponsor Logo"
+                    fileUrl={formData.logoUrl}
+                    onUrlSet={(url) => setFormData(f => ({ ...f, logoUrl: url }))}
+                    onRemove={() => setFormData(f => ({ ...f, logoUrl: '' }))}
+                    accept="image/*"
+                />
             </div>
             <div className="mt-6">
                 <Button className="w-full" onClick={handleSaveClick}>Save Sponsor</Button>

@@ -1,12 +1,14 @@
+
+
 import React, { useState, useEffect, useContext } from 'react';
 import type { CompanyDetails, SocialLink, CarouselMedia } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
-import { ImageUpload } from './ImageUpload';
 import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, KeyIcon, InformationCircleIcon, CloudArrowDownIcon, UploadCloudIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { DataContext } from '../data/DataContext';
+import { UrlOrUploadField } from './UrlOrUploadField';
 
 interface SettingsTabProps {
     companyDetails: CompanyDetails;
@@ -20,12 +22,6 @@ interface SettingsTabProps {
     updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
     deleteDoc: (collectionName: string, docId: string) => Promise<void>;
     restoreFromBackup: (backupData: any) => Promise<void>;
-}
-
-type MigrationStatus = 'idle' | 'migrating' | 'complete' | 'error';
-interface StorageInfo {
-    free: number;
-    size: number;
 }
 
 // Helper function to ensure companyDetails object has all required arrays/objects to prevent render errors.
@@ -42,62 +38,6 @@ const formatBytes = (bytes: number, decimals = 2) => {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
-
-
-const UrlOrUploadField: React.FC<{
-    label: string;
-    fileUrl: string | undefined;
-    onUrlSet: (url: string) => void;
-    onRemove: () => void;
-    accept: string;
-    previewType?: 'image' | 'audio';
-    apiServerUrl?: string;
-}> = ({ label, fileUrl, onUrlSet, onRemove, accept, previewType = 'image', apiServerUrl }) => {
-    const previewContent = () => {
-        if (!fileUrl) return null;
-        switch (previewType) {
-            case 'image':
-                return <img src={fileUrl} alt="preview" className="w-16 h-16 object-contain rounded-md bg-zinc-800 p-1" />;
-            case 'audio':
-                return (
-                    <div className="w-16 h-16 flex items-center justify-center rounded-md bg-zinc-800 p-1">
-                        <MusicalNoteIcon className="w-8 h-8 text-gray-400" />
-                    </div>
-                );
-            default:
-                return null;
-        }
-    };
-
-    return (
-        <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1.5">{label}</label>
-            {fileUrl ? (
-                <div className="flex items-center gap-3 bg-zinc-900/50 p-2 rounded-lg border border-zinc-700/50">
-                    {previewContent()}
-                    <p className="text-xs text-gray-400 truncate flex-grow">File configured</p>
-                    <Button variant="danger" size="sm" onClick={onRemove} className="!p-2 flex-shrink-0">
-                        <TrashIcon className="w-4 h-4" />
-                    </Button>
-                </div>
-            ) : (
-                <div className="space-y-2">
-                    <ImageUpload onUpload={(urls) => { if(urls.length > 0) onUrlSet(urls[0]); }} accept={accept} apiServerUrl={apiServerUrl} />
-                    <div className="flex items-center gap-2">
-                        <hr className="flex-grow border-zinc-600"/>
-                        <span className="text-xs text-zinc-500">OR</span>
-                        <hr className="flex-grow border-zinc-600"/>
-                    </div>
-                    <Input 
-                        placeholder="Paste direct URL"
-                        onBlur={(e) => { if(e.target.value) onUrlSet(e.target.value); }}
-                    />
-                </div>
-            )}
-        </div>
-    );
-};
-
 
 export const SettingsTab: React.FC<SettingsTabProps> = ({ 
     companyDetails, 
@@ -202,13 +142,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         setSocialLinksData(prev => prev.filter(link => link.id !== id));
     };
 
-    const handleCarouselMediaUpload = (urls: string[]) => {
-        const newMedia = urls.map(url => ({
-            id: `temp_${Date.now()}-${Math.random()}`,
-            type: url.includes('.mp4') || url.includes('.webm') ? 'video' as const : 'image' as const, // Simple check based on extension in url
+    const handleAddCarouselMedia = (url: string) => {
+        if (!url) return;
+        const newMediaItem: CarouselMedia = {
+            id: `temp_${Date.now()}`,
+            type: url.includes('.mp4') || url.includes('.webm') || url.startsWith('data:video') ? 'video' : 'image',
             url: url
-        }));
-        setCarouselMediaData(prev => [...prev, ...newMedia]);
+        };
+        setCarouselMediaData(prev => [...prev, newMediaItem]);
     };
 
     const handleRemoveCarouselMedia = (id: string) => {
@@ -219,7 +160,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         const backupData = {
             players: dataContext.players,
             events: dataContext.events,
-// FIX: Property 'ranks' does not exist on type 'DataContextType'. Changed to 'rankTiers' to match the type definition in DataContext.
             rankTiers: dataContext.rankTiers,
             badges: dataContext.badges,
             legendaryBadges: dataContext.legendaryBadges,
@@ -319,7 +259,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onUrlSet={(url) => setFormData(f => ({ ...f, logoUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, logoUrl: '' }))}
                         accept="image/*"
-                        apiServerUrl={dataContext.companyDetails.apiServerUrl}
+                        apiServerUrl={formData.apiServerUrl}
                     />
                     <UrlOrUploadField
                         label="Login Screen Background"
@@ -327,7 +267,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onUrlSet={(url) => setFormData(f => ({ ...f, loginBackgroundUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, loginBackgroundUrl: '' }))}
                         accept="image/*,video/*"
-                        apiServerUrl={dataContext.companyDetails.apiServerUrl}
+                        apiServerUrl={formData.apiServerUrl}
                     />
                      <UrlOrUploadField
                         label="Login Screen Audio"
@@ -336,7 +276,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onRemove={() => setFormData(f => ({ ...f, loginAudioUrl: '' }))}
                         accept="audio/*"
                         previewType="audio"
-                        apiServerUrl={dataContext.companyDetails.apiServerUrl}
+                        apiServerUrl={formData.apiServerUrl}
                     />
                     <UrlOrUploadField
                         label="Player Dashboard BG"
@@ -344,7 +284,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onUrlSet={(url) => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: '' }))}
                         accept="image/*"
-                        apiServerUrl={dataContext.companyDetails.apiServerUrl}
+                        apiServerUrl={formData.apiServerUrl}
                     />
                     <UrlOrUploadField
                         label="Admin Dashboard BG"
@@ -352,26 +292,22 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         onUrlSet={(url) => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: url }))}
                         onRemove={() => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: '' }))}
                         accept="image/*"
-                        apiServerUrl={dataContext.companyDetails.apiServerUrl}
+                        apiServerUrl={formData.apiServerUrl}
                     />
                 </div>
             </DashboardCard>
 
             <DashboardCard title="App & Content Settings" icon={<CogIcon className="w-6 h-6" />}>
                 <div className="p-6 space-y-6">
-                     <div className="bg-blue-900/40 border border-blue-700 text-blue-200 p-4 rounded-lg">
-                        <h4 className="font-bold text-lg flex items-center gap-2"><InformationCircleIcon className="w-5 h-5"/>Data Connection Status Indicator</h4>
-                        <p className="text-sm mt-1">
-                            A small colored light is displayed in the footer to indicate the application's data source status.
-                        </p>
-                        <ul className="text-sm mt-2 space-y-1 list-disc list-inside">
-                            <li><span className="font-bold text-green-400">Green Light:</span> Connected to the live Firebase database. All data is real-time.</li>
-                            <li><span className="font-bold text-blue-400">Blue Light:</span> Connected to a custom API server (advanced). Bypasses Firebase storage limits.</li>
-                            <li><span className="font-bold text-yellow-400">Yellow Light:</span> Firebase is disabled or failed to connect. The app is running on local "mock" data. No changes will be saved.</li>
-                            <li><span className="font-bold text-gray-400">Flickering Light:</span> Indicates a lost connection to the active data source (e.g., API server is down).</li>
-                        </ul>
+                    <div className="md:col-span-2">
+                        <Input 
+                            label="API Server URL" 
+                            value={formData.apiServerUrl || ''} 
+                            onChange={e => setFormData(f => ({ ...f, apiServerUrl: e.target.value }))} 
+                            placeholder="http://localhost:3001" 
+                            tooltip="URL of your self-hosted file server. Leave blank to use database storage (500KB limit)." 
+                        />
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Input label="Minimum Signup Age" type="number" value={formData.minimumSignupAge} onChange={e => setFormData(f => ({...f, minimumSignupAge: Number(e.target.value)}))} />
                         <Input
@@ -404,31 +340,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 </div>
                             ))}
                         </div>
-                        <div className="space-y-2">
-                            <ImageUpload 
-                                onUpload={handleCarouselMediaUpload} 
-                                accept="image/*,video/*" 
-                                multiple
-                                apiServerUrl={dataContext.companyDetails.apiServerUrl} 
-                            />
-                             <div className="flex items-center gap-2">
-                                <hr className="flex-grow border-zinc-600"/><span className="text-xs text-zinc-500">OR</span><hr className="flex-grow border-zinc-600" />
-                            </div>
-                             <div className="flex gap-2">
-                                <Input 
-                                    placeholder="Paste Image/Video URL"
-                                    className="flex-grow"
-                                    id="carousel-url-input"
-                                />
-                                <Button onClick={() => {
-                                    const input = document.getElementById('carousel-url-input') as HTMLInputElement;
-                                    if (input && input.value) {
-                                        handleCarouselMediaUpload([input.value]);
-                                        input.value = '';
-                                    }
-                                }}>Add URL</Button>
-                            </div>
-                        </div>
+                        <UrlOrUploadField 
+                            label="Add New Media"
+                            fileUrl={undefined}
+                            onUrlSet={handleAddCarouselMedia}
+                            onRemove={() => {}} // Not used here
+                            accept="image/*,video/*"
+                            apiServerUrl={formData.apiServerUrl}
+                        />
                     </div>
                      <div className="pt-6 border-t border-zinc-800">
                         <h4 className="font-semibold text-gray-200 mb-4 text-lg">Social Links</h4>
@@ -438,26 +357,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 <Input value={link.name} onChange={(e) => handleSocialLinkChange(link.id, 'name', e.target.value)} placeholder="Name (e.g., Facebook)" label="Name"/>
                                 <Input value={link.url} onChange={(e) => handleSocialLinkChange(link.id, 'url', e.target.value)} placeholder="Full URL" label="URL"/>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Icon</label>
-                                    {link.iconUrl ? (
-                                        <div className="flex items-center gap-2 bg-zinc-900 p-1 rounded-md">
-                                            <img src={link.iconUrl} alt="icon" className="w-8 h-8 object-contain rounded"/>
-                                            <Button variant="danger" size="sm" className="!p-2 ml-auto" onClick={() => handleSocialLinkChange(link.id, 'iconUrl', '')}>
-                                                <XIcon className="w-4 h-4"/>
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            <ImageUpload onUpload={(urls) => { if (urls.length > 0) handleSocialLinkChange(link.id, 'iconUrl', urls[0]) }} accept="image/*" apiServerUrl={dataContext.companyDetails.apiServerUrl} />
-                                            <div className="flex items-center gap-2">
-                                                <hr className="flex-grow border-zinc-600" /><span className="text-xs text-zinc-500">OR</span><hr className="flex-grow border-zinc-600" />
-                                            </div>
-                                            <Input 
-                                                placeholder="Paste Icon URL"
-                                                onBlur={(e) => { if(e.target.value) handleSocialLinkChange(link.id, 'iconUrl', e.target.value) }}
-                                            />
-                                        </div>
-                                    )}
+                                    <UrlOrUploadField
+                                        label="Icon"
+                                        fileUrl={link.iconUrl}
+                                        onUrlSet={(url) => handleSocialLinkChange(link.id, 'iconUrl', url)}
+                                        onRemove={() => handleSocialLinkChange(link.id, 'iconUrl', '')}
+                                        accept="image/*"
+                                        apiServerUrl={formData.apiServerUrl}
+                                    />
                                 </div>
                                 <Button variant="danger" className="!py-2.5" onClick={() => handleRemoveSocialLink(link.id)}>
                                     <TrashIcon className="w-5 h-5"/>

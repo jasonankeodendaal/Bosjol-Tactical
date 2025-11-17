@@ -23,6 +23,7 @@ import { SponsorsTab } from './SponsorsTab';
 import { Leaderboard } from './Leaderboard';
 import { SettingsTab } from './SettingsTab';
 import { ApiSetupTab } from './ApiSetupTab';
+import { AboutTab } from './AboutTab';
 import { DataContext, DataContextType } from '../data/DataContext';
 import { AuthContext } from '../auth/AuthContext';
 
@@ -32,7 +33,7 @@ export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' 
 };
 
 
-type Tab = 'Events' | 'Players' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'API Setup';
+type Tab = 'Events' | 'Players' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'API Setup' | 'About';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
 
 const NewPlayerModal: React.FC<{
@@ -197,6 +198,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Leaderboard', icon: <TrophyIcon className="w-5 h-5"/>},
         {name: 'Settings', icon: <CogIcon className="w-5 h-5"/>},
         {name: 'API Setup', icon: <CodeBracketIcon className="w-5 h-5"/>},
+        {name: 'About', icon: <InformationCircleIcon className="w-5 h-5"/>},
     ];
 
     const activeTabInfo = tabs.find(t => t.name === activeTab);
@@ -349,12 +351,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const auth = useContext(AuthContext);
     const adminUser = auth?.user as Admin;
 
-    const { players, setPlayers, events, legendaryBadges, rankTiers, updateDoc, addDoc, deleteDoc, restoreFromBackup, setDoc, signups } = props;
+    const { players, events, legendaryBadges, rankTiers, updateDoc, addDoc, deleteDoc, restoreFromBackup, setDoc, signups, companyDetails } = props;
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab') as Tab | null;
-        const validTabs: Tab[] = ['Events', 'Players', 'Progression', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'API Setup'];
+        const validTabs: Tab[] = ['Events', 'Players', 'Progression', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'API Setup', 'About'];
         if (tab && validTabs.includes(tab)) {
             setActiveTab(tab);
         }
@@ -417,6 +419,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 onBack={() => setView('dashboard')}
                 onUpdatePlayer={handleUpdatePlayer}
                 rankTiers={rankTiers}
+                companyDetails={companyDetails}
             />
         );
     }
@@ -437,6 +440,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 signups={signups}
                 setDoc={setDoc}
                 deleteDoc={deleteDoc}
+                companyDetails={companyDetails}
             />
         )
     }
@@ -508,6 +512,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         restoreFromBackup={restoreFromBackup}
                     />}
                     {activeTab === 'API Setup' && <ApiSetupTab creatorDetails={props.creatorDetails} />}
+                    {activeTab === 'About' && <AboutTab />}
                 </div>
             </main>
         </div>

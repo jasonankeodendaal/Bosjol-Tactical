@@ -1,14 +1,15 @@
 
 
+
 import React, { useState, useContext } from 'react';
 import type { Location } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
-import { ImageUpload } from './ImageUpload';
 import { MapPinIcon, PlusIcon, PencilIcon, TrashIcon, AtSymbolIcon, PhoneIcon, XIcon, GlobeAltIcon } from './icons/Icons';
 import { DataContext } from '../data/DataContext';
+import { UrlOrUploadField } from './UrlOrUploadField';
 
 interface LocationsTabProps {
     locations: Location[];
@@ -19,7 +20,6 @@ interface LocationsTabProps {
 }
 
 const LocationEditorModal: React.FC<{ location: Partial<Location>, onClose: () => void, onSave: (l: Location | Omit<Location, 'id'>) => void }> = ({ location, onClose, onSave }) => {
-    const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
         name: location.name || '',
         description: location.description || '',
@@ -30,12 +30,12 @@ const LocationEditorModal: React.FC<{ location: Partial<Location>, onClose: () =
     });
     const [imageUrls, setImageUrls] = useState<string[]>(location.imageUrls || []);
 
-    const handleImageUpload = (index: number, url: string) => {
-        const newImages = [...imageUrls];
-        newImages[index] = url;
-        setImageUrls(newImages);
+    const handleAddImage = (url: string) => {
+        if (url && !imageUrls.includes(url)) {
+            setImageUrls(prev => [...prev, url]);
+        }
     };
-
+    
     const handleRemoveImage = (index: number) => {
         setImageUrls(current => current.filter((_, i) => i !== index));
     }
@@ -68,23 +68,24 @@ const LocationEditorModal: React.FC<{ location: Partial<Location>, onClose: () =
                     <Input label="Contact Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({...f, phone: e.target.value}))} />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Location Images (up to 5)</label>
+                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Location Images</label>
                     <div className="space-y-2">
-                        {[...Array(5)].map((_, index) => (
-                           <div key={index} className="flex items-center gap-2">
-                             {imageUrls[index] ? (
-                                <div className="flex items-center gap-2 flex-grow">
-                                    <img src={imageUrls[index]} alt={`Preview ${index+1}`} className="w-16 h-10 object-cover rounded-md"/>
-                                    <p className="text-xs text-gray-400 truncate">Image {index+1}</p>
-                                    <Button size="sm" variant="danger" className="!p-1.5 ml-auto" onClick={() => handleRemoveImage(index)}><XIcon className="w-4 h-4"/></Button>
-                                </div>
-                            ) : (
-                                <div className="flex-grow">
-                                     <ImageUpload onUpload={(urls) => handleImageUpload(index, urls[0])} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
-                                </div>
-                            )}
-                           </div>
+                        {imageUrls.map((url, index) => (
+                             <div key={index} className="flex items-center gap-2 bg-zinc-800/50 p-2 rounded-md">
+                                <img src={url} alt={`Preview ${index+1}`} className="w-12 h-12 object-cover rounded"/>
+                                <p className="text-xs text-gray-400 truncate flex-grow">{url}</p>
+                                <Button variant="danger" size="sm" onClick={() => handleRemoveImage(index)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
+                            </div>
                         ))}
+                    </div>
+                    <div className="mt-4">
+                         <UrlOrUploadField 
+                            label="Add New Image"
+                            fileUrl={undefined}
+                            onUrlSet={handleAddImage}
+                            onRemove={() => {}} // Not used in 'add' mode
+                            accept="image/*"
+                        />
                     </div>
                 </div>
             </div>

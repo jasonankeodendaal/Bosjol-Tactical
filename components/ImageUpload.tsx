@@ -1,9 +1,9 @@
 
+
 import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloudIcon, CheckCircleIcon, XCircleIcon, CogIcon } from './icons/Icons';
 import { Button } from './Button';
-import { storage, USE_FIREBASE } from '../firebase';
 
 interface FileUploadProps {
   onUpload: (urls: string[]) => void;
@@ -14,63 +14,55 @@ interface FileUploadProps {
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
+const MAX_FILE_SIZE_BYTES = 500 * 1024; // 500KB for database storage
+
 export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, apiServerUrl }) => {
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [message, setMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const performUpload = async (fileToUpload: File): Promise<string> => {
+  const performUpload = useCallback(async (fileToUpload: File): Promise<string> => {
     setStatus('uploading');
-    setMessage(`Uploading ${fileToUpload.name}...`);
-
-    // Priority 1: Use external API server if configured
+    setMessage(`Processing ${fileToUpload.name}...`);
+    
     if (apiServerUrl) {
+        // Upload to external server
         const formData = new FormData();
-        formData.append('file', fileToUpload, fileToUpload.name);
-        const response = await fetch(`${apiServerUrl}/upload`, {
-            method: 'POST',
-            body: formData,
-        });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`API server upload failed: ${errorData.error || response.statusText}`);
-        }
-        const { url } = await response.json();
-        return url;
-    }
+        formData.append('file', fileToUpload);
 
-    // Priority 2: Use Firebase Storage if configured
-    if (USE_FIREBASE && storage) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const extension = fileToUpload.name.split('.').pop() || 'file';
-        const fileName = `file-${uniqueSuffix}.${extension}`;
-        const storageRef = storage.ref(`uploads/${fileName}`);
-        const uploadTask = storageRef.put(fileToUpload);
+        try {
+            const response = await fetch(`${apiServerUrl}/upload`, {
+                method: 'POST',
+                body: formData,
+            });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Server returned an error.' }));
+                throw new Error(errorData.message || `Upload failed with status: ${response.status}`);
+            }
+            const result = await response.json();
+            return result.url;
+        } catch (error) {
+            console.error('API Server upload error:', error);
+            throw new Error((error as Error).message || 'Failed to connect to the API server.');
+        }
+    } else {
+        // Fallback to data URL
+        if (fileToUpload.size > MAX_FILE_SIZE_BYTES) {
+            throw new Error(`File > 500KB. Configure an API server for large files.`);
+        }
 
         return new Promise((resolve, reject) => {
-            uploadTask.on('state_changed',
-                (snapshot) => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    if (progress < 100) {
-                        setMessage(`Uploading: ${Math.round(progress)}%`);
-                    } else {
-                        setMessage('Processing...');
-                    }
-                },
-                (error) => {
-                    console.error("Firebase Storage upload failed:", error);
-                    reject(new Error(`Storage upload failed: ${error.code}. Check Storage Rules.`));
-                },
-                () => {
-                    uploadTask.snapshot.ref.getDownloadURL().then(resolve).catch(reject);
-                }
-            );
+            const reader = new FileReader();
+            reader.onload = () => {
+                resolve(reader.result as string);
+            };
+            reader.onerror = (error) => {
+                reject(new Error(`Failed to read file: ${error}`));
+            };
+            reader.readAsDataURL(fileToUpload);
         });
     }
-
-    // Fallback error if no upload mechanism is available
-    throw new Error("No upload service configured. Enable Firebase or provide an API Server URL in Settings.");
-};
+  }, [apiServerUrl]);
 
 
   const resetState = (delay: number) => {
@@ -109,7 +101,7 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
     
     resetState(1500);
     
-}, [onUpload, multiple, apiServerUrl]);
+}, [onUpload, multiple, performUpload]);
 
   const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       handleFilesChange(event.target.files);
@@ -137,7 +129,7 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
                 <div className="w-full flex flex-col items-center justify-center p-4 text-center">
                     <CogIcon className="w-8 h-8 text-gray-400 animate-spin mb-3" />
                     <p className="text-sm font-semibold text-gray-200 mb-2 truncate max-w-full px-2">{message}</p>
-                    <p className="text-xs text-gray-500">Please wait, this may take a moment...</p>
+                    <p className="text-xs text-gray-500">Please wait...</p>
                 </div>
             );
         case 'success':

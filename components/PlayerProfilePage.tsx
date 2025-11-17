@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useContext } from 'react';
-import type { Player, GameEvent, SubRank, XpAdjustment, LegendaryBadge, PlayerRole, RankTier } from '../types';
+import type { Player, GameEvent, SubRank, XpAdjustment, LegendaryBadge, PlayerRole, RankTier, CompanyDetails } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -7,10 +7,10 @@ import { BadgePill } from './BadgePill';
 import { EventCard } from './EventCard';
 import { MOCK_PLAYER_ROLES, UNRANKED_SUB_RANK } from '../constants';
 import { ArrowLeftIcon, UserIcon, ChartBarIcon, CalendarIcon, TrophyIcon, CrosshairsIcon, PlusCircleIcon, TrashIcon } from './icons/Icons';
-import { ImageUpload } from './ImageUpload';
 import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
+import { UrlOrUploadField } from './UrlOrUploadField';
 
 const getRankForPlayer = (player: Player, rankTiers: RankTier[]): SubRank => {
     if (player.stats.gamesPlayed < 10) return UNRANKED_SUB_RANK;
@@ -25,6 +25,7 @@ interface PlayerProfilePageProps {
     onBack: () => void;
     onUpdatePlayer: (player: Player) => void;
     rankTiers: RankTier[];
+    companyDetails: CompanyDetails;
 }
 
 const StatDisplay: React.FC<{ value: string | number, label: string, tooltip?: string }> = ({ value, label, tooltip }) => (
@@ -83,7 +84,7 @@ const AwardXpModal: React.FC<{ onClose: () => void, onSave: (amount: number, rea
     );
 };
 
-export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, events, legendaryBadges, onBack, onUpdatePlayer, rankTiers }) => {
+export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, events, legendaryBadges, onBack, onUpdatePlayer, rankTiers, companyDetails }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ ...player });
     const [isAwardingXp, setIsAwardingXp] = useState(false);
@@ -111,9 +112,9 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
         setIsEditing(false);
     };
     
-    const handleAvatarUpload = (urls: string[]) => {
-        if (urls.length > 0) {
-            setFormData(f => ({ ...f, avatarUrl: urls[0] }));
+    const handleAvatarUpdate = (url: string) => {
+        if (url) {
+            setFormData(f => ({ ...f, avatarUrl: url }));
         }
     };
 
@@ -252,9 +253,14 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                             {isEditing ? (
                                 <>
                                     <div className="flex flex-col items-center">
-                                        <img src={formData.avatarUrl} alt="Avatar Preview" className="w-24 h-24 rounded-full object-cover mb-2"/>
-                                        <ImageUpload onUpload={handleAvatarUpload} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
-                                        <Button size="sm" variant="secondary" className="!text-xs mt-2" onClick={handleRemoveAvatar}>Reset to default</Button>
+                                        <UrlOrUploadField
+                                            label="Avatar"
+                                            fileUrl={formData.avatarUrl}
+                                            onUrlSet={handleAvatarUpdate}
+                                            onRemove={handleRemoveAvatar}
+                                            accept="image/*"
+                                            apiServerUrl={companyDetails.apiServerUrl}
+                                        />
                                     </div>
                                     <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))}/>
                                     <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({...f, surname: e.target.value}))}/>

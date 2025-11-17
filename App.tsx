@@ -185,14 +185,14 @@ const PromotionModal: React.FC<{
 };
 
 
-const Footer: React.FC<{ details: CompanyDetails }> = ({ details }) => (
+const Footer: React.FC<{ details: CompanyDetails, apiServerUrl?: string }> = ({ details, apiServerUrl }) => (
     <footer className="bg-zinc-950/80 backdrop-blur-sm border-t border-zinc-800 py-3 px-4 text-xs text-gray-500 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-4">
                 <img src={details.logoUrl} alt={details.name} className="h-8 w-auto rounded"/>
                 <p className="hidden sm:block">© 2025 Bosjol Tactical Nelspruit Airsoft. All rights reserved.</p>
             </div>
-            <StorageStatusIndicator apiServerUrl={details.apiServerUrl} />
+            <StorageStatusIndicator apiServerUrl={apiServerUrl} />
         </div>
         <p className="sm:hidden text-center mt-2">© 2025 Bosjol Tactical Nelspruit Airsoft. All rights reserved.</p>
     </footer>
@@ -510,7 +510,7 @@ const AppContent: React.FC = () => {
                             </Suspense>
                         </div>
                         
-                        {!showFrontPage && isAuthenticated && <Footer details={companyDetails} />}
+                        {!showFrontPage && isAuthenticated && <Footer details={companyDetails} apiServerUrl={companyDetails.apiServerUrl} />}
                     </motion.div>
                 )}
             </AnimatePresence>

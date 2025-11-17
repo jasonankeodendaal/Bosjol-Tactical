@@ -1,5 +1,6 @@
 
-import type { Player, Admin, GameEvent, Briefing, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails, Signup, RankTier, SubRank } from './types';
+
+import type { Player, Admin, GameEvent, Briefing, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails, Signup, RankTier, SubRank, ApiGuideStep } from './types';
 
 export const MOCK_BADGES: Badge[] = [
     { id: 'b01', name: 'Sharpshooter', description: 'Achieve 50 headshots', iconUrl: 'https://img.icons8.com/color/96/target.png', criteria: { type: 'headshots', value: 50 }},
@@ -27,6 +28,7 @@ export const MOCK_RANK_TIERS: RankTier[] = [
     id: "tier_rookie",
     name: "Rookie",
     description: "Introductory tier for new operators learning the ropes.",
+    tierBadgeUrl: "https://img.icons8.com/external-flatart-icons-outline-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-outline-flatarticons.png",
     subranks: [
       { id: "r_i", name: "Rookie I", minXp: 0, perks: ["Basic Calling Card"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
       { id: "r_ii", name: "Rookie II", minXp: 201, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
@@ -39,6 +41,7 @@ export const MOCK_RANK_TIERS: RankTier[] = [
     id: "tier_vet",
     name: "Veteran",
     description: "For established players who have proven their skills in the field.",
+    tierBadgeUrl: "https://img.icons8.com/external-flatart-icons-flat-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-flat-flatarticons.png",
     subranks: [
       { id: "v_i", name: "Veteran I", minXp: 1001, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
       { id: "v_ii", name: "Veteran II", minXp: 1201, perks: ["Custom Banner"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
@@ -51,6 +54,7 @@ export const MOCK_RANK_TIERS: RankTier[] = [
     id: "tier_elite",
     name: "Elite",
     description: "Recognizing mid-tier competitive players with advanced tactical abilities.",
+    tierBadgeUrl: "https://img.icons8.com/external-flatart-icons-lineal-color-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-lineal-color-flatarticons.png",
     subranks: [
       { id: "e_i", name: "Elite I", minXp: 2001, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
       { id: "e_ii", name: "Elite II", minXp: 2201, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
@@ -63,6 +67,7 @@ export const MOCK_RANK_TIERS: RankTier[] = [
     id: "tier_pro",
     name: "Pro",
     description: "High-skill players demonstrating professional-level gameplay.",
+    tierBadgeUrl: "https://img.icons8.com/external-justicon-lineal-color-justicon/64/external-shield-gaming-justicon-lineal-color-justicon.png",
     subranks: [
       { id: "p_i", name: "Pro I", minXp: 3001, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
       { id: "p_ii", name: "Pro II", minXp: 3301, perks: ["Exclusive Camo"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
@@ -75,6 +80,7 @@ export const MOCK_RANK_TIERS: RankTier[] = [
     id: "tier_master",
     name: "Master",
     description: "Top-tier competitive operators with mastery over all aspects of combat.",
+    tierBadgeUrl: "https://img.icons8.com/external-flat-wichaiwi/64/external-shield-game-design-flat-wichaiwi.png",
     subranks: [
       { id: "m_i", name: "Master I", minXp: 4501, perks: ["Weapon XP Card + Camo"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
       { id: "m_ii", name: "Master II", minXp: 4801, perks: ["Exclusive Calling Card"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
@@ -87,6 +93,7 @@ export const MOCK_RANK_TIERS: RankTier[] = [
     id: "tier_gm",
     name: "Grand Master",
     description: "Among the best of the best, with access to exclusive rewards.",
+    tierBadgeUrl: "https://img.icons8.com/ios-filled/50/medal.png",
     subranks: [
       { id: "gm_i", name: "Grand Master I", minXp: 6001, perks: ["Permanent Cosmetic Reward"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
       { id: "gm_ii", name: "Grand Master II", minXp: 6401, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
@@ -99,6 +106,7 @@ export const MOCK_RANK_TIERS: RankTier[] = [
     id: "tier_leg",
     name: "Legendary",
     description: "The pinnacle of achievement, reserved for the most elite operators.",
+    tierBadgeUrl: "https://img.icons8.com/fluency/48/trophy.png",
     subranks: [
       { id: "l_i", name: "Legendary", minXp: 8001, perks: ["Legendary Banner / Frame"], iconUrl: "https://img.icons8.com/color/96/medal-of-honor.png" },
       { id: "l_top", name: "Legendary (Top 5000)", minXp: 99999, perks: ["Special Badge / Glow Effect"], iconUrl: "https://img.icons8.com/fluency/48/star-medal.png" }
@@ -695,8 +703,8 @@ export const MOCK_COMPANY_DETAILS: CompanyDetails = {
     loginAudioUrl: 'https://cdn.pixabay.com/audio/2022/08/03/audio_5a6914c622.mp3',
     playerDashboardBackgroundUrl: '',
     adminDashboardBackgroundUrl: '',
-    apiServerUrl: '',
     apkUrl: '',
+    apiServerUrl: '',
     minimumSignupAge: 18,
     bankInfo: {
         bankName: 'Global Trust Bank',
@@ -705,6 +713,61 @@ export const MOCK_COMPANY_DETAILS: CompanyDetails = {
     },
     fixedEventRules: "1. All players must have approved eye protection (ANSI Z87.1 rated) worn at all times in designated areas.\n2. All weapons will be chronographed before play. Field limits will be strictly enforced.\n3. Do not blind fire. You must be able to see your target.\n4. Call your hits. Cheating will not be tolerated.\n5. Observe minimum engagement distances (MEDs) for high-powered replicas.\n6. No physical contact or verbal abuse between players.",
 };
+
+const MOCK_API_GUIDE: ApiGuideStep[] = [
+  { id: 'g1', title: 'The Problem: File Size Limits', content: "By default, this application stores all uploaded files (images, audio) directly in the Firebase Firestore database. While simple, Firestore has a hard limit of about **1MB per document**. Our direct-upload component is capped at 500KB to be safe.\n\nThis makes it impossible to use large, high-quality media like background videos or long audio briefings with the direct upload feature." },
+  { id: 'g2', title: 'The Solution: Your Own File Server', content: "This guide shows you how to run a small, simple server application on your own computer or a Virtual Private Server (VPS). This server's only job is to accept file uploads of **any type (images, videos, audio)** and save them to a local folder.\n\nWhen you configure this server's URL in the main Settings tab, the dashboard will automatically switch from storing files in the database to sending them to your server. This completely bypasses the file size limit, allowing for uploads up to 100MB (or whatever you configure)." },
+  { id: 'g3', title: 'Step 1: Get Server Files', content: "You need two files to create the server: `server.js` (the application logic) and `package.json` (the list of dependencies). You can download these as a ZIP file below, or create them in a new folder on your server PC (e.g., `C:\\bosjol-api-server`) and copy the contents into them.", codeBlock: `
+// server.js
+const express = require('express');
+const cors = require('cors');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const PORT = process.env.PORT || 3001;
+const UPLOADS_DIR = 'uploads';
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(\`/\${UPLOADS_DIR}\`, express.static(path.join(__dirname, UPLOADS_DIR)));
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR);
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
+app.post('/upload', upload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).send({ error: 'No file was uploaded.' });
+    const API_BASE_URL = process.env.API_BASE_URL || \`http://localhost:\${PORT}\`;
+    const fileUrl = \`\${API_BASE_URL}/\${UPLOADS_DIR}/\${req.file.filename}\`;
+    res.status(200).send({ url: fileUrl });
+});
+app.get('/health', (req, res) => res.status(200).send({ status: 'ok' }));
+app.listen(PORT, () => console.log(\`✅ Bosjol API Server is running on http://localhost:\${PORT}\`));
+`, codeLanguage: 'javascript', fileName: 'server.js' },
+  { id: 'g4', title: '', content: '', codeBlock: `
+{
+  "name": "bosjol-tactical-api-server",
+  "version": "1.0.0",
+  "description": "A simple Express server for handling file uploads for the Bosjol Tactical Dashboard.",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}
+`, codeLanguage: 'json', fileName: 'package.json' },
+  { id: 'g5', title: 'Step 2: Server Prerequisites', content: "You will need:\n- An always-on computer (like a home server or VPS).\n- [Node.js](https://nodejs.org/) (version 18+) installed.\n- [PM2](https://pm2.keymetrics.io/), a process manager to keep the server running. Install it globally by opening a terminal/command prompt and running: `npm install pm2 -g`" },
+  { id: 'g6', title: 'Step 3: Server Setup', content: "Navigate into the folder you created with your terminal and install the required dependencies.", codeBlock: `# Navigate to the project folder\ncd C:\\bosjol-api-server\n\n# Install dependencies\nnpm install`, codeLanguage: 'bash' },
+  { id: 'g7', title: 'Step 4: Running the Server', content: "Start the server using PM2. This runs it in the background and ensures it restarts automatically if the computer reboots.", codeBlock: `# Start the server\npm2 start server.js --name "bosjol-api"\n\n# Save the process list to run on startup\npm2 save\n\n# (Optional) To monitor server logs\npm2 logs bosjol-api`, codeLanguage: 'bash' },
+  { id: 'g8', title: 'Step 5: Expose to the Internet', content: "To make your local server securely accessible from anywhere, we'll use a free Cloudflare Tunnel.\n1. Follow the [Cloudflare Tunnels Quickstart Guide](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/create-local-tunnel/) to download, install, and log in with the `cloudflared` command-line tool.\n2. Once set up, run the tunnel command, pointing it to your local server's port (3001).", codeBlock: `cloudflared tunnel --url http://localhost:3001`, codeLanguage: 'bash' },
+  { id: 'g9', title: 'Step 6: Final Configuration', content: "Cloudflare will give you a public URL (e.g., `https://your-random-name.trycloudflare.com`). Go to the main 'Settings' tab in this dashboard, paste this public URL into the 'API Server URL' field, and click 'Save All Settings'. The app will now automatically use your server for all file uploads, and the status indicator in the footer should turn blue." }
+];
 
 export const MOCK_CREATOR_DETAILS: CreatorDetails = {
     id: 'creatorDetails',
@@ -715,7 +778,8 @@ export const MOCK_CREATOR_DETAILS: CreatorDetails = {
     bio: "Need a website, mobile app or custom tool get in touch today.. At Jstyp.me nothing is impossible, innovation is key and the mind is a open learning space. Here we build on what can not be done!",
     logoUrl: 'https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png',
     githubUrl: 'https://github.com/jstyp/bosjol-tactical-dashboard',
-    sourceCodeZipUrl: 'https://github.com/jstyp/bosjol-tactical-dashboard/archive/refs/heads/main.zip'
+    sourceCodeZipUrl: 'https://github.com/jstyp/bosjol-tactical-api-server/archive/refs/heads/main.zip',
+    apiSetupGuide: MOCK_API_GUIDE
 };
 
 

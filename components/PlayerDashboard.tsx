@@ -841,7 +841,6 @@ const LoadoutTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate
 };
 
 const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate'>> = ({ player, onPlayerUpdate }) => {
-    const [isUploading, setIsUploading] = useState(false);
     const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
         name: player.name,
@@ -876,7 +875,6 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
         if (urls.length > 0) {
             onPlayerUpdate({ ...player, avatarUrl: urls[0] });
         }
-        setIsUploading(false);
     };
 
     const handleRemoveAvatar = () => {
@@ -896,17 +894,14 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-1 flex flex-col items-center">
                             <h4 className="font-bold text-gray-200 mb-2">Avatar</h4>
-                            <div className="relative group w-32 h-32 mb-2">
-                                <img src={player.avatarUrl} alt={player.name} className="w-32 h-32 rounded-full mx-auto border-2 border-red-500 object-cover" />
-                                <div 
-                                    className="absolute top-0 left-0 w-32 h-32 rounded-full bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                                    onClick={() => setIsUploading(true)}
-                                >
-                                    <p className="text-xs font-bold text-white">CHANGE</p>
-                                </div>
+                            <img src={player.avatarUrl} alt={player.name} className="w-32 h-32 rounded-full mx-auto mb-4 border-2 border-red-500 object-cover" />
+                            
+                            <div className="w-full max-w-xs space-y-2">
+                                <ImageUpload onUpload={handleAvatarUpload} accept="image/png, image/jpeg, image/gif" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
+                                <Button size="sm" variant="secondary" onClick={handleRemoveAvatar} className="!text-xs w-full">Reset to default</Button>
                             </div>
-                            <Button size="sm" variant="secondary" onClick={handleRemoveAvatar} className="!text-xs">Reset to default</Button>
-                             <div className="flex items-center gap-2 mt-4">
+
+                             <div className="flex items-center gap-2 mt-6">
                                 <h4 className="font-bold text-gray-200">Player Code</h4>
                                 <InfoTooltip text="This is your unique Operator ID within the Bosjol Tactical system. Admins will use this code to quickly check you into events and to manually assign kills or other stats to you during live games. Keep it handy on game day!" />
                              </div>
@@ -957,13 +952,6 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
                     </div>
                 </div>
             </DashboardCard>
-             {isUploading && (
-                 <Modal isOpen={true} onClose={() => setIsUploading(false)} title="Upload New Avatar">
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
-                        <ImageUpload onUpload={handleAvatarUpload} accept="image/png, image/jpeg, image/gif" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
-                    </div>
-                </Modal>
-            )}
         </>
     )
 };

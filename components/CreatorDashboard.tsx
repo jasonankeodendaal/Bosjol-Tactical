@@ -130,6 +130,20 @@ service cloud.firestore {
 }
 `;
 
+const storageRulesContent = `
+[
+  {
+    "origin": ["*"],
+    "method": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+    "responseHeader": [
+      "Content-Type",
+      "x-goog-resumable"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]
+`;
+
 // --- SUB-COMPONENTS FOR CREATOR DASHBOARD ---
 
 const FirebaseRulesCard: React.FC<{
@@ -151,6 +165,15 @@ const FirebaseRulesCard: React.FC<{
                 </p>
                 <CodeBlock language="javascript" fileName="firestore.rules">
                     {firestoreRulesContent}
+                </CodeBlock>
+            </div>
+             <div className="pt-4 border-t border-zinc-700">
+                <h3 className="text-xl font-bold text-red-400 mb-2">Cloud Storage CORS Configuration</h3>
+                <p className="text-gray-300 mb-3 text-sm">
+                    This JSON configuration is required to allow file uploads from your web application to Firebase Storage. Without it, you will encounter CORS errors. Follow the instructions in the Setup Guide to apply this configuration.
+                </p>
+                <CodeBlock language="json" fileName="cors.json">
+                    {storageRulesContent}
                 </CodeBlock>
             </div>
         </div>

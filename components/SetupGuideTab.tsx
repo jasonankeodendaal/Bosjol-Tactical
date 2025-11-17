@@ -1,6 +1,4 @@
 
-
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
@@ -224,18 +222,18 @@ VITE_FIREBASE_APP_ID="your-app-id"
 
              <StepCard number={4} title="Set Up Security Rules">
                 <p>By default, your database and storage are locked down. You need to apply security rules to allow the application to work correctly while remaining secure.</p>
-                <p><strong>For Firestore:</strong> Go to 'Firestore Database' -> 'Rules', paste the following, and click 'Publish'.</p>
+                <p><strong>For Firestore:</strong> Go to 'Firestore Database' -&gt; 'Rules', paste the following, and click 'Publish'.</p>
                 <CodeBlock title="firestore.rules">
                     {firestoreRulesContent}
                 </CodeBlock>
-                 <p><strong>For Storage:</strong> Go to 'Storage' -> 'Rules', paste the following, and click 'Publish'.</p>
+                 <p><strong>For Storage:</strong> Go to 'Storage' -&gt; 'Rules', paste the following, and click 'Publish'.</p>
                 <CodeBlock title="storage.rules">
                     {storageRulesContent}
                 </CodeBlock>
             </StepCard>
 
              <StepCard number={5} title="Create Admin & Creator Users">
-                <p>Go to 'Authentication' -> 'Users' and click 'Add user'. Manually create two users:</p>
+                <p>Go to 'Authentication' -&gt; 'Users' and click 'Add user'. Manually create two users:</p>
                  <ul className="list-disc list-inside space-y-2 pl-2">
                     <li><strong>Admin User:</strong> Email: <code className="text-sm bg-zinc-700 p-1 rounded">bosjoltactical@gmail.com</code>. Set a secure password.</li>
                     <li><strong>Creator User:</strong> Email: <code className="text-sm bg-zinc-700 p-1 rounded">jstypme@gmail.com</code>. Set a secure password.</li>

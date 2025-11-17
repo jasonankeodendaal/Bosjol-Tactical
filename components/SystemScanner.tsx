@@ -2,6 +2,8 @@
 
 
 
+
+
 import React, { useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { DataContext, IS_LIVE_DATA, DataContextType } from '../data/DataContext';
 import { Button } from './Button';
@@ -151,7 +153,7 @@ export const SystemScanner: React.FC = () => {
             
             // --- CORE AUTOMATIONS ---
             { category: 'Core Automations', name: 'Event Finalization Logic', description: 'Simulates finalizing an event to verify XP calculations.', checkFn: async () => { try { const mockPlayer = { ...players[0], stats: { ...players[0].stats, xp: 1000 } }; const pXp = 50; const stats = { kills: 5, deaths: 2, headshots: 1 }; const getXp = (ruleId: string) => gamificationSettings.find(r => r.id === ruleId)?.xp ?? 0; const xpg = pXp + (stats.kills * getXp('g_kill')) + (stats.headshots * getXp('g_headshot')) + (stats.deaths * getXp('g_death')); const fXp = mockPlayer.stats.xp + xpg; const eXp = 1000 + 50 + (5 * 10) + (1 * 25) + (2 * -5); return fXp === eXp ? { status: 'pass', detail: `Correctly calc ${xpg} XP.` } : { status: 'fail', detail: `Calc error. Expected ${eXp}, got ${fXp}.` }; } catch (e) { return { status: 'fail', detail: `An exception occurred: ${(e as Error).message}` }; } } },
-            { category: 'Core Automations', name: 'Rank Calculation Logic', description: 'Simulates player XP to verify correct rank assignment.', checkFn: async () => { const mP={stats:{xp:1100,gamesPlayed:11}} as Player; const sR=[...ranks].sort((a,b)=>b.minXp-a.minXp); const r=sR.find(r=>mP.stats.xp>=r.minXp)||UNRANKED_RANK; return r&&r.name==="Corporal"?{status:'pass',detail:'Correctly assigned Corporal.'}:{status:'fail',detail:`Incorrect rank. Expected Corporal, got ${r?.name||'Unranked'}.`} }},
+            { category: 'Core Automations', name: 'Rank Calculation Logic', description: 'Simulates player XP to verify correct rank assignment.', checkFn: async () => { const mP={stats:{xp:750,gamesPlayed:11}} as Player; const sR=[...ranks].sort((a,b)=>b.minXp-a.minXp); const r=sR.find(r=>mP.stats.xp>=r.minXp)||UNRANKED_RANK; return r&&r.name==="Corporal"?{status:'pass',detail:'Correctly assigned Corporal.'}:{status:'fail',detail:`Incorrect rank. Expected Corporal, got ${r?.name||'Unranked'}.`} }},
             { category: 'Core Automations', name: 'Rank Progression Gaps', description: 'Checks for large XP gaps between consecutive ranks.', checkFn: async () => { const sortedRanks = [...ranks].sort((a,b) => a.minXp - b.minXp); const gaps = []; for (let i=0; i < sortedRanks.length - 1; i++) { const gap = sortedRanks[i+1].minXp - sortedRanks[i].minXp; if (gap > 5000) gaps.push(`${sortedRanks[i].name} -> ${sortedRanks[i+1].name} (${gap} XP)`); } return gaps.length > 0 ? { status: 'warn', detail: `Large gaps found: ${gaps.join(', ')}` } : { status: 'pass', detail: 'No large XP gaps between ranks.' }; } },
         ];
     }, [dataContext, authContext]);

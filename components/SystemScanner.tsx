@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { DataContext, IS_LIVE_DATA, DataContextType } from '../data/DataContext';
 import { Button } from './Button';
@@ -8,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon, XCircleIcon, CogIcon, ArrowPathIcon, CodeBracketIcon } from './icons/Icons';
 import { db, USE_FIREBASE, firebaseInitializationError, isFirebaseConfigured } from '../firebase';
 import type { Player, GamificationRule, Badge, GameEvent, Transaction } from '../types';
-import { UNRANKED_SUB_RANK } from '../constants';
+// FIX: Use UNRANKED_TIER instead of UNRANKED_SUB_RANK
+import { UNRANKED_TIER } from '../constants';
 import { DashboardCard } from './DashboardCard';
 import { AuthContext } from '../auth/AuthContext';
 import { InfoTooltip } from './InfoTooltip';
@@ -153,7 +151,7 @@ service cloud.firestore {
     match /socialLinks/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /carouselMedia/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /events/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
-    match /rankTiers/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
+    match /ranks/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /badges/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /legendaryBadges/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /gamificationSettings/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
@@ -238,9 +236,10 @@ export const SystemScanner: React.FC = () => {
     
     const ALL_CHECKS = useCallback((): Check[] => {
         if (!dataContext) return [];
-        const { players, companyDetails, rankTiers, badges, gamificationSettings, events, inventory, creatorDetails, socialLinks, carouselMedia, transactions, signups, legendaryBadges, locations, suppliers, sponsors, vouchers, raffles } = dataContext;
+        // FIX: Use `ranks` instead of `rankTiers`
+        const { players, companyDetails, ranks, badges, gamificationSettings, events, inventory, creatorDetails, socialLinks, carouselMedia, transactions, signups, legendaryBadges, locations, suppliers, sponsors, vouchers, raffles } = dataContext;
 
-        const collectionNames: (keyof DataContextType)[] = ['players', 'events', 'rankTiers', 'badges', 'legendaryBadges', 'gamificationSettings', 'sponsors', 'vouchers', 'inventory', 'suppliers', 'transactions', 'locations', 'raffles', 'socialLinks', 'carouselMedia'];
+        const collectionNames: (keyof DataContextType)[] = ['players', 'events', 'ranks', 'badges', 'legendaryBadges', 'gamificationSettings', 'sponsors', 'vouchers', 'inventory', 'suppliers', 'transactions', 'locations', 'raffles', 'socialLinks', 'carouselMedia'];
         const playerIds = new Set(players.map(p => p.id));
         const eventIds = new Set(events.map(e => e.id));
         const supplierIds = new Set(suppliers.map(s => s.id));
@@ -294,15 +293,15 @@ export const SystemScanner: React.FC = () => {
             ...socialLinks.flatMap(s => ({ category: 'Content & Media' as const, name: `URL: Social Icon '${s.name}'`, description: `Validates the icon URL for the ${s.name} social link.`, checkFn: () => checkUrl(s.iconUrl, `Social Icon '${s.name}'`) })),
             ...carouselMedia.flatMap(c => ({ category: 'Content & Media' as const, name: `URL: Carousel Media`, description: `Validates the URL for a carousel media item.`, checkFn: () => checkUrl(c.url, `Carousel Media`) })),
             ...sponsors.flatMap(s => ({ category: 'Content & Media' as const, name: `URL: Sponsor Logo '${s.name}'`, description: `Validates the logo URL for sponsor ${s.name}.`, checkFn: () => checkUrl(s.logoUrl, `Sponsor Logo '${s.name}'`) })),
-            ...rankTiers.flatMap(t => [{ category: 'Content & Media' as const, name: `URL: Tier Badge '${t.name}'`, description: `Validates the badge URL for tier ${t.name}.`, checkFn: () => checkUrl(t.tierBadgeUrl, `Tier Badge '${t.name}'`) }, ...t.subranks.map(s => ({ category: 'Content & Media' as const, name: `URL: Subrank Icon '${s.name}'`, description: `Validates the icon URL for subrank ${s.name}.`, checkFn: () => checkUrl(s.iconUrl, `Subrank Icon '${s.name}'`) }))]),
+            ...ranks.flatMap(r => [{ category: 'Content & Media' as const, name: `URL: Rank Badge '${r.name}'`, description: `Validates the badge URL for rank ${r.name}.`, checkFn: () => checkUrl(r.rankBadgeUrl, `Rank Badge '${r.name}'`) }, ...r.tiers.map(t => ({ category: 'Content & Media' as const, name: `URL: Tier Icon '${t.name}'`, description: `Validates the icon URL for tier ${t.name}.`, checkFn: () => checkUrl(t.iconUrl, `Tier Icon '${t.name}'`) }))]),
             ...badges.flatMap(b => ({ category: 'Content & Media' as const, name: `URL: Badge Icon '${b.name}'`, description: `Validates the icon URL for badge ${b.name}.`, checkFn: () => checkUrl(b.iconUrl, `Badge Icon '${b.name}'`) })),
             ...legendaryBadges.flatMap(b => ({ category: 'Content & Media' as const, name: `URL: Legendary Badge '${b.name}'`, description: `Validates the icon URL for legendary badge ${b.name}.`, checkFn: () => checkUrl(b.iconUrl, `Legendary Badge '${b.name}'`) })),
             ...events.flatMap(e => ({ category: 'Content & Media' as const, name: `URL: Event Image '${e.title}'`, description: `Validates the image URL for event ${e.title}.`, checkFn: () => checkUrl(e.imageUrl, `Event Image '${e.title}'`) })),
 
             // --- CORE AUTOMATIONS ---
             { category: 'Core Automations', name: 'Event Finalization Logic', description: 'Simulates finalizing an event to verify XP calculations.', checkFn: async () => { try { const mockPlayer = { ...players[0], stats: { ...players[0].stats, xp: 1000 } }; const pXp = 50; const stats = { kills: 5, deaths: 2, headshots: 1 }; const getXp = (ruleId: string) => gamificationSettings.find(r => r.id === ruleId)?.xp ?? 0; const xpg = pXp + (stats.kills * getXp('g_kill')) + (stats.headshots * getXp('g_headshot')) + (stats.deaths * getXp('g_death')); const fXp = mockPlayer.stats.xp + xpg; const eXp = 1000 + 50 + (5 * 10) + (1 * 25) + (2 * -5); return fXp === eXp ? { status: 'pass', detail: `Correctly calc ${xpg} XP.` } : { status: 'fail', detail: `Calc error. Expected ${eXp}, got ${fXp}.` }; } catch (e) { return { status: 'fail', detail: `An exception occurred: ${(e as Error).message}` }; } } },
-            { category: 'Core Automations', name: 'Rank Calculation Logic', description: 'Simulates player XP to verify correct rank assignment.', checkFn: async () => { if (!rankTiers || rankTiers.length === 0) return { status: 'warn', detail: 'Rank Tiers not loaded. Skipping check.' }; const mP = { stats: { xp: 750, gamesPlayed: 11 } } as Player; if (mP.stats.gamesPlayed < 10) return { status: 'fail', detail: 'Logic failed: Player with 11 games was considered unranked.' }; const allSubRanks = rankTiers.flatMap(t => t.subranks); const sR = [...allSubRanks].sort((a, b) => b.minXp - a.minXp); const r = sR.find(r => mP.stats.xp >= r.minXp) || UNRANKED_SUB_RANK; return r && r.name === "Rookie IV" ? { status: 'pass', detail: 'Correctly assigned Rookie IV.' } : { status: 'fail', detail: `Incorrect rank. Expected Rookie IV, got ${r?.name || 'undefined'}.` }; }},
-            { category: 'Core Automations', name: 'Rank Progression Sanity', description: 'Checks for sorting errors or large XP gaps between consecutive ranks.', checkFn: async () => { const allSubRanks = rankTiers.flatMap(t => t.subranks); const sortedRanks = [...allSubRanks].sort((a,b) => a.minXp - b.minXp); const errors = []; for (let i=0; i < sortedRanks.length - 1; i++) { if (sortedRanks[i].minXp >= sortedRanks[i+1].minXp) errors.push(`Sort error: ${sortedRanks[i].name} >= ${sortedRanks[i+1].name}.`); const gap = sortedRanks[i+1].minXp - sortedRanks[i].minXp; if (gap > 5000) errors.push(`Large gap: ${sortedRanks[i].name} -> ${sortedRanks[i+1].name} (${gap} XP)`); } return errors.length > 0 ? { status: 'warn', detail: `Issues found: ${errors.join('; ')}` } : { status: 'pass', detail: 'No sorting errors or large XP gaps found.' }; } },
+            { category: 'Core Automations', name: 'Rank Calculation Logic', description: 'Simulates player XP to verify correct rank assignment.', checkFn: async () => { if (!ranks || ranks.length === 0) return { status: 'warn', detail: 'Ranks not loaded. Skipping check.' }; const mP = { stats: { xp: 750, gamesPlayed: 11 } } as Player; if (mP.stats.gamesPlayed < 10) return { status: 'fail', detail: 'Logic failed: Player with 11 games was considered unranked.' }; const allTiers = ranks.flatMap(t => t.tiers); const sR = [...allTiers].sort((a, b) => b.minXp - a.minXp); const r = sR.find(r => mP.stats.xp >= r.minXp) || UNRANKED_TIER; return r && r.name === "Rookie IV" ? { status: 'pass', detail: 'Correctly assigned Rookie IV.' } : { status: 'fail', detail: `Incorrect rank. Expected Rookie IV, got ${r?.name || 'undefined'}.` }; }},
+            { category: 'Core Automations', name: 'Rank Progression Sanity', description: 'Checks for sorting errors or large XP gaps between consecutive ranks.', checkFn: async () => { const allTiers = ranks.flatMap(r => r.tiers); const sortedTiers = [...allTiers].sort((a,b) => a.minXp - b.minXp); const errors = []; for (let i=0; i < sortedTiers.length - 1; i++) { if (sortedTiers[i].minXp >= sortedTiers[i+1].minXp) errors.push(`Sort error: ${sortedTiers[i].name} >= ${sortedTiers[i+1].name}.`); const gap = sortedTiers[i+1].minXp - sortedTiers[i].minXp; if (gap > 5000) errors.push(`Large gap: ${sortedTiers[i].name} -> ${sortedTiers[i+1].name} (${gap} XP)`); } return errors.length > 0 ? { status: 'warn', detail: `Issues found: ${errors.join('; ')}` } : { status: 'pass', detail: 'No sorting errors or large XP gaps found.' }; } },
         ];
     }, [dataContext, authContext]);
 
@@ -340,8 +339,8 @@ export const SystemScanner: React.FC = () => {
     const handleFix = (check: CheckResult) => {
         if (!dataContext) return;
         const name = check.name;
-        if (name === 'Company Details') dataContext.seedCollection('companyDetails');
-        if (name === 'Creator Details') dataContext.seedCollection('creatorDetails');
+        if (name === 'Company Details') dataContext.seedCollection('companyDetails' as any);
+        if (name === 'Creator Details') dataContext.seedCollection('creatorDetails' as any);
         if (name.startsWith('Collection:')) {
             const collectionName = name.replace('Collection: ', '').trim() as keyof DataContextType;
             dataContext.seedCollection(collectionName as any); // cast as any to bypass complex type issues
@@ -597,7 +596,7 @@ export const SystemScanner: React.FC = () => {
                                     For the application to function correctly with a live Firebase backend, these security rules must be published in your project's Firestore settings. They secure your data by preventing unauthorized access (e.g., a player editing their own XP).
                                 </p>
                                 <CodeBlock title="firestore.rules">
-                                    {firestoreRulesContent}
+                                    {firestoreRulesContent.replace("rankTiers", "ranks")}
                                 </CodeBlock>
                             </div>
                         )}

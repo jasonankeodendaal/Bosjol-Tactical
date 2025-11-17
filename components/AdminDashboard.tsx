@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // FIX: Changed RaffleTicket to RaffleTicketDoc as it is the correct exported type.
-import type { Player, GameEvent, SubRank, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicketDoc, LegendaryBadge, Prize, Signup, CarouselMedia, RankTier, Admin } from '../types';
+import type { Player, GameEvent, Tier, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicketDoc, LegendaryBadge, Prize, Signup, CarouselMedia, Rank, Admin } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { UsersIcon, CogIcon, CalendarIcon, TrashIcon, ShieldCheckIcon, PlusIcon, TrophyIcon, BuildingOfficeIcon, SparklesIcon, PencilIcon, XIcon, TicketIcon, AtSymbolIcon, PhoneIcon, GlobeAltIcon, ArrowLeftIcon, ArchiveBoxIcon, CurrencyDollarIcon, TruckIcon, MapPinIcon, MinusIcon, KeyIcon, Bars3Icon, ExclamationTriangleIcon, InformationCircleIcon, CreditCardIcon, CheckCircleIcon, PrinterIcon, PlusCircleIcon, CodeBracketIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
 import { Modal } from './Modal';
-import { UNRANKED_SUB_RANK } from '../constants';
+import { UNRANKED_TIER } from '../constants';
 import { PlayerProfilePage } from './PlayerProfilePage';
 import { FinanceTab } from './FinanceTab';
 import { SuppliersTab } from './SuppliersTab';
@@ -41,9 +41,9 @@ const NewPlayerModal: React.FC<{
     onClose: () => void;
     players: Player[];
     companyDetails: CompanyDetails;
-    rankTiers: RankTier[];
+    ranks: Rank[];
     addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<string>;
-}> = ({ onClose, players, companyDetails, rankTiers, addPlayerDoc }) => {
+}> = ({ onClose, players, companyDetails, ranks, addPlayerDoc }) => {
     const [formData, setFormData] = useState({
         name: '',
         surname: '',
@@ -111,8 +111,8 @@ const NewPlayerModal: React.FC<{
         
         setIsSaving(true);
         
-        const allSubRanks = rankTiers.flatMap(t => t.subranks).sort((a,b) => a.minXp - b.minXp);
-        const firstRank = allSubRanks.length > 0 ? allSubRanks[0] : UNRANKED_SUB_RANK;
+        const allTiers = ranks.flatMap(r => r.tiers).sort((a,b) => a.minXp - b.minXp);
+        const firstTier = allTiers.length > 0 ? allTiers[0] : UNRANKED_TIER;
        
         const newPlayerData: Omit<Player, 'id'> = {
             name: formData.name,
@@ -125,7 +125,7 @@ const NewPlayerModal: React.FC<{
             idNumber: formData.idNumber,
             role: 'player',
             callsign: formData.name, // Default callsign to first name
-            rank: firstRank,
+            rank: firstTier,
             status: 'Active',
             avatarUrl: `https://api.dicebear.com/8.x/bottts/svg?seed=${formData.name}${formData.surname}`, // Default avatar
             stats: { kills: 0, deaths: 0, headshots: 0, gamesPlayed: 0, xp: 0 },
@@ -267,7 +267,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     );
 }
 
-const PlayerListItem = React.memo(({ player, rank, onViewPlayer }: { player: Player; rank: SubRank; onViewPlayer: (id: string) => void }) => {
+const PlayerListItem = React.memo(({ player, rank, onViewPlayer }: { player: Player; rank: Tier; onViewPlayer: (id: string) => void }) => {
     const kills = player.stats?.kills || 0;
     const deaths = player.stats?.deaths || 0;
     const xp = player.stats?.xp || 0;
@@ -293,7 +293,7 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer }: { player: Pla
     );
 });
 
-const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' | 'rankTiers' | 'companyDetails'> & { onViewPlayer: (id: string) => void }> = ({ players, addPlayerDoc, rankTiers, companyDetails, onViewPlayer }) => {
+const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' | 'ranks' | 'companyDetails'> & { onViewPlayer: (id: string) => void }> = ({ players, addPlayerDoc, ranks, companyDetails, onViewPlayer }) => {
     const [showNewPlayerModal, setShowNewPlayerModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -305,7 +305,7 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
 
     return (
         <div>
-            {showNewPlayerModal && <NewPlayerModal onClose={() => setShowNewPlayerModal(false)} players={players} addPlayerDoc={addPlayerDoc} companyDetails={companyDetails} rankTiers={rankTiers} />}
+            {showNewPlayerModal && <NewPlayerModal onClose={() => setShowNewPlayerModal(false)} players={players} addPlayerDoc={addPlayerDoc} companyDetails={companyDetails} ranks={ranks} />}
             <DashboardCard title="Player Management" icon={<UsersIcon className="w-6 h-6" />}>
                 <div className="p-4">
                     <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
@@ -323,7 +323,7 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
                     <div className="max-h-[60vh] overflow-y-auto pr-2">
                         <ul className="space-y-2">
                             {filteredPlayers.map(p => {
-                                const rank = p.rank || UNRANKED_SUB_RANK;
+                                const rank = p.rank || UNRANKED_TIER;
                                 return (
                                     <PlayerListItem key={p.id} player={p} rank={rank} onViewPlayer={onViewPlayer} />
                                 );
@@ -356,7 +356,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const auth = useContext(AuthContext);
     const adminUser = auth?.user as Admin;
 
-    const { players, events, legendaryBadges, rankTiers, updateDoc, addDoc, deleteDoc, restoreFromBackup, setDoc, signups, companyDetails } = props;
+    const { players, events, legendaryBadges, ranks, updateDoc, addDoc, deleteDoc, restoreFromBackup, setDoc, signups, companyDetails } = props;
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -423,7 +423,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 legendaryBadges={legendaryBadges}
                 onBack={() => setView('dashboard')}
                 onUpdatePlayer={handleUpdatePlayer}
-                rankTiers={rankTiers}
+                ranks={ranks}
                 companyDetails={companyDetails}
             />
         );
@@ -467,9 +467,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 <div className="p-4 sm:p-6 lg:p-8">
                     <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
                     {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
-                    {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} rankTiers={props.rankTiers} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}
+                    {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}
                     {activeTab === 'Progression' && <ProgressionTab 
-                        rankTiers={props.rankTiers} setRankTiers={props.setRankTiers}
+                        ranks={props.ranks} setRanks={props.setRanks}
                         badges={props.badges} setBadges={props.setBadges}
                         legendaryBadges={props.legendaryBadges} setLegendaryBadges={props.setLegendaryBadges}
                         gamificationSettings={props.gamificationSettings} setGamificationSettings={props.setGamificationSettings}

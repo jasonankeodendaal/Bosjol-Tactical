@@ -1,13 +1,13 @@
-
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, RankTier, SubRank, PlayerRole } from '../types';
+// FIX: Changed RankTier and SubRank to Rank and Tier respectively.
+import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, Rank, Tier, PlayerRole } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
 import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
-// FIX: Added MOCK_WEAPONS and MOCK_EQUIPMENT for the new LoadoutTab component.
-import { UNRANKED_SUB_RANK, MOCK_PLAYER_ROLES, MOCK_BADGES, MOCK_WEAPONS, MOCK_EQUIPMENT } from '../constants';
+// FIX: Changed UNRANKED_SUB_RANK to UNRANKED_TIER.
+import { UNRANKED_TIER, MOCK_PLAYER_ROLES, MOCK_BADGES, MOCK_WEAPONS, MOCK_EQUIPMENT } from '../constants';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
@@ -18,35 +18,35 @@ import { DataContext } from '../data/DataContext';
 import { Loader } from './Loader';
 import { UrlOrUploadField } from './UrlOrUploadField';
 
-const getRankForPlayer = (player: Player, rankTiers: RankTier[]): SubRank => {
-    if (!rankTiers || rankTiers.length === 0) return UNRANKED_SUB_RANK;
+const getRankForPlayer = (player: Player, ranks: Rank[]): Tier => {
+    if (!ranks || ranks.length === 0) return UNRANKED_TIER;
     // Rank is now always determined by XP. The gamesPlayed check is handled in the UI components.
-    const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => b.minXp - a.minXp);
-    const rank = allSubRanks.find(r => player.stats.xp >= r.minXp);
+    const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => b.minXp - a.minXp);
+    const tier = allTiers.find(r => player.stats.xp >= r.minXp);
     // Find the lowest rank if no rank is found (for 0 xp)
-    const lowestRank = [...allSubRanks].sort((a,b) => a.minXp - b.minXp)[0];
-    return rank || lowestRank || UNRANKED_SUB_RANK;
+    const lowestTier = [...allTiers].sort((a,b) => a.minXp - b.minXp)[0];
+    return tier || lowestTier || UNRANKED_TIER;
 };
 
-const getRankProgression = (player: Player, rankTiers: RankTier[]) => {
-    const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => a.minXp - a.minXp);
+const getRankProgression = (player: Player, ranks: Rank[]) => {
+    const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => a.minXp - a.minXp);
     
     // The player's current rank based on XP
-    const currentRank = getRankForPlayer(player, rankTiers);
-    const currentRankIndex = allSubRanks.findIndex(r => r.id === currentRank.id);
+    const currentTier = getRankForPlayer(player, ranks);
+    const currentTierIndex = allTiers.findIndex(r => r.id === currentTier.id);
 
-    const previous = currentRankIndex > 0 ? allSubRanks[currentRankIndex - 1] : null;
-    const next = currentRankIndex < allSubRanks.length - 1 ? allSubRanks[currentRankIndex + 1] : null;
+    const previous = currentTierIndex > 0 ? allTiers[currentTierIndex - 1] : null;
+    const next = currentTierIndex < allTiers.length - 1 ? allTiers[currentTierIndex + 1] : null;
     
-    const tier = rankTiers.find(t => t.subranks.some(sr => sr.id === currentRank.id)) || null;
+    const rank = ranks.find(r => r.tiers.some(t => t.id === currentTier.id)) || null;
 
-    return { previous, current: currentRank, next, tier };
+    return { previous, current: currentTier, next, rank };
 }
 
-const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[], player: Player }> = ({ rankTiers, player }) => {
+const RankProgressionDisplay: React.FC<{ ranks: Rank[], player: Player }> = ({ ranks, player }) => {
     const [query, setQuery] = useState("");
 
-    if (!rankTiers || rankTiers.length === 0) {
+    if (!ranks || ranks.length === 0) {
         return (
             <DashboardCard title="Rank Progression & Rewards" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
                 <div className="p-6 text-center text-gray-500">
@@ -56,39 +56,33 @@ const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[], player: Player }
         );
     }
     
-    const { current: playerRank } = getRankProgression(player, rankTiers);
+    const { current: playerTier } = getRankProgression(player, ranks);
 
-    const filteredTiers = rankTiers.map(tier => ({
-        ...tier,
-        subranks: tier.subranks.filter(subrank => subrank.name.toLowerCase().includes(query.toLowerCase()))
-    })).filter(tier => tier.subranks.length > 0);
+    const filteredRanks = ranks.map(rank => ({
+        ...rank,
+        tiers: rank.tiers.filter(tier => tier.name.toLowerCase().includes(query.toLowerCase()))
+    })).filter(rank => rank.tiers.length > 0);
     
-    const getRangeForSubRank = (subrank: SubRank, tier: RankTier, tierIndex: number) => {
-        const sortedRanksInTier = [...tier.subranks].sort((a,b) => a.minXp - b.minXp);
-        const rankIndex = sortedRanksInTier.findIndex(r => r.id === subrank.id);
-        const nextRankInTier = sortedRanksInTier[rankIndex + 1];
+    const getRangeForTier = (tier: Tier, rank: Rank, rankIndex: number) => {
+        const sortedTiersInRank = [...rank.tiers].sort((a,b) => a.minXp - b.minXp);
+        const tierIndex = sortedTiersInRank.findIndex(r => r.id === tier.id);
+        const nextTierInRank = sortedTiersInRank[tierIndex + 1];
 
-        if (nextRankInTier) {
-            return `${subrank.minXp.toLocaleString()} - ${(nextRankInTier.minXp - 1).toLocaleString()} RP`;
+        if (nextTierInRank) {
+            return `${tier.minXp.toLocaleString()} - ${(nextTierInRank.minXp - 1).toLocaleString()} RP`;
         }
         
-        const nextTier = rankTiers[tierIndex + 1];
-        if(nextTier && nextTier.subranks.length > 0) {
-            const nextTierFirstRank = [...nextTier.subranks].sort((a,b) => a.minXp - b.minXp)[0];
-            return `${subrank.minXp.toLocaleString()} - ${(nextTierFirstRank.minXp - 1).toLocaleString()} RP`;
+        const nextRank = ranks[rankIndex + 1];
+        if(nextRank && nextRank.tiers.length > 0) {
+            const nextRankFirstTier = [...nextRank.tiers].sort((a,b) => a.minXp - b.minXp)[0];
+            return `${tier.minXp.toLocaleString()} - ${(nextRankFirstTier.minXp - 1).toLocaleString()} RP`;
         }
-        return `${subrank.minXp.toLocaleString()}+ RP`;
+        return `${tier.minXp.toLocaleString()}+ RP`;
     }
 
     return (
         <DashboardCard title="Rank Progression & Rewards" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
             <div className="p-6">
-                 {player.stats.gamesPlayed < 10 && (
-                    <div className="bg-blue-900/50 border border-blue-700 text-blue-200 p-3 rounded-lg mb-4 text-center">
-                        <p className="font-bold">Placement Matches Required</p>
-                        <p className="text-sm">You must complete <strong>{10 - player.stats.gamesPlayed} more games</strong> to be placed on the leaderboard. Your current RP ({player.stats.xp.toLocaleString()}) will determine your starting rank once placement is complete.</p>
-                    </div>
-                )}
                  <div className="mb-4">
                     <Input
                         type="search"
@@ -99,19 +93,19 @@ const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[], player: Player }
                 </div>
 
                 <div className="space-y-12 max-h-[70vh] overflow-y-auto pr-2">
-                    {filteredTiers.map((tier, tierIndex) => (
-                        <section key={tier.id} className="tier-section">
+                    {filteredRanks.map((rank, rankIndex) => (
+                        <section key={rank.id} className="tier-section">
                             <div className="tier-header">
-                                <img src={tier.tierBadgeUrl} alt={tier.name} className="w-16 h-16 flex-shrink-0"/>
+                                <img src={rank.rankBadgeUrl} alt={rank.name} className="w-16 h-16 flex-shrink-0"/>
                                 <div>
-                                    <h2 className="text-3xl font-bold text-red-400 uppercase tracking-wider">{tier.name}</h2>
-                                    <p className="mt-1 text-sm text-gray-400">{tier.description}</p>
+                                    <h2 className="text-3xl font-bold text-red-400 uppercase tracking-wider">{rank.name}</h2>
+                                    <p className="mt-1 text-sm text-gray-400">{rank.description}</p>
                                 </div>
                             </div>
 
                             <div className="subrank-grid">
-                                {tier.subranks.sort((a,b) => a.minXp - b.minXp).map((sub) => {
-                                    const isCurrent = playerRank.id === sub.id;
+                                {rank.tiers.sort((a,b) => a.minXp - b.minXp).map((sub) => {
+                                    const isCurrent = playerTier.id === sub.id;
                                     const isUnlocked = player.stats.xp >= sub.minXp;
                                     const cardClass = isCurrent ? 'subrank-card--current' : !isUnlocked ? 'subrank-card--locked' : '';
                                     return (
@@ -120,7 +114,7 @@ const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[], player: Player }
                                                 <img src={sub.iconUrl} alt={sub.name} className="w-10 h-10"/>
                                                 <div>
                                                     <h3 className={`font-semibold ${isCurrent ? 'text-amber-300' : 'text-white'}`}>{sub.name}</h3>
-                                                    <p className="text-xs text-gray-400 font-mono">{getRangeForSubRank(sub, tier, tierIndex)}</p>
+                                                    <p className="text-xs text-gray-400 font-mono">{getRangeForTier(sub, rank, rankIndex)}</p>
                                                 </div>
                                             </div>
                                             <ul className="list-none text-xs text-gray-300 space-y-1">
@@ -137,7 +131,7 @@ const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[], player: Player }
                             </div>
                         </section>
                     ))}
-                    {filteredTiers.length === 0 && (
+                    {filteredRanks.length === 0 && (
                         <div className="text-center text-gray-500 py-8">No ranks matched your search.</div>
                     )}
                 </div>
@@ -155,7 +149,7 @@ interface PlayerDashboardProps {
     onEventSignUp: (eventId: string, requestedGearIds: string[], note: string) => void;
     legendaryBadges: LegendaryBadge[];
     raffles: Raffle[];
-    rankTiers: RankTier[];
+    ranks: Rank[];
     locations: Location[];
     signups: Signup[];
 }
@@ -458,7 +452,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     );
 }
 
-const calculateBadgeProgress = (badge: Badge, player: Player, rankTiers: RankTier[]) => {
+const calculateBadgeProgress = (badge: Badge, player: Player, ranks: Rank[]) => {
     const isEarned = player.badges.some(b => b.id === badge.id);
     if (isEarned) return { current: 1, max: 1, percentage: 100, isEarned: true, text: 'Unlocked' };
 
@@ -480,26 +474,26 @@ const calculateBadgeProgress = (badge: Badge, player: Player, rankTiers: RankTie
             max = Number(criteria.value);
             break;
         case 'rank':
-            const allTiers = rankTiers.map(t => t.name);
-            const targetTierName = criteria.value as string;
+            const allRanks = ranks.map(t => t.name);
+            const targetRankName = criteria.value as string;
 
             // Find player's current tier name
-            const playerTier = rankTiers.find(tier => tier.subranks.some(sub => sub.id === player.rank.id));
-            const playerTierName = playerTier?.name;
+            const playerRank = ranks.find(rank => rank.tiers.some(sub => sub.id === player.rank.id));
+            const playerRankName = playerRank?.name;
 
             // Find the index of the player's tier and target tier
-            const playerTierIndex = playerTierName ? allTiers.indexOf(playerTierName) : -1;
-            const targetTierIndex = allTiers.indexOf(targetTierName);
+            const playerRankIndex = playerRankName ? allRanks.indexOf(playerRankName) : -1;
+            const targetRankIndex = allRanks.indexOf(targetRankName);
             
-            if (targetTierIndex > -1) {
-                current = playerTierIndex > -1 ? playerTierIndex : 0;
-                max = targetTierIndex;
+            if (targetRankIndex > -1) {
+                current = playerRankIndex > -1 ? playerRankIndex : 0;
+                max = targetRankIndex;
                 if (current >= max) {
                      return { current: max, max, percentage: 100, isEarned: true, text: 'Unlocked' };
                 }
-                 return { current, max, percentage: (current / max) * 100, isEarned: false, text: `Reach ${targetTierName} Tier` };
+                 return { current, max, percentage: (current / max) * 100, isEarned: false, text: `Reach ${targetRankName} Rank` };
             }
-            return { current: 0, max: 1, percentage: 0, isEarned: false, text: `Reach ${targetTierName} Tier` };
+            return { current: 0, max: 1, percentage: 0, isEarned: false, text: `Reach ${targetRankName} Rank` };
         case 'custom':
             return { current: 0, max: 1, percentage: 0, isEarned: false, text: 'Admin Awarded' };
     }
@@ -508,8 +502,8 @@ const calculateBadgeProgress = (badge: Badge, player: Player, rankTiers: RankTie
     return { current, max, percentage, isEarned: false, text: `${current.toLocaleString()} / ${max.toLocaleString()}` };
 };
 
-const BadgeProgressCard: React.FC<{badge: Badge, player: Player, rankTiers: RankTier[]}> = ({ badge, player, rankTiers }) => {
-    const progress = calculateBadgeProgress(badge, player, rankTiers);
+const BadgeProgressCard: React.FC<{badge: Badge, player: Player, ranks: Rank[]}> = ({ badge, player, ranks }) => {
+    const progress = calculateBadgeProgress(badge, player, ranks);
     
     const baseClasses = "bg-zinc-800/50 p-3 rounded-lg border flex items-center gap-4 transition-all duration-300";
     const unlockedClasses = "border-red-500/50 shadow-lg shadow-red-900/10";
@@ -532,23 +526,36 @@ const BadgeProgressCard: React.FC<{badge: Badge, player: Player, rankTiers: Rank
     );
 }
 
-const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'events' | 'sponsors' | 'rankTiers'>> = ({ player, players, events, sponsors, rankTiers }) => {
+const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'events' | 'sponsors' | 'ranks'>> = ({ player, players, events, sponsors, ranks }) => {
     const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 
-    const { previous, current, next, tier } = getRankProgression(player, rankTiers);
+    const { current, next, rank } = getRankProgression(player, ranks);
 
+    if (!rank || !current) {
+        return (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <DashboardCard title="Rank & Progression" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
+                        <div className="p-6 text-center text-gray-500">
+                            <p>Your rank is being calculated...</p>
+                        </div>
+                    </DashboardCard>
+                </div>
+            </div>
+        );
+    }
+    
     const startXp = current.minXp;
-    const endXp = next ? next.minXp : current.minXp;
-    const progressPercentage = endXp > startXp ? Math.min(((player.stats.xp - startXp) / (endXp - startXp)) * 100, 100) : 100;
+    const endXp = next ? next.minXp : 0;
+    const progressPercentage = next ? (
+        endXp > startXp ? Math.min(((player.stats.xp - startXp) / (endXp - startXp)) * 100, 100) : 0
+      ) : 100;
 
-    const rankedPlayers = players.filter(p => p.stats.gamesPlayed >= 10);
-    const percentile = rankedPlayers.length > 1
-        ? (rankedPlayers.filter(p => p.stats.xp < player.stats.xp).length / (rankedPlayers.length - 1)) * 100
+    const percentile = players.length > 1
+        ? (players.filter(p => p.stats.xp < player.stats.xp).length / (players.length - 1)) * 100
         : 100;
         
-    const isInPlacement = player.stats.gamesPlayed < 10;
-    
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {selectedSponsor && (
@@ -578,93 +585,54 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                         </div>
                     </div>
                 </DashboardCard>
-
-                {/* Rank Progression */}
-                <div className="rank-progress-display">
-                    <div className="rank-display-grid">
-                        <div className="rank-item previous">
-                            {previous && <>
-                                <img src={previous.iconUrl} alt={previous.name} className="w-20 h-20" />
-                                <p>{previous.name}</p>
-                            </>}
-                        </div>
-                        
-                        <div className="rank-item current">
-                            {tier ? (
-                                <>
-                                    <div className="rank-item-hex">
-                                       <img src={tier.tierBadgeUrl} alt={tier.name} className="w-24 h-24 object-contain" />
-                                    </div>
-                                    <p className="text-xl font-bold text-amber-300 uppercase tracking-wider mt-2">{tier.name}</p>
-                                    <p className="text-lg font-semibold -mt-1">{current.name}</p>
-                                </>
-                            ) : (
-                                <>
-                                     <div className="rank-item-hex">
-                                       <img src={current.iconUrl} alt={current.name} />
-                                    </div>
-                                    <p>{current.name}</p>
-                                </>
-                            )}
-                            {isInPlacement && (
-                                <p className="text-xs text-amber-400 mt-1 text-center">
-                                    (In Placement)
-                                </p>
-                            )}
+                
+                <DashboardCard title="Rank & Progression" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
+                    <div className="p-6">
+                        <div className="flex items-center gap-4 mb-4">
+                            <img src={rank.rankBadgeUrl} alt={rank.name} className="w-16 h-16"/>
+                            <div>
+                                <p className="text-sm text-gray-400 uppercase tracking-wider">{rank.name}</p>
+                                <p className="text-2xl font-bold text-white">{current.name}</p>
+                            </div>
                         </div>
 
+                        <div className="space-y-1 mb-4">
+                            <div className="flex justify-between items-baseline">
+                                <p className="text-sm font-semibold text-gray-300">Progression</p>
+                                <p className="text-sm font-mono text-amber-300">{player.stats.xp.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'} RP</p>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-4 border border-zinc-800 shadow-inner">
+                                <motion.div 
+                                    className="bg-gradient-to-r from-red-600 to-red-800 h-full rounded-full"
+                                    initial={{ width: '0%' }}
+                                    animate={{ width: `${progressPercentage}%` }}
+                                    transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+                                />
+                            </div>
+                             <p className="text-right text-xs text-gray-400">
+                                {next ? `${(next.minXp - player.stats.xp > 0 ? next.minXp - player.stats.xp : 0).toLocaleString()} RP to ${next.name}` : 'Maximum Rank Reached!'}
+                            </p>
+                        </div>
 
-                        <div className="rank-item next">
-                             {next && <>
-                                <img src={next.iconUrl} alt={next.name} className="w-20 h-20" />
-                                <p>{next.name}</p>
-                            </>}
+                        <div className="mt-6 pt-4 border-t border-zinc-700/50">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <h4 className="text-sm font-semibold text-gray-400 mb-1">Percentile</h4>
+                                    <p className="text-lg font-bold text-white">Top {(100 - percentile).toFixed(1)}%</p>
+                                    <p className="text-xs text-gray-500">of all operators</p>
+                                </div>
+                                {next && (
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-gray-400 mb-1">Next Tier Unlocks</h4>
+                                        <ul className="text-xs text-gray-300 list-disc list-inside space-y-0.5">
+                                            {next.perks.map((perk, i) => <li key={i}>{perk}</li>)}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
-
-                    <div className="rank-progress-widget">
-                        <div className="rank-percentile-container">
-                            <p>You beat <span>{percentile.toFixed(1)}%</span> of players in Ranked.</p>
-                        </div>
-                         {isInPlacement ? (
-                            <div className="xp-bar-container">
-                                <div className="xp-bar-info">
-                                    <span className="xp-earned">Placement Matches</span>
-                                    <span className="xp-values">{player.stats.gamesPlayed} / 10</span>
-                                </div>
-                                <div className="xp-bar-track">
-                                    <motion.div 
-                                        className="xp-bar-fill" 
-                                        initial={{ width: '0%' }}
-                                        animate={{ width: `${(player.stats.gamesPlayed / 10) * 100}%` }}
-                                        transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
-                                    />
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="xp-bar-container">
-                                <div className="xp-bar-info">
-                                    <span className="xp-earned">Earned Rank Points (RP)</span>
-                                    <span className="xp-values">{player.stats.xp.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'}{!next && '+'}</span>
-                                </div>
-                                <div className="xp-bar-track">
-                                    <motion.div 
-                                        className="xp-bar-fill" 
-                                        initial={{ width: '0%' }}
-                                        animate={{ width: `${progressPercentage}%` }}
-                                        transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                        {isInPlacement ? (
-                            <div className="next-rank-label">Play {10 - player.stats.gamesPlayed} more games</div>
-                        ) : (
-                            next && <div className="next-rank-label">{next.name}</div>
-                        )}
-                    </div>
-                </div>
-
+                </DashboardCard>
 
                 {/* Sponsors */}
                 <DashboardCard title="Sponsors" icon={<SparklesIcon className="w-6 h-6" />} fullHeight>
@@ -881,7 +849,7 @@ const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ p
 };
 
 // FIX: Added missing AchievementsTab component
-const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendaryBadges' | 'rankTiers'>> = ({ player, legendaryBadges, rankTiers }) => {
+const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendaryBadges' | 'ranks'>> = ({ player, legendaryBadges, ranks }) => {
     const dataContext = useContext(DataContext);
     const standardBadges = dataContext?.badges || MOCK_BADGES; // Fallback to mock if needed.
 
@@ -890,7 +858,7 @@ const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendary
             <DashboardCard title="Badge Progress" icon={<TrophyIcon className="w-6 h-6" />}>
                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                     {standardBadges.map(badge => (
-                        <BadgeProgressCard key={badge.id} badge={badge} player={player} rankTiers={rankTiers} />
+                        <BadgeProgressCard key={badge.id} badge={badge} player={player} ranks={ranks} />
                     ))}
                 </div>
             </DashboardCard>
@@ -1058,12 +1026,12 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
             <main className="flex-grow overflow-y-auto">
                 <div className="p-4 sm:p-6 lg:p-8">
                     <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-                    {activeTab === 'Overview' && <OverviewTab player={props.player} players={props.players} events={props.events} sponsors={props.sponsors} rankTiers={props.rankTiers} />}
+                    {activeTab === 'Overview' && <OverviewTab player={props.player} players={props.players} events={props.events} sponsors={props.sponsors} ranks={props.ranks} />}
                     {activeTab === 'Events' && <EventsTab events={props.events} player={props.player} onEventSignUp={props.onEventSignUp} locations={props.locations} signups={props.signups} />}
                     {activeTab === 'Raffles' && <RafflesTab raffles={props.raffles} player={props.player} players={props.players} />}
-                    {activeTab === 'Ranks' && <RankProgressionDisplay rankTiers={props.rankTiers} player={props.player} />}
+                    {activeTab === 'Ranks' && <RankProgressionDisplay ranks={props.ranks} player={props.player} />}
                     {activeTab === 'Stats' && <StatsTab player={props.player} events={props.events} />}
-                    {activeTab === 'Achievements' && <AchievementsTab player={props.player} legendaryBadges={props.legendaryBadges} rankTiers={props.rankTiers} />}
+                    {activeTab === 'Achievements' && <AchievementsTab player={props.player} legendaryBadges={props.legendaryBadges} ranks={props.ranks} />}
                     {activeTab === 'Leaderboard' && <DashboardCard title="Leaderboard" icon={<TrophyIcon className="w-6 h-6"/>} fullHeight><Leaderboard players={props.players} currentPlayerId={props.player.id}/></DashboardCard>}
                     {activeTab === 'Loadout' && <LoadoutTab player={props.player} onPlayerUpdate={props.onPlayerUpdate} />}
                     {activeTab === 'Settings' && <SettingsTab player={props.player} onPlayerUpdate={props.onPlayerUpdate} />}

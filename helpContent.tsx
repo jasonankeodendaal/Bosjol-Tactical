@@ -59,7 +59,7 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             },
             {
                 heading: "Rank & Progression",
-                content: "Shows your current rank, rank points (RP), and progress towards the next rank. You must play at least 10 games to be placed on the leaderboard."
+                content: "Shows your current rank, rank points (RP), and progress towards the next rank. Your position on the leaderboard is determined by your total RP."
             },
             {
                 heading: "Next Mission",
@@ -189,36 +189,33 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
     },
     'player-dashboard-ranks': {
         title: "Player Progression: Ranks & Tiers",
-        description: "Your journey from a fresh Recruit to a Legendary Operator is measured through a structured Rank and Tier system. Here's how it works.",
+        description: "Your journey from a fresh Recruit to a Legendary Operator is measured through a structured system of Ranks and Tiers.",
         sections: [
             {
                 heading: "⭐ RANKS (Major Levels)",
                 content: (
                     <ul className="list-disc list-inside space-y-1">
-                        <li>Big skill stages you climb through (Rookie → Legendary).</li>
-                        <li>Higher rank = harder opponents + better rewards.</li>
-                        <li>RP required increases as you go up.</li>
+                        <li>The main stages of your progression (e.g., Rookie, Veteran, Master).</li>
+                        <li>Each new Rank signifies a major milestone in your career.</li>
                     </ul>
                 )
             },
             {
-                heading: "🔶 TIERS (Steps Inside Each Rank)",
+                heading: "🔶 TIERS (Steps Within Each Rank)",
                 content: (
                     <ul className="list-disc list-inside space-y-1">
-                        <li>Each rank has 5 tiers (I–V).</li>
-                        <li>You must complete all tiers to reach the next rank.</li>
-                        <li>Tiers act as checkpoints so you don’t drop an entire rank at once.</li>
+                        <li>Each Rank is divided into smaller steps, usually I through V (e.g., Rookie I, Rookie II).</li>
+                        <li>You must progress through all Tiers in a Rank to reach the next one.</li>
                     </ul>
                 )
             },
             {
-                heading: "📈 RANK POINTS (RP)",
+                heading: "📈 RANK POINTS (XP)",
                 content: (
                     <ul className="list-disc list-inside space-y-1">
-                        <li>RP decides if you move up or down.</li>
-                        <li>Good performance = RP gained → climb tiers.</li>
-                        <li>Poor performance = RP lost → drop tiers.</li>
-                        <li>RP gain/loss depends on your performance and enemy difficulty.</li>
+                        <li>Your total XP is the sole factor that determines your current Tier and Rank.</li>
+                        <li>You earn XP from various sources: match performance, completing events, and receiving manual bonuses from admins. Your rank progression is based on total XP, regardless of how it was earned.</li>
+                        <li>You can also lose XP from penalties.</li>
                     </ul>
                 )
             },
@@ -226,18 +223,8 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
                 heading: "🏆 LEGENDARY",
                 content: (
                     <ul className="list-disc list-inside space-y-1">
-                        <li>No tiers.</li>
-                        <li>Shows your exact RP number.</li>
-                        <li>Leaderboard position depends on your total RP.</li>
-                    </ul>
-                )
-            },
-            {
-                heading: "🔁 SEASON RESET",
-                content: (
-                    <ul className="list-disc list-inside space-y-1">
-                        <li>End of season lowers your rank (soft reset).</li>
-                        <li>You start lower and climb again for new rewards.</li>
+                        <li>The highest Rank has no Tiers.</li>
+                        <li>Your exact total XP is displayed, and your position on the leaderboard is determined by this number.</li>
                     </ul>
                 )
             }
@@ -280,6 +267,10 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
         title: "Admin: Progression Settings",
         description: "Define the rules for player advancement, including RP, ranks, and badges.",
         sections: [
+            {
+                heading: "Rank Structure",
+                content: "Build the entire progression ladder. Create main Ranks (e.g., Veteran), and then add Tiers (e.g., Veteran I, Veteran II) underneath each Rank. Each Tier must have a minimum XP requirement, which determines when a player achieves it."
+            },
             {
                 heading: "Gamification Settings",
                 content: "Set the base RP values for in-game actions like kills, headshots, and deaths. These values are used to automatically calculate RP awards when an event is finalized."

@@ -79,7 +79,7 @@ export type PlayerRole = 'Assault' | 'Recon' | 'Support' | 'Sniper';
 export interface PlayerCore extends User {
   role: 'player';
   callsign: string;
-  rank: SubRank;
+  rank: Tier;
   status: 'Active' | 'On Leave' | 'Retired';
   avatarUrl: string;
   stats: PlayerStats;
@@ -223,7 +223,7 @@ export interface Briefing {
   date: string;
 }
 
-export interface SubRank {
+export interface Tier {
   id: string;
   name: string;
   minXp: number;
@@ -231,12 +231,12 @@ export interface SubRank {
   iconUrl: string;
 }
 
-export interface RankTier {
+export interface Rank {
   id: string;
   name: string;
   description: string;
-  tierBadgeUrl: string;
-  subranks: SubRank[];
+  rankBadgeUrl: string;
+  tiers: Tier[];
 }
 
 

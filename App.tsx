@@ -4,7 +4,7 @@ import React, { useContext, useState, useEffect, useRef, useCallback } from 'rea
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
 import { Button } from './components/Button';
-import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails, SubRank, Badge, Signup, RankTier, XpAdjustment } from './types';
+import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails, Tier, Badge, Signup, Rank, XpAdjustment } from './types';
 import { XIcon, KeyIcon, ShieldCheckIcon, TrophyIcon } from './components/icons/Icons';
 import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
 import { Loader } from './components/Loader';
@@ -148,21 +148,21 @@ const PublicPageFloatingIcons: React.FC<{
 // --- END Creator Popup ---
 
 const PromotionModal: React.FC<{
-    promotion: { newRank?: SubRank; oldRank?: SubRank; newBadges: Badge[], xpGained: number, currentXp: number, bonusXp: number, rewards: string[], finalXp: number },
+    promotion: { newTier?: Tier; oldTier?: Tier; newBadges: Badge[], xpGained: number, currentXp: number, bonusXp: number, rewards: string[], finalXp: number },
     onDismiss: () => void;
-    rankTiers: RankTier[];
-}> = ({ promotion, onDismiss, rankTiers }) => {
+    ranks: Rank[];
+}> = ({ promotion, onDismiss, ranks }) => {
 
-    const { oldRank, newRank, xpGained, bonusXp, rewards, finalXp } = promotion;
+    const { oldTier, newTier, xpGained, bonusXp, rewards, finalXp } = promotion;
     
     // Recalculate progression for display based on the final XP (current + bonus)
-    const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => a.minXp - b.minXp);
-    const finalRankAfterBonus = allSubRanks.slice().reverse().find(r => finalXp >= r.minXp);
-    const finalRankIndex = allSubRanks.findIndex(r => r.id === finalRankAfterBonus?.id);
-    const nextRankAfterBonus = finalRankIndex !== -1 && finalRankIndex < allSubRanks.length - 1 ? allSubRanks[finalRankIndex + 1] : null;
+    const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => a.minXp - b.minXp);
+    const finalTierAfterBonus = allTiers.slice().reverse().find(r => finalXp >= r.minXp);
+    const finalTierIndex = allTiers.findIndex(r => r.id === finalTierAfterBonus?.id);
+    const nextTierAfterBonus = finalTierIndex !== -1 && finalTierIndex < allTiers.length - 1 ? allTiers[finalTierIndex + 1] : null;
 
-    const startXp = oldRank?.minXp || 0;
-    const endXp = nextRankAfterBonus ? nextRankAfterBonus.minXp : finalXp;
+    const startXp = oldTier?.minXp || 0;
+    const endXp = nextTierAfterBonus ? nextTierAfterBonus.minXp : finalXp;
     const progressPercentage = endXp > startXp ? ((finalXp - startXp) / (endXp - startXp)) * 100 : 100;
 
     return (
@@ -176,31 +176,31 @@ const PromotionModal: React.FC<{
             >
                 <div className="rank-display-grid">
                     <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0, transition:{ delay: 0.2 }}} className="rank-item previous">
-                        {oldRank && <>
-                            <img src={oldRank.iconUrl} alt={oldRank.name} className="w-20 h-20" />
-                            <p>{oldRank.name}</p>
+                        {oldTier && <>
+                            <img src={oldTier.iconUrl} alt={oldTier.name} className="w-20 h-20" />
+                            <p>{oldTier.name}</p>
                         </>}
                     </motion.div>
                     
                     <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1, transition:{ delay: 0, type: 'spring', stiffness: 150 }}} className="rank-item current">
-                       {newRank && <>
+                       {newTier && <>
                             <div className="rank-item-hex">
-                               <img src={newRank.iconUrl} alt={newRank.name} />
+                               <img src={newTier.iconUrl} alt={newTier.name} />
                             </div>
-                            <p>{newRank.name}</p>
+                            <p>{newTier.name}</p>
                         </>}
                     </motion.div>
 
                     <div className="rank-item next">{/* Placeholder for next rank if needed */}</div>
                 </div>
 
-                {newRank && <h2 className="rank-item-header">Rank Up</h2>}
+                {newTier && <h2 className="rank-item-header">Tier Up</h2>}
 
                 <div className="xp-bar-container">
                     <div className="xp-bar-info">
                         <span className="xp-earned">Match RP +{xpGained}</span>
-                        {newRank && <span className="rank-up-tag">RANK UP</span>}
-                        <span className="xp-values">{finalXp.toLocaleString()} / {nextRankAfterBonus ? nextRankAfterBonus.minXp.toLocaleString() : 'MAX'}{!nextRankAfterBonus && '+'}</span>
+                        {newTier && <span className="rank-up-tag">TIER UP</span>}
+                        <span className="xp-values">{finalXp.toLocaleString()} / {nextTierAfterBonus ? nextTierAfterBonus.minXp.toLocaleString() : 'MAX'}{!nextTierAfterBonus && '+'}</span>
                     </div>
                     <div className="xp-bar-track">
                          <motion.div 
@@ -214,7 +214,7 @@ const PromotionModal: React.FC<{
                 
                 {bonusXp > 0 && rewards.length > 0 && (
                      <div className="promotion-rewards">
-                        <h3 className="promotion-rewards__title">Rank Up Rewards</h3>
+                        <h3 className="promotion-rewards__title">Tier Up Rewards</h3>
                         {rewards.map((reward, index) => (
                              <div key={index} className="reward-item">
                                 <span>{reward}</span>
@@ -270,7 +270,7 @@ const AppContent: React.FC = () => {
     const [showCreatorPopup, setShowCreatorPopup] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const [promotion, setPromotion] = useState<{ newRank?: SubRank; oldRank?: SubRank; newBadges: Badge[], xpGained: number, currentXp: number, bonusXp: number, rewards: string[], finalXp: number } | null>(null);
+    const [promotion, setPromotion] = useState<{ newTier?: Tier; oldTier?: Tier; newBadges: Badge[], xpGained: number, currentXp: number, bonusXp: number, rewards: string[], finalXp: number } | null>(null);
 
 
     if (!auth) throw new Error("AuthContext not found.");
@@ -291,37 +291,37 @@ const AppContent: React.FC = () => {
         deleteDoc,
         setDoc,
         creatorDetails,
-        rankTiers,
+        ranks,
         signups,
     } = data;
     
     const currentPlayer = players.find(p => p.id === user?.id);
 
     const checkForPromotions = useCallback((player: Player) => {
-        if (promotion || !rankTiers || rankTiers.length === 0) return;
+        if (promotion || !ranks || ranks.length === 0) return;
     
         const lastSeenXp = parseInt(localStorage.getItem(`lastSeenXp_${player.id}`) || '0', 10);
-        const lastSeenRankId = localStorage.getItem(`lastSeenRankId_${player.id}`);
+        const lastSeenTierId = localStorage.getItem(`lastSeenTierId_${player.id}`);
         const lastSeenBadges: string[] = JSON.parse(localStorage.getItem(`lastSeenBadges_${player.id}`) || '[]');
     
         if (player.stats.xp > lastSeenXp) {
-            const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => b.minXp - a.minXp);
+            const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => b.minXp - a.minXp);
             
-            const getRankForXp = (xp: number): SubRank | undefined => allSubRanks.find(r => xp >= r.minXp);
+            const getTierForXp = (xp: number): Tier | undefined => allTiers.find(r => xp >= r.minXp);
             
-            const oldRank = lastSeenRankId ? allSubRanks.find(r => r.id === lastSeenRankId) : getRankForXp(lastSeenXp);
-            const newRank = getRankForXp(player.stats.xp);
+            const oldTier = lastSeenTierId ? allTiers.find(r => r.id === lastSeenTierId) : getTierForXp(lastSeenXp);
+            const newTier = getTierForXp(player.stats.xp);
             
             const newBadges = player.badges.filter(b => !lastSeenBadges.includes(b.id));
     
-            const hasNewRank = newRank && oldRank && newRank.id !== oldRank.id;
+            const hasNewTier = newTier && oldTier && newTier.id !== oldTier.id;
     
-            if (hasNewRank || newBadges.length > 0) {
+            if (hasNewTier || newBadges.length > 0) {
                  let bonusXp = 0;
                 const rewards: string[] = [];
 
-                if (hasNewRank && newRank) {
-                    newRank.perks.forEach(perk => {
+                if (hasNewTier && newTier) {
+                    newTier.perks.forEach(perk => {
                         if (perk.includes('Weapon XP Card')) {
                             bonusXp += 100; // Bonus XP amount
                             rewards.push('Weapon XP Card');
@@ -330,8 +330,8 @@ const AppContent: React.FC = () => {
                 }
     
                 setPromotion({ 
-                    newRank: hasNewRank ? newRank : undefined, 
-                    oldRank,
+                    newTier: hasNewTier ? newTier : undefined, 
+                    oldTier,
                     newBadges,
                     xpGained: player.stats.xp - lastSeenXp,
                     currentXp: player.stats.xp,
@@ -341,7 +341,7 @@ const AppContent: React.FC = () => {
                 });
             }
         }
-    }, [rankTiers, promotion]);
+    }, [ranks, promotion]);
 
     const dismissPromotion = () => {
         if (promotion && user?.role === 'player' && currentPlayer) {
@@ -356,25 +356,25 @@ const AppContent: React.FC = () => {
                     date: new Date().toISOString()
                 }));
 
-                const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => b.minXp - a.minXp);
-                const finalRank = allSubRanks.find(r => finalXp >= r.minXp) || currentPlayer.rank;
+                const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => b.minXp - a.minXp);
+                const finalTier = allTiers.find(r => finalXp >= r.minXp) || currentPlayer.rank;
 
                 const updatedPlayer = {
                     ...currentPlayer,
                     stats: { ...currentPlayer.stats, xp: finalXp },
                     xpAdjustments: [...currentPlayer.xpAdjustments, ...newAdjustments],
-                    rank: finalRank,
+                    rank: finalTier,
                 };
                 
                 updateDoc('players', updatedPlayer);
                 
                 localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(finalXp));
                 localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify(updatedPlayer.badges.map(b => b.id)));
-                localStorage.setItem(`lastSeenRankId_${currentPlayer.id}`, finalRank.id);
+                localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
             } else {
                  localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(currentPlayer.stats.xp));
                  localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify(currentPlayer.badges.map(b => b.id)));
-                 localStorage.setItem(`lastSeenRankId_${currentPlayer.id}`, currentPlayer.rank.id);
+                 localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, currentPlayer.rank.id);
             }
         }
         setPromotion(null);
@@ -599,7 +599,7 @@ const AppContent: React.FC = () => {
             </AnimatePresence>
             
             <AnimatePresence>
-              {promotion && <PromotionModal promotion={promotion} onDismiss={dismissPromotion} rankTiers={rankTiers} />}
+              {promotion && <PromotionModal promotion={promotion} onDismiss={dismissPromotion} ranks={ranks} />}
             </AnimatePresence>
 
             <AnimatePresence mode="wait">
@@ -637,7 +637,7 @@ const AppContent: React.FC = () => {
                                     onEventSignUp={onEventSignUp}
                                     legendaryBadges={data.legendaryBadges}
                                     raffles={data.raffles}
-                                    rankTiers={rankTiers}
+                                    ranks={ranks}
                                     locations={data.locations}
                                     signups={signups}
                                 />

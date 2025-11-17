@@ -1,7 +1,6 @@
-
-
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import type { User, AuthContextType, Player, Admin, CreatorDetails } from '../types';
+// FIX: Updated imports to use MOCK_PLAYERS and MOCK_ADMIN.
 import { MOCK_PLAYERS, MOCK_ADMIN } from '../constants';
 import { auth, db, USE_FIREBASE, firebase } from '../firebase';
 
@@ -42,6 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                             setUser({ id: adminDoc.id, ...adminDoc.data() } as Admin);
                         } else {
                             console.warn("Admin profile not found, creating default.");
+                            // FIX: The error on this line is resolved by correctly importing MOCK_ADMIN with an ID.
                             const { id, ...newAdminData } = { ...MOCK_ADMIN, email };
                             const docRef = await db.collection("admins").add(newAdminData);
                             setUser({ ...newAdminData, id: docRef.id });

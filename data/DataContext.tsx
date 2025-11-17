@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode, useContext, useMemo } from 'react';
 import { USE_FIREBASE, db, firebaseInitializationError } from '../firebase';
 import * as mock from '../constants';
-import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, RankTier, ApiGuideStep } from '../types';
+import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier } from '../types';
 import { AuthContext } from '../auth/AuthContext';
 
 export const IS_LIVE_DATA = USE_FIREBASE && !!db && !firebaseInitializationError;
@@ -126,8 +126,9 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
     return [data, updateData, loading] as const;
 }
 
+// FIX: Correctly map all mock data exports from constants.ts
 const MOCK_DATA_MAP = {
-    rankTiers: mock.MOCK_RANK_TIERS,
+    ranks: mock.MOCK_RANKS,
     badges: mock.MOCK_BADGES,
     legendaryBadges: mock.MOCK_LEGENDARY_BADGES,
     gamificationSettings: mock.MOCK_GAMIFICATION_SETTINGS,
@@ -153,7 +154,7 @@ type SeedableCollection = keyof typeof MOCK_DATA_MAP;
 export interface DataContextType {
     players: Player[]; setPlayers: (d: Player[] | ((p: Player[]) => Player[])) => void;
     events: GameEvent[]; setEvents: (d: GameEvent[] | ((p: GameEvent[]) => GameEvent[])) => void;
-    rankTiers: RankTier[]; setRankTiers: (d: RankTier[] | ((p: RankTier[]) => RankTier[])) => void;
+    ranks: Rank[]; setRanks: (d: Rank[] | ((p: Rank[]) => Rank[])) => void;
     badges: Badge[]; setBadges: (d: Badge[] | ((p: Badge[]) => Badge[])) => void;
     legendaryBadges: LegendaryBadge[]; setLegendaryBadges: (d: LegendaryBadge[] | ((p: LegendaryBadge[]) => LegendaryBadge[])) => void;
     gamificationSettings: GamificationSettings; setGamificationSettings: (d: GamificationSettings | ((p: GamificationSettings) => GamificationSettings)) => void;
@@ -192,37 +193,38 @@ export const DataContext = createContext<DataContextType | null>(null);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     // Protected collections (require auth)
-    const [players, setPlayers, loadingPlayers] = useCollection<Player>('players', mock.MOCK_PLAYERS, [], { isProtected: true });
-    const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', mock.MOCK_EVENTS, [], { isProtected: true });
-    const [rankTiers, setRankTiers, loadingRankTiers] = useCollection<RankTier>('rankTiers', mock.MOCK_RANK_TIERS, [], { isProtected: true });
-    const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', mock.MOCK_BADGES, [], { isProtected: true });
-    const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', mock.MOCK_LEGENDARY_BADGES, [], { isProtected: true });
-    const [gamificationSettings, setGamificationSettings, loadingGamification] = useCollection<GamificationRule>('gamificationSettings', mock.MOCK_GAMIFICATION_SETTINGS, [], { isProtected: true });
-    const [sponsors, setSponsors, loadingSponsors] = useCollection<Sponsor>('sponsors', mock.MOCK_SPONSORS, [], { isProtected: true });
-    const [vouchers, setVouchers, loadingVouchers] = useCollection<Voucher>('vouchers', mock.MOCK_VOUCHERS, [], { isProtected: true });
-    const [inventory, setInventory, loadingInventory] = useCollection<InventoryItem>('inventory', mock.MOCK_INVENTORY, [], { isProtected: true });
-    const [suppliers, setSuppliers, loadingSuppliers] = useCollection<Supplier>('suppliers', mock.MOCK_SUPPLIERS, [], { isProtected: true });
-    const [transactions, setTransactions, loadingTransactions] = useCollection<Transaction>('transactions', mock.MOCK_TRANSACTIONS, [], { isProtected: true });
-    const [locations, setLocations, loadingLocations] = useCollection<Location>('locations', mock.MOCK_LOCATIONS, [], { isProtected: true });
-    const [raffles, setRaffles, loadingRaffles] = useCollection<Raffle>('raffles', mock.MOCK_RAFFLES, [], { isProtected: true });
-    const [signups, setSignups, loadingSignups] = useCollection<Signup>('signups', mock.MOCK_SIGNUPS, [], { isProtected: true });
+    const [players, setPlayers, loadingPlayers] = useCollection<Player>('players', MOCK_DATA_MAP.players, [], { isProtected: true });
+    const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', MOCK_DATA_MAP.events, [], { isProtected: true });
+    const [ranks, setRanks, loadingRanks] = useCollection<Rank>('ranks', MOCK_DATA_MAP.ranks, [], { isProtected: true });
+    const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', MOCK_DATA_MAP.badges, [], { isProtected: true });
+    const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', MOCK_DATA_MAP.legendaryBadges, [], { isProtected: true });
+    const [gamificationSettings, setGamificationSettings, loadingGamification] = useCollection<GamificationRule>('gamificationSettings', MOCK_DATA_MAP.gamificationSettings, [], { isProtected: true });
+    const [sponsors, setSponsors, loadingSponsors] = useCollection<Sponsor>('sponsors', MOCK_DATA_MAP.sponsors, [], { isProtected: true });
+    const [vouchers, setVouchers, loadingVouchers] = useCollection<Voucher>('vouchers', MOCK_DATA_MAP.vouchers, [], { isProtected: true });
+    const [inventory, setInventory, loadingInventory] = useCollection<InventoryItem>('inventory', MOCK_DATA_MAP.inventory, [], { isProtected: true });
+    const [suppliers, setSuppliers, loadingSuppliers] = useCollection<Supplier>('suppliers', MOCK_DATA_MAP.suppliers, [], { isProtected: true });
+    const [transactions, setTransactions, loadingTransactions] = useCollection<Transaction>('transactions', MOCK_DATA_MAP.transactions, [], { isProtected: true });
+    const [locations, setLocations, loadingLocations] = useCollection<Location>('locations', MOCK_DATA_MAP.locations, [], { isProtected: true });
+    const [raffles, setRaffles, loadingRaffles] = useCollection<Raffle>('raffles', MOCK_DATA_MAP.raffles, [], { isProtected: true });
+    const [signups, setSignups, loadingSignups] = useCollection<Signup>('signups', MOCK_DATA_MAP.signups, [], { isProtected: true });
 
     // --- Deconstructed Settings Documents ---
     // Company Details
+    // FIX: Use correctly exported mock constants
     const [companyCore, updateCompanyCore, loadingCompanyCore] = useDocument('settings', 'companyDetails', mock.MOCK_COMPANY_CORE);
     const [brandingDetails, updateBrandingDetails, loadingBranding] = useDocument('settings', 'brandingDetails', mock.MOCK_BRANDING_DETAILS);
     const [contentDetails, updateContentDetails, loadingContent] = useDocument('settings', 'contentDetails', mock.MOCK_CONTENT_DETAILS);
     // Creator Details
     const [creatorCore, updateCreatorCore, loadingCreatorCore] = useDocument<CreatorDetails>('settings', 'creatorDetails', mock.MOCK_CREATOR_CORE);
-    const [apiSetupGuide, setApiSetupGuide, loadingApiGuide] = useCollection<ApiGuideStep>('apiSetupGuide', mock.MOCK_API_GUIDE, [], { isProtected: true });
+    const [apiSetupGuide, setApiSetupGuide, loadingApiGuide] = useCollection<ApiGuideStep>('apiSetupGuide', MOCK_DATA_MAP.apiSetupGuide, [], { isProtected: true });
 
     // --- Public collections ---
-    const [socialLinks, setSocialLinks, loadingSocialLinks] = useCollection<SocialLink>('socialLinks', mock.MOCK_SOCIAL_LINKS);
-    const [carouselMedia, setCarouselMedia, loadingCarouselMedia] = useCollection<CarouselMedia>('carouselMedia', mock.MOCK_CAROUSEL_MEDIA);
+    const [socialLinks, setSocialLinks, loadingSocialLinks] = useCollection<SocialLink>('socialLinks', MOCK_DATA_MAP.socialLinks);
+    const [carouselMedia, setCarouselMedia, loadingCarouselMedia] = useCollection<CarouselMedia>('carouselMedia', MOCK_DATA_MAP.carouselMedia);
     
     const [isSeeding, setIsSeeding] = useState(false);
 
-    const loading = loadingPlayers || loadingEvents || loadingRankTiers || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia || loadingSignups || loadingCompanyCore || loadingBranding || loadingContent || loadingCreatorCore || loadingApiGuide;
+    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia || loadingSignups || loadingCompanyCore || loadingBranding || loadingContent || loadingCreatorCore || loadingApiGuide;
     
     // --- Composite Objects for consumption by components ---
     const companyDetails = useMemo(() => ({
@@ -241,6 +243,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const setCompanyDetails = async (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => {
         const finalData = typeof d === 'function' ? d(companyDetails) : d;
         
+        // FIX: Use correctly exported mock constants for keys
         const coreData: Partial<typeof mock.MOCK_COMPANY_CORE> = {};
         const brandingData: Partial<typeof mock.MOCK_BRANDING_DETAILS> = {};
         const contentData: Partial<typeof mock.MOCK_CONTENT_DETAILS> = {};
@@ -295,7 +298,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const collectionSetters = {
         players: setPlayers,
         events: setEvents,
-        rankTiers: setRankTiers,
+        ranks: setRanks,
         badges: setBadges,
         legendaryBadges: setLegendaryBadges,
         gamificationSettings: setGamificationSettings,
@@ -403,7 +406,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const batch = db.batch();
 
             // System Settings & Config
-            mock.MOCK_RANK_TIERS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('rankTiers').doc(id), data); });
+            mock.MOCK_RANKS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('ranks').doc(id), data); });
             mock.MOCK_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('badges').doc(id), data); });
             mock.MOCK_LEGENDARY_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('legendaryBadges').doc(id), data); });
             mock.MOCK_GAMIFICATION_SETTINGS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('gamificationSettings').doc(id), data); });
@@ -416,22 +419,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             batch.set(db.collection('settings').doc('creatorDetails'), mock.MOCK_CREATOR_CORE);
             
             // Admin User
+            // FIX: Correctly use MOCK_ADMIN
             const { id: adminId, ...adminData } = mock.MOCK_ADMIN;
             batch.set(db.collection('admins').doc(adminId), adminData);
 
             // Transactional Data & Subcollections
-            mock.MOCK_PLAYERS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('players').doc(id), data); });
-            mock.MOCK_EVENTS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('events').doc(id), data); });
-            mock.MOCK_SIGNUPS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('signups').doc(id), data); });
-            mock.MOCK_VOUCHERS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('vouchers').doc(id), data); });
-            mock.MOCK_INVENTORY.forEach(item => { const {id, ...data} = item; batch.set(db.collection('inventory').doc(id), data); });
-            mock.MOCK_SUPPLIERS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('suppliers').doc(id), data); });
-            mock.MOCK_TRANSACTIONS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('transactions').doc(id), data); });
-            mock.MOCK_LOCATIONS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('locations').doc(id), data); });
-            mock.MOCK_RAFFLES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('raffles').doc(id), data); });
-            mock.MOCK_SPONSORS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('sponsors').doc(id), data); });
-            mock.MOCK_SOCIAL_LINKS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('socialLinks').doc(id), data); });
-            mock.MOCK_CAROUSEL_MEDIA.forEach(item => { const {id, ...data} = item; batch.set(db.collection('carouselMedia').doc(id), data); });
+            MOCK_DATA_MAP.players.forEach(item => { const {id, ...data} = item; batch.set(db.collection('players').doc(id), data); });
+            MOCK_DATA_MAP.events.forEach(item => { const {id, ...data} = item; batch.set(db.collection('events').doc(id), data); });
+            MOCK_DATA_MAP.signups.forEach(item => { const {id, ...data} = item; batch.set(db.collection('signups').doc(id), data); });
+            MOCK_DATA_MAP.vouchers.forEach(item => { const {id, ...data} = item; batch.set(db.collection('vouchers').doc(id), data); });
+            MOCK_DATA_MAP.inventory.forEach(item => { const {id, ...data} = item; batch.set(db.collection('inventory').doc(id), data); });
+            MOCK_DATA_MAP.suppliers.forEach(item => { const {id, ...data} = item; batch.set(db.collection('suppliers').doc(id), data); });
+            MOCK_DATA_MAP.transactions.forEach(item => { const {id, ...data} = item; batch.set(db.collection('transactions').doc(id), data); });
+            MOCK_DATA_MAP.locations.forEach(item => { const {id, ...data} = item; batch.set(db.collection('locations').doc(id), data); });
+            MOCK_DATA_MAP.raffles.forEach(item => { const {id, ...data} = item; batch.set(db.collection('raffles').doc(id), data); });
+            MOCK_DATA_MAP.sponsors.forEach(item => { const {id, ...data} = item; batch.set(db.collection('sponsors').doc(id), data); });
+            MOCK_DATA_MAP.socialLinks.forEach(item => { const {id, ...data} = item; batch.set(db.collection('socialLinks').doc(id), data); });
+            MOCK_DATA_MAP.carouselMedia.forEach(item => { const {id, ...data} = item; batch.set(db.collection('carouselMedia').doc(id), data); });
             
             await batch.commit();
             console.log('All initial data seeded successfully. Refreshing the page to load new data...');
@@ -460,18 +464,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const deleteAllData = async () => {
         if (!IS_LIVE_DATA) {
             console.log("Resetting all mock transactional data in memory...");
-            setPlayers(mock.MOCK_PLAYERS);
-            setEvents(mock.MOCK_EVENTS);
-            setSignups(mock.MOCK_SIGNUPS);
-            setVouchers(mock.MOCK_VOUCHERS);
-            setInventory(mock.MOCK_INVENTORY);
-            setTransactions(mock.MOCK_TRANSACTIONS);
-            setRaffles(mock.MOCK_RAFFLES);
-            setSuppliers(mock.MOCK_SUPPLIERS);
-            setSponsors(mock.MOCK_SPONSORS);
-            setLocations(mock.MOCK_LOCATIONS);
-            setSocialLinks(mock.MOCK_SOCIAL_LINKS);
-            setCarouselMedia(mock.MOCK_CAROUSEL_MEDIA);
+            setPlayers(MOCK_DATA_MAP.players);
+            setEvents(MOCK_DATA_MAP.events);
+            setSignups(MOCK_DATA_MAP.signups);
+            setVouchers(MOCK_DATA_MAP.vouchers);
+            setInventory(MOCK_DATA_MAP.inventory);
+            setTransactions(MOCK_DATA_MAP.transactions);
+            setRaffles(MOCK_DATA_MAP.raffles);
+            setSuppliers(MOCK_DATA_MAP.suppliers);
+            setSponsors(MOCK_DATA_MAP.sponsors);
+            setLocations(MOCK_DATA_MAP.locations);
+            setSocialLinks(MOCK_DATA_MAP.socialLinks);
+            setCarouselMedia(MOCK_DATA_MAP.carouselMedia);
             return;
         }
         
@@ -527,7 +531,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             console.log("Restoring from backup for mock data environment...");
             setPlayers(backupData.players || []);
             setEvents(backupData.events || []);
-            setRankTiers(backupData.rankTiers || []);
+            setRanks(backupData.ranks || []);
             setBadges(backupData.badges || []);
             setLegendaryBadges(backupData.legendaryBadges || []);
             setGamificationSettings(backupData.gamificationSettings || []);
@@ -610,7 +614,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const value: DataContextType = {
         players, setPlayers,
         events, setEvents,
-        rankTiers, setRankTiers,
+        ranks, setRanks,
         badges, setBadges,
         legendaryBadges, setLegendaryBadges,
         gamificationSettings, setGamificationSettings,

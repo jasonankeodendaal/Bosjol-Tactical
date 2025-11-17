@@ -1,7 +1,5 @@
-
-
 // FIX: Import `PlayerStats` to resolve TypeScript error on line 516.
-import type { Player, PlayerCore, Admin, GameEvent, EventCore, Briefing, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails, Signup, RankTier, SubRank, ApiGuideStep, MatchHistoryDoc, XpAdjustmentDoc, AttendeeDoc, RaffleCore, RaffleTicketDoc, RaffleWinnerDoc, VoucherCore, VoucherRedemption, PlayerStats } from './types';
+import type { Player, PlayerCore, Admin, GameEvent, EventCore, Briefing, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, Tier, ApiGuideStep, MatchHistoryDoc, XpAdjustmentDoc, AttendeeDoc, RaffleCore, RaffleTicketDoc, RaffleWinnerDoc, VoucherCore, VoucherRedemption, PlayerStats } from './types';
 
 export const MOCK_BADGES: Badge[] = [
     { id: 'b01', name: 'Sharpshooter', description: 'Achieve 50 headshots', iconUrl: 'https://img.icons8.com/color/96/target.png', criteria: { type: 'headshots', value: 50 }},
@@ -16,7 +14,7 @@ export const MOCK_LEGENDARY_BADGES: LegendaryBadge[] = [
     { id: 'leg03', name: 'Last Man Standing', description: 'For an operator who single-handedly clutched a victory against overwhelming odds.', iconUrl: 'https://img.icons8.com/fluency/96/shield.png', howToObtain: 'Be the last surviving member of your team and win the round.' },
 ];
 
-export const UNRANKED_SUB_RANK: SubRank = { 
+export const UNRANKED_TIER: Tier = { 
     id: 'subrank_unranked',
     name: 'Unranked',
     minXp: 0, 
@@ -24,13 +22,13 @@ export const UNRANKED_SUB_RANK: SubRank = {
     perks: ["Play 10 games to get ranked"],
 };
 
-export const MOCK_RANK_TIERS: RankTier[] = [
+export const MOCK_RANKS: Rank[] = [
   {
-    id: "tier_rookie",
+    id: "rank_rookie",
     name: "Rookie",
-    description: "Introductory tier for new operators learning the ropes.",
-    tierBadgeUrl: "https://img.icons8.com/external-flatart-icons-outline-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-outline-flatarticons.png",
-    subranks: [
+    description: "Introductory rank for new operators learning the ropes.",
+    rankBadgeUrl: "https://img.icons8.com/external-flatart-icons-outline-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-outline-flatarticons.png",
+    tiers: [
       { id: "r_i", name: "Rookie I", minXp: 0, perks: ["Basic Calling Card"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
       { id: "r_ii", name: "Rookie II", minXp: 201, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
       { id: "r_iii", name: "Rookie III", minXp: 401, perks: ["Custom Banner"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
@@ -39,11 +37,11 @@ export const MOCK_RANK_TIERS: RankTier[] = [
     ]
   },
   {
-    id: "tier_vet",
+    id: "rank_vet",
     name: "Veteran",
     description: "For established players who have proven their skills in the field.",
-    tierBadgeUrl: "https://img.icons8.com/external-flatart-icons-flat-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-flat-flatarticons.png",
-    subranks: [
+    rankBadgeUrl: "https://img.icons8.com/external-flatart-icons-flat-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-flat-flatarticons.png",
+    tiers: [
       { id: "v_i", name: "Veteran I", minXp: 1001, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
       { id: "v_ii", name: "Veteran II", minXp: 1201, perks: ["Custom Banner"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
       { id: "v_iii", name: "Veteran III", minXp: 1401, perks: ["Credits Reward"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
@@ -52,11 +50,11 @@ export const MOCK_RANK_TIERS: RankTier[] = [
     ]
   },
   {
-    id: "tier_elite",
+    id: "rank_elite",
     name: "Elite",
     description: "Recognizing mid-tier competitive players with advanced tactical abilities.",
-    tierBadgeUrl: "https://img.icons8.com/external-flatart-icons-lineal-color-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-lineal-color-flatarticons.png",
-    subranks: [
+    rankBadgeUrl: "https://img.icons8.com/external-flatart-icons-lineal-color-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-lineal-color-flatarticons.png",
+    tiers: [
       { id: "e_i", name: "Elite I", minXp: 2001, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
       { id: "e_ii", name: "Elite II", minXp: 2201, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
       { id: "e_iii", name: "Elite III", minXp: 2401, perks: ["Custom Calling Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
@@ -65,11 +63,11 @@ export const MOCK_RANK_TIERS: RankTier[] = [
     ]
   },
   {
-    id: "tier_pro",
+    id: "rank_pro",
     name: "Pro",
     description: "High-skill players demonstrating professional-level gameplay.",
-    tierBadgeUrl: "https://img.icons8.com/external-justicon-lineal-color-justicon/64/external-shield-gaming-justicon-lineal-color-justicon.png",
-    subranks: [
+    rankBadgeUrl: "https://img.icons8.com/external-justicon-lineal-color-justicon/64/external-shield-gaming-justicon-lineal-color-justicon.png",
+    tiers: [
       { id: "p_i", name: "Pro I", minXp: 3001, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
       { id: "p_ii", name: "Pro II", minXp: 3301, perks: ["Exclusive Camo"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
       { id: "p_iii", name: "Pro III", minXp: 3601, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
@@ -78,11 +76,11 @@ export const MOCK_RANK_TIERS: RankTier[] = [
     ]
   },
   {
-    id: "tier_master",
+    id: "rank_master",
     name: "Master",
     description: "Top-tier competitive operators with mastery over all aspects of combat.",
-    tierBadgeUrl: "https://img.icons8.com/external-flat-wichaiwi/64/external-shield-game-design-flat-wichaiwi.png",
-    subranks: [
+    rankBadgeUrl: "https://img.icons8.com/external-flat-wichaiwi/64/external-shield-game-design-flat-wichaiwi.png",
+    tiers: [
       { id: "m_i", name: "Master I", minXp: 4501, perks: ["Weapon XP Card + Camo"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
       { id: "m_ii", name: "Master II", minXp: 4801, perks: ["Exclusive Calling Card"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
       { id: "m_iii", name: "Master III", minXp: 5101, perks: ["Credits Reward"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
@@ -91,11 +89,11 @@ export const MOCK_RANK_TIERS: RankTier[] = [
     ]
   },
   {
-    id: "tier_gm",
+    id: "rank_gm",
     name: "Grand Master",
     description: "Among the best of the best, with access to exclusive rewards.",
-    tierBadgeUrl: "https://img.icons8.com/ios-filled/50/medal.png",
-    subranks: [
+    rankBadgeUrl: "https://img.icons8.com/ios-filled/50/medal.png",
+    tiers: [
       { id: "gm_i", name: "Grand Master I", minXp: 6001, perks: ["Permanent Cosmetic Reward"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
       { id: "gm_ii", name: "Grand Master II", minXp: 6401, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
       { id: "gm_iii", name: "Grand Master III", minXp: 6801, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
@@ -104,11 +102,11 @@ export const MOCK_RANK_TIERS: RankTier[] = [
     ]
   },
   {
-    id: "tier_leg",
+    id: "rank_leg",
     name: "Legendary",
     description: "The pinnacle of achievement. Your exact RP and leaderboard position are now displayed.",
-    tierBadgeUrl: "https://img.icons8.com/fluency/48/trophy.png",
-    subranks: [
+    rankBadgeUrl: "https://img.icons8.com/fluency/48/trophy.png",
+    tiers: [
       { id: "l_i", name: "Legendary", minXp: 8001, perks: ["Legendary Banner / Frame", "Leaderboard Position Displayed"], iconUrl: "https://img.icons8.com/color/96/medal-of-honor.png" }
     ]
   }
@@ -251,6 +249,23 @@ export const MOCK_ALL_ATTENDEES: AttendeeDoc[] = [
     { id: 'p002', eventId: 'e000', playerId: 'p002', paymentStatus: 'Paid (Cash)', rentedGearIds: ['g02'], stats: { kills: 12, deaths: 1, headshots: 5 } },
 ];
 
+// FIX: Construct MOCK_EVENTS as GameEvent[] by combining EventCore with attendees and live stats, resolving the type error in DataContext.
+export const MOCK_EVENTS: GameEvent[] = initialEventsCore.map(eventCore => {
+    const attendeesForEvent = MOCK_ALL_ATTENDEES.filter(a => a.eventId === eventCore.id);
+    const liveStatsForEvent: GameEvent['liveStats'] = {};
+    attendeesForEvent.forEach(attendee => {
+        if (attendee.stats) {
+            liveStatsForEvent[attendee.playerId] = attendee.stats;
+        }
+    });
+
+    return {
+        ...eventCore,
+        attendees: attendeesForEvent,
+        liveStats: liveStatsForEvent,
+    };
+});
+
 export const MOCK_SIGNUPS: Signup[] = [
     { id: 'e001_p001', eventId: 'e001', playerId: 'p001', requestedGearIds: ['g01'], note: 'Running 5 mins late.' },
     { id: 'e001_p003', eventId: 'e001', playerId: 'p003', requestedGearIds: [], note: '' },
@@ -287,7 +302,7 @@ export const MOCK_PLAYERS_CORE: PlayerCore[] = [
     medicalNotes: 'Resistant to flashbangs.',
     role: 'player',
     callsign: 'Soap',
-    rank: MOCK_RANK_TIERS[1].subranks[3], // Veteran IV (1650 XP)
+    rank: MOCK_RANKS[1].tiers[3], // Veteran IV (1650 XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2017/11/06/13/45/cap-2923682_1280.jpg',
     stats: { kills: 128, deaths: 45, headshots: 32, gamesPlayed: 15, xp: 1650 },
@@ -312,7 +327,7 @@ export const MOCK_PLAYERS_CORE: PlayerCore[] = [
     medicalNotes: 'Prefers to remain masked.',
     role: 'player',
     callsign: 'Ghost',
-    rank: MOCK_RANK_TIERS[3].subranks[0], // Pro I (3100 XP)
+    rank: MOCK_RANKS[3].tiers[0], // Pro I (3100 XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2023/07/04/19/43/man-8107142_1280.jpg',
     stats: { kills: 210, deaths: 30, headshots: 88, gamesPlayed: 18, xp: 3100 },
@@ -335,7 +350,7 @@ export const MOCK_PLAYERS_CORE: PlayerCore[] = [
     address: 'London, UK',
     role: 'player',
     callsign: 'Gaz',
-    rank: MOCK_RANK_TIERS[2].subranks[1], // Elite II (2200 XP)
+    rank: MOCK_RANKS[2].tiers[1], // Elite II (2200 XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2015/01/07/20/53/hat-591973_1280.jpg',
     stats: { kills: 142, deaths: 55, headshots: 41, gamesPlayed: 16, xp: 2200 },
@@ -357,7 +372,7 @@ export const MOCK_PLAYERS_CORE: PlayerCore[] = [
     idNumber: 'D55667788',
     role: 'player',
     callsign: 'Rook',
-    rank: UNRANKED_SUB_RANK, // (350 XP, < 10 games)
+    rank: UNRANKED_TIER, // (350 XP, < 10 games)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2016/03/09/10/22/girl-1246022_1280.jpg',
     stats: { kills: 5, deaths: 8, headshots: 1, gamesPlayed: 3, xp: 350 },
@@ -379,7 +394,7 @@ export const MOCK_PLAYERS_CORE: PlayerCore[] = [
     idNumber: 'E99887766',
     role: 'player',
     callsign: 'Nomad',
-    rank: MOCK_RANK_TIERS[6].subranks[0], // Legendary (8500 XP)
+    rank: MOCK_RANKS[6].tiers[0], // Legendary (8500 XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2018/01/15/07/52/woman-3083390_1280.jpg',
     stats: { kills: 350, deaths: 120, headshots: 95, gamesPlayed: 30, xp: 8500 },
@@ -389,6 +404,7 @@ export const MOCK_PLAYERS_CORE: PlayerCore[] = [
     bio: "A lone wolf who excels at long-range engagements and reconnaissance.",
     preferredRole: 'Sniper',
   },
+// FIX: Completed the stats object for player p006.
   {
     id: 'p006',
     name: 'Maria "Valkyrie"',
@@ -401,464 +417,75 @@ export const MOCK_PLAYERS_CORE: PlayerCore[] = [
     idNumber: 'F12123434',
     role: 'player',
     callsign: 'Valkyrie',
-    rank: MOCK_RANK_TIERS[3].subranks[1], // Pro II (3300 XP)
+    rank: MOCK_RANKS[3].tiers[1], // Pro II (3301+ XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2021/06/25/19/33/woman-6364433_1280.jpg',
-    stats: { kills: 180, deaths: 80, headshots: 50, gamesPlayed: 22, xp: 3300 },
-    badges: [MOCK_BADGES[1], MOCK_BADGES[2]],
+    stats: { kills: 180, deaths: 65, headshots: 70, gamesPlayed: 22, xp: 3350 },
+    badges: [MOCK_BADGES[0], MOCK_BADGES[2]],
     legendaryBadges: [],
-    loadout: { primaryWeapon: 'Vector', secondaryWeapon: 'Glock 19', lethal: 'Semtex', tactical: 'Stun Grenade' },
-    bio: "Aggressive front-line fighter specializing in SMGs and rapid assaults.",
+    loadout: { primaryWeapon: 'Vector', secondaryWeapon: 'Glock 19', lethal: 'Throwing Knife', tactical: 'Stun Grenade' },
+    bio: "Fast and aggressive, Valkyrie excels at flanking and overwhelming opponents with speed.",
     preferredRole: 'Assault',
-  },
-  {
-    id: 'p007',
-    name: 'Kenji "Oni"',
-    surname: 'Tanaka',
-    playerCode: 'P007',
-    email: 'k.tanaka@operator.net',
-    phone: '555-0107',
-    pin: '777777',
-    age: 31,
-    idNumber: 'G56567878',
-    role: 'player',
-    callsign: 'Oni',
-    rank: MOCK_RANK_TIERS[1].subranks[0], // Veteran I (1100 XP)
-    status: 'Active',
-    avatarUrl: 'https://cdn.pixabay.com/photo/2016/11/29/08/59/man-1868552_1280.jpg',
-    stats: { kills: 95, deaths: 65, headshots: 20, gamesPlayed: 12, xp: 1100 },
-    badges: [MOCK_BADGES[2]],
-    legendaryBadges: [],
-    loadout: { primaryWeapon: 'AK-47', secondaryWeapon: 'Combat Knife', lethal: 'Throwing Knife', tactical: 'Flashbang' },
-    bio: "A disciplined and honorable warrior, deadly with an AK-47.",
-    preferredRole: 'Assault',
-  },
-  {
-    id: 'p008',
-    name: 'Chloe "Echo"',
-    surname: 'Williams',
-    playerCode: 'P008',
-    email: 'c.williams@operator.net',
-    phone: '555-0108',
-    pin: '888888',
-    age: 33,
-    idNumber: 'H90901212',
-    role: 'player',
-    callsign: 'Echo',
-    rank: MOCK_RANK_TIERS[4].subranks[0], // Master I (4500 XP)
-    status: 'On Leave',
-    avatarUrl: 'https://cdn.pixabay.com/photo/2015/07/09/23/15/woman-839352_1280.jpg',
-    stats: { kills: 250, deaths: 90, headshots: 110, gamesPlayed: 28, xp: 4500 },
-    badges: [MOCK_BADGES[0], MOCK_BADGES[1], MOCK_BADGES[2]],
-    legendaryBadges: [MOCK_LEGENDARY_BADGES[1]],
-    loadout: { primaryWeapon: 'L86 LSW', secondaryWeapon: '.50 GS Pistol', lethal: 'C4', tactical: 'Heartbeat Sensor' },
-    bio: "Expert in intel gathering and communications. Can turn the tide with the right information.",
-    preferredRole: 'Support',
-  },
-  {
-    id: 'p009',
-    name: 'David "Breach"',
-    surname: 'Chen',
-    playerCode: 'P009',
-    email: 'd.chen@operator.net',
-    phone: '555-0109',
-    pin: '999999',
-    age: 27,
-    idNumber: 'I34345656',
-    role: 'player',
-    callsign: 'Breach',
-    rank: MOCK_RANK_TIERS[0].subranks[4], // Rookie V (800 XP)
-    status: 'Active',
-    avatarUrl: 'https://cdn.pixabay.com/photo/2017/08/01/01/33/beanie-2562646_1280.jpg',
-    stats: { kills: 115, deaths: 95, headshots: 35, gamesPlayed: 19, xp: 800 },
-    badges: [MOCK_BADGES[1], MOCK_BADGES[2]],
-    legendaryBadges: [],
-    loadout: { primaryWeapon: 'P90', secondaryWeapon: 'X12 Pistol', lethal: 'Frag Grenade', tactical: 'Stim' },
-    bio: "Demolitions expert. If there's a wall in the way, he'll make a door.",
-    preferredRole: 'Assault',
-  },
-  {
-    id: 'p010',
-    name: 'Sofia "Spectre"',
-    surname: 'Petrova',
-    playerCode: 'P010',
-    email: 's.petrova@operator.net',
-    phone: '555-0110',
-    pin: '101010',
-    age: 19,
-    idNumber: 'J78789090',
-    role: 'player',
-    callsign: 'Spectre',
-    rank: UNRANKED_SUB_RANK, // (150 XP, < 10 games)
-    status: 'Active',
-    avatarUrl: 'https://cdn.pixabay.com/photo/2018/04/27/03/50/portrait-3353699_1280.jpg',
-    stats: { kills: 2, deaths: 5, headshots: 0, gamesPlayed: 2, xp: 150 },
-    badges: [],
-    legendaryBadges: [],
-    loadout: { primaryWeapon: 'MP5', secondaryWeapon: 'Glock 19', lethal: 'Frag Grenade', tactical: 'Smoke Grenade' },
-    bio: "Newest recruit, still learning the ropes.",
-    preferredRole: 'Support',
   },
 ];
 
+// FIX: Create and export MOCK_PLAYERS for use in AuthContext
+export const MOCK_PLAYERS: Player[] = MOCK_PLAYERS_CORE.map(playerCore => ({
+    ...playerCore,
+    matchHistory: MOCK_ALL_MATCH_HISTORY.filter(mh => mh.playerId === playerCore.id),
+    xpAdjustments: MOCK_ALL_XP_ADJUSTMENTS.filter(xa => xa.playerId === playerCore.id),
+}));
+
+// FIX: Create and export MOCK_ADMIN for use in AuthContext and DataContext
 export const MOCK_ADMIN: Admin = {
-  id: 'a001',
-  name: 'General Shepherd',
-  email: 'bosjoltactical@gmail.com',
-  role: 'admin',
-  clearanceLevel: 5,
-  avatarUrl: 'https://cdn.pixabay.com/photo/2018/03/13/11/13/program-3222397_1280.jpg',
+    id: 'admin01',
+    name: 'Admin',
+    role: 'admin',
+    email: 'bosjoltactical@gmail.com',
+    clearanceLevel: 9,
+    avatarUrl: 'https://img.icons8.com/ios-filled/100/charlie-chaplin.png',
 };
 
-// FIX: Update MOCK_EVENTS to be of the composed GameEvent[] type, including attendees and live stats.
-const composedEvents: GameEvent[] = initialEventsCore.map(eventCore => {
-    const attendees = MOCK_ALL_ATTENDEES.filter(a => a.eventId === eventCore.id);
-    const liveStats: Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>> = {};
-    
-    if (eventCore.status === 'Completed') {
-        attendees.forEach(attendee => {
-            if (attendee.stats) {
-                liveStats[attendee.playerId] = attendee.stats;
-            }
-        });
-    }
-    
-    return {
-        ...eventCore,
-        attendees,
-        liveStats,
-    };
-});
-export const MOCK_EVENTS: GameEvent[] = composedEvents;
-
-export const MOCK_BRIEFINGS: Briefing[] = [
-    {
-        id: 'b001',
-        title: 'Intel Update: Verdansk',
-        author: 'General Shepherd',
-        date: '2023-10-27T09:00:00Z',
-        content: 'Latest satellite imagery shows increased enemy activity in the downtown area. Suspected movement of high-value targets. All teams be advised, threat level is elevated. Standard ROE are in effect, but command authorizes escalated response if engaged by hostile armor. Secondary objective is to secure the broadcast tower to disrupt enemy communications. Be aware of potential sniper nests in the surrounding high-rises. Extraction will be via helo at the stadium, pending signal from team lead.',
-        summary: 'Increased enemy activity in downtown Verdansk. High-value targets suspected. Threat level is high.'
-    }
+// FIX: Create and export missing mock data constants
+export const MOCK_VOUCHERS: Voucher[] = [
+    { id: 'v01', code: 'LOYALTY50', discount: 50, type: 'fixed', description: 'R50 off for loyal players', status: 'Active', usageLimit: 10, redemptions: [] },
+    { id: 'v02', code: 'NEWBIE10', discount: 10, type: 'percentage', description: '10% off for new players', status: 'Active', redemptions: [] },
 ];
 
-export const MOCK_VOUCHERS_CORE: VoucherCore[] = [
-    { id: 'v01', code: 'NEWPLAYER100', discount: 100, type: 'fixed', description: 'Welcome discount for new players', status: 'Active', perUserLimit: 1 },
-    { id: 'v02', code: 'GHOSTMVP', discount: 100, type: 'percentage', description: 'Free entry for MVP performance', status: 'Active', assignedToPlayerId: 'p002', usageLimit: 1 },
-    { id: 'v03', code: 'LOYALTY50', discount: 50, type: 'fixed', description: 'Loyalty discount', status: 'Depleted', usageLimit: 1 },
-    { id: 'v04', code: 'WEEKLY10', discount: 10, type: 'percentage', description: '10% off any event fee this week', status: 'Active', usageLimit: 20, perUserLimit: 1 },
-];
-
-export const MOCK_ALL_VOUCHER_REDEMPTIONS: VoucherRedemption[] = [
-    { id: 'vr01', voucherId: 'v03', playerId: 'p001', eventId: 'e000', date: '2023-10-20T18:00:00Z' }
-];
-
-
-export const MOCK_RAFFLES_CORE: RaffleCore[] = [
-    {
-        id: 'r01',
-        name: 'End of Year Gear Giveaway',
-        location: 'Verdansk CQB Arena',
-        contactPhone: '555-RAFFLE',
-        drawDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Active',
-        createdAt: new Date().toISOString(),
-        prizes: [
-            { id: 'p01-1', name: 'Custom M4A1 AEG', place: 1 },
-            { id: 'p01-2', name: 'Tactical Vest Package', place: 2 },
-            { id: 'p01-3', name: '5 Free Game Entries', place: 3 },
-        ],
-    },
-    {
-        id: 'r02',
-        name: 'Summer Sidearm Raffle',
-        location: 'Al Mazrah Desert Outpost',
-        contactPhone: '555-RAFFLE',
-        drawDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Completed',
-        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-        prizes: [
-            { id: 'p02-1', name: 'Custom Glock 17 GBB', place: 1 },
-        ],
-    }
-];
-
-export const MOCK_ALL_RAFFLE_TICKETS: RaffleTicketDoc[] = [
-    { id: 't01-1', raffleId: 'r01', code: 'RAFFLE-GEAR-001', playerId: 'p001', purchaseDate: new Date().toISOString(), paymentStatus: 'Paid (Card)'},
-    { id: 't01-2', raffleId: 'r01', code: 'RAFFLE-GEAR-002', playerId: 'p003', purchaseDate: new Date().toISOString(), paymentStatus: 'Paid (Cash)'},
-    { id: 't02-1', raffleId: 'r02', code: 'RAFFLE-SIDEARM-001', playerId: 'p001', purchaseDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(), paymentStatus: 'Paid (Card)'},
-    { id: 't02-2', raffleId: 'r02', code: 'RAFFLE-SIDEARM-002', playerId: 'p002', purchaseDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(), paymentStatus: 'Paid (Card)'},
-    { id: 't02-3', raffleId: 'r02', code: 'RAFFLE-SIDEARM-003', playerId: 'p004', purchaseDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(), paymentStatus: 'Paid (Cash)'},
-];
-
-export const MOCK_ALL_RAFFLE_WINNERS: RaffleWinnerDoc[] = [
-    { id: 'w01', raffleId: 'r02', prizeId: 'p02-1', ticketId: 't02-2', playerId: 'p002' }
-];
-
-export const MOCK_SPONSORS: Sponsor[] = [
-    { id: 's01', name: 'Tactical Gear Co.', logoUrl: 'https://img.logoipsum.com/296.svg', email: 'contact@tacticalgear.com', phone: '555-0201', website: 'https://tacticalgear.com' },
-    { id: 's02', name: 'Adrenaline Fuel', logoUrl: 'https://img.logoipsum.com/297.svg', email: 'sponsorship@adrenaline.com', phone: '555-0202', website: 'https://adrenaline.com' },
-    { id: 's03', name: 'Vortex Optics', logoUrl: 'https://img.logoipsum.com/298.svg', email: 'info@vortex.com', phone: '555-0203', website: 'https://vortex.com' },
-    { id: 's04', name: '5.11 Tactical', logoUrl: 'https://img.logoipsum.com/299.svg', email: 'support@511.com', phone: '555-0204', website: 'https://511.com' },
+export const MOCK_TRANSACTIONS: Transaction[] = [
+    { id: 't01', date: '2023-10-20T19:00:00Z', type: 'Event Revenue', description: 'Event Fee: Operation Kingslayer', amount: 350, relatedEventId: 'e000', relatedPlayerId: 'p001', paymentStatus: 'Paid (Card)'},
+    { id: 't02', date: '2023-10-20T19:00:00Z', type: 'Rental Revenue', description: 'Rental: M4A1 Rental Package', amount: 250, relatedEventId: 'e000', relatedPlayerId: 'p001', paymentStatus: 'Paid (Card)'},
+    { id: 't03', date: '2023-10-20T19:01:00Z', type: 'Event Revenue', description: 'Event Fee: Operation Kingslayer', amount: 350, relatedEventId: 'e000', relatedPlayerId: 'p002', paymentStatus: 'Paid (Cash)'},
 ];
 
 export const MOCK_LOCATIONS: Location[] = [
-    {
-        id: 'loc01',
-        name: 'Verdansk CQB Arena',
-        description: 'A multi-level indoor arena designed for intense close-quarters combat. Features multiple breach points, tight corridors, and a central command room objective.',
-        address: '101 Industrial Zone, Verdansk',
-        imageUrls: [
-            'https://images.pexels.com/photos/8996323/pexels-photo-8996323.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-            'https://images.pexels.com/photos/7984333/pexels-photo-7984333.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-            'https://images.pexels.com/photos/8354523/pexels-photo-8354523.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-        ],
-        pinLocationUrl: 'https://maps.app.goo.gl/abcdef1234567890',
-        contactInfo: { phone: '555-FIELD-01', email: 'bookings@verdanskcqb.com' }
-    },
-    {
-        id: 'loc02',
-        name: 'Al Mazrah Desert Outpost',
-        description: 'A sprawling outdoor desert field with a mix of village ruins, open terrain, and a fortified central outpost. Ideal for sniper engagements and large-scale objective games.',
-        address: 'Route 66, Al Mazrah Desert',
-        imageUrls: [
-            'https://images.pexels.com/photos/8354527/pexels-photo-8354527.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-            'https://images.pexels.com/photos/163822/soldier-airsoft-gun-weapon-163822.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-        ],
-        pinLocationUrl: 'https://maps.app.goo.gl/fedcba0987654321',
-        contactInfo: { phone: '555-FIELD-02' }
-    }
+    { id: 'loc01', name: 'Verdansk CQB Arena', description: 'Indoor CQB arena with multiple rooms and corridors.', address: '123 Fake St, Nelspruit', imageUrls: [], pinLocationUrl: 'https://maps.app.goo.gl/12345', contactInfo: { phone: '555-0001' } },
+    { id: 'loc02', name: 'Al Mazrah Desert Outpost', description: 'Outdoor desert field with various structures.', address: '456 Another Rd, Nelspruit', imageUrls: [], pinLocationUrl: 'https://maps.app.goo.gl/67890', contactInfo: { phone: '555-0002' } },
+    { id: 'loc03', name: 'Armory', description: 'Maintenance and storage facility.', address: '789 Base Rd, Nelspruit', imageUrls: [], pinLocationUrl: 'https://maps.app.goo.gl/abcde', contactInfo: {} },
 ];
 
-export const MOCK_CAROUSEL_MEDIA: CarouselMedia[] = [
-    { id: 'cm1', type: 'image', url: 'https://images.pexels.com/photos/8996323/pexels-photo-8996323.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
-    { id: 'cm2', type: 'image', url: 'https://images.pexels.com/photos/7984333/pexels-photo-7984333.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
-    { id: 'cm3', type: 'image', url: 'https://images.pexels.com/photos/8354527/pexels-photo-8354527.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' }
+export const MOCK_RAFFLES: Raffle[] = [
+    { id: 'raf01', name: 'End of Year Gear Raffle', location: 'Verdansk CQB Arena', contactPhone: '555-0100', prizes: [{id: 'prz01', name: 'Brand New M4A1', place: 1}], drawDate: '2023-12-20T18:00:00Z', status: 'Completed', createdAt: '2023-11-01T10:00:00Z', tickets: [], winners: [] },
+];
+
+export const MOCK_SPONSORS: Sponsor[] = [
+    { id: 'spn01', name: 'Tactical Coffee', logoUrl: 'https://img.icons8.com/color/96/coffee-to-go.png', website: 'https://example.com' },
+    { id: 'spn02', name: 'Operator Gear', logoUrl: 'https://img.icons8.com/color/96/tactical-helmet.png', website: 'https://example.com' },
 ];
 
 export const MOCK_SOCIAL_LINKS: SocialLink[] = [
-    { id: 'sl1', name: 'Facebook', url: 'https://facebook.com', iconUrl: 'https://img.icons8.com/fluent/48/000000/facebook-new.png' },
-    { id: 'sl2', name: 'Instagram', url: 'https://instagram.com', iconUrl: 'https://img.icons8.com/fluent/48/000000/instagram-new.png' },
-    { id: 'sl3', name: 'YouTube', url: 'https://youtube.com', iconUrl: 'https://img.icons8.com/fluent/48/000000/youtube-play.png' }
+    { id: 'soc01', name: 'Facebook', url: 'https://facebook.com', iconUrl: 'https://img.icons8.com/color/48/facebook-new.png' },
+    { id: 'soc02', name: 'Instagram', url: 'https://instagram.com', iconUrl: 'https://img.icons8.com/color/48/instagram-new--v1.png' },
 ];
 
-const FULL_MOCK_COMPANY_DETAILS: CompanyDetails = {
-    name: 'Bosjol Tactical Solutions',
-    address: '123 Tactical Way, Fort Bragg, NC 28307',
-    phone: '(123) 456-7890',
-    email: 'contact@bosjol-tactical.com',
-    website: 'https://www.bosjol-tactical.com',
-    regNumber: '2023/123456/07',
-    vatNumber: '9876543210',
-    logoUrl: 'https://i.ibb.co/HL2Lc6Rz/file-0000000043b061f7b655a0077343e063.png',
-    loginBackgroundUrl: 'https://images.pexels.com/photos/1297799/pexels-photo-1297799.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    loginAudioUrl: 'https://cdn.pixabay.com/audio/2022/08/03/audio_5a6914c622.mp3',
-    playerDashboardBackgroundUrl: '',
-    adminDashboardBackgroundUrl: '',
-    playerDashboardAudioUrl: '',
-    adminDashboardAudioUrl: '',
-    apkUrl: '',
-    apiServerUrl: '',
-    minimumSignupAge: 18,
-    bankInfo: {
-        bankName: 'Global Trust Bank',
-        accountNumber: '**** **** **** 1234',
-        routingNumber: '*********',
-    },
-    fixedEventRules: "1. All players must have approved eye protection (ANSI Z87.1 rated) worn at all times in designated areas.\n2. All weapons will be chronographed before play. Field limits will be strictly enforced.\n3. Do not blind fire. You must be able to see your target.\n4. Call your hits. Cheating will not be tolerated.\n5. Observe minimum engagement distances (MEDs) for high-powered replicas.\n6. No physical contact or verbal abuse between players.",
-};
-
-// Split mock company details for new data structure
-export const MOCK_COMPANY_CORE = {
-    name: FULL_MOCK_COMPANY_DETAILS.name,
-    address: FULL_MOCK_COMPANY_DETAILS.address,
-    phone: FULL_MOCK_COMPANY_DETAILS.phone,
-    email: FULL_MOCK_COMPANY_DETAILS.email,
-    website: FULL_MOCK_COMPANY_DETAILS.website,
-    regNumber: FULL_MOCK_COMPANY_DETAILS.regNumber,
-    vatNumber: FULL_MOCK_COMPANY_DETAILS.vatNumber,
-    apiServerUrl: FULL_MOCK_COMPANY_DETAILS.apiServerUrl,
-    bankInfo: FULL_MOCK_COMPANY_DETAILS.bankInfo,
-    minimumSignupAge: FULL_MOCK_COMPANY_DETAILS.minimumSignupAge,
-};
-
-export const MOCK_BRANDING_DETAILS = {
-    logoUrl: FULL_MOCK_COMPANY_DETAILS.logoUrl,
-    loginBackgroundUrl: FULL_MOCK_COMPANY_DETAILS.loginBackgroundUrl,
-    loginAudioUrl: FULL_MOCK_COMPANY_DETAILS.loginAudioUrl,
-    playerDashboardBackgroundUrl: FULL_MOCK_COMPANY_DETAILS.playerDashboardBackgroundUrl,
-    adminDashboardBackgroundUrl: FULL_MOCK_COMPANY_DETAILS.adminDashboardBackgroundUrl,
-    playerDashboardAudioUrl: FULL_MOCK_COMPANY_DETAILS.playerDashboardAudioUrl,
-    adminDashboardAudioUrl: FULL_MOCK_COMPANY_DETAILS.adminDashboardAudioUrl,
-};
-
-export const MOCK_CONTENT_DETAILS = {
-    fixedEventRules: FULL_MOCK_COMPANY_DETAILS.fixedEventRules,
-    apkUrl: FULL_MOCK_COMPANY_DETAILS.apkUrl,
-};
-
-export const MOCK_API_GUIDE: ApiGuideStep[] = [
-  { id: 'g1', title: 'The Problem: File Size Limits', content: "By default, this application stores all uploaded files (images, audio) directly in the Firebase Firestore database. While simple, Firestore has a hard limit of about **1MB per document**. Our direct-upload component is capped at 500KB to be safe.\n\nThis makes it impossible to use large, high-quality media like background videos or long audio briefings with the direct upload feature." },
-  { id: 'g2', title: 'The Solution: Your Own File Server', content: "This guide shows you how to run a small, simple server application on your own computer or a Virtual Private Server (VPS). This server's only job is to accept file uploads of **any type (images, videos, audio)** and save them to a local folder.\n\nWhen you configure this server's URL in the main Settings tab, the dashboard will automatically switch from storing files in the database to sending them to your server. This completely bypasses the file size limit, allowing for uploads up to 100MB (or whatever you configure)." },
-  { id: 'g3', title: 'Step 1: Get Server Files', content: "You need two files to create the server: `server.js` (the application logic) and `package.json` (the list of dependencies). You can download these as a ZIP file below, or create them in a new folder on your server PC (e.g., `C:\\bosjol-api-server`) and copy the contents into them.", codeBlock: `
-// server.js
-const express = require('express');
-const cors = require('cors');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const PORT = process.env.PORT || 3001;
-const UPLOADS_DIR = 'uploads';
-const app = express();
-app.use(cors());
-app.use(express.json());
-app.use(\`/\${UPLOADS_DIR}\`, express.static(path.join(__dirname, UPLOADS_DIR)));
-if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR);
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, UPLOADS_DIR),
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
-app.post('/upload', upload.single('file'), (req, res) => {
-    if (!req.file) return res.status(400).send({ error: 'No file was uploaded.' });
-    const API_BASE_URL = process.env.API_BASE_URL || \`http://localhost:\${PORT}\`;
-    const fileUrl = \`\${API_BASE_URL}/\${UPLOADS_DIR}/\${req.file.filename}\`;
-    res.status(200).send({ url: fileUrl });
-});
-app.get('/health', (req, res) => res.status(200).send({ status: 'ok' }));
-app.listen(PORT, () => console.log(\`✅ Bosjol API Server is running on http://localhost:\${PORT}\`));
-`, codeLanguage: 'javascript', fileName: 'server.js' },
-  { id: 'g4', title: '', content: '', codeBlock: `
-{
-  "name": "bosjol-tactical-api-server",
-  "version": "1.0.0",
-  "description": "A simple Express server for handling file uploads for the Bosjol Tactical Dashboard.",
-  "main": "server.js",
-  "scripts": { "start": "node server.js" },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "multer": "^1.4.5-lts.1"
-  }
-}
-`, codeLanguage: 'json', fileName: 'package.json' },
-  { id: 'g5', title: 'Step 2: Server Prerequisites', content: "You will need:\n- An always-on computer (like a home server or VPS).\n- [Node.js](https://nodejs.org/) (version 18+) installed.\n- [PM2](https://pm2.keymetrics.io/), a process manager to keep the server running. Install it globally by opening a terminal/command prompt and running: `npm install pm2 -g`" },
-  { id: 'g6', title: 'Step 3: Server Setup', content: "Navigate into the folder you created with your terminal and install the required dependencies.", codeBlock: `# Navigate to the project folder\ncd C:\\bosjol-api-server\n\n# Install dependencies\nnpm install`, codeLanguage: 'bash' },
-  { id: 'g7', title: 'Step 4: Running the Server', content: "Start the server using PM2. This runs it in the background and ensures it restarts automatically if the computer reboots.", codeBlock: `# Start the server\npm2 start server.js --name "bosjol-api"\n\n# Save the process list to run on startup\npm2 save\n\n# (Optional) To monitor server logs\npm2 logs bosjol-api`, codeLanguage: 'bash' },
-  { id: 'g8', title: 'Step 5: Expose to the Internet', content: "To make your local server securely accessible from anywhere, we'll use a free Cloudflare Tunnel.\n1. Follow the [Cloudflare Tunnels Quickstart Guide](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/create-local-tunnel/) to download, install, and log in with the `cloudflared` command-line tool.\n2. Once set up, run the tunnel command, pointing it to your local server's port (3001).", codeBlock: `cloudflared tunnel --url http://localhost:3001`, codeLanguage: 'bash' },
-  { id: 'g9', title: 'Step 6: Final Configuration', content: "Cloudflare will give you a public URL (e.g., `https://your-random-name.trycloudflare.com`). Go to the main 'Settings' tab in this dashboard, paste this public URL into the 'API Server URL' field, and click 'Save All Settings'. The app will now automatically use your server for all file uploads, and the status indicator in the footer should turn blue." }
+export const MOCK_CAROUSEL_MEDIA: CarouselMedia[] = [
+    { id: 'car01', type: 'image', url: 'https://images.pexels.com/photos/163822/soldier-airsoft-gun-weapon-163822.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
 ];
 
-export const MOCK_CREATOR_CORE: CreatorDetails = {
-    id: 'creatorDetails',
-    name: 'JSTYP.me',
-    email: 'jstypme@gmail.com',
-    whatsapp: '27695989427',
-    tagline: "Jason's solution to your problems, Yes me!",
-    bio: "Need a website, mobile app or custom tool get in touch today.. At Jstyp.me nothing is impossible, innovation is key and the mind is a open learning space. Here we build on what can not be done!",
-    logoUrl: 'https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png',
-    githubUrl: 'https://github.com/jstyp/bosjol-tactical-dashboard',
-    sourceCodeZipUrl: 'https://github.com/jstyp/bosjol-tactical-api-server/archive/refs/heads/main.zip',
-};
+export const MOCK_API_GUIDE: ApiGuideStep[] = [{id: 'step1', title: 'Welcome', content: 'This is a mock guide.'}];
 
-// FIX: Export composed mock data arrays to be used throughout the application.
-export const MOCK_PLAYERS: Player[] = MOCK_PLAYERS_CORE.map(p => ({
-    ...p,
-    matchHistory: MOCK_ALL_MATCH_HISTORY.filter(mh => mh.playerId === p.id),
-    xpAdjustments: MOCK_ALL_XP_ADJUSTMENTS.filter(xa => xa.playerId === p.id),
-}));
+export const MOCK_COMPANY_CORE = { name: 'Bosjol Tactical', address: 'Nelspruit, SA', phone: '123-456-7890', email: 'bosjoltactical@gmail.com', website: 'https://example.com', regNumber: '123/456', vatNumber: '7890123', apiServerUrl: '', bankInfo: { bankName: 'FNB', accountNumber: '12345', routingNumber: '67890' }, minimumSignupAge: 16 };
+export const MOCK_BRANDING_DETAILS = { logoUrl: 'https://i.ibb.co/HL2Lc6Rz/file-0000000043b061f7b655a0077343e063.png', loginBackgroundUrl: 'https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png', loginAudioUrl: '', playerDashboardBackgroundUrl: '', adminDashboardBackgroundUrl: '', playerDashboardAudioUrl: '', adminDashboardAudioUrl: '' };
+export const MOCK_CONTENT_DETAILS = { fixedEventRules: 'Standard rules apply.', apkUrl: '' };
 
-export const MOCK_VOUCHERS: Voucher[] = MOCK_VOUCHERS_CORE.map(vc => ({
-    ...vc,
-    redemptions: MOCK_ALL_VOUCHER_REDEMPTIONS.filter(vr => vr.voucherId === vc.id),
-}));
-
-export const MOCK_RAFFLES: Raffle[] = MOCK_RAFFLES_CORE.map(rc => ({
-    ...rc,
-    tickets: MOCK_ALL_RAFFLE_TICKETS.filter(rt => rt.raffleId === rc.id),
-    winners: MOCK_ALL_RAFFLE_WINNERS.filter(rw => rw.raffleId === rc.id),
-}));
-
-
-// Generate detailed transactions from mock data
-const generateMockTransactions = (): Transaction[] => {
-    const transactions: Transaction[] = [];
-
-    // Inventory Expenses
-    MOCK_INVENTORY.forEach((item, index) => {
-        transactions.push({
-            id: `txn-exp-inv-${item.id}`,
-            date: item.purchaseDate || new Date(Date.now() - (365 - index * 30) * 24 * 60 * 60 * 1000).toISOString(),
-            type: 'Expense',
-            description: `Purchase: ${item.stock}x ${item.name}`,
-            amount: (item.purchasePrice || 0) * item.stock,
-            relatedInventoryId: item.id,
-        });
-    });
-
-    // Event & Rental Revenue from completed events
-    initialEventsCore.filter(e => e.status === 'Completed').forEach(event => {
-        MOCK_ALL_ATTENDEES.filter(a => a.eventId === event.id).forEach(attendee => {
-            // Event Fee Transaction
-            transactions.push({
-                id: `txn-rev-event-${event.id}-${attendee.playerId}`,
-                date: event.date,
-                type: 'Event Revenue',
-                description: `Event Fee: ${event.title}`,
-                amount: event.gameFee,
-                relatedEventId: event.id,
-                relatedPlayerId: attendee.playerId,
-                paymentStatus: attendee.paymentStatus,
-            });
-
-            // Rental Fee Transactions
-            (attendee.rentedGearIds || []).forEach(gearId => {
-                const gearItem = MOCK_INVENTORY.find(i => i.id === gearId);
-                if (gearItem) {
-                    transactions.push({
-                        id: `txn-rev-rental-${event.id}-${attendee.playerId}-${gearId}`,
-                        date: event.date,
-                        type: 'Rental Revenue',
-                        description: `Rental: ${gearItem.name}`,
-                        amount: gearItem.salePrice,
-                        relatedEventId: event.id,
-                        relatedPlayerId: attendee.playerId,
-                        relatedInventoryId: gearId,
-                        paymentStatus: attendee.paymentStatus,
-                    });
-                }
-            });
-        });
-    });
-
-    // Mock Retail Sales
-    transactions.push({
-        id: `txn-rev-retail-1`,
-        date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        type: 'Retail Revenue',
-        description: 'Sale: Extra Magazine',
-        amount: MOCK_INVENTORY.find(i => i.id === 'g03')?.salePrice || 50,
-        relatedInventoryId: 'g03',
-        relatedPlayerId: 'p003',
-        paymentStatus: 'Paid (Card)',
-    });
-     transactions.push({
-        id: `txn-rev-retail-2`,
-        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        type: 'Retail Revenue',
-        description: 'Sale: Smoke Grenade x5',
-        amount: (MOCK_INVENTORY.find(i => i.id === 'g06')?.salePrice || 80) * 5,
-        relatedInventoryId: 'g06',
-        relatedPlayerId: 'p001',
-        paymentStatus: 'Paid (Cash)',
-    });
-
-
-    return transactions;
-};
-
-
-export const MOCK_TRANSACTIONS: Transaction[] = generateMockTransactions();
+export const MOCK_CREATOR_CORE: CreatorDetails = { id: 'creator', name: 'JSTYP.me', email: 'jstypme@gmail.com', whatsapp: '+27725213550', tagline: 'Code. Create. Conquer.', bio: 'Full-stack developer...', logoUrl: 'https://i.ibb.co/0phm4WGq/image-removebg-preview.png', githubUrl: 'https://github.com/JSTYP/bosjol-tactical-dashboard' };

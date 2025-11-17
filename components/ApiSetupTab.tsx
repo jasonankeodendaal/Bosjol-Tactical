@@ -1,19 +1,50 @@
 
 
 
-import React from 'react';
+
+
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { DashboardCard } from './DashboardCard';
 import { CodeBracketIcon, InformationCircleIcon } from './icons/Icons';
 import type { CreatorDetails } from '../types';
 import { Button } from './Button';
 
-const CodeBlock: React.FC<{ children: React.ReactNode, language?: string }> = ({ children, language = 'bash' }) => (
-    <pre className={`bg-zinc-900 p-4 rounded-lg border border-zinc-700 text-sm text-gray-200 overflow-x-auto font-mono`}>
-        <code className={`language-${language}`}>
-            {children}
-        </code>
-    </pre>
-);
+const CodeBlock: React.FC<{ children: React.ReactNode, language?: string, fileName?: string }> = ({ children, language = 'bash', fileName }) => {
+    // Fix: useState was not defined. Imported from 'react'.
+    const [copyStatus, setCopyStatus] = useState('Copy');
+
+    const handleCopy = () => {
+        if (typeof children === 'string') {
+            navigator.clipboard.writeText(children.trim());
+            setCopyStatus('Copied!');
+            setTimeout(() => setCopyStatus('Copy'), 2000);
+        }
+    };
+    
+    return (
+        <div className="bg-zinc-900 rounded-lg border border-zinc-700 my-2">
+             {fileName && (
+                <div className="px-4 py-2 border-b border-zinc-700 text-xs text-gray-400 font-mono">
+                    {fileName}
+                </div>
+            )}
+            <div className="relative p-4">
+                 <pre className="text-sm text-gray-200 overflow-x-auto font-mono">
+                    <code className={`language-${language}`}>
+                        {children}
+                    </code>
+                </pre>
+                <button
+                    className="absolute top-3 right-3 bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-semibold py-1 px-2 rounded-md transition-colors"
+                    onClick={handleCopy}
+                >
+                    {copyStatus}
+                </button>
+            </div>
+        </div>
+    );
+};
 
 const serverJsCode = `
 // server.js
@@ -123,16 +154,38 @@ interface ApiSetupTabProps {
     creatorDetails: CreatorDetails;
 }
 
+const StepCard: React.FC<{ number?: number, title: string, children: React.ReactNode }> = ({ number, title, children }) => {
+    return (
+        // Fix: motion was not defined. Imported from 'framer-motion'.
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.5 }}
+            className="border border-zinc-800/80 rounded-lg shadow-lg overflow-hidden bg-zinc-900/50"
+        >
+            <header className="flex items-center p-4 border-b border-red-600/30 bg-black/20">
+                {number && (
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-600 text-white font-bold text-lg mr-4 flex-shrink-0">{number}</div>
+                )}
+                <h3 className="font-bold text-xl tracking-wider uppercase text-gray-200">{title}</h3>
+            </header>
+            <div className="p-5 text-gray-300 text-sm space-y-3 leading-relaxed">
+                {children}
+            </div>
+        </motion.div>
+    );
+};
+
 export const ApiSetupTab: React.FC<ApiSetupTabProps> = ({ creatorDetails }) => {
     return (
         <DashboardCard title="External API Server Setup" icon={<CodeBracketIcon className="w-6 h-6" />}>
             <div className="p-6 space-y-6">
-                <div>
-                    <h3 className="text-xl font-bold text-red-400 mb-2">The Concept: Your PC as a Private Cloud</h3>
-                    <p className="text-gray-300 mb-3">
+                <StepCard title="The Concept: Your PC as a Private Cloud">
+                    <p>
                         Have you ever wanted to use a local folder on a dedicated, always-on PC as your global storage for all uploads? This guide shows you exactly how to achieve that.
                     </p>
-                    <div className="bg-amber-900/40 border border-amber-700 text-amber-200 p-4 rounded-lg space-y-4">
+                    <div className="bg-amber-900/40 border border-amber-700 text-amber-200 p-4 rounded-lg space-y-4 !mt-4">
                         <div>
                             <h4 className="font-bold text-lg flex items-center gap-2"><InformationCircleIcon className="w-5 h-5"/>How It Works (In Simple Terms)</h4>
                             <p className="text-sm mt-1">
@@ -151,33 +204,30 @@ export const ApiSetupTab: React.FC<ApiSetupTabProps> = ({ creatorDetails }) => {
                             </p>
                         </div>
                     </div>
-                </div>
+                </StepCard>
                 
-                <div>
-                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 1: Get Server Files</h3>
-                     <p className="text-gray-300 mb-3">
+                <StepCard number={1} title="Get Server Files">
+                     <p>
                         You need two files to create the server: <code className="text-sm bg-zinc-700 p-1 rounded">server.js</code> (the application logic) and <code className="text-sm bg-zinc-700 p-1 rounded">package.json</code> (the list of dependencies). Create these two files in a new folder on your server PC (e.g., <code className="text-sm bg-zinc-700 p-1 rounded">C:\bosjol-api-server</code>) and copy the contents below into them.
                     </p>
-                     <CodeBlock language="json">
-                        {packageJsonCode}
-                    </CodeBlock>
-                    <CodeBlock language="javascript">
+                    <CodeBlock language="javascript" fileName="server.js">
                         {serverJsCode}
                     </CodeBlock>
-                </div>
+                     <CodeBlock language="json" fileName="package.json">
+                        {packageJsonCode}
+                    </CodeBlock>
+                </StepCard>
 
-                <div>
-                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 2: Server Environment Prerequisites</h3>
-                    <ul className="list-disc list-inside text-gray-300 space-y-1">
+                <StepCard number={2} title="Server Environment Prerequisites">
+                    <ul className="list-disc list-inside space-y-2 pl-2">
                         <li>A server environment (a VPS from providers like DigitalOcean/Vultr, a home server, or a Raspberry Pi).</li>
                         <li><a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline">Node.js</a> (version 18 or newer) installed on your server.</li>
                         <li>A process manager like <a href="https://pm2.keymetrics.io/" target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline">PM2</a> to keep the server running reliably. Install it globally with: <code className="text-sm bg-zinc-700 p-1 rounded">npm install pm2 -g</code></li>
                     </ul>
-                </div>
+                </StepCard>
 
-                <div>
-                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 3: Server Project Setup</h3>
-                    <p className="text-gray-300 mb-2">Navigate into the folder you created with your terminal and install the required dependencies.</p>
+                <StepCard number={3} title="Server Project Setup">
+                    <p>Navigate into the folder you created with your terminal and install the required dependencies.</p>
                     <CodeBlock language="bash">
                         {`# Navigate to the project folder you created
 cd C:\\bosjol-api-server
@@ -185,11 +235,10 @@ cd C:\\bosjol-api-server
 # Install all dependencies listed in package.json
 npm install`}
                     </CodeBlock>
-                </div>
+                </StepCard>
 
-                <div>
-                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 4: Running the Server with PM2</h3>
-                    <p className="text-gray-300 mb-2">Start the server using PM2. This runs it in the background, monitors it, and restarts it automatically if it crashes or the server reboots.</p>
+                <StepCard number={4} title="Running the Server with PM2">
+                    <p>Start the server using PM2. This runs it in the background, monitors it, and restarts it automatically if it crashes or the server reboots.</p>
                     <CodeBlock language="bash">
                         {`# Start the server and give it a name
 pm2 start server.js --name "bosjol-api"
@@ -200,24 +249,23 @@ pm2 save
 # To monitor logs
 pm2 logs bosjol-api`}
                     </CodeBlock>
-                    <p className="text-gray-300 my-2">Your server is now running locally on your machine, typically on port 3001.</p>
-                </div>
+                    <p className="!mt-2">Your server is now running locally on your machine, typically on port 3001.</p>
+                </StepCard>
 
-                <div>
-                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 5: Expose to the Internet (Cloudflare Tunnels)</h3>
-                    <p className="text-gray-300 mb-2">To make your local server securely accessible from the dashboard, the recommended method is using a free Cloudflare Tunnel. This avoids complex router configuration and is more secure.</p>
-                    <ul className="list-decimal list-inside text-gray-300 space-y-2 pl-4">
+                <StepCard number={5} title="Expose to the Internet (Cloudflare Tunnels)">
+                    <p>To make your local server securely accessible from the dashboard, the recommended method is using a free Cloudflare Tunnel. This avoids complex router configuration and is more secure.</p>
+                    <ol className="list-decimal list-inside space-y-2 pl-4">
                         <li>Follow the <a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/create-local-tunnel/" target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline">Cloudflare Tunnels Quickstart Guide</a> to install <code className="text-sm bg-zinc-700 p-1 rounded">cloudflared</code> and log in.</li>
                         <li>Run the tunnel command pointing to your local server's port. This creates a secure, public URL.</li>
                          <CodeBlock language="bash">cloudflared tunnel --url http://localhost:3001</CodeBlock>
                         <li>Cloudflare will output a public URL (e.g., <code className="text-sm bg-zinc-700 p-1 rounded">https://your-random-name.trycloudflare.com</code>). **Copy this URL.**</li>
-                    </ul>
-                </div>
+                    </ol>
+                </StepCard>
 
-                <div>
-                    <h3 className="text-xl font-bold text-red-400 mb-2">Step 6: Final Configuration</h3>
-                     <p className="text-gray-300 mb-2">Go to the main <span className="font-bold">'Settings'</span> tab in this dashboard. Paste the public URL you copied from Cloudflare into the <span className="font-bold">'API Server URL'</span> field and click 'Save All Settings'. The app will now automatically use your self-hosted server for all new file uploads.</p>
-                </div>
+                <StepCard number={6} title="Final Configuration">
+                     <p>Go to the main <span className="font-bold">'Settings'</span> tab in this dashboard. Paste the public URL you copied from Cloudflare into the <span className="font-bold">'API Server URL'</span> field and click 'Save All Settings'. The app will now automatically use your self-hosted server for all new file uploads.</p>
+                </StepCard>
+
                  <div className="mt-6 pt-6 border-t border-zinc-800">
                     <h3 className="text-xl font-bold text-red-400 mb-2">Dashboard Source Code</h3>
                      <p className="text-gray-300 mb-3">

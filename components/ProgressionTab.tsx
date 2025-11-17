@@ -1,9 +1,10 @@
 
+
 import React, { useState, useContext } from 'react';
 import type { Rank, Tier, Badge, LegendaryBadge, GamificationRule, GamificationSettings } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
-import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, PlusIcon, XIcon } from './icons/Icons';
+import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, PlusIcon, XIcon, InformationCircleIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { ImageUpload } from './ImageUpload';
 import { DashboardCard } from './DashboardCard';
@@ -332,7 +333,29 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
             {editingRank && <RankEditorModal rank={editingRank} tiers={tiers} onClose={() => setEditingRank(null)} onSave={handleSaveRank} />}
             {deletingRank && <Modal isOpen={true} onClose={() => setDeletingRank(null)} title="Confirm Deletion"><p>Delete "{deletingRank.name}" rank?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingRank(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteRank}>Delete</Button></div></Modal>}
 
-            {/* Main Content */}
+             {/* Main Content */}
+            <DashboardCard title="How Player Progression Works" icon={<InformationCircleIcon className="w-6 h-6 text-blue-400" />}>
+                <div className="p-6 space-y-4 text-sm text-gray-300 leading-relaxed">
+                    <div>
+                        <h4 className="font-bold text-lg text-red-400 mb-2">Automated Rank Assignment</h4>
+                        <p>A player's rank is determined by their total accumulated Rank Points (XP). The system automatically assigns them the highest rank whose minimum XP requirement they meet. For example, if "Sergeant" requires 1000 XP and "Captain" requires 8000 XP, a player with 7999 XP will be a Sergeant.</p>
+                        <p className="mt-2"><strong>Unranked Status:</strong> New players remain "Unranked" until they have participated in a minimum number of games (currently set to 10), regardless of their XP total.</p>
+                    </div>
+                    <div className="pt-4 border-t border-zinc-700/50">
+                        <h4 className="font-bold text-lg text-red-400 mb-2">Automated XP & Badge Awards</h4>
+                        <ul className="list-disc list-inside space-y-2">
+                            <li><strong>Event Finalization:</strong> When you finalize a completed event from its management page, the system automatically calculates and awards XP to each attendee based on their performance.</li>
+                            <li><strong>XP Calculation:</strong> The total XP awarded is a sum of the event's base 'Participation XP' plus performance XP based on the live stats you entered (kills, headshots, etc.). The value for each action is configured in the 'Gamification Settings' card.</li>
+                            <li><strong>Badge Unlocks:</strong> The system continuously checks if a player's stats meet the criteria for any 'Standard Badges'. When a threshold is met (e.g., 50 headshots), the badge is awarded automatically.</li>
+                        </ul>
+                    </div>
+                     <div className="pt-4 border-t border-zinc-700/50">
+                        <h4 className="font-bold text-lg text-red-400 mb-2">The Player Experience</h4>
+                        <p>When a player logs in, the system checks for any changes since their last session. If they have earned a new rank or new badges, a <strong>promotion pop-up</strong> will automatically appear to celebrate their achievements. All rank and XP changes are reflected instantly on the global leaderboard.</p>
+                    </div>
+                </div>
+            </DashboardCard>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-6">
                      <DashboardCard title="Tier Management" icon={<ShieldCheckIcon className="w-6 h-6" />}>

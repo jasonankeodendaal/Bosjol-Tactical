@@ -49,7 +49,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({ events, inventory }) => 
                     <div className="space-y-2 max-h-96 overflow-y-auto">
                         {completedEvents.length > 0 ? completedEvents.map(event => {
                             const eventRevenue = event.attendees
-                                .filter(a => a.paymentStatus.startsWith('Paid'))
+                                .filter(a => a.paymentStatus?.startsWith('Paid'))
                                 .reduce((sum) => sum + event.gameFee, 0);
                             return (
                                 <div key={event.id} className="bg-zinc-800/50 p-3 rounded-md flex justify-between items-center">

@@ -178,6 +178,7 @@ export interface DataContextType {
     deleteDoc: (collectionName: string, docId: string) => Promise<void>;
     
     deleteAllData: () => Promise<void>;
+    deleteAllPlayers: () => Promise<void>;
     restoreFromBackup: (backupData: any) => Promise<void>;
     seedInitialData: () => Promise<void>;
     seedCollection: (collectionName: SeedableCollection) => Promise<void>;
@@ -490,6 +491,32 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
     
+    const deleteAllPlayers = async () => {
+        if (!IS_LIVE_DATA) {
+            console.log("Resetting players mock data in memory...");
+            setPlayers([]);
+            return;
+        }
+        
+        try {
+            console.log("Deleting all players...");
+            const snapshot = await db.collection('players').get();
+            if (snapshot.empty) {
+                console.log("No players to delete.");
+                return;
+            }
+            const batch = db.batch();
+            snapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+            console.log(`All ${snapshot.size} players have been deleted.`);
+        } catch (error) {
+            console.error("Error deleting all players: ", error);
+            throw error;
+        }
+    };
+
     const restoreFromBackup = async (backupData: any) => {
         const allCollections = [...Object.keys(MOCK_DATA_MAP), 'companyDetails', 'brandingDetails', 'contentDetails', 'creatorDetails'];
         
@@ -604,6 +631,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         deleteDoc,
 
         deleteAllData,
+        deleteAllPlayers,
         restoreFromBackup,
         seedInitialData,
         seedCollection,

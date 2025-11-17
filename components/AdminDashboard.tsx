@@ -31,6 +31,7 @@ import { AuthContext } from '../auth/AuthContext';
 
 export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' | 'seedInitialData' | 'updatePlayerDoc' | 'addEventDoc' | 'deleteEventDoc' | 'updateEventDoc'> & {
     onDeleteAllData: () => void;
+    deleteAllPlayers: () => Promise<void>;
     addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<void>;
 };
 
@@ -510,6 +511,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         carouselMedia={props.carouselMedia}
                         setCarouselMedia={props.setCarouselMedia}
                         onDeleteAllData={props.onDeleteAllData}
+                        deleteAllPlayers={props.deleteAllPlayers}
                         addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
                         restoreFromBackup={restoreFromBackup}
                     />}

@@ -18,6 +18,7 @@ interface SettingsTabProps {
     carouselMedia: CarouselMedia[];
     setCarouselMedia: (d: CarouselMedia[] | ((p: CarouselMedia[]) => CarouselMedia[])) => void;
     onDeleteAllData: () => void;
+    deleteAllPlayers: () => Promise<void>;
     addDoc: <T extends {}>(collectionName: string, data: T) => Promise<void>;
     updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
     deleteDoc: (collectionName: string, docId: string) => Promise<void>;
@@ -47,6 +48,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     carouselMedia,
     setCarouselMedia,
     onDeleteAllData,
+    deleteAllPlayers,
     addDoc, updateDoc, deleteDoc,
     restoreFromBackup,
 }) => {
@@ -62,6 +64,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const [backupFile, setBackupFile] = useState<File | null>(null);
     const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false);
     const [restoreConfirmText, setRestoreConfirmText] = useState('');
+
+    const [isDeletePlayersConfirmOpen, setIsDeletePlayersConfirmOpen] = useState(false);
+    const [deletePlayersConfirmText, setDeletePlayersConfirmText] = useState('');
     
     // This effect syncs local form state with context state, but ONLY if the form isn't dirty.
     // This prevents external updates from overwriting local unsaved changes.
@@ -215,6 +220,18 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             setIsRestoreConfirmOpen(false);
             setBackupFile(null);
             setRestoreConfirmText('');
+        }
+    };
+    
+    const handleDeleteAllPlayers = async () => {
+        try {
+            await deleteAllPlayers();
+            alert('All player data has been successfully deleted.');
+        } catch (error) {
+            alert(`Failed to delete players: ${(error as Error).message}`);
+        } finally {
+            setIsDeletePlayersConfirmOpen(false);
+            setDeletePlayersConfirmText('');
         }
     };
 
@@ -475,7 +492,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             )}
 
             <DashboardCard title="Danger Zone" icon={<ExclamationTriangleIcon className="w-6 h-6 text-red-500"/>}>
-                <div className="p-6">
+                <div className="p-6 space-y-4">
                     <div className="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg flex flex-col sm:flex-row justify-between items-center">
                         <div>
                             <h4 className="font-bold">Delete All Transactional Data</h4>
@@ -486,8 +503,42 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             Delete All Data
                         </Button>
                     </div>
+                    <div className="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg flex flex-col sm:flex-row justify-between items-center">
+                        <div>
+                            <h4 className="font-bold">Delete All Players</h4>
+                            <p className="text-sm">This will permanently delete ONLY the players from the database. All other data like events, inventory, and settings will remain. This action cannot be undone.</p>
+                        </div>
+                        <Button onClick={() => setIsDeletePlayersConfirmOpen(true)} variant="danger" className="mt-3 sm:mt-0 sm:ml-4 flex-shrink-0">
+                            <TrashIcon className="w-5 h-5 mr-2" />
+                            Delete All Players
+                        </Button>
+                    </div>
                 </div>
             </DashboardCard>
+            
+            {isDeletePlayersConfirmOpen && (
+                <Modal isOpen={true} onClose={() => setIsDeletePlayersConfirmOpen(false)} title="Confirm Deletion of All Players">
+                    <p className="text-amber-300">You are about to <span className="font-bold">permanently delete all player data</span>. This includes their stats, match history, and profiles.</p>
+                    <p className="text-red-400 font-bold mt-2">This action is irreversible.</p>
+                    <p className="text-gray-300 mt-4">To confirm, please type "DELETE PLAYERS" in the box below.</p>
+                    <Input 
+                        value={deletePlayersConfirmText}
+                        onChange={(e) => setDeletePlayersConfirmText(e.target.value)}
+                        className="mt-2"
+                        placeholder='Type "DELETE PLAYERS"'
+                    />
+                    <div className="mt-6">
+                        <Button
+                            variant="danger"
+                            className="w-full"
+                            disabled={deletePlayersConfirmText !== 'DELETE PLAYERS'}
+                            onClick={handleDeleteAllPlayers}
+                        >
+                            Confirm and Delete All Players
+                        </Button>
+                    </div>
+                </Modal>
+            )}
 
             <div className="mt-6 sticky bottom-6 z-20">
                 <Button onClick={handleSave} disabled={!isDirty || isSaving} className="w-full py-3 text-lg shadow-lg">

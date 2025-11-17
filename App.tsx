@@ -529,6 +529,7 @@ const AppContent: React.FC = () => {
                                 <AdminDashboard
                                     {...data}
                                     onDeleteAllData={data.deleteAllData}
+                                    deleteAllPlayers={data.deleteAllPlayers}
                                     addPlayerDoc={(playerData) => addDoc('players', playerData)}
                                 />
                             )}

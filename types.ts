@@ -376,5 +376,4 @@ export interface CreatorDetails {
     logoUrl: string;
     githubUrl: string;
     sourceCodeZipUrl?: string;
-    apiSetupGuide: ApiGuideStep[];
 }

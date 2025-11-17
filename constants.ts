@@ -690,7 +690,7 @@ export const MOCK_SOCIAL_LINKS: SocialLink[] = [
     { id: 'sl3', name: 'YouTube', url: 'https://youtube.com', iconUrl: 'https://img.icons8.com/fluent/48/000000/youtube-play.png' }
 ];
 
-export const MOCK_COMPANY_DETAILS: CompanyDetails = {
+const FULL_MOCK_COMPANY_DETAILS: CompanyDetails = {
     name: 'Bosjol Tactical Solutions',
     address: '123 Tactical Way, Fort Bragg, NC 28307',
     phone: '(123) 456-7890',
@@ -716,7 +716,36 @@ export const MOCK_COMPANY_DETAILS: CompanyDetails = {
     fixedEventRules: "1. All players must have approved eye protection (ANSI Z87.1 rated) worn at all times in designated areas.\n2. All weapons will be chronographed before play. Field limits will be strictly enforced.\n3. Do not blind fire. You must be able to see your target.\n4. Call your hits. Cheating will not be tolerated.\n5. Observe minimum engagement distances (MEDs) for high-powered replicas.\n6. No physical contact or verbal abuse between players.",
 };
 
-const MOCK_API_GUIDE: ApiGuideStep[] = [
+// Split mock company details for new data structure
+export const MOCK_COMPANY_CORE = {
+    name: FULL_MOCK_COMPANY_DETAILS.name,
+    address: FULL_MOCK_COMPANY_DETAILS.address,
+    phone: FULL_MOCK_COMPANY_DETAILS.phone,
+    email: FULL_MOCK_COMPANY_DETAILS.email,
+    website: FULL_MOCK_COMPANY_DETAILS.website,
+    regNumber: FULL_MOCK_COMPANY_DETAILS.regNumber,
+    vatNumber: FULL_MOCK_COMPANY_DETAILS.vatNumber,
+    apiServerUrl: FULL_MOCK_COMPANY_DETAILS.apiServerUrl,
+    bankInfo: FULL_MOCK_COMPANY_DETAILS.bankInfo,
+    minimumSignupAge: FULL_MOCK_COMPANY_DETAILS.minimumSignupAge,
+};
+
+export const MOCK_BRANDING_DETAILS = {
+    logoUrl: FULL_MOCK_COMPANY_DETAILS.logoUrl,
+    loginBackgroundUrl: FULL_MOCK_COMPANY_DETAILS.loginBackgroundUrl,
+    loginAudioUrl: FULL_MOCK_COMPANY_DETAILS.loginAudioUrl,
+    playerDashboardBackgroundUrl: FULL_MOCK_COMPANY_DETAILS.playerDashboardBackgroundUrl,
+    adminDashboardBackgroundUrl: FULL_MOCK_COMPANY_DETAILS.adminDashboardBackgroundUrl,
+    playerDashboardAudioUrl: FULL_MOCK_COMPANY_DETAILS.playerDashboardAudioUrl,
+    adminDashboardAudioUrl: FULL_MOCK_COMPANY_DETAILS.adminDashboardAudioUrl,
+};
+
+export const MOCK_CONTENT_DETAILS = {
+    fixedEventRules: FULL_MOCK_COMPANY_DETAILS.fixedEventRules,
+    apkUrl: FULL_MOCK_COMPANY_DETAILS.apkUrl,
+};
+
+export const MOCK_API_GUIDE: ApiGuideStep[] = [
   { id: 'g1', title: 'The Problem: File Size Limits', content: "By default, this application stores all uploaded files (images, audio) directly in the Firebase Firestore database. While simple, Firestore has a hard limit of about **1MB per document**. Our direct-upload component is capped at 500KB to be safe.\n\nThis makes it impossible to use large, high-quality media like background videos or long audio briefings with the direct upload feature." },
   { id: 'g2', title: 'The Solution: Your Own File Server', content: "This guide shows you how to run a small, simple server application on your own computer or a Virtual Private Server (VPS). This server's only job is to accept file uploads of **any type (images, videos, audio)** and save them to a local folder.\n\nWhen you configure this server's URL in the main Settings tab, the dashboard will automatically switch from storing files in the database to sending them to your server. This completely bypasses the file size limit, allowing for uploads up to 100MB (or whatever you configure)." },
   { id: 'g3', title: 'Step 1: Get Server Files', content: "You need two files to create the server: `server.js` (the application logic) and `package.json` (the list of dependencies). You can download these as a ZIP file below, or create them in a new folder on your server PC (e.g., `C:\\bosjol-api-server`) and copy the contents into them.", codeBlock: `
@@ -771,7 +800,7 @@ app.listen(PORT, () => console.log(\`✅ Bosjol API Server is running on http://
   { id: 'g9', title: 'Step 6: Final Configuration', content: "Cloudflare will give you a public URL (e.g., `https://your-random-name.trycloudflare.com`). Go to the main 'Settings' tab in this dashboard, paste this public URL into the 'API Server URL' field, and click 'Save All Settings'. The app will now automatically use your server for all file uploads, and the status indicator in the footer should turn blue." }
 ];
 
-export const MOCK_CREATOR_DETAILS: CreatorDetails = {
+export const MOCK_CREATOR_CORE: CreatorDetails = {
     id: 'creatorDetails',
     name: 'JSTYP.me',
     email: 'jstypme@gmail.com',
@@ -781,7 +810,6 @@ export const MOCK_CREATOR_DETAILS: CreatorDetails = {
     logoUrl: 'https://i.ibb.co/TDC9Xn1N/JSTYP-me-Logo.png',
     githubUrl: 'https://github.com/jstyp/bosjol-tactical-dashboard',
     sourceCodeZipUrl: 'https://github.com/jstyp/bosjol-tactical-api-server/archive/refs/heads/main.zip',
-    apiSetupGuide: MOCK_API_GUIDE
 };
 
 

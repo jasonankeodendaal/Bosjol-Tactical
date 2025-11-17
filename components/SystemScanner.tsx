@@ -1,4 +1,5 @@
 
+
 import React, { useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { DataContext, IS_LIVE_DATA, DataContextType } from '../data/DataContext';
 import { Button } from './Button';
@@ -192,7 +193,8 @@ export const SystemScanner: React.FC = () => {
 
     const { healthScore, errorCount, warningCount, noticeCount } = useMemo(() => {
         // Flatten the array of arrays. `reduce` is used for broader environment compatibility over `flat()`.
-        const all: CheckResult[] = Object.values(results).reduce<CheckResult[]>((acc, arr) => acc.concat(arr), []);
+        // FIX: Cast the result of Object.values to the correct type to guide TypeScript's inference inside the reduce function.
+        const all: CheckResult[] = (Object.values(results) as CheckResult[][]).reduce((acc, arr) => acc.concat(arr), []);
         if (all.length === 0) return { healthScore: 0, errorCount: 0, warningCount: 0, noticeCount: 0 };
 
         const passes = all.filter(c => c.status === 'pass').length;

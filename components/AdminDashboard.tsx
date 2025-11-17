@@ -51,6 +51,7 @@ const NewPlayerModal: React.FC<{
         age: '',
         idNumber: '',
     });
+    const [isSaving, setIsSaving] = useState(false);
 
     const handleSave = async () => {
         // Validation
@@ -67,6 +68,8 @@ const NewPlayerModal: React.FC<{
             alert(`Player must be at least ${companyDetails.minimumSignupAge} years old to sign up.`);
             return;
         }
+        
+        setIsSaving(true);
 
         // Auto-generate playerCode based on initials
         const initials = (formData.name.charAt(0) + formData.surname.charAt(0)).toUpperCase();
@@ -119,6 +122,8 @@ const NewPlayerModal: React.FC<{
         } catch (error) {
             console.error("Failed to create new player:", error);
             alert(`Error: Could not create player. Please check the console for details. Message: ${(error as Error).message}`);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -138,7 +143,9 @@ const NewPlayerModal: React.FC<{
                 <Input label="6-Digit PIN" type="password" value={formData.pin} onChange={e => setFormData(f => ({ ...f, pin: e.target.value.replace(/\D/g, '') }))} maxLength={6} />
             </div>
             <div className="mt-6">
-                <Button className="w-full" onClick={handleSave}>Create Player</Button>
+                <Button className="w-full" onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? 'Creating...' : 'Create Player'}
+                </Button>
             </div>
         </Modal>
     );

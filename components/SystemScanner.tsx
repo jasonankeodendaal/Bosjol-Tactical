@@ -191,11 +191,9 @@ export const SystemScanner: React.FC = () => {
     }, [runChecks]);
 
     const { healthScore, errorCount, warningCount, noticeCount } = useMemo(() => {
-        // FIX: The use of .flat() was causing a type inference issue in some TypeScript environments.
-        // Replaced with .reduce() to robustly flatten the array of arrays while maintaining type safety.
-        // FIX: The initial value `[]` for reduce is inferred as `never[]`, causing a type conflict.
-        // Explicitly setting the generic type for `reduce` to `CheckResult[]` resolves this.
-        const all: CheckResult[] = Object.values(results).reduce<CheckResult[]>((acc, val) => acc.concat(val), []);
+        // FIX: Replaced reduce with flat() for simplicity, as the type issue seems to be with reduce's inference.
+        // If flat() still causes issues, it indicates a broader tsconfig problem, but this is the modern way to flatten.
+        const all: CheckResult[] = Object.values(results).flat();
         if (all.length === 0) return { healthScore: 0, errorCount: 0, warningCount: 0, noticeCount: 0 };
 
         const passes = all.filter(c => c.status === 'pass').length;

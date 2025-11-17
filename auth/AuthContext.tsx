@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import type { User, AuthContextType, Player, Admin, CreatorDetails } from '../types';
 import { MOCK_PLAYERS, MOCK_ADMIN } from '../constants';
@@ -146,7 +147,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
         } else { // Mock player login
             const player = MOCK_PLAYERS.find(p => 
-                p.playerCode.toLowerCase() === cleanUsername.toLowerCase() && p.pin === cleanPassword
+                p.playerCode.toUpperCase() === cleanUsername.toUpperCase() && p.pin === cleanPassword
             );
             if (player) {
                 setUser(player);

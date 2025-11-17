@@ -1,6 +1,8 @@
+
+
 import React from 'react';
 import { DashboardCard } from './DashboardCard';
-import { InformationCircleIcon } from './icons/Icons';
+import { InformationCircleIcon, ExclamationTriangleIcon } from './icons/Icons';
 
 const StepCard: React.FC<{ number: number, title: string, children: React.ReactNode }> = ({ number, title, children }) => {
     return (
@@ -49,16 +51,22 @@ export const AboutTab: React.FC = () => {
                     </StepCard>
 
                     <StepCard number={3} title="Handling Video and Audio Files">
-                         <p>For video and audio, you cannot use image hosting sites. The best free options are platforms designed for media streaming.</p>
+                         <p>For video and audio, you cannot use image hosting sites. The best free options are platforms designed for media streaming. It's also recommended to use web-optimized formats like <strong>MP3</strong> over large formats like WAV for faster loading.</p>
                          <h4 className="font-semibold text-gray-200 mt-4 mb-2">Cloud Storage (Dropbox, Google Drive)</h4>
-                         <p>This is a reliable way to host any file type.</p>
-                         <ol className="list-decimal list-inside space-y-2 pl-4">
-                            <li>Upload your file to a cloud storage service like Dropbox or Google Drive.</li>
-                            <li>Create a public sharing link.</li>
-                            <li><strong>Crucially, you must modify the link to be a direct download link.</strong> This varies by service. For Dropbox, change <code className="text-sm bg-zinc-700 p-1 rounded">?dl=0</code> at the end of the URL to <code className="text-sm bg-zinc-700 p-1 rounded">?raw=1</code>. For Google Drive, the process is more complex and involves reformatting the URL.</li>
-                         </ol>
-                          <div className="mt-4 bg-blue-900/40 border border-blue-700 text-blue-200 p-3 rounded-lg text-sm">
-                            <p><span className="font-bold">Advanced Option:</span> If you have your own web hosting, you can upload files via FTP and get a direct link that way. This is the most reliable method.</p>
+                         <p>You can use services like Dropbox or Google Drive, but you must modify the sharing link to create a direct download link. This process varies by service.</p>
+                         
+                         <div className="mt-4 bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-sm">
+                            <div className="flex items-start">
+                                <ExclamationTriangleIcon className="w-8 h-8 mr-3 flex-shrink-0"/>
+                                <div>
+                                    <p className="font-bold">IMPORTANT: Cloud storage is NOT reliable for streaming.</p>
+                                    <p className="mt-1">Services like Google Drive often force a file **download** instead of allowing it to **stream**, even with a modified link. This will break the audio/video player in the application. For guaranteed playback, it is <span className="font-bold">highly recommended</span> to use the <strong>Direct Upload</strong> feature instead.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                         <div className="mt-4 bg-blue-900/40 border border-blue-700 text-blue-200 p-3 rounded-lg text-sm">
+                            <p><span className="font-bold">Advanced Option:</span> The most reliable method is to use a proper file hosting service (like Amazon S3, or your own web hosting via FTP) that provides true direct streaming links.</p>
                         </div>
                     </StepCard>
                 </div>

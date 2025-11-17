@@ -410,6 +410,17 @@ const AppContent: React.FC = () => {
 
 
     const handleEnterFrontPage = () => {
+        // Directly handle audio playback on user interaction to comply with autoplay policies
+        if (audioRef.current && companyDetails.loginAudioUrl) {
+            if (audioRef.current.src !== companyDetails.loginAudioUrl) {
+                audioRef.current.src = companyDetails.loginAudioUrl;
+            }
+            // Attempt to play, but catch errors silently. The useEffect will also try to play.
+            // This direct call on a user gesture is crucial for "unlocking" audio playback.
+            audioRef.current.play().catch(e => {
+                console.warn("Audio autoplay unlock attempt was blocked by browser. This is sometimes expected.", e);
+            });
+        }
         setShowFrontPage(false);
         setHelpTopic('login-screen');
     };

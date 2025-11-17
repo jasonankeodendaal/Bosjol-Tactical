@@ -1,4 +1,5 @@
 
+
 import React, { useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { DataContext, IS_LIVE_DATA, DataContextType } from '../data/DataContext';
 import { Button } from './Button';
@@ -37,14 +38,14 @@ interface ErrorLogEntry {
     status: 'fail' | 'warn';
 }
 
-const checkUrl = async (url: string | undefined): Promise<{ status: 'pass' | 'fail' | 'warn', detail: string }> => {
-    if (!url || typeof url !== 'string' || url.trim() === '') return { status: 'warn', detail: 'URL is not configured.' };
+const checkUrl = async (url: string | undefined, name: string): Promise<{ status: 'pass' | 'fail' | 'warn', detail: string }> => {
+    if (!url || typeof url !== 'string' || url.trim() === '') return { status: 'warn', detail: `URL for '${name}' is not configured.` };
     if (url.startsWith('data:')) return { status: 'pass', detail: 'URL is a valid data URI.' };
     try {
         const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
         return { status: 'pass', detail: 'URL is reachable.' };
     } catch (error) {
-        return { status: 'fail', detail: 'URL fetch failed, resource is unreachable.' };
+        return { status: 'fail', detail: `URL fetch for '${name}' failed, resource is unreachable.` };
     }
 };
 
@@ -172,6 +173,32 @@ service cloud.firestore {
 }
 `;
 
+const storageRulesContent = `
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Default deny all to secure your bucket.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+    
+    // Allow public read access to all files.
+    // This is simple and suitable for this app's public assets like logos and event images.
+    match /{allPaths=**} {
+      allow read: if true;
+    }
+    
+    // Allow any authenticated user (player, admin, creator) to upload/write files.
+    // For a production app with user-specific content, you would restrict this further,
+    // e.g., match /users/{userId}/{fileName} { allow write: if request.auth.uid == userId; }
+    match /{allPaths=**} {
+      allow write: if request.auth != null;
+    }
+  }
+}
+`;
+
 const CodeBlock: React.FC<{ children: React.ReactNode, title: string }> = ({ children, title }) => {
     const [copyStatus, setCopyStatus] = useState('Copy');
 
@@ -231,12 +258,18 @@ export const SystemScanner: React.FC = () => {
     const collectionData = dataContext ? JSON.stringify(dataContext[selectedCollection], null, 2) : "Data context not available.";
     const collectionNames = dataContext ? Object.keys(dataContext).filter(k => Array.isArray(dataContext[k as keyof DataContextType])) : [];
 
-
+    const [editedData, setEditedData] = useState(collectionData);
+    useEffect(() => { setEditedData(collectionData); }, [collectionData]);
+    
     const ALL_CHECKS = useCallback((): Check[] => {
         if (!dataContext) return [];
-        const { players, companyDetails, rankTiers, badges, gamificationSettings, events, inventory, creatorDetails, socialLinks, carouselMedia } = dataContext;
+        const { players, companyDetails, rankTiers, badges, gamificationSettings, events, inventory, creatorDetails, socialLinks, carouselMedia, transactions, signups, legendaryBadges, locations, suppliers, sponsors, vouchers, raffles } = dataContext;
 
         const collectionNames: (keyof DataContextType)[] = ['players', 'events', 'rankTiers', 'badges', 'legendaryBadges', 'gamificationSettings', 'sponsors', 'vouchers', 'inventory', 'suppliers', 'transactions', 'locations', 'raffles', 'socialLinks', 'carouselMedia'];
+        const playerIds = new Set(players.map(p => p.id));
+        const eventIds = new Set(events.map(e => e.id));
+        const supplierIds = new Set(suppliers.map(s => s.id));
+        const locationNames = new Set(locations.map(l => l.name));
 
         return [
             // --- CORE SYSTEM ---
@@ -252,7 +285,7 @@ export const SystemScanner: React.FC = () => {
             { category: 'Data & Storage', name: 'Firestore Read/Write Test', description: "Performs a live test to create, read, and delete a document.", checkFn: async () => { if (!IS_LIVE_DATA || !db) return { status: 'pass', detail: 'Skipped (mock data mode).' }; const t = db.collection('_health').doc(`test_${Date.now()}`); try { await t.set({s:'w'}); const d=await t.get(); if (!d.exists) throw new Error('Read fail.'); await t.delete(); return { status: 'pass', detail: 'CRUD operations successful.' }; } catch (e) { return { status: 'fail', detail: `R/W test failed: ${(e as Error).message}` }; } finally { try { await t.delete(); } catch (_) {} }}},
             ...collectionNames.map(name => ({
                 category: 'Data & Storage' as const,
-                name: `Collection: ${name} Loaded`,
+                name: `Collection: ${name}`,
                 description: `Checks if the '${name}' data collection has been loaded.`,
                 checkFn: async () => {
                     const data = dataContext[name];
@@ -260,26 +293,41 @@ export const SystemScanner: React.FC = () => {
                     return count > 0 ? { status: 'pass' as const, detail: `${count} item(s) loaded.` } : { status: 'warn' as const, detail: `Collection is empty or failed to load.`, fixable: true };
                 }
             })),
-            { category: 'Data & Storage', name: 'Orphaned Data Check', description: 'Checks for references to players that no longer exist.', checkFn: async () => { const playerIds = new Set(players.map(p => p.id)); const orphans: string[] = []; events.forEach(e => e.attendees.forEach(a => { if (!playerIds.has(a.playerId)) orphans.push(`event '${e.title}' attendee`); })); return orphans.length > 0 ? {status: 'warn', detail: `Found ${orphans.length} orphaned record(s).`} : {status: 'pass', detail: 'No orphaned data found.'}; }},
-
-            // --- API CONNECTIVITY ---
-            { category: 'API Connectivity', name: 'API Server Health', description: "Pings the external API server (if configured).", checkFn: async () => !companyDetails.apiServerUrl ? { status: 'info', detail: 'Not configured.' } : checkUrl(`${companyDetails.apiServerUrl}/health`) },
+             { category: 'Data & Storage', name: 'Duplicate Player Codes', description: 'Ensures every player has a unique Player Code.', checkFn: async () => { const codes = players.map(p => p.playerCode); const duplicates = codes.filter((c, i) => codes.indexOf(c) !== i); return duplicates.length > 0 ? {status: 'fail', detail: `Found duplicate codes: ${[...new Set(duplicates)].join(', ')}.`} : {status: 'pass', detail: 'All player codes are unique.'}; }},
+            { category: 'Data & Storage', name: 'Orphaned Data Check', description: 'Checks for references to players/events that no longer exist.', checkFn: async () => { const orphans: string[] = []; events.forEach(e => e.attendees.forEach(a => { if (!playerIds.has(a.playerId)) orphans.push(`event '${e.title}' attendee`); })); transactions.forEach(t => { if(t.relatedPlayerId && !playerIds.has(t.relatedPlayerId)) orphans.push(`Txn ${t.id} -> player`); if(t.relatedEventId && !eventIds.has(t.relatedEventId)) orphans.push(`Txn ${t.id} -> event`); }); signups.forEach(s => { if(!playerIds.has(s.playerId)) orphans.push(`Signup ${s.id} -> player`); if(!eventIds.has(s.eventId)) orphans.push(`Signup ${s.id} -> event`); }); return orphans.length > 0 ? {status: 'warn', detail: `Found ${orphans.length} orphaned record(s).`} : {status: 'pass', detail: 'No orphaned data found.'}; }},
+            { category: 'Data & Storage', name: 'Invalid Foreign Keys', description: 'Checks for broken links between collections (e.g., inventory to supplier).', checkFn: async () => { const invalids: string[] = []; inventory.forEach(i => { if(i.supplierId && !supplierIds.has(i.supplierId)) invalids.push(`Inv ${i.name} -> supplier`); }); events.forEach(e => { if(e.location && !locationNames.has(e.location)) invalids.push(`Event '${e.title}' -> location`); }); return invalids.length > 0 ? {status: 'warn', detail: `Found ${invalids.length} invalid reference(s).`} : {status: 'pass', detail: 'All foreign keys are valid.'}; }},
+            
+            // --- API & PERFORMANCE ---
+            { category: 'API & Performance', name: 'API Server Health', description: "Pings the external API server (if configured).", checkFn: async () => !companyDetails.apiServerUrl ? { status: 'info', detail: 'Not configured.' } : checkUrl(`${companyDetails.apiServerUrl}/health`, 'API Server') },
+            { category: 'API & Performance', name: 'Settings Document Size', description: "Checks the size of the companyDetails document against the 1MB Firestore limit.", checkFn: async () => { const size = new TextEncoder().encode(JSON.stringify(companyDetails)).length; const limit = 1048576; const percentage = (size / limit) * 100; if (percentage > 95) return {status: 'fail', detail: `${(size/1024).toFixed(0)} KB (${percentage.toFixed(0)}%). Critically close to 1MB limit. Use external URLs for media.`}; if (percentage > 75) return {status: 'warn', detail: `${(size/1024).toFixed(0)} KB (${percentage.toFixed(0)}%). Approaching 1MB limit.`}; return {status: 'pass', detail: `${(size/1024).toFixed(0)} KB (${percentage.toFixed(0)}% of 1MB limit).`}; }},
 
             // --- CONFIGURATION ---
             { category: 'Configuration', name: 'Company Details', description: "Ensures the main company configuration was loaded.", checkFn: async () => companyDetails?.name ? { status: 'pass', detail: `Loaded: ${companyDetails.name}` } : { status: 'fail', detail: 'Company details are missing.', fixable: true } },
             { category: 'Configuration', name: 'Creator Details', description: "Ensures the creator's details were loaded.", checkFn: async () => creatorDetails?.name ? { status: 'pass', detail: `Loaded: ${creatorDetails.name}` } : { status: 'warn', detail: 'Creator details are missing.', fixable: true } },
             
             // --- CONTENT & MEDIA ---
-            { category: 'Content & Media', name: 'Company Logo URL', description: "Validates that the company logo URL is accessible.", checkFn: () => checkUrl(companyDetails.logoUrl) },
-            { category: 'Content & Media', name: 'Login Background URL', description: "Checks the background media for the login screen.", checkFn: () => checkUrl(companyDetails.loginBackgroundUrl) },
-            { category: 'Content & Media', name: 'Login Audio URL', description: "Checks the audio file for the login screen.", checkFn: () => checkUrl(companyDetails.loginAudioUrl) },
-            { category: 'Content & Media', name: 'Player Dashboard BG', description: "Checks the player dashboard background image.", checkFn: () => checkUrl(companyDetails.playerDashboardBackgroundUrl) },
-            { category: 'Content & Media', name: 'Admin Dashboard BG', description: "Checks the admin dashboard background image.", checkFn: () => checkUrl(companyDetails.adminDashboardBackgroundUrl) },
-            
+            ...Object.entries({
+                'Company Logo': companyDetails.logoUrl,
+                'Login Background': companyDetails.loginBackgroundUrl,
+                'Login Audio': companyDetails.loginAudioUrl,
+                'Player Dashboard BG': companyDetails.playerDashboardBackgroundUrl,
+                'Admin Dashboard BG': companyDetails.adminDashboardBackgroundUrl,
+                'Player Dashboard Audio': companyDetails.playerDashboardAudioUrl,
+                'Admin Dashboard Audio': companyDetails.adminDashboardAudioUrl,
+                'Creator Logo': creatorDetails.logoUrl,
+            }).map(([name, url]) => ({ category: 'Content & Media' as const, name: `URL: ${name}`, description: `Validates that the URL for ${name} is accessible.`, checkFn: () => checkUrl(url, name) })),
+            ...socialLinks.flatMap(s => ({ category: 'Content & Media' as const, name: `URL: Social Icon '${s.name}'`, description: `Validates the icon URL for the ${s.name} social link.`, checkFn: () => checkUrl(s.iconUrl, `Social Icon '${s.name}'`) })),
+            ...carouselMedia.flatMap(c => ({ category: 'Content & Media' as const, name: `URL: Carousel Media`, description: `Validates the URL for a carousel media item.`, checkFn: () => checkUrl(c.url, `Carousel Media`) })),
+            ...sponsors.flatMap(s => ({ category: 'Content & Media' as const, name: `URL: Sponsor Logo '${s.name}'`, description: `Validates the logo URL for sponsor ${s.name}.`, checkFn: () => checkUrl(s.logoUrl, `Sponsor Logo '${s.name}'`) })),
+            ...rankTiers.flatMap(t => [{ category: 'Content & Media' as const, name: `URL: Tier Badge '${t.name}'`, description: `Validates the badge URL for tier ${t.name}.`, checkFn: () => checkUrl(t.tierBadgeUrl, `Tier Badge '${t.name}'`) }, ...t.subranks.map(s => ({ category: 'Content & Media' as const, name: `URL: Subrank Icon '${s.name}'`, description: `Validates the icon URL for subrank ${s.name}.`, checkFn: () => checkUrl(s.iconUrl, `Subrank Icon '${s.name}'`) }))]),
+            ...badges.flatMap(b => ({ category: 'Content & Media' as const, name: `URL: Badge Icon '${b.name}'`, description: `Validates the icon URL for badge ${b.name}.`, checkFn: () => checkUrl(b.iconUrl, `Badge Icon '${b.name}'`) })),
+            ...legendaryBadges.flatMap(b => ({ category: 'Content & Media' as const, name: `URL: Legendary Badge '${b.name}'`, description: `Validates the icon URL for legendary badge ${b.name}.`, checkFn: () => checkUrl(b.iconUrl, `Legendary Badge '${b.name}'`) })),
+            ...events.flatMap(e => ({ category: 'Content & Media' as const, name: `URL: Event Image '${e.title}'`, description: `Validates the image URL for event ${e.title}.`, checkFn: () => checkUrl(e.imageUrl, `Event Image '${e.title}'`) })),
+
             // --- CORE AUTOMATIONS ---
             { category: 'Core Automations', name: 'Event Finalization Logic', description: 'Simulates finalizing an event to verify XP calculations.', checkFn: async () => { try { const mockPlayer = { ...players[0], stats: { ...players[0].stats, xp: 1000 } }; const pXp = 50; const stats = { kills: 5, deaths: 2, headshots: 1 }; const getXp = (ruleId: string) => gamificationSettings.find(r => r.id === ruleId)?.xp ?? 0; const xpg = pXp + (stats.kills * getXp('g_kill')) + (stats.headshots * getXp('g_headshot')) + (stats.deaths * getXp('g_death')); const fXp = mockPlayer.stats.xp + xpg; const eXp = 1000 + 50 + (5 * 10) + (1 * 25) + (2 * -5); return fXp === eXp ? { status: 'pass', detail: `Correctly calc ${xpg} XP.` } : { status: 'fail', detail: `Calc error. Expected ${eXp}, got ${fXp}.` }; } catch (e) { return { status: 'fail', detail: `An exception occurred: ${(e as Error).message}` }; } } },
             { category: 'Core Automations', name: 'Rank Calculation Logic', description: 'Simulates player XP to verify correct rank assignment.', checkFn: async () => { if (!rankTiers || rankTiers.length === 0) return { status: 'warn', detail: 'Rank Tiers not loaded. Skipping check.' }; const mP = { stats: { xp: 750, gamesPlayed: 11 } } as Player; if (mP.stats.gamesPlayed < 10) return { status: 'fail', detail: 'Logic failed: Player with 11 games was considered unranked.' }; const allSubRanks = rankTiers.flatMap(t => t.subranks); const sR = [...allSubRanks].sort((a, b) => b.minXp - a.minXp); const r = sR.find(r => mP.stats.xp >= r.minXp) || UNRANKED_SUB_RANK; return r && r.name === "Rookie IV" ? { status: 'pass', detail: 'Correctly assigned Rookie IV.' } : { status: 'fail', detail: `Incorrect rank. Expected Rookie IV, got ${r?.name || 'undefined'}.` }; }},
-            { category: 'Core Automations', name: 'Rank Progression Gaps', description: 'Checks for large XP gaps between consecutive ranks.', checkFn: async () => { const allSubRanks = rankTiers.flatMap(t => t.subranks); const sortedRanks = [...allSubRanks].sort((a,b) => a.minXp - b.minXp); const gaps = []; for (let i=0; i < sortedRanks.length - 1; i++) { const gap = sortedRanks[i+1].minXp - sortedRanks[i].minXp; if (gap > 5000) gaps.push(`${sortedRanks[i].name} -> ${sortedRanks[i+1].name} (${gap} XP)`); } return gaps.length > 0 ? { status: 'warn', detail: `Large gaps found: ${gaps.join(', ')}` } : { status: 'pass', detail: 'No large XP gaps between ranks.' }; } },
+            { category: 'Core Automations', name: 'Rank Progression Sanity', description: 'Checks for sorting errors or large XP gaps between consecutive ranks.', checkFn: async () => { const allSubRanks = rankTiers.flatMap(t => t.subranks); const sortedRanks = [...allSubRanks].sort((a,b) => a.minXp - b.minXp); const errors = []; for (let i=0; i < sortedRanks.length - 1; i++) { if (sortedRanks[i].minXp >= sortedRanks[i+1].minXp) errors.push(`Sort error: ${sortedRanks[i].name} >= ${sortedRanks[i+1].name}.`); const gap = sortedRanks[i+1].minXp - sortedRanks[i].minXp; if (gap > 5000) errors.push(`Large gap: ${sortedRanks[i].name} -> ${sortedRanks[i+1].name} (${gap} XP)`); } return errors.length > 0 ? { status: 'warn', detail: `Issues found: ${errors.join('; ')}` } : { status: 'pass', detail: 'No sorting errors or large XP gaps found.' }; } },
         ];
     }, [dataContext, authContext]);
 
@@ -289,26 +337,28 @@ export const SystemScanner: React.FC = () => {
         setResults({});
         const allChecks = ALL_CHECKS();
 
-        const promises = allChecks.map(async (check) => {
-            const result = await check.checkFn();
-            return { ...check, ...result };
+        const initialResults: Record<string, CheckResult[]> = {};
+        allChecks.forEach(check => {
+            if (!initialResults[check.category]) initialResults[check.category] = [];
+            initialResults[check.category].push({ name: check.name, description: check.description, status: 'pending', detail: 'Waiting to run...' });
         });
+        setResults(initialResults);
 
-        const allResults = await Promise.all(promises);
-
-        const newResults: Record<string, CheckResult[]> = {};
         const newErrorLog: ErrorLogEntry[] = [];
 
-        allResults.forEach(res => {
-            if (!newResults[res.category]) newResults[res.category] = [];
-            newResults[res.category].push({ name: res.name, description: res.description, status: res.status, detail: res.detail, fixable: res.fixable });
-            if (res.status === 'fail' || res.status === 'warn') {
-                newErrorLog.push({ timestamp: new Date(), checkName: res.name, category: res.category, detail: res.detail, status: res.status });
-            }
-        });
+        for (const check of allChecks) {
+            setResults(prev => ({ ...prev, [check.category]: prev[check.category].map(c => c.name === check.name ? { ...c, status: 'running', detail: 'Scanning...' } : c) }));
 
-        setResults(newResults);
-        setErrorLog(newErrorLog.sort((a, b) => (a.status === 'fail' ? -1 : 1) - (b.status === 'fail' ? -1 : 1)));
+            const result = await check.checkFn();
+            const finalResult = { ...check, ...result };
+
+            setResults(prev => ({ ...prev, [finalResult.category]: prev[finalResult.category].map(c => c.name === finalResult.name ? { name: finalResult.name, description: finalResult.description, status: finalResult.status, detail: finalResult.detail, fixable: finalResult.fixable } : c) }));
+            
+            if (finalResult.status === 'fail' || finalResult.status === 'warn') {
+                newErrorLog.push({ timestamp: new Date(), checkName: finalResult.name, category: finalResult.category, detail: finalResult.detail, status: finalResult.status });
+                setErrorLog([...newErrorLog].sort((a, b) => (a.status === 'fail' ? -1 : 1) - (b.status === 'fail' ? -1 : 1)));
+            }
+        }
         setIsScanning(false);
     }, [ALL_CHECKS]);
 
@@ -318,11 +368,59 @@ export const SystemScanner: React.FC = () => {
         if (name === 'Company Details') dataContext.seedCollection('companyDetails');
         if (name === 'Creator Details') dataContext.seedCollection('creatorDetails');
         if (name.startsWith('Collection:')) {
-            const collectionName = name.replace('Collection: ', '').replace(' Loaded', '').trim() as keyof DataContextType;
+            const collectionName = name.replace('Collection: ', '').trim() as keyof DataContextType;
             dataContext.seedCollection(collectionName as any); // cast as any to bypass complex type issues
         }
         setTimeout(runChecks, 1000); // Re-run checks after attempting a fix
     };
+
+    const handleSaveRawData = async () => {
+        if (!confirm(`Are you sure you want to overwrite all data for the '${selectedCollection}' collection? This is a high-risk operation that cannot be undone.`)) {
+            return;
+        }
+        try {
+            const parsedData = JSON.parse(editedData);
+            if (!Array.isArray(parsedData)) {
+                throw new Error("Data must be a JSON array of objects.");
+            }
+            
+            if (IS_LIVE_DATA && db) {
+                const collectionRef = db.collection(selectedCollection as string);
+                
+                // First, delete all existing documents in the collection
+                const existingDocs = await collectionRef.get();
+                const deleteBatch = db.batch();
+                existingDocs.forEach(doc => deleteBatch.delete(doc.ref));
+                await deleteBatch.commit();
+
+                // Then, add all new documents
+                const addBatch = db.batch();
+                parsedData.forEach(doc => {
+                    if (doc.id) {
+                        const { id, ...data } = doc;
+                        const docRef = collectionRef.doc(id);
+                        addBatch.set(docRef, data);
+                    } else {
+                         addBatch.set(collectionRef.doc(), doc); // Add with auto-generated ID if none provided
+                    }
+                });
+                await addBatch.commit();
+                alert('Live data updated successfully. Data will refresh shortly.');
+            } else {
+                // Mock data update
+                const setter = (dataContext as any)[`set${selectedCollection.charAt(0).toUpperCase() + selectedCollection.slice(1)}`];
+                if (typeof setter === 'function') {
+                    setter(parsedData);
+                    alert('Mock data updated in memory. Changes will be lost on refresh.');
+                } else {
+                    throw new Error(`Setter function for ${selectedCollection} not found in DataContext.`);
+                }
+            }
+        } catch (e) {
+            alert(`Failed to save data: ${(e as Error).message}`);
+        }
+    };
+
 
     useEffect(() => {
         runChecks();
@@ -360,7 +458,7 @@ export const SystemScanner: React.FC = () => {
                 <div className="border-b border-zinc-700 mb-4">
                     <nav className="flex space-x-4 -mb-px" aria-label="Powerhouse Tabs">
                         <TabButton name="Live Status" active={activeTab === 'status'} onClick={() => setActiveTab('status')} />
-                        <TabButton name="Raw Data Viewer" active={activeTab === 'data'} onClick={() => setActiveTab('data')} />
+                        <TabButton name="Raw Data Editor" active={activeTab === 'data'} onClick={() => setActiveTab('data')} />
                         <TabButton name="Firebase Rules" active={activeTab === 'rules'} onClick={() => setActiveTab('rules')} />
                     </nav>
                 </div>
@@ -408,7 +506,7 @@ export const SystemScanner: React.FC = () => {
                                     <div className="lg:col-span-8">
                                         <h3 className="font-semibold text-gray-200 mb-3 text-lg">Thematic Reports</h3>
                                         <div className="space-y-2">
-                                            {Object.keys(results).map(category => {
+                                            {Object.keys(results).sort().map(category => {
                                                 const { score, hasFails, fails, warns } = getCategoryHealth(category);
                                                 const isOpen = expandedCategory === category;
                                                 return (
@@ -442,7 +540,9 @@ export const SystemScanner: React.FC = () => {
                                                             >
                                                                 <div className="p-4 space-y-3">
                                                                     {(results[category] || []).map(check => (
-                                                                        <div key={check.name} className="flex items-center gap-3 text-sm p-2 bg-zinc-800/50 rounded-md">
+                                                                        <div key={check.name} className="flex items-start gap-3 text-sm p-2 bg-zinc-800/50 rounded-md">
+                                                                            {check.status === 'pending' && <CogIcon className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />}
+                                                                            {check.status === 'running' && <CogIcon className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0 animate-spin" />}
                                                                             {check.status === 'pass' && <CheckCircleIcon className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />}
                                                                             {check.status === 'fail' && <XCircleIcon className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />}
                                                                             {check.status === 'warn' && <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />}
@@ -467,7 +567,7 @@ export const SystemScanner: React.FC = () => {
                                     </div>
 
                                     <div className="lg:col-span-4">
-                                        <h3 className="font-semibold text-gray-200 mb-3 text-lg">Top Issues</h3>
+                                        <h3 className="font-semibold text-gray-200 mb-3 text-lg">Activity Log</h3>
                                         <div className="bg-zinc-900/50 p-2 rounded-lg max-h-80 overflow-y-auto">
                                             {errorLog.length > 0 ? (
                                                 <ul className="space-y-1">
@@ -495,19 +595,23 @@ export const SystemScanner: React.FC = () => {
 
                         {activeTab === 'data' && (
                             <div>
-                                <h3 className="font-semibold text-gray-200 mb-3 text-lg">Raw Data Viewer</h3>
+                                <h3 className="font-semibold text-gray-200 mb-3 text-lg">Raw Data Editor</h3>
                                 <p className="text-sm text-amber-300 bg-amber-900/50 border border-amber-700 p-3 rounded-md mb-4">
                                     <ExclamationTriangleIcon className="inline w-5 h-5 mr-2" />
-                                    This is a read-only view of the live application state for the selected data collection.
+                                    <strong>High-Risk Area:</strong> Editing this data directly can break the application. Ensure your JSON is valid and all objects in an array have a unique `id` property. This tool will completely replace the existing collection data with your new content.
                                 </p>
                                 <select value={selectedCollection} onChange={e => setSelectedCollection(e.target.value as keyof DataContextType)} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
                                     {collectionNames.map(name => <option key={name} value={name}>{name}</option>)}
                                 </select>
-                                <pre className="text-xs text-gray-200 overflow-x-auto font-mono max-h-96 bg-zinc-900 p-4 rounded-lg border border-zinc-700 mt-4">
-                                    <code>
-                                        {collectionData}
-                                    </code>
-                                </pre>
+                                <textarea
+                                    value={editedData}
+                                    onChange={e => setEditedData(e.target.value)}
+                                    className="text-xs text-gray-200 w-full font-mono h-96 bg-zinc-950 p-4 rounded-lg border border-zinc-700 mt-4 focus:ring-red-500 focus:border-red-500"
+                                    spellCheck="false"
+                                />
+                                <Button onClick={handleSaveRawData} variant="danger" className="w-full mt-4">
+                                    Save Raw Data for '{selectedCollection}'
+                                </Button>
                             </div>
                         )}
                         
@@ -515,10 +619,13 @@ export const SystemScanner: React.FC = () => {
                            <div>
                                 <h3 className="font-semibold text-gray-200 mb-3 text-lg">Required Firebase Security Rules</h3>
                                 <p className="text-sm text-gray-400 mb-4">
-                                    For the application to function correctly with a live Firebase backend, these security rules must be published in your project's Firestore settings. They secure your data by preventing unauthorized access (e.g., players editing their own XP).
+                                    For the application to function correctly with a live Firebase backend, these security rules must be published in your project's Firestore and Storage settings. They secure your data by preventing unauthorized access (e.g., players editing their own XP).
                                 </p>
                                 <CodeBlock title="firestore.rules">
                                     {firestoreRulesContent}
+                                </CodeBlock>
+                                 <CodeBlock title="storage.rules">
+                                    {storageRulesContent}
                                 </CodeBlock>
                             </div>
                         )}

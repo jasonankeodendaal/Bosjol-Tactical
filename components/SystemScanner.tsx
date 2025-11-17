@@ -8,7 +8,6 @@ import { CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon, XCircl
 import { db, USE_FIREBASE, firebaseInitializationError, isFirebaseConfigured } from '../firebase';
 import type { Player, GamificationRule, Badge, GameEvent, Transaction } from '../types';
 import { UNRANKED_RANK } from '../constants';
-import { Modal } from './Modal';
 import { DashboardCard } from './DashboardCard';
 import { AuthContext } from '../auth/AuthContext';
 import { InfoTooltip } from './InfoTooltip';
@@ -100,7 +99,7 @@ export const SystemScanner: React.FC = () => {
     const [results, setResults] = useState<Record<string, CheckResult[]>>({});
     const [errorLog, setErrorLog] = useState<ErrorLogEntry[]>([]);
     const [isScanning, setIsScanning] = useState(false);
-    const [modalCategory, setModalCategory] = useState<string | null>(null);
+    const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
     const ALL_CHECKS = useCallback((): Check[] => {
         if (!dataContext) return [];
@@ -210,12 +209,13 @@ export const SystemScanner: React.FC = () => {
 
     const getCategoryHealth = (category: string) => {
         const checks = results[category] || [];
-        if (checks.length === 0) return { score: 100, hasFails: false };
+        if (checks.length === 0) return { score: 100, hasFails: false, fails: 0, warns: 0 };
         const passes = checks.filter(c => c.status === 'pass').length;
+        const fails = checks.filter(c => c.status === 'fail').length;
+        const warns = checks.filter(c => c.status === 'warn').length;
         const totalRelevant = checks.filter(c => c.status === 'pass' || c.status === 'fail').length;
-        const hasFails = checks.some(c => c.status === 'fail');
         const score = totalRelevant > 0 ? Math.round((passes / totalRelevant) * 100) : 100;
-        return { score, hasFails };
+        return { score, hasFails: fails > 0, fails, warns };
     };
 
     return (
@@ -253,19 +253,56 @@ export const SystemScanner: React.FC = () => {
                 <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <div className="lg:col-span-8">
                         <h3 className="font-semibold text-gray-200 mb-3 text-lg">Thematic Reports</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
                             {Object.keys(results).map(category => {
-                                const { score, hasFails } = getCategoryHealth(category);
+                                const { score, hasFails, fails, warns } = getCategoryHealth(category);
+                                const isOpen = expandedCategory === category;
                                 return (
-                                    <div key={category} className="bg-zinc-900/50 p-4 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <div className="relative w-10 h-10">
+                                    <div key={category} className="bg-zinc-900/50 rounded-lg border border-zinc-700/50 overflow-hidden">
+                                        <button className="w-full flex items-center p-4 text-left" onClick={() => setExpandedCategory(isOpen ? null : category)}>
+                                            <div className="relative w-10 h-10 mr-4">
                                                 <CircularProgress percentage={score} size={40} strokeWidth={4} colorClass={hasFails ? 'text-red-500' : score < 100 ? 'text-yellow-500' : 'text-green-500'} />
                                                 <div className="absolute inset-0 flex items-center justify-center text-xs font-bold">{score}%</div>
                                             </div>
-                                            <p className="font-semibold text-gray-300">{category}</p>
-                                        </div>
-                                        <Button size="sm" variant="secondary" className="w-full mt-3" onClick={() => setModalCategory(category)}>View details</Button>
+                                            <div className="flex-grow">
+                                                <p className="font-semibold text-gray-200">{category}</p>
+                                                <div className="flex items-center gap-3 text-xs text-gray-400">
+                                                    {fails > 0 && <span className="text-red-400">{fails} Error(s)</span>}
+                                                    {warns > 0 && <span className="text-yellow-400">{warns} Warning(s)</span>}
+                                                    {fails === 0 && warns === 0 && <span className="text-green-400">All Clear</span>}
+                                                </div>
+                                            </div>
+                                            <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
+                                                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                            </motion.div>
+                                        </button>
+                                        <AnimatePresence>
+                                        {isOpen && (
+                                            <motion.section
+                                                key="content"
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                                className="border-t border-zinc-700/50"
+                                            >
+                                                <div className="p-4 space-y-3">
+                                                    {(results[category] || []).map(check => (
+                                                        <div key={check.name} className="flex items-start gap-3 text-sm p-2 bg-zinc-800/50 rounded-md">
+                                                            {check.status === 'pass' && <CheckCircleIcon className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />}
+                                                            {check.status === 'fail' && <XCircleIcon className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />}
+                                                            {check.status === 'warn' && <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />}
+                                                            {check.status === 'info' && <InformationCircleIcon className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />}
+                                                            <div className="flex-grow">
+                                                                <p className="font-semibold text-gray-200">{check.name}</p>
+                                                                <p className="text-xs text-gray-400">{check.detail}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </motion.section>
+                                        )}
+                                        </AnimatePresence>
                                     </div>
                                 );
                             })}
@@ -297,26 +334,6 @@ export const SystemScanner: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <AnimatePresence>
-                {modalCategory && (
-                    <Modal isOpen={true} onClose={() => setModalCategory(null)} title={`Details: ${modalCategory}`}>
-                        <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4">
-                            {(results[modalCategory] || []).map(check => (
-                                <div key={check.name} className="flex items-start gap-3 text-sm p-3 bg-zinc-800/50 rounded-lg">
-                                    {check.status === 'pass' && <CheckCircleIcon className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />}
-                                    {check.status === 'fail' && <XCircleIcon className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />}
-                                    {check.status === 'warn' && <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />}
-                                    {check.status === 'info' && <InformationCircleIcon className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />}
-                                    <div className="flex-grow">
-                                        <p className="font-semibold text-gray-200">{check.name}</p>
-                                        <p className="text-xs text-gray-400">{check.detail}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </Modal>
-                )}
-            </AnimatePresence>
         </DashboardCard>
     );
 };

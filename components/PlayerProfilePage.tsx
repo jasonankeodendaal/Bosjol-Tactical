@@ -11,6 +11,7 @@ import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
+import { SendCredentialsModal } from './SendCredentialsModal';
 
 const getRankForPlayer = (player: Player, rankTiers: RankTier[]): SubRank => {
     if (player.stats.gamesPlayed < 10) return UNRANKED_SUB_RANK;
@@ -91,6 +92,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
     const [selectedLegendaryBadge, setSelectedLegendaryBadge] = useState('');
     const [showPin, setShowPin] = useState(false);
     const [isResettingPin, setIsResettingPin] = useState(false);
+    const [isSendingCredentials, setIsSendingCredentials] = useState(false);
     const dataContext = useContext(DataContext);
     
     useEffect(() => {
@@ -230,6 +232,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
         <div className="p-4 sm:p-6 lg:p-8">
             {isAwardingXp && <AwardXpModal onClose={() => setIsAwardingXp(false)} onSave={handleAwardXp} />}
             {isResettingPin && <ResetPinModal onClose={() => setIsResettingPin(false)} onSave={handleResetPin} />}
+            {isSendingCredentials && <SendCredentialsModal player={player} onClose={() => setIsSendingCredentials(false)} />}
             <header className="flex items-center mb-6">
                 <Button onClick={onBack} variant="secondary" size="sm" className="mr-4">
                     <ArrowLeftIcon className="w-5 h-5" />
@@ -284,7 +287,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                                         inputMode="numeric"
                                     />
                                     <Input label="Email" value={formData.email} onChange={e => setFormData(f => ({...f, email: e.target.value}))}/>
-                                    <Input label="Phone" value={formData.phone} onChange={e => setFormData(f => ({...f, phone: e.target.value}))}/>
+                                    <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({...f, phone: e.target.value}))}/>
                                     <Input label="Address" value={formData.address} onChange={e => setFormData(f => ({...f, address: e.target.value}))}/>
                                     <textarea placeholder="Bio" value={formData.bio} onChange={e => setFormData(p => ({...p, bio: e.target.value}))} rows={3} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
                                      <div>
@@ -335,6 +338,11 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                                     <div className="flex gap-2 pt-2">
                                         <Button variant="secondary" onClick={() => setIsEditing(true)} className="w-full">Edit Profile</Button>
                                         <Button onClick={() => setIsAwardingXp(true)} className="w-full">Award XP</Button>
+                                    </div>
+                                    <div className="pt-2">
+                                        <Button variant="secondary" onClick={() => setIsSendingCredentials(true)} className="w-full">
+                                            Send Credentials
+                                        </Button>
                                     </div>
                                 </>
                             )}

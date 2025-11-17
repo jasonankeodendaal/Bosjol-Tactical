@@ -11,6 +11,17 @@ export const Input: React.FC<InputProps> = ({ label, className = '', tooltip, ic
   const baseClasses = "w-full bg-zinc-900 border border-zinc-700 rounded-lg py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-300";
   const withIconClasses = icon ? "pl-10 pr-4" : "px-4";
 
+  const { onChange, type } = props;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (type === 'tel' && e.target.value.startsWith('0')) {
+      e.target.value = '+27' + e.target.value.substring(1);
+    }
+    if (onChange) {
+      onChange(e);
+    }
+  };
+
   const inputElement = (
       <div className="relative">
         {icon && (
@@ -18,7 +29,7 @@ export const Input: React.FC<InputProps> = ({ label, className = '', tooltip, ic
             {icon}
           </div>
         )}
-        <input className={`${baseClasses} ${withIconClasses} ${className}`} {...props} />
+        <input className={`${baseClasses} ${withIconClasses} ${className}`} {...props} onChange={handleChange} />
       </div>
   );
   

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
-import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee, Signup, CompanyDetails } from '../types';
+import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee, Signup, CompanyDetails, LegendaryBadge } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -15,6 +15,7 @@ interface ManageEventPageProps {
     players: Player[];
     inventory: InventoryItem[];
     gamificationSettings: GamificationSettings;
+    legendaryBadges: LegendaryBadge[];
     onBack: () => void;
     onSave: (eventData: GameEvent) => void;
     onDelete: (eventId: string) => void;
@@ -37,15 +38,15 @@ const defaultEvent: Omit<GameEvent, 'id'> = {
     rules: '',
     participationXp: 50,
     attendees: [],
-    // FIX: Removed absentPlayers as it's not a valid property of GameEvent
     status: 'Upcoming',
     gameFee: 0,
     gearForRent: [],
+    eventBadges: [],
     liveStats: {},
 };
 
 export const ManageEventPage: React.FC<ManageEventPageProps> = ({
-    event, players, inventory, gamificationSettings, onBack, onSave, onDelete, setPlayers, setTransactions, signups, setDoc, deleteDoc, companyDetails
+    event, players, inventory, gamificationSettings, legendaryBadges, onBack, onSave, onDelete, setPlayers, setTransactions, signups, setDoc, deleteDoc, companyDetails
 }) => {
     const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState<Omit<GameEvent, 'id'>>(() => {
@@ -219,6 +220,25 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
         onSave(finalEventData);
     };
 
+    const handleGearToggle = (itemId: string) => {
+        setFormData(prev => {
+            const gearForRent = prev.gearForRent || [];
+            const newGear = gearForRent.includes(itemId)
+                ? gearForRent.filter(id => id !== itemId)
+                : [...gearForRent, itemId];
+            return { ...prev, gearForRent: newGear };
+        });
+    };
+
+    const handleBadgeToggle = (badgeId: string) => {
+        setFormData(prev => {
+            const eventBadges = prev.eventBadges || [];
+            const newBadges = eventBadges.includes(badgeId)
+                ? eventBadges.filter(id => id !== badgeId)
+                : [...eventBadges, badgeId];
+            return { ...prev, eventBadges: newBadges };
+        });
+    };
 
     const handleSaveClick = () => {
         const eventData = {
@@ -271,6 +291,39 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1.5">Rules</label>
                                 <textarea value={formData.rules} onChange={e => setFormData(f => ({...f, rules: e.target.value}))} rows={3} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
+                            </div>
+                             <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Gear Available for Rent</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto bg-zinc-900/50 p-2 rounded-md border border-zinc-700/50">
+                                    {inventory.filter(i => i.isRental).map(item => (
+                                        <label key={item.id} className="flex items-center gap-3 p-2 rounded-md bg-zinc-800 hover:bg-zinc-700 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={(formData.gearForRent || []).includes(item.id)}
+                                                onChange={() => handleGearToggle(item.id)}
+                                                className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"
+                                            />
+                                            <span className="text-sm text-gray-200">{item.name}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Event Commendations (Badges)</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto bg-zinc-900/50 p-2 rounded-md border border-zinc-700/50">
+                                    {legendaryBadges.map(badge => (
+                                        <label key={badge.id} className="flex items-center gap-3 p-2 rounded-md bg-zinc-800 hover:bg-zinc-700 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={(formData.eventBadges || []).includes(badge.id)}
+                                                onChange={() => handleBadgeToggle(badge.id)}
+                                                className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"
+                                            />
+                                            <img src={badge.iconUrl} alt={badge.name} className="w-6 h-6"/>
+                                            <span className="text-sm text-amber-300">{badge.name}</span>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <Input label="Game Fee (R)" type="number" value={formData.gameFee} onChange={e => setFormData(f => ({ ...f, gameFee: Number(e.target.value) }))} />

@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import type { Voucher, Raffle, Prize, Player } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -108,7 +106,7 @@ const RaffleEditorModal: React.FC<{ raffle: Partial<Raffle>, onClose: () => void
                 <Input label="Raffle Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                  <div className="grid grid-cols-2 gap-4">
                     <Input label="Draw Date" type="date" value={formData.drawDate} onChange={e => setFormData(f => ({ ...f, drawDate: e.target.value }))} />
-                    <Input label="Contact Phone" value={formData.contactPhone} onChange={e => setFormData(f => ({ ...f, contactPhone: e.target.value }))} />
+                    <Input label="Contact Phone" type="tel" value={formData.contactPhone} onChange={e => setFormData(f => ({ ...f, contactPhone: e.target.value }))} />
                 </div>
                 <Input label="Location" value={formData.location} onChange={e => setFormData(f => ({ ...f, location: e.target.value }))} />
                 <div>

@@ -174,7 +174,7 @@ export interface DataContextType {
     // CRUD functions
     setDoc: (collectionName: string, docId: string, data: object) => Promise<void>;
     updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
-    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<void>;
+    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<string>;
     deleteDoc: (collectionName: string, docId: string) => Promise<void>;
     
     deleteAllData: () => Promise<void>;
@@ -333,15 +333,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const addDoc = async <T extends {}>(collectionName: string, data: T) => {
+    const addDoc = async <T extends {}>(collectionName: string, data: T): Promise<string> => {
         if (IS_LIVE_DATA) {
-            await db.collection(collectionName).add(data);
+            const docRef = await db.collection(collectionName).add(data);
+            return docRef.id;
         } else {
+            const id = `mock_${collectionName}_${Date.now()}`;
             const setter = collectionSetters[collectionName as CollectionName];
             if (setter) {
                 // @ts-ignore
-                setter(prev => [...prev, { ...data, id: `mock${Date.now()}` }]);
+                setter(prev => [...prev, { ...data, id }]);
             }
+            return id;
         }
     };
 

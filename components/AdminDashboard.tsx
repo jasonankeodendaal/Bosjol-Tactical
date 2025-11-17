@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // FIX: Changed RaffleTicket to RaffleTicketDoc as it is the correct exported type.
@@ -28,11 +25,12 @@ import { ApiSetupTab } from './ApiSetupTab';
 import { AboutTab } from './AboutTab';
 import { DataContext, DataContextType } from '../data/DataContext';
 import { AuthContext } from '../auth/AuthContext';
+import { SendCredentialsModal } from './SendCredentialsModal';
 
 export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' | 'seedInitialData' | 'updatePlayerDoc' | 'addEventDoc' | 'deleteEventDoc' | 'updateEventDoc'> & {
     onDeleteAllData: () => void;
     deleteAllPlayers: () => Promise<void>;
-    addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<void>;
+    addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<string>;
 };
 
 
@@ -44,7 +42,7 @@ const NewPlayerModal: React.FC<{
     players: Player[];
     companyDetails: CompanyDetails;
     rankTiers: RankTier[];
-    addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<void>;
+    addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<string>;
 }> = ({ onClose, players, companyDetails, rankTiers, addPlayerDoc }) => {
     const [formData, setFormData] = useState({
         name: '',
@@ -58,6 +56,7 @@ const NewPlayerModal: React.FC<{
     const [playerCode, setPlayerCode] = useState('');
     const [playerCodeError, setPlayerCodeError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [newlyCreatedPlayer, setNewlyCreatedPlayer] = useState<Player | null>(null);
 
     useEffect(() => {
         const { name, surname } = formData;
@@ -148,41 +147,44 @@ const NewPlayerModal: React.FC<{
             activeAuthUID: '',
         };
         try {
-            await addPlayerDoc(newPlayerData);
-            onClose();
+            const newPlayerId = await addPlayerDoc(newPlayerData);
+            const completePlayer: Player = { ...newPlayerData, id: newPlayerId };
+            setNewlyCreatedPlayer(completePlayer);
         } catch (error) {
             console.error("Failed to create new player:", error);
             alert(`Error: Could not create player. Please check the console for details. Message: ${(error as Error).message}`);
-        } finally {
             setIsSaving(false);
         }
     };
 
     return (
-        <Modal isOpen={true} onClose={onClose} title="Create New Player">
-            <div className="space-y-4">
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
-                    <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({ ...f, surname: e.target.value }))} />
+        <>
+            {newlyCreatedPlayer && <SendCredentialsModal player={newlyCreatedPlayer} onClose={() => { setNewlyCreatedPlayer(null); onClose(); }} />}
+            <Modal isOpen={!newlyCreatedPlayer} onClose={onClose} title="Create New Player">
+                <div className="space-y-4">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
+                        <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({ ...f, surname: e.target.value }))} />
+                    </div>
+                    <div>
+                        <Input label="Player Code" value={playerCode} onChange={handlePlayerCodeChange} />
+                        {playerCodeError && <p className="text-red-500 text-xs mt-1">{playerCodeError}</p>}
+                    </div>
+                    <Input label="Email" type="email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
+                    <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input label="Age" type="number" value={formData.age} onChange={e => setFormData(f => ({ ...f, age: e.target.value }))} />
+                        <Input label="ID Number" value={formData.idNumber} onChange={e => setFormData(f => ({ ...f, idNumber: e.target.value }))} />
+                    </div>
+                    <Input label="6-Digit PIN" type="password" value={formData.pin} onChange={e => setFormData(f => ({ ...f, pin: e.target.value.replace(/\D/g, '') }))} maxLength={6} />
                 </div>
-                <div>
-                    <Input label="Player Code" value={playerCode} onChange={handlePlayerCodeChange} />
-                    {playerCodeError && <p className="text-red-500 text-xs mt-1">{playerCodeError}</p>}
+                <div className="mt-6">
+                    <Button className="w-full" onClick={handleSave} disabled={isSaving || !!playerCodeError}>
+                        {isSaving ? 'Creating...' : 'Create Player'}
+                    </Button>
                 </div>
-                <Input label="Email" type="email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
-                <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label="Age" type="number" value={formData.age} onChange={e => setFormData(f => ({ ...f, age: e.target.value }))} />
-                    <Input label="ID Number" value={formData.idNumber} onChange={e => setFormData(f => ({ ...f, idNumber: e.target.value }))} />
-                </div>
-                <Input label="6-Digit PIN" type="password" value={formData.pin} onChange={e => setFormData(f => ({ ...f, pin: e.target.value.replace(/\D/g, '') }))} maxLength={6} />
-            </div>
-            <div className="mt-6">
-                <Button className="w-full" onClick={handleSave} disabled={isSaving || !!playerCodeError}>
-                    {isSaving ? 'Creating...' : 'Create Player'}
-                </Button>
-            </div>
-        </Modal>
+            </Modal>
+        </>
     );
 };
 
@@ -435,6 +437,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 players={props.players}
                 inventory={props.inventory}
                 gamificationSettings={props.gamificationSettings}
+                legendaryBadges={props.legendaryBadges}
                 onBack={() => setView('dashboard')}
                 onSave={handleSaveEvent}
                 onDelete={handleDeleteEvent}

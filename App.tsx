@@ -1,5 +1,6 @@
 
 
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -148,27 +149,69 @@ const PublicPageFloatingIcons: React.FC<{
 // --- END Creator Popup ---
 
 const PromotionModal: React.FC<{
-    promotion: { newRank?: SubRank; newBadges: Badge[] };
+    promotion: { newRank?: SubRank; oldRank?: SubRank; newBadges: Badge[], xpGained: number, currentXp: number, nextRankXp?: number };
     onDismiss: () => void;
 }> = ({ promotion, onDismiss }) => {
+
     return (
-        <Modal isOpen={true} onClose={onDismiss} title="Operator Promoted!">
-            <div className="text-center">
-                {promotion.newRank && (
-                    <div className="mb-6">
-                        <h3 className="text-lg font-semibold text-gray-300 mb-2">New Rank Achieved</h3>
-                        <div className="bg-zinc-800/50 p-4 rounded-lg flex flex-col items-center">
-                            <img src={promotion.newRank.iconUrl} alt={promotion.newRank.name} className="h-20 mx-auto mb-2" />
-                            <p className="text-2xl font-bold text-red-400">{promotion.newRank.name}</p>
-                        </div>
-                    </div>
-                )}
-                {promotion.newBadges.length > 0 && (
-                     <div>
-                        <h3 className="text-lg font-semibold text-gray-300 mb-2">Achievements Unlocked</h3>
-                        <div className="space-y-2">
+      <Modal isOpen={true} onClose={onDismiss} title="">
+        <div 
+          onClick={onDismiss} 
+          className="promotion-modal-content text-center p-6 -m-6 rounded-xl border-2 border-amber-400/50 shadow-2xl shadow-amber-500/20"
+          style={{ cursor: 'pointer' }}
+        >
+            <div className="relative grid grid-cols-3 items-center justify-items-center h-48">
+                {/* Previous Rank */}
+                <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0, transition: { delay: 0.2 } }} className="text-center opacity-60">
+                    {promotion.oldRank && (
+                        <>
+                            <img src={promotion.oldRank.iconUrl} alt={promotion.oldRank.name} className="h-20 mx-auto" />
+                            <p className="text-sm font-semibold text-gray-400 mt-1">{promotion.oldRank.name}</p>
+                        </>
+                    )}
+                </motion.div>
+
+                {/* New Rank */}
+                <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1, transition: { delay: 0, type: 'spring', stiffness: 200 } }} className="relative text-center z-10">
+                    {promotion.newRank && (
+                        <>
+                           <div className="relative w-40 h-40 flex items-center justify-center">
+                                <div className="absolute inset-0 hex-bg hex-clip bg-amber-400/20 animate-gold-glow"></div>
+                                <img src={promotion.newRank.iconUrl} alt={promotion.newRank.name} className="h-28 z-10" style={{filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.5))'}}/>
+                            </div>
+                            <p className="text-xl font-bold text-amber-300 mt-2 uppercase tracking-widest">{promotion.newRank.name}</p>
+                        </>
+                    )}
+                </motion.div>
+
+                {/* Chevron */}
+                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.4 } }} className="absolute text-amber-300">
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </motion.div>
+
+                <div></div>{/* Placeholder for grid */}
+            </div>
+            
+            {promotion.newRank && <p className="text-green-400 text-lg font-semibold mt-4">RANK UP</p>}
+
+            {/* XP Bar */}
+             <div className="mt-6 text-left">
+                <p className="text-green-400 font-bold text-lg">Earned Rank XP +{promotion.xpGained}</p>
+                <div className="flex justify-between items-end">
+                    {promotion.newRank && <span className="text-sm font-semibold text-white bg-amber-500/80 px-2 py-0.5 rounded">RANK UP</span>}
+                    <p className="text-sm font-mono text-gray-300 ml-auto">{promotion.currentXp.toLocaleString()} / {promotion.nextRankXp ? promotion.nextRankXp.toLocaleString() + '+' : 'MAX'}</p>
+                </div>
+                <div className="w-full bg-black/50 border border-amber-400/20 rounded-full h-3 mt-1 p-0.5">
+                    <div className="progress-bar-glow h-full rounded-full" style={{ width: `${promotion.nextRankXp ? ((promotion.currentXp - (promotion.oldRank?.minXp || 0)) / (promotion.nextRankXp - (promotion.oldRank?.minXp || 0))) * 100 : 100}%` }}></div>
+                </div>
+             </div>
+
+             {promotion.newBadges.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-amber-400/20">
+                    <h3 className="text-lg font-semibold text-gray-300 mb-2">Achievements Unlocked</h3>
+                    <div className="space-y-2">
                         {promotion.newBadges.map(badge => (
-                            <div key={badge.id} className="bg-zinc-800/50 p-3 rounded-lg flex items-center gap-4">
+                            <div key={badge.id} className="bg-zinc-800/50 p-3 rounded-lg flex items-center gap-4 border border-zinc-700">
                                 <img src={badge.iconUrl} alt={badge.name} className="w-12 h-12" />
                                 <div className="text-left">
                                     <p className="font-bold text-white">{badge.name}</p>
@@ -176,12 +219,13 @@ const PromotionModal: React.FC<{
                                 </div>
                             </div>
                         ))}
-                        </div>
                     </div>
-                )}
-                 <Button onClick={onDismiss} className="w-full mt-6">Continue</Button>
-            </div>
-        </Modal>
+                </div>
+             )}
+
+            <p className="text-center text-gray-500 text-xs uppercase mt-8 tracking-widest">Tap to Continue</p>
+        </div>
+      </Modal>
     );
 };
 
@@ -207,7 +251,7 @@ const AppContent: React.FC = () => {
     const [showCreatorPopup, setShowCreatorPopup] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const [promotion, setPromotion] = useState<{ newRank?: SubRank; newBadges: Badge[] } | null>(null);
+    const [promotion, setPromotion] = useState<{ newRank?: SubRank; oldRank?: SubRank; newBadges: Badge[], xpGained: number, currentXp: number, nextRankXp?: number } | null>(null);
 
 
     if (!auth) throw new Error("AuthContext not found.");
@@ -252,7 +296,18 @@ const AppContent: React.FC = () => {
             const hasNewRank = newRank && oldRank && newRank.id !== oldRank.id;
 
             if (hasNewRank || newBadges.length > 0) {
-                setPromotion({ newRank: hasNewRank ? newRank : undefined, newBadges });
+                 const sortedRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => a.minXp - b.minXp);
+                 const currentRankIndex = sortedRanks.findIndex(r => r.id === newRank?.id);
+                 const nextRank = currentRankIndex !== -1 && currentRankIndex < sortedRanks.length - 1 ? sortedRanks[currentRankIndex + 1] : null;
+
+                setPromotion({ 
+                    newRank: hasNewRank ? newRank : undefined, 
+                    oldRank,
+                    newBadges,
+                    xpGained: player.stats.xp - lastSeenXp,
+                    currentXp: player.stats.xp,
+                    nextRankXp: nextRank?.minXp,
+                });
             }
         }
     }, [rankTiers, promotion]);

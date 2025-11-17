@@ -386,7 +386,13 @@ const AppContent: React.FC = () => {
 
         if (targetAudioUrl) {
             // If the target is different from what's currently playing, change it.
-            const absoluteTargetUrl = new URL(targetAudioUrl, window.location.href).href;
+            let absoluteTargetUrl: string;
+            if (targetAudioUrl.startsWith('data:')) {
+                absoluteTargetUrl = targetAudioUrl;
+            } else {
+                absoluteTargetUrl = new URL(targetAudioUrl, window.location.href).href;
+            }
+
             if (currentSrc !== absoluteTargetUrl) {
                 audio.src = targetAudioUrl;
                 playAudio();

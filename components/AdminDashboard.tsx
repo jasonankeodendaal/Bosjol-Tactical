@@ -77,7 +77,7 @@ const NewPlayerModal: React.FC<{
     const handlePlayerCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const code = e.target.value.toUpperCase();
         setPlayerCode(code);
-        if (players.some(p => p.playerCode.toUpperCase() === code)) {
+        if (players.some(p => p.playerCode?.toUpperCase() === code)) {
             setPlayerCodeError('This Player Code is already taken.');
         } else {
             setPlayerCodeError('');
@@ -108,7 +108,11 @@ const NewPlayerModal: React.FC<{
         setIsSaving(true);
         
         const sortedRanks = [...ranks].sort((a, b) => a.minXp - b.minXp);
-        const defaultRank = sortedRanks[0] || UNRANKED_RANK;
+        
+        // Find the rank with the lowest minXp, but ensure it's a valid rank object.
+        // If not, fall back to UNRANKED_RANK. This prevents saving a rank with `tierId: undefined`.
+        const firstRank = sortedRanks[0];
+        const defaultRank = (firstRank && firstRank.id && firstRank.tierId) ? firstRank : UNRANKED_RANK;
 
         // Create a clean rank object for saving to prevent any undefined properties
         const rankToSave: Rank = {
@@ -449,8 +453,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 onDelete={handleDeleteEvent}
                 setPlayers={props.setPlayers}
                 setTransactions={props.setTransactions}
-                setInventory={props.setInventory}
-                updateDoc={props.updateDoc}
             />
         )
     }

@@ -286,12 +286,12 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer }: { player: Pla
         <li onClick={() => onViewPlayer(player.id)} className="flex items-center p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer border border-transparent hover:border-red-600/50">
             <img src={player.avatarUrl} alt={player.name} className="w-12 h-12 rounded-full object-cover mr-4" />
             <div className="flex-grow">
-                <p className="font-bold text-white">{player.name} "{player.callsign}" {player.surname}</p>
+                <p className="font-bold text-white">{(player.name || 'Unnamed')} "{(player.callsign || 'N/A')}" {(player.surname || '')}</p>
                 <div className="flex items-center text-sm text-gray-400">
                     <img src={rank.iconUrl} alt={rank.name} className="w-5 h-5 mr-1.5"/>
                     <span>{rank.name}</span>
                     <span className="mx-2">|</span>
-                    <span className="font-mono">{player.playerCode}</span>
+                    <span className="font-mono">{(player.playerCode || 'NO-CODE')}</span>
                 </div>
             </div>
             <div className="text-right">
@@ -307,9 +307,9 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredPlayers = players.filter(p => 
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.callsign.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.playerCode.toLowerCase().includes(searchTerm.toLowerCase())
+        (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.callsign || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.playerCode || '').toLowerCase().includes(searchTerm.toLowerCase())
     ).sort((a,b) => b.stats.xp - a.stats.xp);
 
     return (

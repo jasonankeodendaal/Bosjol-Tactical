@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
-import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee, Signup, CompanyDetails, LegendaryBadge, XpAdjustment } from '../types';
+import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee, Signup, CompanyDetails, LegendaryBadge, XpAdjustment, Rank, Tier } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { ArrowLeftIcon, CalendarIcon, UserIcon, TrashIcon, CheckCircleIcon, CreditCardIcon, PlusIcon, ChartBarIcon, ExclamationTriangleIcon, TrophyIcon, MinusIcon, CurrencyDollarIcon, CogIcon } from './icons/Icons';
-import { MOCK_EVENT_THEMES, EVENT_STATUSES, EVENT_TYPES } from '../constants';
+import { MOCK_EVENT_THEMES, EVENT_STATUSES, EVENT_TYPES, UNRANKED_TIER } from '../constants';
 import { BadgePill } from './BadgePill';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
@@ -45,10 +45,12 @@ const defaultEvent: Omit<GameEvent, 'id'> = {
     liveStats: {},
 };
 
-const getRankForPlayer = (player: Player, rankTiers: any[]): any => {
-    if (!rankTiers || rankTiers.length === 0) return null;
-    const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => b.minXp - a.minXp);
-    return allSubRanks.find(r => player.stats.xp >= r.minXp) || allSubRanks[allSubRanks.length - 1] || null;
+const getRankForPlayer = (player: Player, ranks: Rank[]): Tier | null => {
+    if (!ranks || ranks.length === 0) return null;
+    const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => b.minXp - a.minXp);
+    const tier = allTiers.find(r => player.stats.xp >= r.minXp);
+    const lowestTier = [...allTiers].sort((a,b) => a.minXp - b.minXp)[0];
+    return tier || lowestTier || null;
 };
 
 
@@ -228,7 +230,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     
             // Recalculate rank for any player whose XP changed
             if (mutablePlayer.stats.xp !== player.stats.xp) {
-                const newRank = getRankForPlayer(mutablePlayer, dataContext!.rankTiers);
+                const newRank = getRankForPlayer(mutablePlayer, dataContext!.ranks);
                 if (newRank) {
                     mutablePlayer.rank = newRank;
                 }

@@ -20,16 +20,14 @@ import { UrlOrUploadField } from './UrlOrUploadField';
 
 const getRankForPlayer = (player: Player, ranks: Rank[]): Tier => {
     if (!ranks || ranks.length === 0) return UNRANKED_TIER;
-    // Rank is now always determined by XP. The gamesPlayed check is handled in the UI components.
     const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => b.minXp - a.minXp);
     const tier = allTiers.find(r => player.stats.xp >= r.minXp);
-    // Find the lowest rank if no rank is found (for 0 xp)
     const lowestTier = [...allTiers].sort((a,b) => a.minXp - b.minXp)[0];
     return tier || lowestTier || UNRANKED_TIER;
 };
 
 const getRankProgression = (player: Player, ranks: Rank[]) => {
-    const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => a.minXp - a.minXp);
+    const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => a.minXp - b.minXp);
     
     // The player's current rank based on XP
     const currentTier = getRankForPlayer(player, ranks);
@@ -961,22 +959,24 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
                 </div>
                 
                 <div className="pt-4 border-t border-zinc-700/50">
-                     <textarea placeholder="Bio" value={formData.bio} onChange={e => setFormData(p => ({ ...p, bio: e.target.value }))} rows={3} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-zinc-700/50">
-                    <Input label="Email" value={formData.email} onChange={e => setFormData(f => ({...f, email: e.target.value}))}/>
-                    <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({...f, phone: e.target.value}))}/>
-                    <Input label="Address" value={formData.address} onChange={e => setFormData(f => ({...f, address: e.target.value}))}/>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Preferred Role</label>
-                        <select value={formData.preferredRole} onChange={e => setFormData(p => ({...p, preferredRole: e.target.value as PlayerRole}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                            {MOCK_PLAYER_ROLES.map(role => <option key={role}>{role}</option>)}
-                        </select>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input icon={<AtSymbolIcon className="w-5 h-5"/>} label="Email" type="email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
+                        <Input icon={<PhoneIcon className="w-5 h-5"/>} label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} />
                     </div>
-                    <Input label="Allergies" value={formData.allergies} onChange={e => setFormData(f => ({...f, allergies: e.target.value}))}/>
-                    <Input label="Medical Notes" value={formData.medicalNotes} onChange={e => setFormData(f => ({...f, medicalNotes: e.target.value}))}/>
                 </div>
                 
+                 <div className="pt-4 border-t border-zinc-700/50">
+                    <h3 className="text-lg font-semibold text-gray-200 mb-2">Game Preferences</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Preferred Role</label>
+                            <select value={formData.preferredRole} onChange={e => setFormData(p => ({...p, preferredRole: e.target.value as PlayerRole}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                {MOCK_PLAYER_ROLES.map(role => <option key={role}>{role}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="pt-4">
                     <Button onClick={handleSave} className="w-full">Save Changes</Button>
                 </div>
@@ -985,42 +985,52 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
     );
 };
 
-// FIX: Added the main PlayerDashboard component which was missing, causing the export error.
+
 export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
+    const { player, players, sponsors, events, onEventSignUp, legendaryBadges, raffles, ranks, locations, signups, onPlayerUpdate } = props;
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
     const auth = useContext(AuthContext);
-
-    useEffect(() => {
+    
+     useEffect(() => {
         if (auth) {
-            const topic = `player-dashboard-${activeTab.toLowerCase().replace(/\s/g, '-')}`;
-            auth.setHelpTopic(topic);
+            auth.setHelpTopic(`player-dashboard-${activeTab.toLowerCase()}`);
         }
     }, [activeTab, auth]);
 
     return (
         <div className="flex flex-col h-full">
             <header className="flex items-center justify-between p-3 sm:p-4 bg-zinc-950/70 backdrop-blur-sm border-b border-zinc-800 flex-shrink-0">
-                <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
-                    <img src={props.player.avatarUrl} alt={props.player.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-red-600 flex-shrink-0" />
+                 <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
+                    <img src={player.avatarUrl} alt={player.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-red-600 flex-shrink-0"/>
                     <div className="overflow-hidden">
-                        <h1 className="text-base sm:text-xl font-bold text-white truncate">{props.player.name}</h1>
-                        <p className="text-xs sm:text-sm text-red-400">"{props.player.callsign}"</p>
+                        <h1 className="text-base sm:text-xl font-bold text-white truncate">{player.name}</h1>
+                        <p className="text-xs sm:text-sm text-red-400">"{player.callsign}"</p>
                     </div>
                 </div>
-                <Button onClick={() => auth?.logout()} variant="secondary" size="sm" className="flex-shrink-0">Logout</Button>
+                <Button onClick={auth?.logout} variant="secondary" size="sm" className="flex-shrink-0">Logout</Button>
             </header>
             <main className="flex-grow overflow-y-auto">
                 <div className="p-4 sm:p-6 lg:p-8">
                     <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-                    {activeTab === 'Overview' && <OverviewTab player={props.player} players={props.players} events={props.events} sponsors={props.sponsors} ranks={props.ranks} />}
-                    {activeTab === 'Events' && <EventsTab events={props.events} player={props.player} onEventSignUp={props.onEventSignUp} locations={props.locations} signups={props.signups} />}
-                    {activeTab === 'Raffles' && <RafflesTab raffles={props.raffles} player={props.player} players={props.players} />}
-                    {activeTab === 'Ranks' && <RankProgressionDisplay ranks={props.ranks} player={props.player} />}
-                    {activeTab === 'Stats' && <StatsTab player={props.player} events={props.events} />}
-                    {activeTab === 'Achievements' && <AchievementsTab player={props.player} legendaryBadges={props.legendaryBadges} ranks={props.ranks} />}
-                    {activeTab === 'Leaderboard' && <DashboardCard title="Leaderboard" icon={<TrophyIcon className="w-6 h-6"/>} fullHeight><Leaderboard players={props.players} currentPlayerId={props.player.id}/></DashboardCard>}
-                    {activeTab === 'Loadout' && <LoadoutTab player={props.player} onPlayerUpdate={props.onPlayerUpdate} />}
-                    {activeTab === 'Settings' && <SettingsTab player={props.player} onPlayerUpdate={props.onPlayerUpdate} />}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            {activeTab === 'Overview' && <OverviewTab player={player} players={players} events={events} sponsors={sponsors} ranks={ranks} />}
+                            {activeTab === 'Events' && <EventsTab events={events} player={player} onEventSignUp={onEventSignUp} locations={locations} signups={signups} />}
+                            {activeTab === 'Raffles' && <RafflesTab raffles={raffles} player={player} players={players} />}
+                            {activeTab === 'Ranks' && <RankProgressionDisplay ranks={ranks} player={player} />}
+                            {activeTab === 'Stats' && <StatsTab player={player} events={events} />}
+                            {activeTab === 'Achievements' && <AchievementsTab player={player} legendaryBadges={legendaryBadges} ranks={ranks}/>}
+                            {activeTab === 'Leaderboard' && <Leaderboard players={players} currentPlayerId={player.id} />}
+                            {activeTab === 'Loadout' && <LoadoutTab player={player} onPlayerUpdate={onPlayerUpdate} />}
+                            {activeTab === 'Settings' && <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />}
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
             </main>
         </div>

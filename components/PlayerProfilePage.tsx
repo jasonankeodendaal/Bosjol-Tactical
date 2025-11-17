@@ -14,7 +14,7 @@ import { UrlOrUploadField } from './UrlOrUploadField';
 import { SendCredentialsModal } from './SendCredentialsModal';
 
 const getTierForPlayer = (player: Player, ranks: Rank[]): Tier => {
-    // Rank is now always determined by XP. The gamesPlayed check is handled in the UI components.
+    // Determines a player's tier based on their total XP.
     if (!ranks || ranks.length === 0) return UNRANKED_TIER;
     const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => b.minXp - a.minXp);
     const tier = allTiers.find(r => player.stats.xp >= r.minXp);
@@ -248,15 +248,9 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                         <span className="text-md font-semibold text-red-400">
                             {playerRank ? `${playerRank.name} - ${playerTier.name}` : playerTier.name}
                         </span>
-                         {player.stats.gamesPlayed < 10 && <span className="text-amber-400 text-sm ml-2">(In Placement)</span>}
                         <span className="text-gray-400 mx-2">|</span>
                         <BadgePill color={player.status === 'Active' ? 'green' : 'red'}>{player.status}</BadgePill>
                     </div>
-                     {player.stats.gamesPlayed < 10 && (
-                        <p className="text-xs text-amber-400 mt-1">
-                            Player must complete {10 - player.stats.gamesPlayed} more games to be fully ranked.
-                        </p>
-                    )}
                 </div>
             </header>
 

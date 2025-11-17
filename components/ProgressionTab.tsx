@@ -203,7 +203,6 @@ const RankEditorModal: React.FC<{
         }
         const finalRank = { tiers: [], ...rank, ...formData };
         onSave(finalRank);
-        onClose();
     };
 
     return (
@@ -326,7 +325,11 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
         setEditingRank(null);
         'id' in rank ? await updateDoc('ranks', rank) : await addDoc('ranks', rank);
     }
-    const handleDeleteRank = async () => { if (deletingRank) { await deleteDoc('ranks', deletingRank.id); setDeletingRank(null); } }
+    const handleDeleteRank = async () => { 
+        if (!deletingRank) return;
+        await deleteDoc('ranks', deletingRank.id); 
+        setDeletingRank(null); 
+    }
 
     const handleSaveTier = async (tier: (Omit<Tier, 'id'> | Tier) & { rankId: string }) => {
         setEditingTier(null); // Optimistic close
@@ -352,11 +355,11 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     const handleDeleteTier = async () => {
         if (!deletingTier) return;
         const { rankId, id: tierId } = deletingTier;
-        setDeletingTier(null); // Optimistic close
         
         const rankToUpdate = ranks.find(r => r.id === rankId);
         if (!rankToUpdate) {
             console.error(`Could not find Rank with ID ${rankId} to delete tier.`);
+            setDeletingTier(null);
             return;
         }
 
@@ -366,6 +369,7 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
         };
         
         await updateDoc('ranks', updatedRank);
+        setDeletingTier(null);
     };
     
     const allTiers = ranks.flatMap(r => r.tiers).sort((a,b) => a.minXp - b.minXp);

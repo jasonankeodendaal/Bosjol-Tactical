@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { DataContext, IS_LIVE_DATA, DataContextType } from '../data/DataContext';
 import { Button } from './Button';
@@ -306,7 +307,8 @@ export const SystemScanner: React.FC = () => {
     }, [ALL_CHECKS, dataContext, runChecks, playerIdFilter]);
 
     const handleFixAll = async () => {
-        // FIX: Explicitly type 'r' as CheckResult to fix TypeScript inference issue.
+        // FIX: In some TypeScript configurations, the type of `r` is inferred as `unknown`
+        // from the `flat()` method. Explicitly typing `r` as `CheckResult` resolves this.
         const fixableErrors = Object.values(results).flat().filter((r: CheckResult) => r.fixable && (r.status === 'fail' || r.status === 'warn'));
         if (fixableErrors.length === 0) { alert("No fixable issues found."); return; }
         if (!confirm(`This will attempt to automatically fix ${fixableErrors.length} issue(s). Proceed?`)) return;

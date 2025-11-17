@@ -260,7 +260,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     );
 }
 
-const PlayerListItem: React.memo(({ player, rank, onViewPlayer }: { player: Player; rank: SubRank; onViewPlayer: (id: string) => void }) => {
+const PlayerListItem = React.memo(({ player, rank, onViewPlayer }: { player: Player; rank: SubRank; onViewPlayer: (id: string) => void }) => {
     const kills = player.stats?.kills || 0;
     const deaths = player.stats?.deaths || 0;
     const xp = player.stats?.xp || 0;

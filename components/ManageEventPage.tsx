@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
-import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee, Signup, CompanyDetails, LegendaryBadge } from '../types';
+import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee, Signup, CompanyDetails, LegendaryBadge, XpAdjustment } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -44,6 +44,13 @@ const defaultEvent: Omit<GameEvent, 'id'> = {
     eventBadges: [],
     liveStats: {},
 };
+
+const getRankForPlayer = (player: Player, rankTiers: any[]): any => {
+    if (!rankTiers || rankTiers.length === 0) return null;
+    const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => b.minXp - a.minXp);
+    return allSubRanks.find(r => player.stats.xp >= r.minXp) || allSubRanks[allSubRanks.length - 1] || null;
+};
+
 
 export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     event, players, inventory, gamificationSettings, legendaryBadges, onBack, onSave, onDelete, setPlayers, setTransactions, signups, setDoc, deleteDoc, companyDetails
@@ -130,94 +137,119 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
         }));
     };
 
-    const handleFinalizeEvent = () => {
-        if (!confirm('Are you sure you want to finalize this event? This will award XP to all attendees and cannot be easily undone.')) {
+    const handleFinalizeEvent = async () => {
+        if (!confirm('Are you sure you want to finalize this event? This will award/deduct RP for all involved players and cannot be easily undone.')) {
             return;
         }
-
+    
+        const noShowPenaltyRule = gamificationSettings.find(r => r.id === 'g_no_show_penalty');
+        const noShowPenaltyXp = noShowPenaltyRule ? noShowPenaltyRule.xp : 0; // This value is negative
+    
+        const attendeePlayerIds = new Set(formData.attendees.map(a => a.playerId));
+        const eventSignups = signups.filter(s => s.eventId === event?.id);
+        const noShowPlayerIds = new Set(
+            eventSignups.filter(s => !attendeePlayerIds.has(s.playerId)).map(s => s.playerId)
+        );
+    
         const newTransactions: Transaction[] = [];
-
+    
         const updatedPlayers = players.map(player => {
+            let mutablePlayer = { ...player };
+    
+            // Case 1: Player attended the event
             const attendeeInfo = formData.attendees.find(a => a.playerId === player.id);
-            if (!attendeeInfo) return player;
-
-            const playerLiveStats = liveStats[player.id] || {};
-            let xpGained = formData.participationXp || 0;
-            
-            const rules = new Map(gamificationSettings.map(r => [r.id, r.xp]));
-            const getXp = (ruleId: string) => formData.xpOverrides?.[ruleId] ?? rules.get(ruleId) ?? 0;
-
-            xpGained += (playerLiveStats.kills || 0) * getXp('g_kill');
-            xpGained += (playerLiveStats.headshots || 0) * getXp('g_headshot');
-            xpGained += (playerLiveStats.deaths || 0) * getXp('g_death'); // Usually negative
-            
-            // Add financial transactions for this player
-            if (attendeeInfo.paymentStatus?.startsWith('Paid') && event?.id) {
-                 newTransactions.push({
-                    id: `txn-${event!.id}-${player.id}-fee`,
-                    date: formData.date,
-                    type: 'Event Revenue',
-                    description: `Event Fee: ${formData.title}`,
-                    amount: formData.gameFee,
-                    relatedEventId: event!.id,
-                    relatedPlayerId: player.id,
-                    paymentStatus: attendeeInfo.paymentStatus
-                });
-
-                (attendeeInfo.rentedGearIds || []).forEach(gearId => {
-                    const gear = inventory.find(i => i.id === gearId);
-                    if (gear) {
-                        newTransactions.push({
-                            id: `txn-${event!.id}-${player.id}-${gearId}`,
-                            date: formData.date,
-                            type: 'Rental Revenue',
-                            description: `Rental: ${gear.name}`,
-                            amount: gear.salePrice,
-                            relatedEventId: event!.id,
-                            relatedPlayerId: player.id,
-                            relatedInventoryId: gearId,
-                            paymentStatus: attendeeInfo.paymentStatus
-                        });
-                    }
-                });
-            }
-
-
-            const newMatchRecord = {
-                eventId: event!.id,
-                playerStats: {
-                    kills: playerLiveStats.kills || 0,
-                    deaths: playerLiveStats.deaths || 0,
-                    headshots: playerLiveStats.headshots || 0,
+            if (attendeeInfo) {
+                const playerLiveStats = liveStats[player.id] || {};
+                let xpGained = formData.participationXp || 0;
+    
+                const rules = new Map(gamificationSettings.map(r => [r.id, r.xp]));
+                const getXp = (ruleId: string) => formData.xpOverrides?.[ruleId] ?? rules.get(ruleId) ?? 0;
+    
+                xpGained += (playerLiveStats.kills || 0) * getXp('g_kill');
+                xpGained += (playerLiveStats.headshots || 0) * getXp('g_headshot');
+                xpGained += (playerLiveStats.deaths || 0) * getXp('g_death');
+    
+                if (attendeeInfo.paymentStatus?.startsWith('Paid') && event?.id) {
+                    newTransactions.push({
+                        id: `txn-${event.id}-${player.id}-fee`,
+                        date: formData.date, type: 'Event Revenue', description: `Event Fee: ${formData.title}`,
+                        amount: formData.gameFee, relatedEventId: event.id, relatedPlayerId: player.id,
+                        paymentStatus: attendeeInfo.paymentStatus
+                    });
+                    (attendeeInfo.rentedGearIds || []).forEach(gearId => {
+                        const gear = inventory.find(i => i.id === gearId);
+                        if (gear) {
+                            newTransactions.push({
+                                id: `txn-${event.id}-${player.id}-${gearId}`, date: formData.date,
+                                type: 'Rental Revenue', description: `Rental: ${gear.name}`, amount: gear.salePrice,
+                                relatedEventId: event.id, relatedPlayerId: player.id, relatedInventoryId: gearId,
+                                paymentStatus: attendeeInfo.paymentStatus
+                            });
+                        }
+                    });
                 }
-            };
-            
-            return {
-                ...player,
-                stats: {
-                    ...player.stats,
-                    xp: player.stats.xp + xpGained,
-                    kills: player.stats.kills + (playerLiveStats.kills || 0),
-                    deaths: player.stats.deaths + (playerLiveStats.deaths || 0),
-                    headshots: player.stats.headshots + (playerLiveStats.headshots || 0),
-                    gamesPlayed: player.stats.gamesPlayed + 1,
-                },
-                matchHistory: [...player.matchHistory, newMatchRecord]
-            };
+    
+                const newMatchRecord = {
+                    eventId: event!.id,
+                    playerStats: {
+                        kills: playerLiveStats.kills || 0,
+                        deaths: playerLiveStats.deaths || 0,
+                        headshots: playerLiveStats.headshots || 0,
+                    }
+                };
+    
+                mutablePlayer = {
+                    ...mutablePlayer,
+                    stats: {
+                        ...mutablePlayer.stats,
+                        xp: mutablePlayer.stats.xp + xpGained,
+                        kills: mutablePlayer.stats.kills + (playerLiveStats.kills || 0),
+                        deaths: mutablePlayer.stats.deaths + (playerLiveStats.deaths || 0),
+                        headshots: mutablePlayer.stats.headshots + (playerLiveStats.headshots || 0),
+                        gamesPlayed: mutablePlayer.stats.gamesPlayed + 1,
+                    },
+                    matchHistory: [...mutablePlayer.matchHistory, newMatchRecord]
+                };
+            }
+            // Case 2: Player was a no-show
+            else if (noShowPlayerIds.has(player.id) && noShowPenaltyXp < 0) {
+                const newXp = mutablePlayer.stats.xp + noShowPenaltyXp;
+                const newAdjustment: XpAdjustment = {
+                    amount: noShowPenaltyXp,
+                    reason: `Penalty for no-show at event: ${formData.title}`,
+                    date: new Date().toISOString(),
+                };
+                mutablePlayer = {
+                    ...mutablePlayer,
+                    stats: { ...mutablePlayer.stats, xp: newXp },
+                    xpAdjustments: [...mutablePlayer.xpAdjustments, newAdjustment],
+                };
+            }
+    
+            // Recalculate rank for any player whose XP changed
+            if (mutablePlayer.stats.xp !== player.stats.xp) {
+                const newRank = getRankForPlayer(mutablePlayer, dataContext!.rankTiers);
+                if (newRank) {
+                    mutablePlayer.rank = newRank;
+                }
+            }
+    
+            return mutablePlayer;
         });
-
+    
         setPlayers(updatedPlayers);
         setTransactions(prev => [...prev, ...newTransactions]);
-
-        const finalEventData = {
-            ...(event || {}),
-            ...formData,
-            id: event?.id || '',
-            status: 'Completed' as EventStatus,
+    
+        const finalEventData: GameEvent = {
+            ...(event || {}), ...formData,
+            id: event?.id || '', status: 'Completed',
             liveStats: liveStats,
         };
-
         onSave(finalEventData);
+    
+        // Clean up all signups for this finalized event
+        const cleanupPromises = eventSignups.map(signup => deleteDoc('signups', signup.id));
+        await Promise.all(cleanupPromises);
     };
 
     const handleGearToggle = (itemId: string) => {
@@ -327,7 +359,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <Input label="Game Fee (R)" type="number" value={formData.gameFee} onChange={e => setFormData(f => ({ ...f, gameFee: Number(e.target.value) }))} />
-                                <Input label="Participation XP" type="number" value={formData.participationXp} onChange={e => setFormData(f => ({ ...f, participationXp: Number(e.target.value) }))} />
+                                <Input label="Participation RP" type="number" value={formData.participationXp} onChange={e => setFormData(f => ({ ...f, participationXp: Number(e.target.value) }))} />
                                  <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1.5">Event Status</label>
                                     <select value={formData.status} onChange={e => setFormData(f => ({ ...f, status: e.target.value as EventStatus }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
@@ -428,13 +460,13 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             <div className="bg-green-900/50 border border-green-700 p-3 rounded-lg text-center">
                                 <CheckCircleIcon className="w-8 h-8 mx-auto text-green-400 mb-2" />
                                 <p className="font-semibold text-green-300">This event has been finalized.</p>
-                                <p className="text-xs text-green-400">XP and stats have been awarded.</p>
+                                <p className="text-xs text-green-400">RP and stats have been awarded.</p>
                             </div>
                         )}
                         {event && formData.status !== 'Completed' && (
                             <Button onClick={handleFinalizeEvent} variant="primary" className="w-full !bg-green-600 hover:!bg-green-500">
                                 <CheckCircleIcon className="w-5 h-5 mr-2" />
-                                Finalize Event & Award XP
+                                Finalize Event & Award RP
                             </Button>
                         )}
                         <Button onClick={handleSaveClick} variant="secondary" className="w-full">

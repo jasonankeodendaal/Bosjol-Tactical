@@ -1,6 +1,5 @@
 
 
-
 // FIX: Import `PlayerStats` to resolve TypeScript error on line 516.
 import type { Player, PlayerCore, Admin, GameEvent, EventCore, Briefing, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails, Signup, RankTier, SubRank, ApiGuideStep, MatchHistoryDoc, XpAdjustmentDoc, AttendeeDoc, RaffleCore, RaffleTicketDoc, RaffleWinnerDoc, VoucherCore, VoucherRedemption, PlayerStats } from './types';
 
@@ -107,20 +106,20 @@ export const MOCK_RANK_TIERS: RankTier[] = [
   {
     id: "tier_leg",
     name: "Legendary",
-    description: "The pinnacle of achievement, reserved for the most elite operators.",
+    description: "The pinnacle of achievement. Your exact RP and leaderboard position are now displayed.",
     tierBadgeUrl: "https://img.icons8.com/fluency/48/trophy.png",
     subranks: [
-      { id: "l_i", name: "Legendary", minXp: 8001, perks: ["Legendary Banner / Frame"], iconUrl: "https://img.icons8.com/color/96/medal-of-honor.png" },
-      { id: "l_top", name: "Legendary (Top 5000)", minXp: 99999, perks: ["Special Badge / Glow Effect"], iconUrl: "https://img.icons8.com/fluency/48/star-medal.png" }
+      { id: "l_i", name: "Legendary", minXp: 8001, perks: ["Legendary Banner / Frame", "Leaderboard Position Displayed"], iconUrl: "https://img.icons8.com/color/96/medal-of-honor.png" }
     ]
   }
 ];
 
 export const MOCK_GAMIFICATION_SETTINGS: GamificationSettings = [
-    { id: 'g_kill', name: 'XP per Kill', description: 'XP awarded for each standard elimination.', xp: 10 },
-    { id: 'g_headshot', name: 'XP per Headshot', description: 'Bonus XP for headshot eliminations. Added to kill XP.', xp: 25 },
-    { id: 'g_death', name: 'XP Loss per Death', description: 'XP deducted each time a player is eliminated.', xp: -5 },
-    { id: 'g_game', name: 'Base XP per Game', description: 'XP awarded to every player for completing a match.', xp: 100 },
+    { id: 'g_kill', name: 'RP per Kill', description: 'RP awarded for each standard elimination.', xp: 10 },
+    { id: 'g_headshot', name: 'RP per Headshot', description: 'Bonus RP for headshot eliminations. Added to kill RP.', xp: 25 },
+    { id: 'g_death', name: 'RP Loss per Death', description: 'RP deducted each time a player is eliminated.', xp: -5 },
+    { id: 'g_game', name: 'Base RP per Game', description: 'RP awarded to every player for completing a match.', xp: 100 },
+    { id: 'g_no_show_penalty', name: 'No-Show Penalty', description: 'RP deducted if a player signs up for an event but does not attend.', xp: -150 },
 ];
 
 export const MOCK_WEAPONS = {

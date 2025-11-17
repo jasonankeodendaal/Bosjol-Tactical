@@ -59,7 +59,7 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             },
             {
                 heading: "Rank & Progression",
-                content: "Shows your current rank, rank points (XP), and progress towards the next rank. Unlocks for your current rank are listed here. You must play at least 10 games to be ranked."
+                content: "Shows your current rank, rank points (RP), and progress towards the next rank. You must play at least 10 games to be placed on the leaderboard."
             },
             {
                 heading: "Next Mission",
@@ -71,7 +71,7 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             },
             {
                 heading: "Automations",
-                content: "Your rank is automatically calculated based on your total XP. The progression bar fills as you earn XP, and you will rank up automatically upon reaching the next XP threshold."
+                content: "Your rank is automatically calculated based on your total RP. The progression bar fills as you earn RP, and you will rank up automatically upon reaching the next RP threshold."
             }
         ]
     },
@@ -117,7 +117,7 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
         sections: [
             {
                 heading: "Lifetime Stats",
-                content: "An overview of your entire career, including K/D Ratio, total kills, deaths, headshots, matches played, and total Rank Points (XP)."
+                content: "An overview of your entire career, including K/D Ratio, total kills, deaths, headshots, matches played, and total Rank Points (RP)."
             },
             {
                 heading: "Match History",
@@ -161,11 +161,11 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             },
             {
                 heading: "Global Rankings",
-                content: "A ranked list of all players, sorted by their total Rank Points (XP). Your own position is highlighted for easy reference."
+                content: "A ranked list of all players, sorted by their total Rank Points (RP). Your own position is highlighted for easy reference."
             },
             {
                 heading: "Automations",
-                content: "The leaderboard is updated in real-time. As soon as any player's XP changes, their position on the leaderboard is automatically recalculated and displayed."
+                content: "The leaderboard is updated in real-time. As soon as any player's RP changes, their position on the leaderboard is automatically recalculated and displayed."
             }
         ]
     },
@@ -187,6 +187,62 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             }
         ]
     },
+    'player-dashboard-ranks': {
+        title: "Player Progression: Ranks & Tiers",
+        description: "Your journey from a fresh Recruit to a Legendary Operator is measured through a structured Rank and Tier system. Here's how it works.",
+        sections: [
+            {
+                heading: "⭐ RANKS (Major Levels)",
+                content: (
+                    <ul className="list-disc list-inside space-y-1">
+                        <li>Big skill stages you climb through (Rookie → Legendary).</li>
+                        <li>Higher rank = harder opponents + better rewards.</li>
+                        <li>RP required increases as you go up.</li>
+                    </ul>
+                )
+            },
+            {
+                heading: "🔶 TIERS (Steps Inside Each Rank)",
+                content: (
+                    <ul className="list-disc list-inside space-y-1">
+                        <li>Each rank has 5 tiers (I–V).</li>
+                        <li>You must complete all tiers to reach the next rank.</li>
+                        <li>Tiers act as checkpoints so you don’t drop an entire rank at once.</li>
+                    </ul>
+                )
+            },
+            {
+                heading: "📈 RANK POINTS (RP)",
+                content: (
+                    <ul className="list-disc list-inside space-y-1">
+                        <li>RP decides if you move up or down.</li>
+                        <li>Good performance = RP gained → climb tiers.</li>
+                        <li>Poor performance = RP lost → drop tiers.</li>
+                        <li>RP gain/loss depends on your performance and enemy difficulty.</li>
+                    </ul>
+                )
+            },
+            {
+                heading: "🏆 LEGENDARY",
+                content: (
+                    <ul className="list-disc list-inside space-y-1">
+                        <li>No tiers.</li>
+                        <li>Shows your exact RP number.</li>
+                        <li>Leaderboard position depends on your total RP.</li>
+                    </ul>
+                )
+            },
+            {
+                heading: "🔁 SEASON RESET",
+                content: (
+                    <ul className="list-disc list-inside space-y-1">
+                        <li>End of season lowers your rank (soft reset).</li>
+                        <li>You start lower and climb again for new rewards.</li>
+                    </ul>
+                )
+            }
+        ]
+    },
     // Admin Dashboard Topics
     'admin-dashboard-events': {
         title: "Admin: Event Management",
@@ -198,7 +254,7 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
             },
             {
                 heading: "Event Management",
-                content: "From the manage event page, you can edit all event details, record an audio briefing, link rental gear with custom prices, check in players, track live stats, manage payments, and finalize the event to award XP."
+                content: "From the manage event page, you can edit all event details, record an audio briefing, link rental gear with custom prices, check in players, track live stats, manage payments, and finalize the event to award RP."
             }
         ]
     },
@@ -222,11 +278,11 @@ export const HELP_CONTENT: Record<string, HelpTopic> = {
     },
     'admin-dashboard-progression': {
         title: "Admin: Progression Settings",
-        description: "Define the rules for player advancement, including XP, ranks, and badges.",
+        description: "Define the rules for player advancement, including RP, ranks, and badges.",
         sections: [
             {
                 heading: "Gamification Settings",
-                content: "Set the base XP values for in-game actions like kills, headshots, and deaths. These values are used to automatically calculate XP awards when an event is finalized."
+                content: "Set the base RP values for in-game actions like kills, headshots, and deaths. These values are used to automatically calculate RP awards when an event is finalized."
             },
             {
                 heading: "Standard & Legendary Badges",

@@ -16,7 +16,7 @@ export interface PlayerStats {
   deaths: number;
   headshots: number;
   gamesPlayed: number;
-  xp: number; // Internally this is rank points
+  xp: number; // Internally this is rank points (RP)
 }
 
 export interface Badge {

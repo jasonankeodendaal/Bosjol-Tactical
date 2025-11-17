@@ -198,7 +198,7 @@ const PromotionModal: React.FC<{
 
                 <div className="xp-bar-container">
                     <div className="xp-bar-info">
-                        <span className="xp-earned">Match XP +{xpGained}</span>
+                        <span className="xp-earned">Match RP +{xpGained}</span>
                         {newRank && <span className="rank-up-tag">RANK UP</span>}
                         <span className="xp-values">{finalXp.toLocaleString()} / {nextRankAfterBonus ? nextRankAfterBonus.minXp.toLocaleString() : 'MAX'}{!nextRankAfterBonus && '+'}</span>
                     </div>
@@ -218,7 +218,7 @@ const PromotionModal: React.FC<{
                         {rewards.map((reward, index) => (
                              <div key={index} className="reward-item">
                                 <span>{reward}</span>
-                                <span className="reward-item__amount">+100 XP</span>
+                                <span className="reward-item__amount">+100 RP</span>
                             </div>
                         ))}
                     </div>

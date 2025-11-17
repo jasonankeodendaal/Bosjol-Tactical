@@ -14,9 +14,12 @@ import { UrlOrUploadField } from './UrlOrUploadField';
 import { SendCredentialsModal } from './SendCredentialsModal';
 
 const getRankForPlayer = (player: Player, rankTiers: RankTier[]): SubRank => {
-    if (player.stats.gamesPlayed < 10) return UNRANKED_SUB_RANK;
+    // Rank is now always determined by XP. The gamesPlayed check is handled in the UI components.
+    if (!rankTiers || rankTiers.length === 0) return UNRANKED_SUB_RANK;
     const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => b.minXp - a.minXp);
-    return allSubRanks.find(r => player.stats.xp >= r.minXp) || UNRANKED_SUB_RANK;
+    const rank = allSubRanks.find(r => player.stats.xp >= r.minXp);
+    const lowestRank = [...allSubRanks].sort((a,b) => a.minXp - b.minXp)[0];
+    return rank || lowestRank || UNRANKED_SUB_RANK;
 };
 
 interface PlayerProfilePageProps {
@@ -245,12 +248,13 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                         <span className="text-md font-semibold text-red-400">
                             {playerTier ? `${playerTier.name} - ${playerRank.name}` : playerRank.name}
                         </span>
+                         {player.stats.gamesPlayed < 10 && <span className="text-amber-400 text-sm ml-2">(In Placement)</span>}
                         <span className="text-gray-400 mx-2">|</span>
                         <BadgePill color={player.status === 'Active' ? 'green' : 'red'}>{player.status}</BadgePill>
                     </div>
-                     {playerRank.id === UNRANKED_SUB_RANK.id && player.stats.gamesPlayed < 10 && (
+                     {player.stats.gamesPlayed < 10 && (
                         <p className="text-xs text-amber-400 mt-1">
-                            Player must complete {10 - player.stats.gamesPlayed} more games to be ranked.
+                            Player must complete {10 - player.stats.gamesPlayed} more games to be fully ranked.
                         </p>
                     )}
                 </div>

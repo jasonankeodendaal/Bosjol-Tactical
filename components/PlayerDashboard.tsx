@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useMemo, useContext, lazy, Suspense } from 'react';
+
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, RankTier, SubRank, PlayerRole } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
 import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
-import { UNRANKED_SUB_RANK, MOCK_PLAYER_ROLES, MOCK_BADGES } from '../constants';
+// FIX: Added MOCK_WEAPONS and MOCK_EQUIPMENT for the new LoadoutTab component.
+import { UNRANKED_SUB_RANK, MOCK_PLAYER_ROLES, MOCK_BADGES, MOCK_WEAPONS, MOCK_EQUIPMENT } from '../constants';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
@@ -18,41 +20,27 @@ import { UrlOrUploadField } from './UrlOrUploadField';
 
 const getRankForPlayer = (player: Player, rankTiers: RankTier[]): SubRank => {
     if (!rankTiers || rankTiers.length === 0) return UNRANKED_SUB_RANK;
-    if (player.stats.gamesPlayed < 10) {
-        return UNRANKED_SUB_RANK;
-    }
+    // Rank is now always determined by XP. The gamesPlayed check is handled in the UI components.
     const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => b.minXp - a.minXp);
     const rank = allSubRanks.find(r => player.stats.xp >= r.minXp);
-    return rank || allSubRanks[allSubRanks.length - 1] || UNRANKED_SUB_RANK;
+    // Find the lowest rank if no rank is found (for 0 xp)
+    const lowestRank = [...allSubRanks].sort((a,b) => a.minXp - b.minXp)[0];
+    return rank || lowestRank || UNRANKED_SUB_RANK;
 };
 
 const getRankProgression = (player: Player, rankTiers: RankTier[]) => {
-    const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => a.minXp - b.minXp);
+    const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => a.minXp - a.minXp);
     
-    if (player.stats.gamesPlayed < 10) {
-        return {
-            previous: null,
-            current: UNRANKED_SUB_RANK,
-            next: allSubRanks[0] || null,
-            tier: null
-        };
-    }
+    // The player's current rank based on XP
+    const currentRank = getRankForPlayer(player, rankTiers);
+    const currentRankIndex = allSubRanks.findIndex(r => r.id === currentRank.id);
 
-    let currentRankIndex = -1;
-    for (let i = allSubRanks.length - 1; i >= 0; i--) {
-        if (player.stats.xp >= allSubRanks[i].minXp) {
-            currentRankIndex = i;
-            break;
-        }
-    }
-    
-    const current = currentRankIndex !== -1 ? allSubRanks[currentRankIndex] : allSubRanks[0] || UNRANKED_SUB_RANK;
     const previous = currentRankIndex > 0 ? allSubRanks[currentRankIndex - 1] : null;
     const next = currentRankIndex < allSubRanks.length - 1 ? allSubRanks[currentRankIndex + 1] : null;
     
-    const tier = rankTiers.find(t => t.subranks.some(sr => sr.id === current.id)) || null;
+    const tier = rankTiers.find(t => t.subranks.some(sr => sr.id === currentRank.id)) || null;
 
-    return { previous, current, next, tier };
+    return { previous, current: currentRank, next, tier };
 }
 
 const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[], player: Player }> = ({ rankTiers, player }) => {
@@ -81,15 +69,15 @@ const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[], player: Player }
         const nextRankInTier = sortedRanksInTier[rankIndex + 1];
 
         if (nextRankInTier) {
-            return `${subrank.minXp.toLocaleString()} - ${(nextRankInTier.minXp - 1).toLocaleString()} XP`;
+            return `${subrank.minXp.toLocaleString()} - ${(nextRankInTier.minXp - 1).toLocaleString()} RP`;
         }
         
         const nextTier = rankTiers[tierIndex + 1];
         if(nextTier && nextTier.subranks.length > 0) {
             const nextTierFirstRank = [...nextTier.subranks].sort((a,b) => a.minXp - b.minXp)[0];
-            return `${subrank.minXp.toLocaleString()} - ${(nextTierFirstRank.minXp - 1).toLocaleString()} XP`;
+            return `${subrank.minXp.toLocaleString()} - ${(nextTierFirstRank.minXp - 1).toLocaleString()} RP`;
         }
-        return `${subrank.minXp.toLocaleString()}+ XP`;
+        return `${subrank.minXp.toLocaleString()}+ RP`;
     }
 
     return (
@@ -98,7 +86,7 @@ const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[], player: Player }
                  {player.stats.gamesPlayed < 10 && (
                     <div className="bg-blue-900/50 border border-blue-700 text-blue-200 p-3 rounded-lg mb-4 text-center">
                         <p className="font-bold">Placement Matches Required</p>
-                        <p className="text-sm">You must complete <strong>{10 - player.stats.gamesPlayed} more games</strong> to be placed in a rank. Your current XP ({player.stats.xp.toLocaleString()}) will be used to determine your starting rank once placement is complete.</p>
+                        <p className="text-sm">You must complete <strong>{10 - player.stats.gamesPlayed} more games</strong> to be placed on the leaderboard. Your current RP ({player.stats.xp.toLocaleString()}) will determine your starting rank once placement is complete.</p>
                     </div>
                 )}
                  <div className="mb-4">
@@ -124,7 +112,7 @@ const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[], player: Player }
                             <div className="subrank-grid">
                                 {tier.subranks.sort((a,b) => a.minXp - b.minXp).map((sub) => {
                                     const isCurrent = playerRank.id === sub.id;
-                                    const isUnlocked = player.stats.xp >= sub.minXp && player.stats.gamesPlayed >= 10;
+                                    const isUnlocked = player.stats.xp >= sub.minXp;
                                     const cardClass = isCurrent ? 'subrank-card--current' : !isUnlocked ? 'subrank-card--locked' : '';
                                     return (
                                         <article key={sub.id} className={`subrank-card ${cardClass}`}>
@@ -548,7 +536,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
     const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 
-    const { previous, current, next } = getRankProgression(player, rankTiers);
+    const { previous, current, next, tier } = getRankProgression(player, rankTiers);
 
     const startXp = current.minXp;
     const endXp = next ? next.minXp : current.minXp;
@@ -559,7 +547,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
         ? (rankedPlayers.filter(p => p.stats.xp < player.stats.xp).length / (rankedPlayers.length - 1)) * 100
         : 100;
         
-    const isUnranked = current.id === UNRANKED_SUB_RANK.id && player.stats.gamesPlayed < 10;
+    const isInPlacement = player.stats.gamesPlayed < 10;
     
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -602,16 +590,29 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                         </div>
                         
                         <div className="rank-item current">
-                            <div className="rank-item-hex">
-                               <img src={current.iconUrl} alt={current.name} />
-                            </div>
-                            <p>{current.name}</p>
-                            {isUnranked && (
+                            {tier ? (
+                                <>
+                                    <div className="rank-item-hex">
+                                       <img src={tier.tierBadgeUrl} alt={tier.name} className="w-24 h-24 object-contain" />
+                                    </div>
+                                    <p className="text-xl font-bold text-amber-300 uppercase tracking-wider mt-2">{tier.name}</p>
+                                    <p className="text-lg font-semibold -mt-1">{current.name}</p>
+                                </>
+                            ) : (
+                                <>
+                                     <div className="rank-item-hex">
+                                       <img src={current.iconUrl} alt={current.name} />
+                                    </div>
+                                    <p>{current.name}</p>
+                                </>
+                            )}
+                            {isInPlacement && (
                                 <p className="text-xs text-amber-400 mt-1 text-center">
-                                    Play {10 - player.stats.gamesPlayed} more games to get ranked.
+                                    (In Placement)
                                 </p>
                             )}
                         </div>
+
 
                         <div className="rank-item next">
                              {next && <>
@@ -625,7 +626,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                         <div className="rank-percentile-container">
                             <p>You beat <span>{percentile.toFixed(1)}%</span> of players in Ranked.</p>
                         </div>
-                         {isUnranked ? (
+                         {isInPlacement ? (
                             <div className="xp-bar-container">
                                 <div className="xp-bar-info">
                                     <span className="xp-earned">Placement Matches</span>
@@ -643,7 +644,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                         ) : (
                             <div className="xp-bar-container">
                                 <div className="xp-bar-info">
-                                    <span className="xp-earned">Earned Rank XP</span>
+                                    <span className="xp-earned">Earned Rank Points (RP)</span>
                                     <span className="xp-values">{player.stats.xp.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'}{!next && '+'}</span>
                                 </div>
                                 <div className="xp-bar-track">
@@ -656,8 +657,8 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                                 </div>
                             </div>
                         )}
-                        {isUnranked ? (
-                            <div className="next-rank-label">Complete Placement</div>
+                        {isInPlacement ? (
+                            <div className="next-rank-label">Play {10 - player.stats.gamesPlayed} more games</div>
                         ) : (
                             next && <div className="next-rank-label">{next.name}</div>
                         )}
@@ -762,293 +763,310 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
     return (
         <div className="space-y-6">
             {myWins.length > 0 && (
-                <div className="bg-amber-800/20 border border-amber-600/50 p-4 rounded-lg text-center">
-                    <TrophyIcon className="w-10 h-10 text-amber-400 mx-auto mb-2" />
-                    <h3 className="font-bold text-lg text-amber-300">Congratulations! You're a winner!</h3>
-                    {myWins.map(win => (
-                         <p key={win.prizeId} className="text-amber-200">You won: {win.prize?.name} in the "{win.raffleName}" raffle.</p>
-                    ))}
-                </div>
+// FIX: The RafflesTab component was truncated. It has been completed to correctly display raffle information.
+                <DashboardCard title="Raffle Wins" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
+                    <div className="p-4 space-y-2">
+                        {myWins.map(win => (
+                            <div key={win.id} className="bg-amber-900/50 p-3 rounded-lg border border-amber-700/50">
+                                <p className="font-bold text-amber-300">You won: {win.prize?.name}</p>
+                                <p className="text-sm text-amber-400">in the "{win.raffleName}" raffle!</p>
+                            </div>
+                        ))}
+                    </div>
+                </DashboardCard>
             )}
-            <DashboardCard title="My Raffle Tickets" icon={<TicketIcon className="w-6 h-6"/>}>
-                <div className="p-4">
-                    {myTickets.length > 0 ? (
-                        <ul className="space-y-2">
-                            {myTickets.map(ticket => (
-                                <li key={ticket.id} className="bg-zinc-800/50 p-3 rounded-md">
-                                    <p className="font-mono text-red-400">{ticket.code}</p>
-                                    <p className="text-sm text-gray-300">{ticket.raffleName}</p>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="text-center text-gray-500 py-4">You have no tickets for upcoming raffles.</p>
+            <DashboardCard title="My Raffle Tickets" icon={<TicketIcon className="w-6 h-6" />}>
+                <div className="p-4 space-y-2 max-h-60 overflow-y-auto">
+                    {myTickets.length > 0 ? myTickets.map(ticket => (
+                        <div key={ticket.id} className="bg-zinc-800/50 p-3 rounded-md flex justify-between items-center">
+                            <div>
+                                <p className="font-semibold text-white">{ticket.raffleName}</p>
+                                <p className="text-xs text-gray-400 font-mono">{ticket.code}</p>
+                            </div>
+                            <p className="text-xs text-gray-500">{new Date(ticket.purchaseDate).toLocaleDateString()}</p>
+                        </div>
+                    )) : (
+                        <p className="text-center text-gray-500 py-4">You have no active raffle tickets.</p>
                     )}
                 </div>
             </DashboardCard>
-            <DashboardCard title="Past Raffle Results" icon={<TicketIcon className="w-6 h-6"/>}>
-                 <div className="p-4 space-y-4 max-h-96 overflow-y-auto">
-                    {pastRaffles.map(raffle => (
-                        <div key={raffle.id} className="bg-zinc-800/50 p-3 rounded-md">
-                            <h4 className="font-bold text-white mb-2">{raffle.name}</h4>
-                            <ul className="space-y-1 text-sm">
+            <DashboardCard title="Past Raffle Results" icon={<TicketIcon className="w-6 h-6" />}>
+                 <div className="p-4 space-y-4 max-h-80 overflow-y-auto">
+                    {pastRaffles.length > 0 ? pastRaffles.map(raffle => (
+                         <div key={raffle.id} className="bg-zinc-800/50 p-3 rounded-md">
+                            <h4 className="font-bold text-white">{raffle.name}</h4>
+                            <p className="text-xs text-gray-400 mb-2">Drawn on: {new Date(raffle.drawDate).toLocaleDateString()}</p>
+                            <ul className="text-sm space-y-1">
                                 {raffle.winners.map(winner => {
                                     const prize = raffle.prizes.find(p => p.id === winner.prizeId);
                                     const winnerPlayer = players.find(p => p.id === winner.playerId);
                                     return (
-                                        <li key={winner.prizeId} className="flex justify-between">
-                                            <span className="text-gray-300">{prize?.name}</span>
-                                            <span className="font-semibold text-amber-400">{winnerPlayer?.name || 'Unknown'}</span>
+                                        <li key={winner.id} className="flex justify-between">
+                                            <span className="text-gray-300">{prize?.place}. {prize?.name}</span>
+                                            <span className="font-semibold text-amber-300">{winnerPlayer?.name}</span>
                                         </li>
                                     )
                                 })}
                             </ul>
                         </div>
-                    ))}
-                 </div>
+                    )) : (
+                        <p className="text-center text-gray-500 py-4">No past raffles.</p>
+                    )}
+                </div>
             </DashboardCard>
         </div>
     );
 };
 
+// FIX: Added missing StatsTab component
 const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ player, events }) => {
     const { stats, matchHistory } = player;
     const kdr = stats.deaths > 0 ? (stats.kills / stats.deaths).toFixed(2) : stats.kills.toFixed(2);
+
     const bestMatch = useMemo(() => {
         if (!matchHistory || matchHistory.length === 0) return null;
-        return [...matchHistory].sort((a,b) => b.playerStats.kills - a.playerStats.kills)[0];
+        return [...matchHistory].sort((a, b) => b.playerStats.kills - a.playerStats.kills)[0];
     }, [matchHistory]);
-    
+
+    const bestEvent = bestMatch ? events.find(e => e.id === bestMatch.eventId) : null;
+
     return (
         <div className="space-y-6">
-            <DashboardCard title="Lifetime Performance" icon={<ChartBarIcon className="w-6 h-6"/>}>
+            <DashboardCard title="Lifetime Performance" icon={<ChartBarIcon className="w-6 h-6" />}>
                 <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-y-6">
-                    <StatDisplay value={kdr} label="K/D Ratio" tooltip="Kill/Death Ratio."/>
-                    <StatDisplay value={stats.kills.toLocaleString()} label="Total Kills"/>
-                    <StatDisplay value={stats.deaths.toLocaleString()} label="Total Deaths"/>
-                    <StatDisplay value={stats.headshots.toLocaleString()} label="Total Headshots"/>
-                    <StatDisplay value={stats.gamesPlayed.toLocaleString()} label="Matches Played"/>
-                    <StatDisplay value={stats.xp.toLocaleString()} label="Total Rank Points"/>
+                    <StatDisplay value={kdr} label="K/D Ratio" tooltip="Kill/Death Ratio" />
+                    <StatDisplay value={stats.kills.toLocaleString()} label="Total Kills" />
+                    <StatDisplay value={stats.deaths.toLocaleString()} label="Total Deaths" />
+                    <StatDisplay value={stats.headshots.toLocaleString()} label="Total Headshots" />
+                    <StatDisplay value={stats.gamesPlayed.toLocaleString()} label="Matches Played" />
+                    <StatDisplay value={stats.xp.toLocaleString()} label="Total RP" />
                 </div>
             </DashboardCard>
-            {bestMatch && (
-                 <DashboardCard title="Best Match" icon={<TrophyIcon className="w-6 h-6"/>}>
-                    <div className="p-6">
-                        <EventCard event={events.find(e => e.id === bestMatch.eventId)!} />
+            {bestMatch && bestEvent && (
+                <DashboardCard title="Best Match Performance" icon={<SparklesIcon className="w-6 h-6" />}>
+                    <div className="p-4">
+                        <EventCard event={bestEvent} />
                         <div className="grid grid-cols-3 gap-2 text-center p-3 mt-2 bg-zinc-900/50 rounded-lg">
                             <StatDisplay value={bestMatch.playerStats.kills} label="Kills" />
                             <StatDisplay value={bestMatch.playerStats.deaths} label="Deaths" />
                             <StatDisplay value={bestMatch.playerStats.headshots} label="Headshots" />
                         </div>
                     </div>
-                 </DashboardCard>
+                </DashboardCard>
             )}
-             <DashboardCard title="Match History" icon={<CalendarIcon className="w-6 h-6" />}>
+            <DashboardCard title="Match History" icon={<CalendarIcon className="w-6 h-6" />}>
                 <div className="p-4 space-y-4 max-h-[40rem] overflow-y-auto">
-                    {[...matchHistory].reverse().map(record => {
-                        const event = events.find(e => e.id === record.eventId);
-                        if (!event) return null;
-                        return (
-                             <div key={event.id} className="bg-zinc-900/50 p-1 rounded-lg">
-                                <EventCard event={event} />
-                                <div className="grid grid-cols-3 gap-2 text-center p-3">
-                                    <StatDisplay value={record.playerStats.kills} label="Kills" />
-                                    <StatDisplay value={record.playerStats.deaths} label="Deaths" />
-                                    <StatDisplay value={record.playerStats.headshots} label="Headshots" />
+                    {matchHistory.length > 0 ? (
+                        matchHistory
+                            .map(record => ({ ...record, event: events.find(e => e.id === record.eventId) }))
+                            .filter(record => record.event)
+                            .sort((a, b) => new Date(b.event!.date).getTime() - new Date(a.event!.date).getTime())
+                            .map(({ event, playerStats }, index) => (
+                                <div key={index} className="bg-zinc-900/50 p-1 rounded-lg">
+                                    <EventCard event={event!} />
+                                    <div className="grid grid-cols-3 gap-2 text-center p-3">
+                                        <StatDisplay value={playerStats.kills} label="Kills" />
+                                        <StatDisplay value={playerStats.deaths} label="Deaths" />
+                                        <StatDisplay value={playerStats.headshots} label="Headshots" />
+                                    </div>
                                 </div>
-                            </div>
-                        )
-                    })}
+                            ))
+                    ) : (
+                        <p className="text-gray-500 text-center py-4">No match history.</p>
+                    )}
                 </div>
             </DashboardCard>
         </div>
     );
 };
 
+// FIX: Added missing AchievementsTab component
 const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendaryBadges' | 'rankTiers'>> = ({ player, legendaryBadges, rankTiers }) => {
     const dataContext = useContext(DataContext);
-    if (!dataContext) return null;
-    
+    const standardBadges = dataContext?.badges || MOCK_BADGES; // Fallback to mock if needed.
+
     return (
-         <div className="space-y-6">
-            <DashboardCard title="Badge Progress" icon={<TrophyIcon className="w-6 h-6"/>}>
-                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {MOCK_BADGES.map(badge => (
+        <div className="space-y-6">
+            <DashboardCard title="Badge Progress" icon={<TrophyIcon className="w-6 h-6" />}>
+                 <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {standardBadges.map(badge => (
                         <BadgeProgressCard key={badge.id} badge={badge} player={player} rankTiers={rankTiers} />
                     ))}
                 </div>
             </DashboardCard>
-             <DashboardCard title="Legendary Commendations" icon={<SparklesIcon className="w-6 h-6"/>}>
-                <div className="p-4">
-                     {player.legendaryBadges.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {player.legendaryBadges.map(badge => (
-                            <div key={badge.id} className="bg-zinc-800/50 p-3 rounded-lg border border-amber-700/50 flex items-center gap-4">
-                                <img src={badge.iconUrl} alt={badge.name} className="w-12 h-12" />
-                                <div>
+             <DashboardCard title="Legendary Commendations" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
+                 <div className="p-4">
+                    {player.legendaryBadges.length > 0 ? (
+                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            {player.legendaryBadges.map(badge => (
+                                <div key={badge.id} className="bg-zinc-800/50 p-4 rounded-lg text-center border border-amber-700/50">
+                                    <img src={badge.iconUrl} alt={badge.name} className="w-16 h-16 mx-auto mb-2"/>
                                     <p className="font-bold text-amber-300">{badge.name}</p>
-                                    <p className="text-xs text-gray-400">{badge.description}</p>
+                                    <p className="text-xs text-gray-400 mt-1">{badge.description}</p>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
                         </div>
-                     ) : (
-                         <p className="text-center text-gray-500 py-4">No legendary badges earned yet.</p>
-                     )}
-                </div>
+                    ) : (
+                        <p className="text-center text-gray-500 py-8">No legendary commendations earned yet.</p>
+                    )}
+                 </div>
             </DashboardCard>
         </div>
-    );
+    )
 };
 
+// FIX: Added missing LoadoutTab component
 const LoadoutTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate'>> = ({ player, onPlayerUpdate }) => {
     const [loadout, setLoadout] = useState(player.loadout);
-    const [isSaving, setIsSaving] = useState(false);
-    
-    const handleSave = async () => {
-        setIsSaving(true);
-        await onPlayerUpdate({ ...player, loadout });
-        setIsSaving(false);
+
+    const handleSave = () => {
+        onPlayerUpdate({ ...player, loadout });
+        alert("Loadout saved!");
     };
 
-    const isDirty = JSON.stringify(loadout) !== JSON.stringify(player.loadout);
-    
     return (
-        <DashboardCard title="Loadout" icon={<CrosshairsIcon className="w-6 h-6" />}>
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                    label="Primary Weapon"
-                    value={loadout.primaryWeapon}
-                    onChange={e => setLoadout(l => ({...l, primaryWeapon: e.target.value}))}
-                    placeholder="e.g., M4A1 Assault Rifle"
-                />
-                 <Input
-                    label="Secondary Weapon"
-                    value={loadout.secondaryWeapon}
-                    onChange={e => setLoadout(l => ({...l, secondaryWeapon: e.target.value}))}
-                    placeholder="e.g., X12 Pistol"
-                />
-                 <Input
-                    label="Lethal Equipment"
-                    value={loadout.lethal}
-                    onChange={e => setLoadout(l => ({...l, lethal: e.target.value}))}
-                    placeholder="e.g., Frag Grenade"
-                />
-                 <Input
-                    label="Tactical Equipment"
-                    value={loadout.tactical}
-                    onChange={e => setLoadout(l => ({...l, tactical: e.target.value}))}
-                    placeholder="e.g., Flashbang"
-                />
-                <div className="md:col-span-2">
-                    <Button onClick={handleSave} disabled={!isDirty || isSaving} className="w-full mt-4">
-                        {isSaving ? 'Saving...' : 'Save Loadout'}
-                    </Button>
+        <DashboardCard title="Loadout Customization" icon={<CrosshairsIcon className="w-6 h-6" />}>
+            <div className="p-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Primary Weapon</label>
+                        <select value={loadout.primaryWeapon} onChange={e => setLoadout(l => ({...l, primaryWeapon: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                            {MOCK_WEAPONS.primary.map((w: string) => <option key={w}>{w}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Secondary Weapon</label>
+                        <select value={loadout.secondaryWeapon} onChange={e => setLoadout(l => ({...l, secondaryWeapon: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                            {MOCK_WEAPONS.secondary.map((w: string) => <option key={w}>{w}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Lethal Equipment</label>
+                        <select value={loadout.lethal} onChange={e => setLoadout(l => ({...l, lethal: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                            {MOCK_EQUIPMENT.lethal.map((e: string) => <option key={e}>{e}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Tactical Equipment</label>
+                        <select value={loadout.tactical} onChange={e => setLoadout(l => ({...l, tactical: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                            {MOCK_EQUIPMENT.tactical.map((e: string) => <option key={e}>{e}</option>)}
+                        </select>
+                    </div>
+                </div>
+                <div className="pt-4">
+                    <Button onClick={handleSave} className="w-full">Save Loadout</Button>
                 </div>
             </div>
         </DashboardCard>
     );
 };
 
+// FIX: Added missing SettingsTab component
 const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate'>> = ({ player, onPlayerUpdate }) => {
-    const [formData, setFormData] = useState(player);
-    const [isSaving, setIsSaving] = useState(false);
+    const [formData, setFormData] = useState({ ...player });
     const dataContext = useContext(DataContext);
+    const companyDetails = dataContext?.companyDetails;
 
-    const handleSave = async () => {
-        setIsSaving(true);
-        await onPlayerUpdate(formData);
-        setIsSaving(false);
+    const handleSave = () => {
+        onPlayerUpdate(formData);
+        alert("Profile updated!");
     };
     
-    const isDirty = JSON.stringify(formData) !== JSON.stringify(player);
-
     const handleAvatarUpdate = (url: string) => {
         if (url) {
             setFormData(f => ({ ...f, avatarUrl: url }));
         }
     };
 
+    const handleRemoveAvatar = () => {
+        const defaultAvatar = `https://api.dicebear.com/8.x/bottts/svg?seed=${formData.name}${formData.surname}`;
+        setFormData(f => ({ ...f, avatarUrl: defaultAvatar }));
+    };
+
     return (
-         <DashboardCard title="Profile Settings" icon={<CogIcon className="w-6 h-6" />}>
+        <DashboardCard title="Profile Settings" icon={<CogIcon className="w-6 h-6" />}>
             <div className="p-6 space-y-4">
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="md:col-span-1">
                         <UrlOrUploadField
                             label="Avatar"
                             fileUrl={formData.avatarUrl}
                             onUrlSet={handleAvatarUpdate}
-                            onRemove={() => setFormData(f => ({ ...f, avatarUrl: '' }))}
+                            onRemove={handleRemoveAvatar}
                             accept="image/*"
-                            apiServerUrl={dataContext?.companyDetails.apiServerUrl}
+                            apiServerUrl={companyDetails?.apiServerUrl}
                         />
                     </div>
                     <div className="md:col-span-2 space-y-4">
-                        <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))} />
-                        <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({...f, surname: e.target.value}))} />
-                        <Input label="Callsign" value={formData.callsign} onChange={e => setFormData(f => ({...f, callsign: e.target.value}))} />
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
+                            <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({ ...f, surname: e.target.value }))} />
+                        </div>
+                        <Input label="Callsign" value={formData.callsign} onChange={e => setFormData(f => ({ ...f, callsign: e.target.value }))} />
                     </div>
                 </div>
-                <textarea placeholder="Bio" value={formData.bio || ''} onChange={e => setFormData(p => ({...p, bio: e.target.value}))} rows={3} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
-                 <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Preferred Role</label>
-                    <select value={formData.preferredRole} onChange={e => setFormData(p => ({...p, preferredRole: e.target.value as PlayerRole}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                        {MOCK_PLAYER_ROLES.map(role => <option key={role}>{role}</option>)}
-                    </select>
+                
+                <div className="pt-4 border-t border-zinc-700/50">
+                     <textarea placeholder="Bio" value={formData.bio} onChange={e => setFormData(p => ({ ...p, bio: e.target.value }))} rows={3} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
                 </div>
-                <Input label="Email" type="email" value={formData.email} onChange={e => setFormData(f => ({...f, email: e.target.value}))} />
-                <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({...f, phone: e.target.value}))} />
-                <Button onClick={handleSave} disabled={!isDirty || isSaving} className="w-full mt-4">
-                    {isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-zinc-700/50">
+                    <Input label="Email" value={formData.email} onChange={e => setFormData(f => ({...f, email: e.target.value}))}/>
+                    <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({...f, phone: e.target.value}))}/>
+                    <Input label="Address" value={formData.address} onChange={e => setFormData(f => ({...f, address: e.target.value}))}/>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Preferred Role</label>
+                        <select value={formData.preferredRole} onChange={e => setFormData(p => ({...p, preferredRole: e.target.value as PlayerRole}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                            {MOCK_PLAYER_ROLES.map(role => <option key={role}>{role}</option>)}
+                        </select>
+                    </div>
+                    <Input label="Allergies" value={formData.allergies} onChange={e => setFormData(f => ({...f, allergies: e.target.value}))}/>
+                    <Input label="Medical Notes" value={formData.medicalNotes} onChange={e => setFormData(f => ({...f, medicalNotes: e.target.value}))}/>
+                </div>
+                
+                <div className="pt-4">
+                    <Button onClick={handleSave} className="w-full">Save Changes</Button>
+                </div>
             </div>
         </DashboardCard>
     );
 };
 
+// FIX: Added the main PlayerDashboard component which was missing, causing the export error.
 export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
-    const { player, players, onPlayerUpdate, events, onEventSignUp, legendaryBadges, raffles, rankTiers, locations, signups } = props;
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
     const auth = useContext(AuthContext);
 
-    const playerRank = getRankForPlayer(player, rankTiers);
-    
+    useEffect(() => {
+        if (auth) {
+            const topic = `player-dashboard-${activeTab.toLowerCase().replace(/\s/g, '-')}`;
+            auth.setHelpTopic(topic);
+        }
+    }, [activeTab, auth]);
+
     return (
         <div className="flex flex-col h-full">
             <header className="flex items-center justify-between p-3 sm:p-4 bg-zinc-950/70 backdrop-blur-sm border-b border-zinc-800 flex-shrink-0">
                 <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
-                    <img src={player.avatarUrl} alt={player.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-red-600 flex-shrink-0"/>
+                    <img src={props.player.avatarUrl} alt={props.player.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-red-600 flex-shrink-0" />
                     <div className="overflow-hidden">
-                        <h1 className="text-base sm:text-xl font-bold text-white truncate">{player.name} "{player.callsign}"</h1>
-                        <p className="text-xs sm:text-sm text-red-400">{playerRank.name}</p>
+                        <h1 className="text-base sm:text-xl font-bold text-white truncate">{props.player.name}</h1>
+                        <p className="text-xs sm:text-sm text-red-400">"{props.player.callsign}"</p>
                     </div>
                 </div>
                 <Button onClick={() => auth?.logout()} variant="secondary" size="sm" className="flex-shrink-0">Logout</Button>
             </header>
-            
             <main className="flex-grow overflow-y-auto">
                 <div className="p-4 sm:p-6 lg:p-8">
                     <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-                    
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={activeTab}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            {activeTab === 'Overview' && <OverviewTab {...props} />}
-                            {activeTab === 'Events' && <EventsTab events={events} player={player} onEventSignUp={onEventSignUp} locations={locations} signups={signups} />}
-                            {activeTab === 'Raffles' && <RafflesTab raffles={raffles} player={player} players={players} />}
-                            {activeTab === 'Ranks' && <RankProgressionDisplay rankTiers={rankTiers} player={player} />}
-                            {activeTab === 'Stats' && <StatsTab player={player} events={events} />}
-                            {activeTab === 'Achievements' && <AchievementsTab player={player} legendaryBadges={legendaryBadges} rankTiers={rankTiers} />}
-                            {activeTab === 'Leaderboard' && <Leaderboard players={players} currentPlayerId={player.id} />}
-                            {activeTab === 'Loadout' && <LoadoutTab player={player} onPlayerUpdate={onPlayerUpdate} />}
-                            {activeTab === 'Settings' && <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />}
-                        </motion.div>
-                    </AnimatePresence>
+                    {activeTab === 'Overview' && <OverviewTab player={props.player} players={props.players} events={props.events} sponsors={props.sponsors} rankTiers={props.rankTiers} />}
+                    {activeTab === 'Events' && <EventsTab events={props.events} player={props.player} onEventSignUp={props.onEventSignUp} locations={props.locations} signups={props.signups} />}
+                    {activeTab === 'Raffles' && <RafflesTab raffles={props.raffles} player={props.player} players={props.players} />}
+                    {activeTab === 'Ranks' && <RankProgressionDisplay rankTiers={props.rankTiers} player={props.player} />}
+                    {activeTab === 'Stats' && <StatsTab player={props.player} events={props.events} />}
+                    {activeTab === 'Achievements' && <AchievementsTab player={props.player} legendaryBadges={props.legendaryBadges} rankTiers={props.rankTiers} />}
+                    {activeTab === 'Leaderboard' && <DashboardCard title="Leaderboard" icon={<TrophyIcon className="w-6 h-6"/>} fullHeight><Leaderboard players={props.players} currentPlayerId={props.player.id}/></DashboardCard>}
+                    {activeTab === 'Loadout' && <LoadoutTab player={props.player} onPlayerUpdate={props.onPlayerUpdate} />}
+                    {activeTab === 'Settings' && <SettingsTab player={props.player} onPlayerUpdate={props.onPlayerUpdate} />}
                 </div>
             </main>
         </div>

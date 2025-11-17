@@ -1,6 +1,8 @@
 
 
 
+
+
 import React, { useState, useContext } from 'react';
 // FIX: The types 'Rank' and 'Tier' do not exist. The correct types are 'RankTier' and 'SubRank'.
 // The component logic has been refactored to use the correct nested data structure.
@@ -233,9 +235,10 @@ const TierEditorModal: React.FC<{
 const RankEditorModal: React.FC<{
     rank: Partial<SubRank & { tierId?: string }> | null,
     tiers: RankTier[],
+    allRanks: (SubRank & { tierId: string })[],
     onClose: () => void,
     onSave: (rank: (Omit<SubRank, 'id'> | SubRank) & { tierId: string }) => void
-}> = ({ rank, tiers, onClose, onSave }) => {
+}> = ({ rank, tiers, allRanks, onClose, onSave }) => {
     const [formData, setFormData] = useState({
         name: rank?.name || '',
         tierId: rank?.tierId || (tiers.length > 0 ? tiers[0].id : ''),
@@ -243,6 +246,9 @@ const RankEditorModal: React.FC<{
         iconUrl: rank?.iconUrl || '',
         perks: rank?.perks?.join(', ') || '',
     });
+
+    const currentRankIndex = allRanks.findIndex(r => r.id === rank?.id);
+    const nextRank = currentRankIndex > -1 && currentRankIndex < allRanks.length - 1 ? allRanks[currentRankIndex + 1] : null;
 
     const handleSave = () => {
         if (!formData.name || !formData.tierId) {
@@ -271,7 +277,10 @@ const RankEditorModal: React.FC<{
                         {tiers.map(tier => <option key={tier.id} value={tier.id}>{tier.name}</option>)}
                     </select>
                 </div>
-                <Input label="Minimum XP Required" type="number" value={formData.minXp} onChange={e => setFormData(f => ({...f, minXp: Number(e.target.value)}))} />
+                <div className="grid grid-cols-2 gap-4">
+                    <Input label="Starts At (XP)" type="number" value={formData.minXp} onChange={e => setFormData(f => ({...f, minXp: Number(e.target.value)}))} />
+                    <Input label="Ends Before (XP)" type="number" value={nextRank ? nextRank.minXp : ''} disabled placeholder="No upper limit" tooltip="This value is determined by the 'Starts At' XP of the next rank." />
+                </div>
                 <Input label="Perks (comma-separated)" value={formData.perks} onChange={e => setFormData(f => ({...f, perks: e.target.value}))} />
                 <UrlOrUploadField
                     label="Rank Icon"
@@ -375,6 +384,9 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     }
     
     const sortedRanks = rankTiers.flatMap(t => t.subranks.map(sr => ({...sr, tierId: t.id }))).sort((a,b) => a.minXp - b.minXp);
+
+    const earningRules = gamificationSettings.filter(rule => rule.xp >= 0);
+    const penaltyRules = gamificationSettings.filter(rule => rule.xp < 0);
     
     return (
         <div className="space-y-6">
@@ -387,7 +399,7 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
             {deletingLegendaryBadge && <Modal isOpen={true} onClose={() => setDeletingLegendaryBadge(null)} title="Confirm Deletion"><p>Delete "{deletingLegendaryBadge.name}"?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingLegendaryBadge(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteLegendaryBadge}>Delete</Button></div></Modal>}
             {editingTier && <TierEditorModal tier={editingTier} onClose={() => setEditingTier(null)} onSave={handleSaveTier} />}
             {deletingTier && <Modal isOpen={true} onClose={() => setDeletingTier(null)} title="Confirm Deletion"><p>Delete "{deletingTier.name}" tier?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingTier(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteTier}>Delete</Button></div></Modal>}
-            {editingRank && <RankEditorModal rank={editingRank} tiers={rankTiers} onClose={() => setEditingRank(null)} onSave={handleSaveRank} />}
+            {editingRank && <RankEditorModal rank={editingRank} tiers={rankTiers} allRanks={sortedRanks} onClose={() => setEditingRank(null)} onSave={handleSaveRank} />}
             {deletingRank && <Modal isOpen={true} onClose={() => setDeletingRank(null)} title="Confirm Deletion"><p>Delete "{deletingRank.name}" rank?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingRank(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteRank}>Delete</Button></div></Modal>}
 
              {/* Main Content */}
@@ -456,8 +468,16 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
                 <div className="space-y-6">
                     <DashboardCard title="Gamification Settings" icon={<PlusCircleIcon className="w-6 h-6" />}>
                         <div className="p-4">
-                            <div className="flex justify-end mb-4"><Button size="sm" onClick={() => setEditingRule({})}><PlusIcon className="w-5 h-5 mr-2" /> Add Rule</Button></div>
-                            <div className="space-y-2">{gamificationSettings.map(rule => <GamificationRuleItem key={rule.id} rule={rule} onEdit={setEditingRule} onDelete={setDeletingRule} />)}</div>
+                             <div className="flex justify-between items-center mb-4">
+                                <h4 className="font-semibold text-gray-200">XP Earning Rules</h4>
+                                <Button size="sm" onClick={() => setEditingRule({})}><PlusIcon className="w-5 h-5 mr-2" /> Add Rule</Button>
+                            </div>
+                            <div className="space-y-2">{earningRules.map(rule => <GamificationRuleItem key={rule.id} rule={rule} onEdit={setEditingRule} onDelete={setDeletingRule} />)}</div>
+                            
+                            <div className="mt-6 pt-6 border-t border-zinc-800">
+                                <h4 className="font-semibold text-gray-200 mb-2">XP Penalty Rules</h4>
+                                <div className="space-y-2">{penaltyRules.map(rule => <GamificationRuleItem key={rule.id} rule={rule} onEdit={setEditingRule} onDelete={setDeletingRule} />)}</div>
+                            </div>
                         </div>
                     </DashboardCard>
                     <DashboardCard title="Standard Badges" icon={<TrophyIcon className="w-6 h-6" />}>

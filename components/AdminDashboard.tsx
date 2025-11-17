@@ -286,7 +286,7 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer }: { player: Pla
                 </div>
             </div>
             <div className="text-right">
-                <p className="font-bold text-red-400 text-lg">{xp.toLocaleString()} XP</p>
+                <p className="font-bold text-red-400 text-lg">{xp.toLocaleString()} RP</p>
                 <p className="text-xs text-gray-500">K/D: {kdr.toFixed(2)}</p>
             </div>
         </li>

@@ -1,4 +1,5 @@
 
+
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import type { User, AuthContextType, Player, Admin, CreatorDetails } from '../types';
 import { MOCK_PLAYERS, MOCK_ADMIN } from '../constants';
@@ -114,10 +115,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 const playerData = { id: playerDoc.id, ...playerDoc.data() } as Player;
                 
                 if (playerData.pin === cleanPassword) {
-                    // If a user (admin or previous anonymous) is already logged in, sign them out.
-                    if (auth.currentUser) {
-                        await auth.signOut();
-                    }
+                    // signInAnonymously will automatically sign out any existing user.
                     const userCredential = await auth.signInAnonymously();
                     const authUID = userCredential.user?.uid;
 
@@ -133,15 +131,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 return false;
             } catch (error) {
                 const typedError = error as { code?: string; message: string };
-                let userMessage = `Login failed: ${typedError.message}.`;
+                let userMessage = `Login failed: ${typedError.message}.`; // Default message
 
-                if (typedError.code === 'permission-denied') {
-                    userMessage += "\n\nThis is a 'permission-denied' error. It almost always means your Firestore Security Rules are not set up correctly. Please ensure the rules allow an authenticated user to update the 'activeAuthUID' field on a player's document.";
+                if (typedError.code === 'auth/admin-restricted-operation') {
+                    userMessage = "Login failed due to a server configuration issue (auth/admin-restricted-operation). This can happen if Anonymous Sign-In is not enabled in your Firebase project's Authentication settings. Please ask the administrator to enable it.";
+                } else if (typedError.code === 'permission-denied') {
+                    userMessage = "Login failed due to a permission error. This usually means the app's Firestore Security Rules are not configured correctly. The rules must allow an authenticated user to update the 'activeAuthUID' field on their player document.";
                 } else {
                     userMessage += "\n\nPlease check the console for more details.";
                 }
                 
-                console.error("Player Firestore login failed:", error);
+                console.error("Player login failed:", typedError);
                 alert(userMessage);
                 return false;
             }

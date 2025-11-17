@@ -1,3 +1,4 @@
+
 import React, { useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { DataContext, IS_LIVE_DATA, DataContextType } from '../data/DataContext';
 import { Button } from './Button';
@@ -9,7 +10,6 @@ import { UNRANKED_RANK } from '../constants';
 import { Modal } from './Modal';
 import { DashboardCard } from './DashboardCard';
 import { AuthContext } from '../auth/AuthContext';
-// FIX: Import InfoTooltip to replace icon with title prop.
 import { InfoTooltip } from './InfoTooltip';
 
 type CheckStatus = 'pass' | 'fail' | 'warn' | 'info' | 'pending' | 'running';
@@ -191,9 +191,8 @@ export const SystemScanner: React.FC = () => {
     }, [runChecks]);
 
     const { healthScore, errorCount, warningCount, noticeCount } = useMemo(() => {
-        // FIX: Replaced reduce with flat() for simplicity, as the type issue seems to be with reduce's inference.
-        // If flat() still causes issues, it indicates a broader tsconfig problem, but this is the modern way to flatten.
-        const all: CheckResult[] = Object.values(results).flat();
+        // Flatten the array of arrays. `reduce` is used for broader environment compatibility over `flat()`.
+        const all: CheckResult[] = Object.values(results).reduce<CheckResult[]>((acc, arr) => acc.concat(arr), []);
         if (all.length === 0) return { healthScore: 0, errorCount: 0, warningCount: 0, noticeCount: 0 };
 
         const passes = all.filter(c => c.status === 'pass').length;

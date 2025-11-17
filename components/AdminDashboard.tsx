@@ -1,9 +1,4 @@
 
-
-
-
-
-
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, GameEvent, Rank, Tier, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, RentalSignup, CarouselMedia } from '../types';
@@ -63,7 +58,7 @@ const NewPlayerModal: React.FC<{
         const { name, surname } = formData;
         if (name && surname) {
             const initials = (name.charAt(0) + surname.charAt(0)).toUpperCase();
-            const existingPlayersWithInitials = players.filter(p => p.playerCode.startsWith(initials));
+            const existingPlayersWithInitials = players.filter(p => p.playerCode?.startsWith(initials));
             let newNumber = 1;
             if (existingPlayersWithInitials.length > 0) {
                 const highestNumber = existingPlayersWithInitials.reduce((max, p) => {

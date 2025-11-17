@@ -2,6 +2,7 @@
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
+import 'firebase/compat/storage';
 
 // Vite exposes environment variables on `import.meta.env`.
 // These variables are replaced at build time. They MUST be prefixed with `VITE_`
@@ -58,5 +59,6 @@ try {
 
 export const auth = app ? firebase.auth() : null;
 export const db = app ? firebase.firestore() : null;
+export const storage = app ? firebase.storage() : null;
 
 export { firebase };

@@ -11,25 +11,29 @@ interface UrlOrUploadFieldProps {
     onUrlSet: (url: string) => void;
     onRemove: () => void;
     accept: string;
-    previewType?: 'image' | 'audio';
+    previewType?: 'image' | 'audio' | 'video';
     apiServerUrl?: string;
 }
 
-export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileUrl, onUrlSet, onRemove, accept, previewType = 'image', apiServerUrl }) => {
+export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileUrl, onUrlSet, onRemove, accept, previewType, apiServerUrl }) => {
     const previewContent = () => {
         if (!fileUrl) return null;
-        switch (previewType) {
-            case 'image':
-                return <img src={fileUrl} alt="preview" className="w-16 h-16 object-contain rounded-md bg-zinc-800 p-1" />;
-            case 'audio':
-                return (
-                    <div className="w-16 h-16 flex items-center justify-center rounded-md bg-zinc-800 p-1">
-                        <MusicalNoteIcon className="w-8 h-8 text-gray-400" />
-                    </div>
-                );
-            default:
-                return null;
+        if (previewType === 'audio') {
+            return (
+                <div className="w-16 h-16 flex items-center justify-center rounded-md bg-zinc-800 p-1">
+                    <MusicalNoteIcon className="w-8 h-8 text-gray-400" />
+                </div>
+            );
         }
+
+        const isVideo = previewType === 'video' || fileUrl.toLowerCase().includes('.mp4') || fileUrl.toLowerCase().includes('.webm') || fileUrl.startsWith('data:video');
+        
+        if (isVideo) {
+            return <video src={fileUrl} muted loop playsInline autoPlay className="w-16 h-16 object-cover rounded-md bg-zinc-800" />;
+        }
+        
+        // Default to image
+        return <img src={fileUrl} alt="preview" className="w-16 h-16 object-contain rounded-md bg-zinc-800 p-1" />;
     };
 
     const handleUrlInput = (e: React.FocusEvent<HTMLInputElement> | React.KeyboardEvent<HTMLInputElement>) => {

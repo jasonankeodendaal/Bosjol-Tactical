@@ -95,6 +95,12 @@ const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[], player: Player }
     return (
         <DashboardCard title="Rank Progression & Rewards" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
             <div className="p-6">
+                 {player.stats.gamesPlayed < 10 && (
+                    <div className="bg-blue-900/50 border border-blue-700 text-blue-200 p-3 rounded-lg mb-4 text-center">
+                        <p className="font-bold">Placement Matches Required</p>
+                        <p className="text-sm">You must complete <strong>{10 - player.stats.gamesPlayed} more games</strong> to be placed in a rank. Your current XP ({player.stats.xp.toLocaleString()}) will be used to determine your starting rank once placement is complete.</p>
+                    </div>
+                )}
                  <div className="mb-4">
                     <Input
                         type="search"
@@ -552,6 +558,8 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
     const percentile = rankedPlayers.length > 1
         ? (rankedPlayers.filter(p => p.stats.xp < player.stats.xp).length / (rankedPlayers.length - 1)) * 100
         : 100;
+        
+    const isUnranked = current.id === UNRANKED_SUB_RANK.id && player.stats.gamesPlayed < 10;
     
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -598,6 +606,11 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                                <img src={current.iconUrl} alt={current.name} />
                             </div>
                             <p>{current.name}</p>
+                            {isUnranked && (
+                                <p className="text-xs text-amber-400 mt-1 text-center">
+                                    Play {10 - player.stats.gamesPlayed} more games to get ranked.
+                                </p>
+                            )}
                         </div>
 
                         <div className="rank-item next">
@@ -612,21 +625,42 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                         <div className="rank-percentile-container">
                             <p>You beat <span>{percentile.toFixed(1)}%</span> of players in Ranked.</p>
                         </div>
-                        <div className="xp-bar-container">
-                            <div className="xp-bar-info">
-                                <span className="xp-earned">Earned Rank XP</span>
-                                <span className="xp-values">{player.stats.xp.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'}{!next && '+'}</span>
+                         {isUnranked ? (
+                            <div className="xp-bar-container">
+                                <div className="xp-bar-info">
+                                    <span className="xp-earned">Placement Matches</span>
+                                    <span className="xp-values">{player.stats.gamesPlayed} / 10</span>
+                                </div>
+                                <div className="xp-bar-track">
+                                    <motion.div 
+                                        className="xp-bar-fill" 
+                                        initial={{ width: '0%' }}
+                                        animate={{ width: `${(player.stats.gamesPlayed / 10) * 100}%` }}
+                                        transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+                                    />
+                                </div>
                             </div>
-                            <div className="xp-bar-track">
-                                <motion.div 
-                                    className="xp-bar-fill" 
-                                    initial={{ width: '0%' }}
-                                    animate={{ width: `${progressPercentage}%` }}
-                                    transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
-                                />
+                        ) : (
+                            <div className="xp-bar-container">
+                                <div className="xp-bar-info">
+                                    <span className="xp-earned">Earned Rank XP</span>
+                                    <span className="xp-values">{player.stats.xp.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'}{!next && '+'}</span>
+                                </div>
+                                <div className="xp-bar-track">
+                                    <motion.div 
+                                        className="xp-bar-fill" 
+                                        initial={{ width: '0%' }}
+                                        animate={{ width: `${progressPercentage}%` }}
+                                        transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        {next && <div className="next-rank-label">{next.name}</div>}
+                        )}
+                        {isUnranked ? (
+                            <div className="next-rank-label">Complete Placement</div>
+                        ) : (
+                            next && <div className="next-rank-label">{next.name}</div>
+                        )}
                     </div>
                 </div>
 

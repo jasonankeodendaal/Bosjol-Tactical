@@ -242,10 +242,17 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                     <h1 className="text-2xl font-bold text-white">{player.name} "{player.callsign}" {player.surname}</h1>
                     <div className="flex items-center mt-1">
                         <img src={playerRank.iconUrl} alt={playerRank.name} className="w-6 h-6 mr-2" />
-                        <span className="text-md font-semibold text-red-400">{playerTier?.name} - {playerRank.name}</span>
+                        <span className="text-md font-semibold text-red-400">
+                            {playerTier ? `${playerTier.name} - ${playerRank.name}` : playerRank.name}
+                        </span>
                         <span className="text-gray-400 mx-2">|</span>
                         <BadgePill color={player.status === 'Active' ? 'green' : 'red'}>{player.status}</BadgePill>
                     </div>
+                     {playerRank.id === UNRANKED_SUB_RANK.id && player.stats.gamesPlayed < 10 && (
+                        <p className="text-xs text-amber-400 mt-1">
+                            Player must complete {10 - player.stats.gamesPlayed} more games to be ranked.
+                        </p>
+                    )}
                 </div>
             </header>
 

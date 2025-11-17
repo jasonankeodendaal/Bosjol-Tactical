@@ -1,9 +1,10 @@
 
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
 import { Button } from './components/Button';
-import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails, SubRank, Badge, Signup, RankTier } from './types';
+import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails, SubRank, Badge, Signup, RankTier, XpAdjustment } from './types';
 import { XIcon, KeyIcon, ShieldCheckIcon, TrophyIcon } from './components/icons/Icons';
 import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
 import { Loader } from './components/Loader';
@@ -147,15 +148,22 @@ const PublicPageFloatingIcons: React.FC<{
 // --- END Creator Popup ---
 
 const PromotionModal: React.FC<{
-    promotion: { newRank?: SubRank; oldRank?: SubRank; newBadges: Badge[], xpGained: number, currentXp: number, nextRankXp?: number };
+    promotion: { newRank?: SubRank; oldRank?: SubRank; newBadges: Badge[], xpGained: number, currentXp: number, bonusXp: number, rewards: string[], finalXp: number },
     onDismiss: () => void;
-}> = ({ promotion, onDismiss }) => {
+    rankTiers: RankTier[];
+}> = ({ promotion, onDismiss, rankTiers }) => {
 
-    const { oldRank, newRank, xpGained, currentXp, nextRankXp } = promotion;
+    const { oldRank, newRank, xpGained, bonusXp, rewards, finalXp } = promotion;
     
+    // Recalculate progression for display based on the final XP (current + bonus)
+    const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => a.minXp - b.minXp);
+    const finalRankAfterBonus = allSubRanks.slice().reverse().find(r => finalXp >= r.minXp);
+    const finalRankIndex = allSubRanks.findIndex(r => r.id === finalRankAfterBonus?.id);
+    const nextRankAfterBonus = finalRankIndex !== -1 && finalRankIndex < allSubRanks.length - 1 ? allSubRanks[finalRankIndex + 1] : null;
+
     const startXp = oldRank?.minXp || 0;
-    const endXp = nextRankXp || currentXp;
-    const progressPercentage = endXp > startXp ? ((currentXp - startXp) / (endXp - startXp)) * 100 : 100;
+    const endXp = nextRankAfterBonus ? nextRankAfterBonus.minXp : finalXp;
+    const progressPercentage = endXp > startXp ? ((finalXp - startXp) / (endXp - startXp)) * 100 : 100;
 
     return (
         <div className="promotion-backdrop" onClick={onDismiss}>
@@ -190,9 +198,9 @@ const PromotionModal: React.FC<{
 
                 <div className="xp-bar-container">
                     <div className="xp-bar-info">
-                        <span className="xp-earned">Earned Rank XP +{xpGained}</span>
+                        <span className="xp-earned">Match XP +{xpGained}</span>
                         {newRank && <span className="rank-up-tag">RANK UP</span>}
-                        <span className="xp-values">{currentXp.toLocaleString()} / {nextRankXp ? nextRankXp.toLocaleString() : 'MAX'}{!nextRankXp && '+'}</span>
+                        <span className="xp-values">{finalXp.toLocaleString()} / {nextRankAfterBonus ? nextRankAfterBonus.minXp.toLocaleString() : 'MAX'}{!nextRankAfterBonus && '+'}</span>
                     </div>
                     <div className="xp-bar-track">
                          <motion.div 
@@ -203,6 +211,19 @@ const PromotionModal: React.FC<{
                         />
                     </div>
                 </div>
+                
+                {bonusXp > 0 && rewards.length > 0 && (
+                     <div className="promotion-rewards">
+                        <h3 className="promotion-rewards__title">Rank Up Rewards</h3>
+                        {rewards.map((reward, index) => (
+                             <div key={index} className="reward-item">
+                                <span>{reward}</span>
+                                <span className="reward-item__amount">+100 XP</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
 
                 {promotion.newBadges.length > 0 && (
                     <div className="mt-4 w-full max-w-md">
@@ -249,7 +270,7 @@ const AppContent: React.FC = () => {
     const [showCreatorPopup, setShowCreatorPopup] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const [promotion, setPromotion] = useState<{ newRank?: SubRank; oldRank?: SubRank; newBadges: Badge[], xpGained: number, currentXp: number, nextRankXp?: number } | null>(null);
+    const [promotion, setPromotion] = useState<{ newRank?: SubRank; oldRank?: SubRank; newBadges: Badge[], xpGained: number, currentXp: number, bonusXp: number, rewards: string[], finalXp: number } | null>(null);
 
 
     if (!auth) throw new Error("AuthContext not found.");
@@ -296,9 +317,17 @@ const AppContent: React.FC = () => {
             const hasNewRank = newRank && oldRank && newRank.id !== oldRank.id;
     
             if (hasNewRank || newBadges.length > 0) {
-                const sortedRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => a.minXp - b.minXp);
-                const currentRankIndex = sortedRanks.findIndex(r => r.id === newRank?.id);
-                const nextRank = currentRankIndex !== -1 && currentRankIndex < sortedRanks.length - 1 ? sortedRanks[currentRankIndex + 1] : null;
+                 let bonusXp = 0;
+                const rewards: string[] = [];
+
+                if (hasNewRank && newRank) {
+                    newRank.perks.forEach(perk => {
+                        if (perk.includes('Weapon XP Card')) {
+                            bonusXp += 100; // Bonus XP amount
+                            rewards.push('Weapon XP Card');
+                        }
+                    });
+                }
     
                 setPromotion({ 
                     newRank: hasNewRank ? newRank : undefined, 
@@ -306,17 +335,47 @@ const AppContent: React.FC = () => {
                     newBadges,
                     xpGained: player.stats.xp - lastSeenXp,
                     currentXp: player.stats.xp,
-                    nextRankXp: nextRank?.minXp,
+                    bonusXp,
+                    rewards,
+                    finalXp: player.stats.xp + bonusXp,
                 });
             }
         }
     }, [rankTiers, promotion]);
 
     const dismissPromotion = () => {
-        if (user?.role === 'player' && currentPlayer) {
-            localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(currentPlayer.stats.xp));
-            localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify(currentPlayer.badges.map(b => b.id)));
-            localStorage.setItem(`lastSeenRankId_${currentPlayer.id}`, currentPlayer.rank.id);
+        if (promotion && user?.role === 'player' && currentPlayer) {
+            const { bonusXp, rewards } = promotion;
+            
+            if (bonusXp > 0 && rewards && rewards.length > 0) {
+                const finalXp = currentPlayer.stats.xp + bonusXp;
+
+                const newAdjustments: XpAdjustment[] = rewards.map(reward => ({
+                    amount: 100, // Hardcoded bonus for "Weapon XP Card"
+                    reason: `Rank Up Reward: ${reward}`,
+                    date: new Date().toISOString()
+                }));
+
+                const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => b.minXp - a.minXp);
+                const finalRank = allSubRanks.find(r => finalXp >= r.minXp) || currentPlayer.rank;
+
+                const updatedPlayer = {
+                    ...currentPlayer,
+                    stats: { ...currentPlayer.stats, xp: finalXp },
+                    xpAdjustments: [...currentPlayer.xpAdjustments, ...newAdjustments],
+                    rank: finalRank,
+                };
+                
+                updateDoc('players', updatedPlayer);
+                
+                localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(finalXp));
+                localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify(updatedPlayer.badges.map(b => b.id)));
+                localStorage.setItem(`lastSeenRankId_${currentPlayer.id}`, finalRank.id);
+            } else {
+                 localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(currentPlayer.stats.xp));
+                 localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify(currentPlayer.badges.map(b => b.id)));
+                 localStorage.setItem(`lastSeenRankId_${currentPlayer.id}`, currentPlayer.rank.id);
+            }
         }
         setPromotion(null);
     };
@@ -540,7 +599,7 @@ const AppContent: React.FC = () => {
             </AnimatePresence>
             
             <AnimatePresence>
-              {promotion && <PromotionModal promotion={promotion} onDismiss={dismissPromotion} />}
+              {promotion && <PromotionModal promotion={promotion} onDismiss={dismissPromotion} rankTiers={rankTiers} />}
             </AnimatePresence>
 
             <AnimatePresence mode="wait">

@@ -119,7 +119,7 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
 
     const handleEnter = () => {
         try {
-            const audio = new Audio('https://soundbible.com/mp3/weapon-fire-and-ricochet-383185338.mp3');
+            const audio = new Audio('https://cdn.pixabay.com/audio/2022/04/18/audio_0062b027d1.mp3');
             audio.volume = 0.5;
             audio.play();
         } catch (err) {

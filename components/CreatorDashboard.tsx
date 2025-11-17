@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CreatorDetails } from '../types';
@@ -87,6 +86,21 @@ service cloud.firestore {
          ]));
     }
     
+    match /signups/{signupId} {
+      // Allow any authenticated user to read signups (needed for gear availability checks).
+      allow read: if request.auth != null;
+      // Allow a player to create their own signup doc, where the docId is eventId_playerId
+      allow create: if request.auth != null &&
+      						 request.resource.data.playerId == signupId.split('_')[1] &&
+                   get(/databases/$(database)/documents/players/$(request.resource.data.playerId)).data.activeAuthUID == request.auth.uid;
+      // Allow a player to delete their own signup doc
+      allow delete: if request.auth != null &&
+      						 resource.data.playerId == signupId.split('_')[1] &&
+                   get(/databases/$(database)/documents/players/$(resource.data.playerId)).data.activeAuthUID == request.auth.uid;
+      // Admins/Creators can manage any signup
+      allow write: if isAdmin() || isCreator();
+    }
+    
     // --- Publicly Readable, Admin/Creator Writable Collections ---
     match /settings/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /socialLinks/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
@@ -102,7 +116,6 @@ service cloud.firestore {
     match /locations/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /raffles/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /vouchers/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
-    match /signups/{docId} { allow read: if true; allow write: if isAdmin() || isCreator() || request.auth.uid == resource.data.activeAuthUID; }
     
     // --- Admin-Only Collections ---
     match /transactions/{transactionId} { allow read, write: if isAdmin() || isCreator(); }

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
@@ -74,6 +73,7 @@ service cloud.firestore {
     }
     
     match /signups/{signupId} {
+      // Allow any authenticated user to read signups (needed for gear availability checks).
       allow read: if request.auth != null;
       // Allow a player to create their own signup doc, where the docId is eventId_playerId
       allow create: if request.auth != null &&
@@ -111,6 +111,20 @@ service cloud.firestore {
     match /_health/{testId} { allow read, write: if isAdmin() || isCreator(); }
   }
 }
+`;
+
+const corsJsonContent = `
+[
+  {
+    "origin": ["*"],
+    "method": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+    "responseHeader": [
+      "Content-Type",
+      "x-goog-resumable"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]
 `;
 
 const CodeBlock: React.FC<{ children: React.ReactNode, title: string }> = ({ children, title }) => {
@@ -232,7 +246,21 @@ VITE_FIREBASE_APP_ID="your-app-id"
                 </CodeBlock>
             </StepCard>
 
-             <StepCard number={5} title="Create Admin & Creator Users">
+            <StepCard number={5} title="Fix File Uploads (CORS)">
+                <p>Firebase Storage often requires you to manually configure Cross-Origin Resource Sharing (CORS) to allow file uploads from your web app. This is the most common reason for upload failures.</p>
+                <ol className="list-decimal list-inside space-y-2 pl-4">
+                    <li>Install the Google Cloud CLI on your computer by following the <a href="https://cloud.google.com/sdk/docs/install" target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline">official installation guide</a>.</li>
+                    <li>Authenticate the CLI by running: <CodeBlock title="Terminal">gcloud auth login</CodeBlock></li>
+                    <li>Create a file named <code className="text-sm bg-zinc-700 p-1 rounded">cors.json</code> on your computer with the exact content below:</li>
+                    <CodeBlock title="cors.json">{corsJsonContent}</CodeBlock>
+                    <li>Find your Storage Bucket URL in your Firebase project (Firebase Console -&gt; Storage). It will look like <code className="text-sm bg-zinc-700 p-1 rounded">gs://your-project-id.appspot.com</code>.</li>
+                    <li>Run the following command in your terminal, replacing the placeholder with your actual bucket URL:</li>
+                    <CodeBlock title="Terminal">gsutil cors set cors.json gs://your-project-id.appspot.com</CodeBlock>
+                </ol>
+                <p>This one-time setup permanently fixes the upload issue.</p>
+            </StepCard>
+
+             <StepCard number={6} title="Create Admin & Creator Users">
                 <p>Go to 'Authentication' -&gt; 'Users' and click 'Add user'. Manually create two users:</p>
                  <ul className="list-disc list-inside space-y-2 pl-2">
                     <li><strong>Admin User:</strong> Email: <code className="text-sm bg-zinc-700 p-1 rounded">bosjoltactical@gmail.com</code>. Set a secure password.</li>
@@ -241,7 +269,7 @@ VITE_FIREBASE_APP_ID="your-app-id"
                  <p>The application is hard-coded to recognize these two emails as privileged users. After creating them, you can log in with their credentials.</p>
             </StepCard>
 
-            <StepCard number={6} title="Initial Data Seeding">
+            <StepCard number={7} title="Initial Data Seeding">
                 <p>When you run the app for the first time connected to a new, empty Firestore database, it will automatically detect this and "seed" all the initial mock data (players, events, settings, etc.) into your live database. You will see a "Seeding initial database..." loading screen. After it completes, the app will reload, and you will be running on your own live Firebase backend.</p>
             </StepCard>
         </div>

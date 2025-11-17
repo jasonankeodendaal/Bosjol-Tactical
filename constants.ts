@@ -486,7 +486,7 @@ export const MOCK_API_GUIDE: ApiGuideStep[] = [
     {
         id: 'step1',
         title: 'Introduction & Goal',
-        content: 'This guide provides the necessary code to run a self-hosted API server for handling file uploads and serving application data. This completely replaces the client-side Firebase connection, offering greater security, scalability, and the ability to handle large file uploads (like videos) that exceed Firestore\'s 1MB document limit. The server is built with Node.js and Express.',
+        content: 'This guide provides the necessary code to run a self-hosted API server for serving all application data and handling file uploads. This completely replaces the client-side Firebase connection, offering greater security, scalability, and the ability to handle large file uploads (like videos) that exceed Firestore\'s 1MB document limit. The server is built with Node.js and Express.',
     },
     {
         id: 'step2',
@@ -503,7 +503,8 @@ export const MOCK_API_GUIDE: ApiGuideStep[] = [
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "multer": "^1.4.5-lts.1"
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.1"
   }
 }`,
         codeLanguage: 'json',
@@ -512,17 +513,31 @@ export const MOCK_API_GUIDE: ApiGuideStep[] = [
     {
         id: 'step3',
         title: 'The Database File',
-        content: 'This server uses a simple JSON file as its database. Create a file named `db.json` in the same folder. This file should contain all your application data, structured by collection name. You can generate this file using the "Download Backup" button in the Settings tab.',
+        content: 'This server uses a simple JSON file as its database. Create a file named `db.json` in the same folder. This file should contain all your application data, structured by collection name. You can generate this file using the "Download Backup" button in the Settings tab to get a correctly formatted starting point.',
         codeBlock: `{
-  "players": [...],
-  "events": [...],
-  "ranks": [...],
-  "badges": [...],
-  "inventory": [...],
-  "transactions": [...],
-  "sponsors": [...],
-  "companyDetails": {...},
-  "socialLinks": [...]
+  "players": [],
+  "events": [],
+  "ranks": [],
+  "badges": [],
+  "legendaryBadges": [],
+  "gamificationSettings": [],
+  "inventory": [],
+  "signups": [],
+  "transactions": [],
+  "locations": [],
+  "suppliers": [],
+  "vouchers": [],
+  "raffles": [],
+  "sponsors": [],
+  "socialLinks": [],
+  "carouselMedia": [],
+  "apiSetupGuide": [],
+  "settings": {
+    "companyDetails": {},
+    "brandingDetails": {},
+    "contentDetails": {},
+    "creatorDetails": {}
+  }
 }`,
         codeLanguage: 'json',
         fileName: 'db.json'
@@ -530,27 +545,28 @@ export const MOCK_API_GUIDE: ApiGuideStep[] = [
     {
         id: 'step4',
         title: 'The Server Code',
-        content: 'Create a file named `server.js`. This code sets up an Express server with endpoints to read your `db.json` file, handle CRUD operations (examples for players included), and manage file uploads to a local `uploads/` directory.',
+        content: 'Create a file named `server.js`. This code sets up an Express server with generic endpoints to read and write to your `db.json` file, and manage file uploads to a local `uploads/` directory.',
         codeBlock: `const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const DB_PATH = path.join(__dirname, 'db.json');
+const UPLOADS_DIR = 'uploads';
 
 // --- Middleware ---
 app.use(cors());
 app.use(express.json());
-// Serve uploaded files statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, UPLOADS_DIR)));
 
 // --- File Upload Setup (Multer) ---
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
-    const uploadPath = path.join(__dirname, 'uploads');
+    const uploadPath = path.join(__dirname, UPLOADS_DIR);
     await fs.mkdir(uploadPath, { recursive: true });
     cb(null, uploadPath);
   },
@@ -583,23 +599,20 @@ const writeDb = async (data) => {
 
 // --- API Endpoints ---
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).send({ status: 'ok' });
-});
+// Health check
+app.get('/health', (req, res) => res.status(200).send({ status: 'ok' }));
 
-// File upload endpoint
+// File upload
 app.post('/upload', upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).send({ message: 'No file uploaded.' });
   }
-  // Construct the full URL to the uploaded file
-  const fileUrl = \`\${req.protocol}://\${req.get('host')}/uploads/\${req.file.filename}\`;
+  const fileUrl = \`\${req.protocol}://\${req.get('host')}/\${UPLOADS_DIR}/\${req.file.filename}\`;
   res.status(200).send({ url: fileUrl });
 });
 
-// Get all data endpoint
-app.get('/api/data', async (req, res) => {
+// Get all data combined
+app.get('/api/all-data', async (req, res) => {
   try {
     const db = await readDb();
     res.json(db);
@@ -608,38 +621,89 @@ app.get('/api/data', async (req, res) => {
   }
 });
 
-// Example: Get all players
-app.get('/api/players', async (req, res) => {
-  const db = await readDb();
-  res.json(db.players || []);
-});
-
-// Example: Update a player
-app.put('/api/players/:id', async (req, res) => {
-  const { id } = req.params;
-  const updatedPlayerData = req.body;
-  
+// Generic GET all for a collection
+app.get('/api/:collection', async (req, res) => {
+  const { collection } = req.params;
   try {
     const db = await readDb();
-    const playerIndex = db.players.findIndex(p => p.id === id);
-
-    if (playerIndex === -1) {
-      return res.status(404).json({ message: 'Player not found' });
+    if (db.hasOwnProperty(collection)) {
+      res.json(db[collection]);
+    } else {
+      res.status(404).json({ message: \`Collection '\${collection}' not found.\` });
     }
-
-    db.players[playerIndex] = { ...db.players[playerIndex], ...updatedPlayerData, id: id }; // Ensure ID is not changed
-    await writeDb(db);
-    res.json(db.players[playerIndex]);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
+// Generic POST to a collection
+app.post('/api/:collection', async (req, res) => {
+  const { collection } = req.params;
+  const newItem = { id: uuidv4(), ...req.body };
+  try {
+    const db = await readDb();
+    if (db.hasOwnProperty(collection) && Array.isArray(db[collection])) {
+      db[collection].push(newItem);
+      await writeDb(db);
+      res.status(201).json(newItem);
+    } else {
+      res.status(404).json({ message: \`Collection '\${collection}' not found or is not an array.\` });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Generic PUT to a document in a collection
+app.put('/api/:collection/:id', async (req, res) => {
+  const { collection, id } = req.params;
+  const updatedData = req.body;
+  try {
+    const db = await readDb();
+    if (db.hasOwnProperty(collection) && Array.isArray(db[collection])) {
+      const index = db[collection].findIndex(item => item.id === id);
+      if (index > -1) {
+        db[collection][index] = { ...db[collection][index], ...updatedData, id }; // Ensure ID is preserved
+        await writeDb(db);
+        res.json(db[collection][index]);
+      } else {
+        res.status(404).json({ message: \`Document with id '\${id}' not found in '\${collection}'.\` });
+      }
+    } else {
+      res.status(404).json({ message: \`Collection '\${collection}' not found or is not an array.\` });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Generic DELETE from a collection
+app.delete('/api/:collection/:id', async (req, res) => {
+    const { collection, id } = req.params;
+    try {
+        const db = await readDb();
+        if (db.hasOwnProperty(collection) && Array.isArray(db[collection])) {
+            const initialLength = db[collection].length;
+            db[collection] = db[collection].filter(item => item.id !== id);
+            if (db[collection].length < initialLength) {
+                await writeDb(db);
+                res.status(204).send();
+            } else {
+                res.status(404).json({ message: \`Document with id '\${id}' not found in '\${collection}'.\` });
+            }
+        } else {
+            res.status(404).json({ message: \`Collection '\${collection}' not found or is not an array.\` });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+
 // --- Start Server ---
 app.listen(PORT, () => {
   console.log(\`Bosjol Tactical API server running on http://localhost:\${PORT}\`);
-});
-`,
+});`,
         codeLanguage: 'javascript',
         fileName: 'server.js'
     },
@@ -653,7 +717,7 @@ app.listen(PORT, () => {
      {
         id: 'step6',
         title: 'Connecting the Frontend',
-        content: 'In the Admin Settings, go to "App & Content Settings" and set the "API Server URL" to the address of your running server (e.g., `http://localhost:3001`). The application will now use this server for all file uploads, bypassing database storage limits.',
+        content: 'In the Admin Settings, go to "App & Content Settings" and set the "API Server URL" to the address of your running server (e.g., `http://localhost:3001`). The application will now use this server for all data and file uploads, bypassing Firebase and database storage limits.',
     }
 ];
 

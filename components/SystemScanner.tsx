@@ -376,7 +376,9 @@ export const SystemScanner: React.FC = () => {
                             <div>
                                 <h3 className="font-semibold text-gray-200 mb-3 text-lg">Raw Data Editor</h3>
                                 <p className="text-sm text-amber-300 bg-amber-900/50 border border-amber-700 p-3 rounded-md mb-4"><ExclamationTriangleIcon className="inline w-5 h-5 mr-2" /><strong>High-Risk Area:</strong> Editing this data directly can break the application. This tool will completely replace the existing collection data.</p>
-                                <div className="flex gap-4 mb-4"><select value={selectedCollection} onChange={e => setSelectedCollection(e.target.value as keyof DataContextType)} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500">{collectionNames.map(name => <option key={name} value={name}>{name}</option>)}</select><Button onClick={handleBeautifyJson} variant="secondary">Beautify JSON</Button></div>
+                                <div className="flex gap-4 mb-4"><select value={selectedCollection} onChange={e => setSelectedCollection(e.target.value as keyof DataContextType)} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+                                    {collectionNames.map(collectionName => <option key={collectionName} value={collectionName}>{collectionName}</option>)}
+                                </select><Button onClick={handleBeautifyJson} variant="secondary">Beautify JSON</Button></div>
                                 <textarea value={editedData} onChange={e => setEditedData(e.target.value)} className="text-xs text-gray-200 w-full font-mono h-96 bg-zinc-950 p-4 rounded-lg border border-zinc-700 focus:ring-red-500 focus:border-red-500" spellCheck="false" />
                                 <Button onClick={handleSaveRawData} variant="danger" className="w-full mt-4">Save Raw Data for '{selectedCollection}'</Button>
                             </div>

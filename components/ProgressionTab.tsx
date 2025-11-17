@@ -17,7 +17,7 @@ interface ProgressionTabProps {
     setLegendaryBadges: React.Dispatch<React.SetStateAction<LegendaryBadge[]>>;
     gamificationSettings: GamificationSettings;
     setGamificationSettings: React.Dispatch<React.SetStateAction<GamificationSettings>>;
-    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<void>;
+    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<string>;
     updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
     deleteDoc: (collectionName: string, docId: string) => Promise<void>;
 }
@@ -304,44 +304,59 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     const [deletingTier, setDeletingTier] = useState<(Tier & { rankId: string }) | null>(null);
     
     // Handlers
-    const handleSaveRule = (rule: Omit<GamificationRule, 'id'> | GamificationRule) => { 'id' in rule ? updateDoc('gamificationSettings', rule) : addDoc('gamificationSettings', rule); };
-    const handleDeleteRule = () => { if (deletingRule) { deleteDoc('gamificationSettings', deletingRule.id); setDeletingRule(null); } };
+    const handleSaveRule = async (rule: Omit<GamificationRule, 'id'> | GamificationRule) => { 
+        setEditingRule(null);
+        'id' in rule ? await updateDoc('gamificationSettings', rule) : await addDoc('gamificationSettings', rule); 
+    };
+    const handleDeleteRule = async () => { if (deletingRule) { await deleteDoc('gamificationSettings', deletingRule.id); setDeletingRule(null); } };
     
-    const handleSaveBadge = (badge: Omit<Badge, 'id'> | Badge) => { 'id' in badge ? updateDoc('badges', badge) : addDoc('badges', badge); setEditingBadge(null); }
-    const handleDeleteBadge = () => { if (deletingBadge) { deleteDoc('badges', deletingBadge.id); setDeletingBadge(null); } }
+    const handleSaveBadge = async (badge: Omit<Badge, 'id'> | Badge) => { 
+        setEditingBadge(null);
+        'id' in badge ? await updateDoc('badges', badge) : await addDoc('badges', badge);
+    }
+    const handleDeleteBadge = async () => { if (deletingBadge) { await deleteDoc('badges', deletingBadge.id); setDeletingBadge(null); } }
 
-    const handleSaveLegendaryBadge = (badge: Omit<LegendaryBadge, 'id'> | LegendaryBadge) => { 'id' in badge ? updateDoc('legendaryBadges', badge) : addDoc('legendaryBadges', badge); setEditingLegendaryBadge(null); }
-    const handleDeleteLegendaryBadge = () => { if (deletingLegendaryBadge) { deleteDoc('legendaryBadges', deletingLegendaryBadge.id); setDeletingLegendaryBadge(null); } }
+    const handleSaveLegendaryBadge = async (badge: Omit<LegendaryBadge, 'id'> | LegendaryBadge) => { 
+        setEditingLegendaryBadge(null);
+        'id' in badge ? await updateDoc('legendaryBadges', badge) : await addDoc('legendaryBadges', badge);
+    }
+    const handleDeleteLegendaryBadge = async () => { if (deletingLegendaryBadge) { await deleteDoc('legendaryBadges', deletingLegendaryBadge.id); setDeletingLegendaryBadge(null); } }
 
-    const handleSaveRank = (rank: Omit<Rank, 'id'> | Rank) => { 'id' in rank ? updateDoc('ranks', rank) : addDoc('ranks', rank); setEditingRank(null); }
-    const handleDeleteRank = () => { if (deletingRank) { deleteDoc('ranks', deletingRank.id); setDeletingRank(null); } }
+    const handleSaveRank = async (rank: Omit<Rank, 'id'> | Rank) => { 
+        setEditingRank(null);
+        'id' in rank ? await updateDoc('ranks', rank) : await addDoc('ranks', rank);
+    }
+    const handleDeleteRank = async () => { if (deletingRank) { await deleteDoc('ranks', deletingRank.id); setDeletingRank(null); } }
 
-    const handleSaveTier = (tier: (Omit<Tier, 'id'> | Tier) & { rankId: string }) => {
+    const handleSaveTier = async (tier: (Omit<Tier, 'id'> | Tier) & { rankId: string }) => {
+        setEditingTier(null); // Optimistic close
         const { rankId, ...tierData } = tier;
         const rankToUpdate = ranks.find(r => r.id === rankId);
-        if (!rankToUpdate) return;
+        if (!rankToUpdate) {
+            console.error(`Could not find Rank with ID ${rankId} to save tier.`);
+            return;
+        }
         
         let updatedTiers;
         if ('id' in tierData && tierData.id) { // Editing existing tier
             updatedTiers = rankToUpdate.tiers.map(t => t.id === tierData.id ? (tierData as Tier) : t);
         } else { // Adding new tier
             const newTier = { ...tierData, id: `t_${Date.now()}` } as Tier;
-            updatedTiers = [...rankToUpdate.tiers, newTier];
+            updatedTiers = [...(rankToUpdate.tiers || []), newTier];
         }
 
         const updatedRank = { ...rankToUpdate, tiers: updatedTiers };
-        
-        updateDoc('ranks', updatedRank);
-        setEditingTier(null);
+        await updateDoc('ranks', updatedRank);
     };
 
-    const handleDeleteTier = () => {
+    const handleDeleteTier = async () => {
         if (!deletingTier) return;
         const { rankId, id: tierId } = deletingTier;
+        setDeletingTier(null); // Optimistic close
         
         const rankToUpdate = ranks.find(r => r.id === rankId);
         if (!rankToUpdate) {
-            setDeletingTier(null);
+            console.error(`Could not find Rank with ID ${rankId} to delete tier.`);
             return;
         }
 
@@ -350,8 +365,7 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
             tiers: rankToUpdate.tiers.filter(t => t.id !== tierId)
         };
         
-        updateDoc('ranks', updatedRank);
-        setDeletingTier(null);
+        await updateDoc('ranks', updatedRank);
     };
     
     const allTiers = ranks.flatMap(r => r.tiers).sort((a,b) => a.minXp - b.minXp);
@@ -395,7 +409,7 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
                                 </div>
                             </div>
                             <div className="p-4 space-y-2">
-                                {rank.tiers.sort((a,b) => a.minXp - b.minXp).map(tier => (
+                                {(rank.tiers || []).sort((a,b) => a.minXp - b.minXp).map(tier => (
                                     <div key={tier.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-md">
                                         <img src={tier.iconUrl} alt={tier.name} className="w-8 h-8"/>
                                         <div className="flex-grow">

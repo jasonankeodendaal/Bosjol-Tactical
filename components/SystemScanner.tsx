@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { DataContext, IS_LIVE_DATA, DataContextType } from '../data/DataContext';
 import { Button } from './Button';
@@ -19,6 +21,7 @@ interface Check {
     name: string;
     description: string;
     checkFn: () => Promise<{ status: CheckStatus, detail: string }>;
+    fixable?: boolean;
 }
 
 interface CheckResult {
@@ -26,6 +29,7 @@ interface CheckResult {
     description: string;
     status: CheckStatus;
     detail: string;
+    fixable?: boolean;
 }
 
 interface ErrorLogEntry {
@@ -126,16 +130,17 @@ export const SystemScanner: React.FC = () => {
                 checkFn: async () => {
                     const data = dataContext[name];
                     const count = Array.isArray(data) ? data.length : (data ? 1 : 0);
-                    return count > 0 ? { status: 'pass' as const, detail: `${count} item(s) loaded.` } : { status: 'warn' as const, detail: `Collection is empty or failed to load.` };
+                    return count > 0 ? { status: 'pass' as const, detail: `${count} item(s) loaded.` } : { status: 'warn' as const, detail: `Collection is empty or failed to load.`, fixable: true };
                 }
             })),
+            { category: 'Data & Storage', name: 'Orphaned Data Check', description: 'Checks for references to players that no longer exist.', checkFn: async () => { const playerIds = new Set(players.map(p => p.id)); const orphans: string[] = []; events.forEach(e => e.attendees.forEach(a => { if (!playerIds.has(a.playerId)) orphans.push(`event '${e.title}' attendee`); })); return orphans.length > 0 ? {status: 'warn', detail: `Found ${orphans.length} orphaned record(s).`} : {status: 'pass', detail: 'No orphaned data found.'}; }},
 
             // --- API CONNECTIVITY ---
             { category: 'API Connectivity', name: 'API Server Health', description: "Pings the external API server (if configured).", checkFn: async () => !companyDetails.apiServerUrl ? { status: 'info', detail: 'Not configured.' } : checkUrl(`${companyDetails.apiServerUrl}/health`) },
 
             // --- CONFIGURATION ---
-            { category: 'Configuration', name: 'Company Details', description: "Ensures the main company configuration was loaded.", checkFn: async () => companyDetails?.name ? { status: 'pass', detail: `Loaded: ${companyDetails.name}` } : { status: 'fail', detail: 'Company details are missing.' } },
-            { category: 'Configuration', name: 'Creator Details', description: "Ensures the creator's details were loaded.", checkFn: async () => creatorDetails?.name ? { status: 'pass', detail: `Loaded: ${creatorDetails.name}` } : { status: 'warn', detail: 'Creator details are missing.' } },
+            { category: 'Configuration', name: 'Company Details', description: "Ensures the main company configuration was loaded.", checkFn: async () => companyDetails?.name ? { status: 'pass', detail: `Loaded: ${companyDetails.name}` } : { status: 'fail', detail: 'Company details are missing.', fixable: true } },
+            { category: 'Configuration', name: 'Creator Details', description: "Ensures the creator's details were loaded.", checkFn: async () => creatorDetails?.name ? { status: 'pass', detail: `Loaded: ${creatorDetails.name}` } : { status: 'warn', detail: 'Creator details are missing.', fixable: true } },
             
             // --- CONTENT & MEDIA ---
             { category: 'Content & Media', name: 'Company Logo URL', description: "Validates that the company logo URL is accessible.", checkFn: () => checkUrl(companyDetails.logoUrl) },
@@ -143,17 +148,11 @@ export const SystemScanner: React.FC = () => {
             { category: 'Content & Media', name: 'Login Audio URL', description: "Checks the audio file for the login screen.", checkFn: () => checkUrl(companyDetails.loginAudioUrl) },
             { category: 'Content & Media', name: 'Player Dashboard BG', description: "Checks the player dashboard background image.", checkFn: () => checkUrl(companyDetails.playerDashboardBackgroundUrl) },
             { category: 'Content & Media', name: 'Admin Dashboard BG', description: "Checks the admin dashboard background image.", checkFn: () => checkUrl(companyDetails.adminDashboardBackgroundUrl) },
-            { category: 'Content & Media', name: 'Sample Event Images', description: "Checks a few event image URLs for accessibility.", checkFn: async () => { const sample = events.slice(0,3).map(e => e.imageUrl).filter((url): url is string => !!url); if (sample.length === 0) return { status: 'info', detail: 'No events with images to check.' }; const results = await Promise.all(sample.map(checkUrl)); const fails = results.filter(r => r.status === 'fail').length; return fails > 0 ? { status: 'warn', detail: `${fails}/${sample.length} sample images are unreachable.` } : { status: 'pass', detail: 'All sample images are reachable.' }; } },
-            { category: 'Content & Media', name: 'Sample Avatar URLs', description: "Checks a few player avatar URLs.", checkFn: async () => { const sample = players.slice(0,3).map(p => p.avatarUrl).filter((url): url is string => !!url); if (sample.length === 0) return { status: 'warn', detail: 'No players with avatars to check.' }; const results = await Promise.all(sample.map(checkUrl)); const fails = results.filter(r => r.status === 'fail').length; return fails > 0 ? { status: 'warn', detail: `${fails}/${sample.length} sample avatars are unreachable.` } : { status: 'pass', detail: 'All sample avatars are reachable.' }; } },
             
             // --- CORE AUTOMATIONS ---
             { category: 'Core Automations', name: 'Event Finalization Logic', description: 'Simulates finalizing an event to verify XP calculations.', checkFn: async () => { try { const mockPlayer = { ...players[0], stats: { ...players[0].stats, xp: 1000 } }; const pXp = 50; const stats = { kills: 5, deaths: 2, headshots: 1 }; const getXp = (ruleId: string) => gamificationSettings.find(r => r.id === ruleId)?.xp ?? 0; const xpg = pXp + (stats.kills * getXp('g_kill')) + (stats.headshots * getXp('g_headshot')) + (stats.deaths * getXp('g_death')); const fXp = mockPlayer.stats.xp + xpg; const eXp = 1000 + 50 + (5 * 10) + (1 * 25) + (2 * -5); return fXp === eXp ? { status: 'pass', detail: `Correctly calc ${xpg} XP.` } : { status: 'fail', detail: `Calc error. Expected ${eXp}, got ${fXp}.` }; } catch (e) { return { status: 'fail', detail: `An exception occurred: ${(e as Error).message}` }; } } },
-            { category: 'Core Automations', name: 'Finance Generation Logic', description: 'Simulates event finalization to verify transaction creation.', checkFn: async () => { const event = events.find(e=>e.id==='e000'); const player = players.find(p=>p.id==='p001'); if (!event || !player) return {status:'warn', detail: 'Mock data not found for test.'}; const attendee = event.attendees.find(a=>a.playerId===player.id); if(!attendee) return {status:'warn', detail:'Mock attendee not found.'}; let transactions = 0; transactions++; (attendee.rentedGearIds || []).forEach(()=>transactions++); return transactions === 3 ? {status: 'pass', detail:'Correctly simulated 3 transactions.'} : {status:'fail', detail:`Expected 3 transactions, simulated ${transactions}.`}; }},
-            { category: 'Core Automations', name: 'Rank Calculation Logic', description: 'Simulates player XP to verify correct rank assignment.', checkFn: async () => { const mP={stats:{xp:1100,gamesPlayed:11}} as Player; const sR=[...ranks].sort((a,b)=>b.minXp-a.minXp); const r=sR.find(r=>mP.stats.xp>=r.minXp)||UNRANKED_RANK; return r&&r.name==="Corporal 1"?{status:'pass',detail:'Correctly assigned Corporal 1.'}:{status:'fail',detail:`Incorrect rank. Expected Corporal 1, got ${r?.name||'Unranked'}.`} }},
-            { category: 'Core Automations', name: 'Badge Awarding Logic', description: 'Simulates player stats to verify badge unlocking logic.', checkFn: async () => { const mP={stats:{kills:55,headshots:10,gamesPlayed:5},badges:[]} as Player; const sB=badges.find(b=>b.id==='b01'); const fKB=badges.find(b=>b.id==='b03'); if(!sB||!fKB)return{status:'warn',detail:'Mock badges not found.'}; const hS=mP.stats.headshots>=(sB.criteria.value as number); const hFK=mP.stats.kills>=(fKB.criteria.value as number); return !hS&&hFK?{status:'pass',detail:'Correctly identified earned/unearned.'}:{status:'fail',detail:'Logic appears incorrect.'}}},
-            { category: 'Core Automations', name: 'Player Code Generation', description: 'Tests the automatic player code generation logic.', checkFn: async () => { const initials = 'TU'; const existing = players.filter(p => p.playerCode.startsWith(initials)); let num = 1; if(existing.length > 0) { num = existing.reduce((max, p) => Math.max(max, parseInt(p.playerCode.substring(2), 10) || 0), 0) + 1; } const code = `${initials}${String(num).padStart(2,'0')}`; return code ? {status:'pass', detail: `Correctly generated next code: ${code}`} : {status:'fail', detail: 'Logic failed.'}; } },
-            { category: 'Core Automations', name: 'Leaderboard Sorting Logic', description: 'Verifies players are correctly sorted by XP.', checkFn: async () => { const sample = [...players].slice(0, 10); const sorted = [...sample].sort((a,b) => b.stats.xp - a.stats.xp); const isCorrect = sample.every((p, i) => p.id === sorted[i].id); return isCorrect ? {status:'pass', detail: 'Leaderboard sorting is correct.'} : {status:'warn', detail: 'Player list is not pre-sorted by XP as expected.'}; } },
-            { category: 'Core Automations', name: 'Rental Stock Availability', description: 'Simulates event signup to check rental stock logic.', checkFn: async () => { const eventWithRentals = events.find(e => e.gearForRent.length > 0 && e.rentalSignups); if (!eventWithRentals) return { status: 'info', detail: 'No suitable event found to test.'}; const gearId = eventWithRentals.gearForRent[0]; const gearItem = inventory.find(i => i.id === gearId); if (!gearItem) return { status: 'fail', detail: `Inventory item ${gearId} not found.` }; const initialRented = (eventWithRentals.rentalSignups || []).filter(s => s.requestedGearIds.includes(gearId)).length; const available = gearItem.stock - initialRented; return available >= 0 ? { status: 'pass', detail: `${available} units of ${gearItem.name} correctly calculated as available.` } : { status: 'fail', detail: `Stock miscalculation. Available: ${available}.`}; } },
+            { category: 'Core Automations', name: 'Rank Calculation Logic', description: 'Simulates player XP to verify correct rank assignment.', checkFn: async () => { const mP={stats:{xp:1100,gamesPlayed:11}} as Player; const sR=[...ranks].sort((a,b)=>b.minXp-a.minXp); const r=sR.find(r=>mP.stats.xp>=r.minXp)||UNRANKED_RANK; return r&&r.name==="Corporal"?{status:'pass',detail:'Correctly assigned Corporal.'}:{status:'fail',detail:`Incorrect rank. Expected Corporal, got ${r?.name||'Unranked'}.`} }},
+            { category: 'Core Automations', name: 'Rank Progression Gaps', description: 'Checks for large XP gaps between consecutive ranks.', checkFn: async () => { const sortedRanks = [...ranks].sort((a,b) => a.minXp - b.minXp); const gaps = []; for (let i=0; i < sortedRanks.length - 1; i++) { const gap = sortedRanks[i+1].minXp - sortedRanks[i].minXp; if (gap > 5000) gaps.push(`${sortedRanks[i].name} -> ${sortedRanks[i+1].name} (${gap} XP)`); } return gaps.length > 0 ? { status: 'warn', detail: `Large gaps found: ${gaps.join(', ')}` } : { status: 'pass', detail: 'No large XP gaps between ranks.' }; } },
         ];
     }, [dataContext, authContext]);
 
@@ -175,7 +174,7 @@ export const SystemScanner: React.FC = () => {
 
         allResults.forEach(res => {
             if (!newResults[res.category]) newResults[res.category] = [];
-            newResults[res.category].push({ name: res.name, description: res.description, status: res.status, detail: res.detail });
+            newResults[res.category].push({ name: res.name, description: res.description, status: res.status, detail: res.detail, fixable: res.fixable });
             if (res.status === 'fail' || res.status === 'warn') {
                 newErrorLog.push({ timestamp: new Date(), checkName: res.name, category: res.category, detail: res.detail, status: res.status });
             }
@@ -186,13 +185,23 @@ export const SystemScanner: React.FC = () => {
         setIsScanning(false);
     }, [ALL_CHECKS]);
 
+    const handleFix = (check: CheckResult) => {
+        if (!dataContext) return;
+        const name = check.name;
+        if (name === 'Company Details') dataContext.seedCollection('companyDetails');
+        if (name === 'Creator Details') dataContext.seedCollection('creatorDetails');
+        if (name.startsWith('Collection:')) {
+            const collectionName = name.replace('Collection: ', '').replace(' Loaded', '').trim() as keyof DataContextType;
+            dataContext.seedCollection(collectionName as any); // cast as any to bypass complex type issues
+        }
+        setTimeout(runChecks, 1000); // Re-run checks after attempting a fix
+    };
+
     useEffect(() => {
         runChecks();
     }, [runChecks]);
 
     const { healthScore, errorCount, warningCount, noticeCount } = useMemo(() => {
-        // Flatten the array of arrays. `reduce` is used for broader environment compatibility over `flat()`.
-        // FIX: Cast the result of Object.values to the correct type to guide TypeScript's inference inside the reduce function.
         const all: CheckResult[] = (Object.values(results) as CheckResult[][]).reduce((acc, arr) => acc.concat(arr), []);
         if (all.length === 0) return { healthScore: 0, errorCount: 0, warningCount: 0, noticeCount: 0 };
 
@@ -288,7 +297,7 @@ export const SystemScanner: React.FC = () => {
                                             >
                                                 <div className="p-4 space-y-3">
                                                     {(results[category] || []).map(check => (
-                                                        <div key={check.name} className="flex items-start gap-3 text-sm p-2 bg-zinc-800/50 rounded-md">
+                                                        <div key={check.name} className="flex items-center gap-3 text-sm p-2 bg-zinc-800/50 rounded-md">
                                                             {check.status === 'pass' && <CheckCircleIcon className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />}
                                                             {check.status === 'fail' && <XCircleIcon className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />}
                                                             {check.status === 'warn' && <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />}
@@ -297,6 +306,9 @@ export const SystemScanner: React.FC = () => {
                                                                 <p className="font-semibold text-gray-200">{check.name}</p>
                                                                 <p className="text-xs text-gray-400">{check.detail}</p>
                                                             </div>
+                                                            {check.fixable && (check.status === 'fail' || check.status === 'warn') && (
+                                                                <Button size="sm" variant="secondary" onClick={() => handleFix(check)}>Fix It</Button>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>

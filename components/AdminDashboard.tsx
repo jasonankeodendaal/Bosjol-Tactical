@@ -3,6 +3,7 @@
 
 
 
+
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, GameEvent, Rank, Tier, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, RentalSignup, CarouselMedia } from '../types';
@@ -54,13 +55,50 @@ const NewPlayerModal: React.FC<{
         age: '',
         idNumber: '',
     });
+    const [playerCode, setPlayerCode] = useState('');
+    const [playerCodeError, setPlayerCodeError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        const { name, surname } = formData;
+        if (name && surname) {
+            const initials = (name.charAt(0) + surname.charAt(0)).toUpperCase();
+            const existingPlayersWithInitials = players.filter(p => p.playerCode.startsWith(initials));
+            let newNumber = 1;
+            if (existingPlayersWithInitials.length > 0) {
+                const highestNumber = existingPlayersWithInitials.reduce((max, p) => {
+                    const numPart = p.playerCode.substring(initials.length);
+                    const num = parseInt(numPart, 10);
+                    return !isNaN(num) && num > max ? num : max;
+                }, 0);
+                newNumber = highestNumber + 1;
+            }
+            const newPlayerCode = `${initials}${String(newNumber).padStart(2, '0')}`;
+            setPlayerCode(newPlayerCode);
+            setPlayerCodeError('');
+        }
+    }, [formData.name, formData.surname, players]);
+
+    const handlePlayerCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const code = e.target.value.toUpperCase();
+        setPlayerCode(code);
+        if (players.some(p => p.playerCode.toUpperCase() === code)) {
+            setPlayerCodeError('This Player Code is already taken.');
+        } else {
+            setPlayerCodeError('');
+        }
+    };
+
 
     const handleSave = async () => {
         // Validation
         const ageNum = Number(formData.age);
-        if (!formData.name || !formData.surname || !formData.email || !formData.pin || !formData.age || !formData.idNumber) {
+        if (!formData.name || !formData.surname || !formData.email || !formData.pin || !formData.age || !formData.idNumber || !playerCode) {
             alert('Please fill in all required fields.');
+            return;
+        }
+        if (playerCodeError) {
+            alert(playerCodeError);
             return;
         }
         if (!/^\d{6}$/.test(formData.pin)) {
@@ -73,22 +111,6 @@ const NewPlayerModal: React.FC<{
         }
         
         setIsSaving(true);
-
-        // Auto-generate playerCode based on initials
-        const initials = (formData.name.charAt(0) + formData.surname.charAt(0)).toUpperCase();
-        const existingPlayersWithInitials = players.filter(p => p.playerCode.startsWith(initials));
-        
-        let newNumber = 1;
-        if (existingPlayersWithInitials.length > 0) {
-            const highestNumber = existingPlayersWithInitials.reduce((max, p) => {
-                const numPart = p.playerCode.substring(initials.length);
-                const num = parseInt(numPart, 10);
-                return !isNaN(num) && num > max ? num : max;
-            }, 0);
-            newNumber = highestNumber + 1;
-        }
-        
-        const newPlayerCode = `${initials}${String(newNumber).padStart(2, '0')}`;
         
         const sortedRanks = [...ranks].sort((a, b) => a.minXp - b.minXp);
         const defaultRank = sortedRanks[0] || UNRANKED_RANK;
@@ -109,7 +131,7 @@ const NewPlayerModal: React.FC<{
         const newPlayerData: Omit<Player, 'id'> = {
             name: formData.name,
             surname: formData.surname,
-            playerCode: newPlayerCode,
+            playerCode: playerCode,
             email: formData.email,
             phone: formData.phone,
             pin: formData.pin,
@@ -156,6 +178,10 @@ const NewPlayerModal: React.FC<{
                     <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                     <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({ ...f, surname: e.target.value }))} />
                 </div>
+                <div>
+                    <Input label="Player Code" value={playerCode} onChange={handlePlayerCodeChange} />
+                    {playerCodeError && <p className="text-red-500 text-xs mt-1">{playerCodeError}</p>}
+                </div>
                 <Input label="Email" type="email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
                 <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -165,7 +191,7 @@ const NewPlayerModal: React.FC<{
                 <Input label="6-Digit PIN" type="password" value={formData.pin} onChange={e => setFormData(f => ({ ...f, pin: e.target.value.replace(/\D/g, '') }))} maxLength={6} />
             </div>
             <div className="mt-6">
-                <Button className="w-full" onClick={handleSave} disabled={isSaving}>
+                <Button className="w-full" onClick={handleSave} disabled={isSaving || !!playerCodeError}>
                     {isSaving ? 'Creating...' : 'Create Player'}
                 </Button>
             </div>
@@ -428,6 +454,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 onDelete={handleDeleteEvent}
                 setPlayers={props.setPlayers}
                 setTransactions={props.setTransactions}
+                setInventory={props.setInventory}
+                updateDoc={props.updateDoc}
             />
         )
     }

@@ -121,7 +121,7 @@ export interface EventAttendee {
 }
 
 export type InventoryCategory = 'AEG Rifle' | 'GBB Rifle' | 'Sniper Rifle' | 'Sidearm' | 'SMG' | 'Tactical Gear' | 'Attachments' | 'Consumables' | 'Other';
-export type InventoryCondition = 'New' | 'Used' | 'Needs Repair';
+export type InventoryCondition = 'New' | 'Used' | 'Needs Repair' | 'Needs Inspection';
 
 
 export interface InventoryItem {

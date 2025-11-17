@@ -1,12 +1,13 @@
 
 
 
+
 import React, { useContext, useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
 import { Button } from './components/Button';
-import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails } from './types';
-import { XIcon, KeyIcon } from './components/icons/Icons';
+import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails, Rank, Badge } from './types';
+import { XIcon, KeyIcon, ShieldCheckIcon, TrophyIcon } from './components/icons/Icons';
 import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
 import { Loader } from './components/Loader';
 import { USE_FIREBASE, isFirebaseConfigured, firebaseInitializationError } from './firebase';
@@ -147,6 +148,45 @@ const PublicPageFloatingIcons: React.FC<{
 
 // --- END Creator Popup ---
 
+const PromotionModal: React.FC<{
+    promotion: { newRank?: Rank; newBadges: Badge[] };
+    onDismiss: () => void;
+}> = ({ promotion, onDismiss }) => {
+    return (
+        <Modal isOpen={true} onClose={onDismiss} title="Operator Promoted!">
+            <div className="text-center">
+                {promotion.newRank && (
+                    <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-300 mb-2">New Rank Achieved</h3>
+                        <div className="bg-zinc-800/50 p-4 rounded-lg flex flex-col items-center">
+                            <img src={promotion.newRank.iconUrl} alt={promotion.newRank.name} className="h-20 mx-auto mb-2" />
+                            <p className="text-2xl font-bold text-red-400">{promotion.newRank.name}</p>
+                        </div>
+                    </div>
+                )}
+                {promotion.newBadges.length > 0 && (
+                     <div>
+                        <h3 className="text-lg font-semibold text-gray-300 mb-2">Achievements Unlocked</h3>
+                        <div className="space-y-2">
+                        {promotion.newBadges.map(badge => (
+                            <div key={badge.id} className="bg-zinc-800/50 p-3 rounded-lg flex items-center gap-4">
+                                <img src={badge.iconUrl} alt={badge.name} className="w-12 h-12" />
+                                <div className="text-left">
+                                    <p className="font-bold text-white">{badge.name}</p>
+                                    <p className="text-xs text-gray-400">{badge.description}</p>
+                                </div>
+                            </div>
+                        ))}
+                        </div>
+                    </div>
+                )}
+                 <Button onClick={onDismiss} className="w-full mt-6">Continue</Button>
+            </div>
+        </Modal>
+    );
+};
+
+
 const Footer: React.FC<{ details: CompanyDetails }> = ({ details }) => (
     <footer className="bg-zinc-950/80 backdrop-blur-sm border-t border-zinc-800 py-3 px-4 text-xs text-gray-500 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -168,11 +208,68 @@ const AppContent: React.FC = () => {
     const [showCreatorPopup, setShowCreatorPopup] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [promotion, setPromotion] = useState<{ newRank?: Rank; newBadges: Badge[] } | null>(null);
+
 
     if (!auth) throw new Error("AuthContext not found.");
     if (!data) throw new Error("DataContext not found.");
     
     const { isAuthenticated, user, login, logout, helpTopic, setHelpTopic } = auth;
+    
+    const { 
+        players,
+        events,
+        companyDetails,
+        socialLinks,
+        carouselMedia,
+        loading,
+        isSeeding,
+        updateDoc,
+        addDoc,
+        creatorDetails,
+        ranks,
+    } = data;
+    
+    const currentPlayer = players.find(p => p.id === user?.id);
+
+    const checkForPromotions = useCallback((player: Player) => {
+        // Don't run this check if modal is already open
+        if (promotion) return;
+        
+        const lastSeenXp = parseInt(localStorage.getItem(`lastSeenXp_${player.id}`) || '0', 10);
+        const lastSeenBadges: string[] = JSON.parse(localStorage.getItem(`lastSeenBadges_${player.id}`) || '[]');
+        
+        // Check only if XP has actually changed.
+        if (player.stats.xp > lastSeenXp) {
+            const getRankForXp = (xp: number) => ranks.slice().sort((a, b) => b.minXp - a.minXp).find(r => xp >= r.minXp);
+            
+            const oldRank = getRankForXp(lastSeenXp);
+            const newRank = getRankForXp(player.stats.xp);
+            
+            const newBadges = player.badges.filter(b => !lastSeenBadges.includes(b.id));
+
+            const hasNewRank = newRank && oldRank && newRank.id !== oldRank.id;
+
+            if (hasNewRank || newBadges.length > 0) {
+                setPromotion({ newRank: hasNewRank ? newRank : undefined, newBadges });
+            }
+        }
+    }, [ranks, promotion]);
+
+    const dismissPromotion = () => {
+        if (user?.role === 'player' && currentPlayer) {
+            localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(currentPlayer.stats.xp));
+            localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify(currentPlayer.badges.map(b => b.id)));
+        }
+        setPromotion(null);
+    };
+
+    useEffect(() => {
+        if (user?.role === 'player' && currentPlayer) {
+            checkForPromotions(currentPlayer);
+        }
+    }, [user, currentPlayer, checkForPromotions]);
+
 
     useEffect(() => {
         if (showFrontPage) {
@@ -239,18 +336,6 @@ const AppContent: React.FC = () => {
         }
     }, [isAuthenticated, resetInactivityTimer]);
 
-    const { 
-        players,
-        events,
-        companyDetails,
-        socialLinks,
-        carouselMedia,
-        loading,
-        isSeeding,
-        updateDoc,
-        addDoc,
-        creatorDetails,
-    } = data;
     
     // Centralized background audio management
     useEffect(() => {
@@ -308,7 +393,7 @@ const AppContent: React.FC = () => {
     }, [showFrontPage, isAuthenticated, companyDetails.loginAudioUrl]);
 
 
-    const currentPlayer = players.find(p => p.id === user?.id);
+    
 
     const handleUpdatePlayer = async (updatedPlayer: Player) => {
         await updateDoc('players', updatedPlayer);
@@ -388,6 +473,7 @@ const AppContent: React.FC = () => {
         <div className="min-h-screen flex flex-col bg-transparent text-white" style={creatorBackgroundStyle}>
             <AnimatePresence>
                 {showCreatorPopup && <CreatorPopup onClose={() => setShowCreatorPopup(false)} creatorDetails={creatorDetails} />}
+                {promotion && <PromotionModal promotion={promotion} onDismiss={dismissPromotion} />}
             </AnimatePresence>
             <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
 

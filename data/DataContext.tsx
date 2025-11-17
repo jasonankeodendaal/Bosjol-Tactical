@@ -106,8 +106,11 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
     }, [collectionName, docId]);
 
      const updateData = async (newData: T | ((prev: T) => T)) => {
-        const finalData = typeof newData === 'function' ? (newData as (prev: T) => T)(data) : newData;
         if (IS_LIVE_DATA) {
+            // For live data, we need the most current state to apply a function update.
+            // However, the component calling this function ('SettingsTab') will pass the complete new object,
+            // not a function, making this simpler. We just write to Firestore and let the listener update state.
+            const finalData = typeof newData === 'function' ? (newData as (prev: T) => T)(data) : newData;
             try {
                 if (collectionName === 'settings') {
                     const dataSize = new TextEncoder().encode(JSON.stringify(finalData)).length;
@@ -117,13 +120,17 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                     }
                 }
                 const docRef = db.collection(collectionName).doc(docId);
+                // Write to Firestore and rely on the onSnapshot listener to update the state.
+                // This makes Firestore the single source of truth and avoids race conditions.
                 await docRef.set(finalData, { merge: true });
             } catch (error: any) {
                 console.error(`Failed to save document ${collectionName}/${docId}:`, error);
                 alert(`Failed to save settings: ${error.message}`);
             }
+        } else {
+            // For mock data, we update the state directly.
+            setData(newData);
         }
-        setData(finalData);
     };
     
     return [data, updateData, loading] as const;

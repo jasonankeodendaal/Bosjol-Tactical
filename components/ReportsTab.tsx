@@ -13,7 +13,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({ events, inventory }) => 
     const completedEvents = events.filter(e => e.status === 'Completed');
     const totalRevenue = completedEvents.reduce((total, event) => {
         const eventRevenue = event.attendees
-            .filter(a => a.paymentStatus.startsWith('Paid'))
+            .filter(a => a.paymentStatus?.startsWith('Paid'))
             .reduce((sum) => sum + event.gameFee, 0);
         return total + eventRevenue;
     }, 0);

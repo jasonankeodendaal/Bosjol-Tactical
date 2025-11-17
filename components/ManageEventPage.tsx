@@ -125,7 +125,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             xpGained += (playerLiveStats.deaths || 0) * getXp('g_death'); // Usually negative
             
             // Add financial transactions for this player
-            if (attendeeInfo.paymentStatus.startsWith('Paid') && event?.id) {
+            if (attendeeInfo.paymentStatus?.startsWith('Paid') && event?.id) {
                  newTransactions.push({
                     id: `txn-${event!.id}-${player.id}-fee`,
                     date: formData.date,

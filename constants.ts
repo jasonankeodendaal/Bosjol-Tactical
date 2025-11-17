@@ -1,9 +1,9 @@
-import type { Player, Admin, GameEvent, Briefing, Rank, Tier, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails } from './types';
+import type { Player, Admin, GameEvent, Briefing, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails, Signup, RankTier, SubRank } from './types';
 
 export const MOCK_BADGES: Badge[] = [
-    { id: 'b01', name: 'Sharpshooter', description: 'Achieve 50 headshots', iconUrl: 'https://cdn.pixabay.com/photo/2012/04/13/19/27/target-33391_1280.png', criteria: { type: 'headshots', value: 50 }},
-    { id: 'b02', name: 'Veteran', description: 'Participate in 25 matches', iconUrl: 'https://cdn.pixabay.com/photo/2017/08/10/03/00/medal-2617351_1280.png', criteria: { type: 'gamesPlayed', value: 25 }},
-    { id: 'b03', name: 'First Kill', description: 'Get your first kill', iconUrl: 'https://cdn.pixabay.com/photo/2012/04/12/21/51/skull-30880_1280.png', criteria: { type: 'kills', value: 1 }},
+    { id: 'b01', name: 'Sharpshooter', description: 'Achieve 50 headshots', iconUrl: 'https://img.icons8.com/color/96/target.png', criteria: { type: 'headshots', value: 50 }},
+    { id: 'b02', name: 'Veteran', description: 'Participate in 25 matches', iconUrl: 'https://img.icons8.com/color/96/medal2.png', criteria: { type: 'gamesPlayed', value: 25 }},
+    { id: 'b03', name: 'First Kill', description: 'Get your first kill', iconUrl: 'https://img.icons8.com/color/96/skull.png', criteria: { type: 'kills', value: 1 }},
     { id: 'b04', name: 'Gold Tier Operator', description: 'Awarded for reaching the Gold rank', iconUrl: 'https://img.icons8.com/color/96/gold-medal.png', criteria: { type: 'rank', value: 'Gold' } },
 ];
 
@@ -13,48 +13,97 @@ export const MOCK_LEGENDARY_BADGES: LegendaryBadge[] = [
     { id: 'leg03', name: 'Last Man Standing', description: 'For an operator who single-handedly clutched a victory against overwhelming odds.', iconUrl: 'https://img.icons8.com/fluency/96/shield.png', howToObtain: 'Be the last surviving member of your team and win the round.' },
 ];
 
-export const UNRANKED_RANK: Rank = { 
-    id: 'rank_unranked',
-    tierId: 'tier_unranked',
+export const UNRANKED_SUB_RANK: SubRank = { 
+    id: 'subrank_unranked',
     name: 'Unranked',
     minXp: 0, 
     iconUrl: 'https://img.icons8.com/ios-filled/100/737373/shield.png',
-    unlocks: ["Access to standard loadout"],
+    perks: ["Play 10 games to get ranked"],
 };
 
-export const MOCK_TIERS: Tier[] = [
-    { id: 't1', name: 'Recruit', badgeIconUrl: 'https://img.icons8.com/external-flatart-icons-outline-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-outline-flatarticons.png' },
-    { id: 't2', name: 'Operator', badgeIconUrl: 'https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-solid-flatarticons.png' },
-    { id: 't3', name: 'Veteran', badgeIconUrl: 'https://img.icons8.com/external-flatart-icons-flat-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-flat-flatarticons.png' },
-    { id: 't4', name: 'Elite', badgeIconUrl: 'https://img.icons8.com/external-justicon-flat-justicon/64/external-shield-gaming-justicon-flat-justicon.png' },
-    { id: 't5', name: 'Commander', badgeIconUrl: 'https://img.icons8.com/color/96/laurel-wreath.png' },
+export const MOCK_RANK_TIERS: RankTier[] = [
+  {
+    id: "tier_rookie",
+    name: "Rookie",
+    description: "Introductory tier. Players learn basics, unlock introductory cosmetics and small credit rewards at season end.",
+    subranks: [
+      { id: "r_i", name: "Rookie I", minXp: 0, perks: ["Season cosmetic (banner)", "Small credit reward"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
+      { id: "r_ii", name: "Rookie II", minXp: 201, perks: ["Calling card", "Small credit reward"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
+      { id: "r_iii", name: "Rookie III", minXp: 401, perks: ["Weapon XP card (minor)", "Profile frame"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
+      { id: "r_iv", name: "Rookie IV", minXp: 601, perks: ["Skin fragment", "Credits"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
+      { id: "r_v", name: "Rookie V", minXp: 801, perks: ["Season-end credits", "Badge"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" }
+    ]
+  },
+  {
+    id: "tier_vet",
+    name: "Veteran",
+    description: "Established players — better season rewards and more cosmetics unlocked per subrank.",
+    subranks: [
+      { id: "v_i", name: "Veteran I", minXp: 1001, perks: ["Credits", "Calling card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
+      { id: "v_ii", name: "Veteran II", minXp: 1201, perks: ["Weapon XP Card", "Profile frame"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
+      { id: "v_iii", name: "Veteran III", minXp: 1401, perks: ["Weapon skin (basic)", "Credits"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
+      { id: "v_iv", name: "Veteran IV", minXp: 1601, perks: ["Calling card", "Season cosmetic"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
+      { id: "v_v", name: "Veteran V", minXp: 1801, perks: ["Higher credits", "Badge"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" }
+    ]
+  },
+  {
+    id: "tier_elite",
+    name: "Elite",
+    description: "Mid-tier competitive players — unlock stronger cosmetics and weapon XP rewards.",
+    subranks: [
+      { id: "e_i", name: "Elite I", minXp: 2001, perks: ["Weapon XP Card x2", "Profile frame"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
+      { id: "e_ii", name: "Elite II", minXp: 2201, perks: ["Weapon skin (uncommon)", "Credits"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
+      { id: "e_iii", name: "Elite III", minXp: 2401, perks: ["Calling card", "Weapon XP Card x3"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
+      { id: "e_iv", name: "Elite IV", minXp: 2601, perks: ["Season costume fragment", "Higher credits"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
+      { id: "e_v", name: "Elite V", minXp: 2801, perks: ["Distinct banner", "XP boost token (cosmetic)"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" }
+    ]
+  },
+  {
+    id: "tier_pro",
+    name: "Pro",
+    description: "High-skill players. Season rewards include multiple Weapon XP cards, rarer skins and valuable credits.",
+    subranks: [
+      { id: "p_i", name: "Pro I", minXp: 3001, perks: ["Weapon XP Card x5", "Calling card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
+      { id: "p_ii", name: "Pro II", minXp: 3301, perks: ["Rare weapon skin", "Large credits"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
+      { id: "p_iii", name: "Pro III", minXp: 3601, perks: ["Weapon XP Card x8", "Profile frame (rare)"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
+      { id: "p_iv", name: "Pro IV", minXp: 3901, perks: ["Premium calling card", "Season cosmetic set"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
+      { id: "p_v", name: "Pro V", minXp: 4201, perks: ["Large skin shard pack", "High credits"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" }
+    ]
+  },
+  {
+    id: "tier_master",
+    name: "Master",
+    description: "Competitive tier — strong season rewards: multiple premium Weapon XP cards, exclusive camos and higher credits.",
+    subranks: [
+      { id: "m_i", name: "Master I", minXp: 4501, perks: ["Premium weapon skin", "Weapon XP Card x10"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
+      { id: "m_ii", name: "Master II", minXp: 4901, perks: ["Exclusive profile frame", "Large credits"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
+      { id: "m_iii", name: "Master III", minXp: 5201, perks: ["Rare camo", "Weapon XP Card x12"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
+      { id: "m_iv", name: "Master IV", minXp: 5401, perks: ["Cosmetic bundle (small)", "Season badge"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
+      { id: "m_v", name: "Master V", minXp: 5701, perks: ["High-tier skin", "Mass Weapon XP Cards"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" }
+    ]
+  },
+  {
+    id: "tier_gm",
+    name: "Grand Master",
+    description: "Top competitive tier — exclusive cosmetics, banner effects, and significant season rewards.",
+    subranks: [
+      { id: "gm_i", name: "Grand Master I", minXp: 6001, perks: ["Exclusive banner effect", "Large credits"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
+      { id: "gm_ii", name: "Grand Master II", minXp: 6401, perks: ["Elite weapon skin", "Weapon XP Card x20"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
+      { id: "gm_iii", name: "Grand Master III", minXp: 6801, perks: ["Profile frame (epic)", "Season cosmetic set"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
+      { id: "gm_iv", name: "Grand Master IV", minXp: 7201, perks: ["Huge credits pack", "Exclusive calling card"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
+      { id: "gm_v", name: "Grand Master V", minXp: 7601, perks: ["Top-tier skin", "Legendary shard token"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" }
+    ]
+  },
+  {
+    id: "tier_leg",
+    name: "Legendary",
+    description: "Elite elite — special season rewards, top-tier cosmetics and the Legendary points mechanic for reconstructing certain Battle Pass rewards.",
+    subranks: [
+      { id: "l_i", name: "Legendary", minXp: 8001, perks: ["Legendary banner & frame", "Top cosmetic bundle", "Legendary Points (BP reconstruction)"], iconUrl: "https://img.icons8.com/color/96/medal-of-honor.png" },
+      { id: "l_top", name: "Legendary (Top 5,000)", minXp: 99999, perks: ["Exclusive Top-Player Badge", "Unique visual effect"], iconUrl: "https://img.icons8.com/fluency/48/star-medal.png" }
+    ]
+  }
 ];
-
-
-// New 15-rank structure across 5 tiers
-export const MOCK_RANKS: Rank[] = [
-    // Tier 1 - Recruit
-    { id: "r01", tierId: "t1", name: "Trainee", minXp: 0, iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png", unlocks: ["Basic Loadout"] },
-    { id: "r02", tierId: "t1", name: "Private", minXp: 250, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png", unlocks: ["New Sidearm Option"] },
-    { id: "r03", tierId: "t1", name: "Corporal", minXp: 500, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png", unlocks: ["New Tactical Grenade"] },
-    // Tier 2 - Operator
-    { id: "r04", tierId: "t2", name: "Sergeant", minXp: 1000, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png", unlocks: ["New Assault Rifle", "First Perk Slot"] },
-    { id: "r05", tierId: "t2", name: "Staff Sergeant", minXp: 1500, iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png", unlocks: ["5% Store Discount"] },
-    { id: "r06", tierId: "t2", name: "Gunnery Sergeant", minXp: 2000, iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png", unlocks: ["New SMG Option"] },
-    // Tier 3 - Veteran
-    { id: "r07", tierId: "t3", name: "Master Sergeant", minXp: 3000, iconUrl: "https://img.icons8.com/ios-filled/50/military-rank.png", unlocks: ["New Sniper Rifle", "Second Perk Slot"] },
-    { id: "r08", tierId: "t3", name: "First Sergeant", minXp: 4000, iconUrl: "https://img.icons8.com/ios-filled/50/insignia.png", unlocks: ["10% Store Discount", "Custom Weapon Charm"] },
-    { id: "r09", tierId: "t3", name: "Sergeant Major", minXp: 5000, iconUrl: "https://img.icons8.com/color/48/sergeant-major-of-the-army.png", unlocks: ["New LMG Option"] },
-    // Tier 4 - Elite
-    { id: "r10", tierId: "t4", name: "Lieutenant", minXp: 6500, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-rank-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["Third Perk Slot", "Free Gear Rental Voucher"] },
-    { id: "r11", tierId: "t4", name: "Captain", minXp: 8000, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-badge-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["15% Store Discount"] },
-    { id: "r12", tierId: "t4", name: "Major", minXp: 10000, iconUrl: "https://img.icons8.com/fluency/48/medal2.png", unlocks: ["Elite Operator Skin"] },
-    // Tier 5 - Commander
-    { id: "r13", tierId: "t5", name: "Colonel", minXp: 12500, iconUrl: "https://img.icons8.com/officel/40/command-sergeant-major.png", unlocks: ["Prestige Weapon Blueprint"] },
-    { id: "r14", tierId: "t5", name: "Brigadier", minXp: 15000, iconUrl: "https://img.icons8.com/fluency/48/star-medal.png", unlocks: ["20% Store Discount"] },
-    { id: "r15", tierId: "t5", name: "General", minXp: 20000, iconUrl: "https://img.icons8.com/color/96/medal-of-honor.png", unlocks: ["Hall of Fame Entry", "Lifetime 25% Discount"] }
-];
-
 
 export const MOCK_GAMIFICATION_SETTINGS: GamificationSettings = [
     { id: 'g_kill', name: 'XP per Kill', description: 'XP awarded for each standard elimination.', xp: 10 },
@@ -117,11 +166,10 @@ const initialEvents: GameEvent[] = [
     location: 'Verdansk CQB Arena',
     description: 'Infiltrate the enemy stronghold under the cover of darkness. Your primary objective is to retrieve sensitive intel from a heavily guarded command post. Secondary objectives include disrupting enemy communications and sabotaging their supply lines. Expect heavy resistance.',
     attendees: [],
-    signedUpPlayers: ['p001', 'p003'],
     absentPlayers: [],
     status: 'Upcoming',
     imageUrl: 'https://images.pexels.com/photos/163822/soldier-airsoft-gun-weapon-163822.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    audioBriefingUrl: 'https://cdn.pixabay.com/audio/2022/06/23/audio_7b51f7d191.mp3',
+    audioBriefingUrl: 'https://soundbible.com/mp3/radio-chatter-96263806.mp3',
     theme: 'Modern Warfare',
     rules: 'Standard ROE. Suppressors recommended. NVG is mandatory. One medic per squad.',
     participationXp: 50,
@@ -131,7 +179,6 @@ const initialEvents: GameEvent[] = [
         'g01': 200, // Discounted M4A1
     },
     eventBadges: ['leg03'], // Last Man Standing can be earned here
-    rentalSignups: [],
     xpOverrides: {
       g_kill: 20, // Double kill XP for this event
       g_headshot: 50, // Double headshot XP
@@ -148,7 +195,6 @@ const initialEvents: GameEvent[] = [
     location: 'Verdansk CQB Arena',
     description: 'Hone your close-quarters combat skills in a series of intense training drills. Focus will be on room clearing, door breaching, and team communication in tight spaces. All skill levels welcome.',
     attendees: [],
-    signedUpPlayers: ['p001', 'p002', 'p003'],
     absentPlayers: [],
     status: 'Upcoming',
     imageUrl: 'https://images.pexels.com/photos/7984333/pexels-photo-7984333.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
@@ -157,7 +203,6 @@ const initialEvents: GameEvent[] = [
     participationXp: 25,
     gameFee: 150,
     gearForRent: [],
-    rentalSignups: [],
     liveStats: {},
     gameDurationSeconds: 0,
   },
@@ -170,7 +215,6 @@ const initialEvents: GameEvent[] = [
     location: 'Armory',
     description: 'Standard weapon cleaning and system checks for all personnel. Ensure your gear is in top condition for the next operation. Armorers will be on site to assist with any technical issues.',
     attendees: [],
-    signedUpPlayers: ['p001', 'p002', 'p003'],
     absentPlayers: [],
     status: 'Upcoming',
     imageUrl: 'https://images.pexels.com/photos/53860/pexels-photo-53860.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
@@ -179,7 +223,6 @@ const initialEvents: GameEvent[] = [
     participationXp: 10,
     gameFee: 0,
     gearForRent: [],
-    rentalSignups: [],
     liveStats: {},
     gameDurationSeconds: 0,
   },
@@ -195,7 +238,6 @@ const initialEvents: GameEvent[] = [
         { playerId: 'p001', paymentStatus: 'Paid (Card)', rentedGearIds: ['g01', 'g05'], voucherCode: 'LOYALTY50' },
         { playerId: 'p002', paymentStatus: 'Paid (Cash)', rentedGearIds: ['g02'] },
     ],
-    signedUpPlayers: [],
     absentPlayers: [],
     status: 'Completed',
     imageUrl: 'https://images.pexels.com/photos/8354527/pexels-photo-8354527.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
@@ -204,7 +246,6 @@ const initialEvents: GameEvent[] = [
     participationXp: 100,
     gameFee: 350,
     gearForRent: MOCK_INVENTORY.filter(i => i.isRental).map(i => i.id),
-    rentalSignups: [],
     liveStats: {
         'p001': { kills: 8, deaths: 3, headshots: 2 },
         'p002': { kills: 12, deaths: 1, headshots: 5 }
@@ -212,6 +253,18 @@ const initialEvents: GameEvent[] = [
     gameDurationSeconds: 2750, // e.g., 45 minutes and 50 seconds
   },
 ];
+
+export const MOCK_SIGNUPS: Signup[] = [
+    { id: 'e001_p001', eventId: 'e001', playerId: 'p001', requestedGearIds: ['g01'], note: 'Running 5 mins late.' },
+    { id: 'e001_p003', eventId: 'e001', playerId: 'p003', requestedGearIds: [], note: '' },
+    { id: 'e002_p001', eventId: 'e002', playerId: 'p001', requestedGearIds: [], note: '' },
+    { id: 'e002_p002', eventId: 'e002', playerId: 'p002', requestedGearIds: [], note: '' },
+    { id: 'e002_p003', eventId: 'e002', playerId: 'p003', requestedGearIds: [], note: '' },
+    { id: 'e003_p001', eventId: 'e003', playerId: 'p001', requestedGearIds: [], note: '' },
+    { id: 'e003_p002', eventId: 'e003', playerId: 'p002', requestedGearIds: [], note: '' },
+    { id: 'e003_p003', eventId: 'e003', playerId: 'p003', requestedGearIds: [], note: '' },
+];
+
 
 const MOCK_PLAYER_MATCH_HISTORY: Record<string, MatchRecord[]> = {
     p001: [
@@ -247,7 +300,7 @@ export const MOCK_PLAYERS: Player[] = [
     medicalNotes: 'Resistant to flashbangs.',
     role: 'player',
     callsign: 'Soap',
-    rank: MOCK_RANKS[4], // Staff Sergeant
+    rank: MOCK_RANK_TIERS[1].subranks[3], // Veteran IV (1650 XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2017/11/06/13/45/cap-2923682_1280.jpg',
     stats: {
@@ -287,7 +340,7 @@ export const MOCK_PLAYERS: Player[] = [
     medicalNotes: 'Prefers to remain masked.',
     role: 'player',
     callsign: 'Ghost',
-    rank: MOCK_RANKS[6], // Master Sergeant
+    rank: MOCK_RANK_TIERS[3].subranks[0], // Pro I (3100 XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2023/07/04/19/43/man-8107142_1280.jpg',
     stats: {
@@ -323,7 +376,7 @@ export const MOCK_PLAYERS: Player[] = [
     address: 'London, UK',
     role: 'player',
     callsign: 'Gaz',
-    rank: MOCK_RANKS[5], // Gunnery Sergeant
+    rank: MOCK_RANK_TIERS[2].subranks[1], // Elite II (2200 XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2015/01/07/20/53/hat-591973_1280.jpg',
     stats: {
@@ -358,7 +411,7 @@ export const MOCK_PLAYERS: Player[] = [
     idNumber: 'D55667788',
     role: 'player',
     callsign: 'Rook',
-    rank: MOCK_RANKS[1], // Private
+    rank: UNRANKED_SUB_RANK, // (350 XP, < 10 games)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2016/03/09/10/22/girl-1246022_1280.jpg',
     stats: {
@@ -393,7 +446,7 @@ export const MOCK_PLAYERS: Player[] = [
     idNumber: 'E99887766',
     role: 'player',
     callsign: 'Nomad',
-    rank: MOCK_RANKS[10], // Captain
+    rank: MOCK_RANK_TIERS[6].subranks[0], // Legendary (8500 XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2018/01/15/07/52/woman-3083390_1280.jpg',
     stats: { kills: 350, deaths: 120, headshots: 95, gamesPlayed: 30, xp: 8500 },
@@ -414,7 +467,7 @@ export const MOCK_PLAYERS: Player[] = [
     idNumber: 'F12123434',
     role: 'player',
     callsign: 'Valkyrie',
-    rank: MOCK_RANKS[6], // Master Sergeant
+    rank: MOCK_RANK_TIERS[3].subranks[1], // Pro II (3300 XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2021/06/25/19/33/woman-6364433_1280.jpg',
     stats: { kills: 180, deaths: 80, headshots: 50, gamesPlayed: 22, xp: 3300 },
@@ -435,7 +488,7 @@ export const MOCK_PLAYERS: Player[] = [
     idNumber: 'G56567878',
     role: 'player',
     callsign: 'Oni',
-    rank: MOCK_RANKS[3], // Sergeant
+    rank: MOCK_RANK_TIERS[1].subranks[0], // Veteran I (1100 XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2016/11/29/08/59/man-1868552_1280.jpg',
     stats: { kills: 95, deaths: 65, headshots: 20, gamesPlayed: 12, xp: 1100 },
@@ -456,7 +509,7 @@ export const MOCK_PLAYERS: Player[] = [
     idNumber: 'H90901212',
     role: 'player',
     callsign: 'Echo',
-    rank: MOCK_RANKS[7], // First Sergeant
+    rank: MOCK_RANK_TIERS[4].subranks[0], // Master I (4500 XP)
     status: 'On Leave',
     avatarUrl: 'https://cdn.pixabay.com/photo/2015/07/09/23/15/woman-839352_1280.jpg',
     stats: { kills: 250, deaths: 90, headshots: 110, gamesPlayed: 28, xp: 4500 },
@@ -477,7 +530,7 @@ export const MOCK_PLAYERS: Player[] = [
     idNumber: 'I34345656',
     role: 'player',
     callsign: 'Breach',
-    rank: MOCK_RANKS[2], // Corporal
+    rank: MOCK_RANK_TIERS[0].subranks[4], // Rookie V (800 XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2017/08/01/01/33/beanie-2562646_1280.jpg',
     stats: { kills: 115, deaths: 95, headshots: 35, gamesPlayed: 19, xp: 800 },
@@ -498,7 +551,7 @@ export const MOCK_PLAYERS: Player[] = [
     idNumber: 'J78789090',
     role: 'player',
     callsign: 'Spectre',
-    rank: MOCK_RANKS[0], // Trainee
+    rank: UNRANKED_SUB_RANK, // (150 XP, < 10 games)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2018/04/27/03/50/portrait-3353699_1280.jpg',
     stats: { kills: 2, deaths: 5, headshots: 0, gamesPlayed: 2, xp: 150 },
@@ -582,10 +635,10 @@ export const MOCK_RAFFLES: Raffle[] = [
 
 
 export const MOCK_SPONSORS: Sponsor[] = [
-    { id: 's01', name: 'Tactical Gear Co.', logoUrl: 'https://img.logoipsum.com/243.svg', email: 'contact@tacticalgear.com', phone: '555-0201', website: 'https://tacticalgear.com' },
-    { id: 's02', name: 'Adrenaline Fuel', logoUrl: 'https://img.logoipsum.com/244.svg', email: 'sponsorship@adrenaline.com', phone: '555-0202', website: 'https://adrenaline.com' },
-    { id: 's03', name: 'Vortex Optics', logoUrl: 'https://img.logoipsum.com/245.svg', email: 'info@vortex.com', phone: '555-0203', website: 'https://vortex.com' },
-    { id: 's04', name: '5.11 Tactical', logoUrl: 'https://img.logoipsum.com/246.svg', email: 'support@511.com', phone: '555-0204', website: 'https://511.com' },
+    { id: 's01', name: 'Tactical Gear Co.', logoUrl: 'https://img.logoipsum.com/284.svg', email: 'contact@tacticalgear.com', phone: '555-0201', website: 'https://tacticalgear.com' },
+    { id: 's02', name: 'Adrenaline Fuel', logoUrl: 'https://img.logoipsum.com/285.svg', email: 'sponsorship@adrenaline.com', phone: '555-0202', website: 'https://adrenaline.com' },
+    { id: 's03', name: 'Vortex Optics', logoUrl: 'https://img.logoipsum.com/286.svg', email: 'info@vortex.com', phone: '555-0203', website: 'https://vortex.com' },
+    { id: 's04', name: '5.11 Tactical', logoUrl: 'https://img.logoipsum.com/287.svg', email: 'support@511.com', phone: '555-0204', website: 'https://511.com' },
 ];
 
 export const MOCK_LOCATIONS: Location[] = [
@@ -638,7 +691,7 @@ export const MOCK_COMPANY_DETAILS: CompanyDetails = {
     vatNumber: '9876543210',
     logoUrl: 'https://i.ibb.co/HL2Lc6Rz/file-0000000043b061f7b655a0077343e063.png',
     loginBackgroundUrl: 'https://images.pexels.com/photos/1297799/pexels-photo-1297799.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    loginAudioUrl: 'https://cdn.pixabay.com/audio/2022/08/04/audio_39b383796f.mp3',
+    loginAudioUrl: 'https://soundbible.com/mp3/military-march-short-60-second-sound-effect-1115166213.mp3',
     playerDashboardBackgroundUrl: '',
     adminDashboardBackgroundUrl: '',
     apiServerUrl: '',

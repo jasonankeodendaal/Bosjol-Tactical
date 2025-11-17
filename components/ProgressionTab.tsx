@@ -1,7 +1,10 @@
 
 
+
 import React, { useState, useContext } from 'react';
-import type { Rank, Tier, Badge, LegendaryBadge, GamificationRule, GamificationSettings } from '../types';
+// FIX: The types 'Rank' and 'Tier' do not exist. The correct types are 'RankTier' and 'SubRank'.
+// The component logic has been refactored to use the correct nested data structure.
+import type { RankTier, SubRank, Badge, LegendaryBadge, GamificationRule, GamificationSettings } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
 import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, PlusIcon, XIcon, InformationCircleIcon } from './icons/Icons';
@@ -12,10 +15,8 @@ import { DataContext } from '../data/DataContext';
 
 
 interface ProgressionTabProps {
-    ranks: Rank[];
-    setRanks: React.Dispatch<React.SetStateAction<Rank[]>>;
-    tiers: Tier[];
-    setTiers: React.Dispatch<React.SetStateAction<Tier[]>>;
+    rankTiers: RankTier[];
+    setRankTiers: React.Dispatch<React.SetStateAction<RankTier[]>>;
     badges: Badge[];
     setBadges: React.Dispatch<React.SetStateAction<Badge[]>>;
     legendaryBadges: LegendaryBadge[];
@@ -181,14 +182,13 @@ const LegendaryBadgeEditorModal: React.FC<{
 };
 
 const TierEditorModal: React.FC<{
-    tier: Partial<Tier> | null,
+    tier: Partial<RankTier> | null,
     onClose: () => void,
-    onSave: (tier: Omit<Tier, 'id'> | Tier) => void
+    onSave: (tier: Omit<RankTier, 'id'> | RankTier) => void
 }> = ({ tier, onClose, onSave }) => {
-    const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
         name: tier?.name || '',
-        badgeIconUrl: tier?.badgeIconUrl || '',
+        description: tier?.description || '',
     });
 
     const handleSave = () => {
@@ -196,7 +196,7 @@ const TierEditorModal: React.FC<{
             alert("Tier name cannot be empty.");
             return;
         }
-        const finalTier = { ...tier, ...formData };
+        const finalTier = { subranks: [], ...tier, ...formData };
         onSave(finalTier);
         onClose();
     };
@@ -205,11 +205,7 @@ const TierEditorModal: React.FC<{
         <Modal isOpen={true} onClose={onClose} title={tier?.id ? 'Edit Tier' : 'Create Tier'}>
             <div className="space-y-4">
                 <Input label="Tier Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
-                <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Tier Badge Icon</label>
-                    <ImageUpload onUpload={(urls) => { if(urls.length) setFormData(f => ({...f, badgeIconUrl: urls[0]}))}} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
-                    {formData.badgeIconUrl && <img src={formData.badgeIconUrl} alt="Tier Badge Preview" className="w-16 h-16 mt-2"/>}
-                </div>
+                <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} />
             </div>
             <div className="mt-6">
                 <Button onClick={handleSave} className="w-full">Save Tier</Button>
@@ -219,10 +215,10 @@ const TierEditorModal: React.FC<{
 };
 
 const RankEditorModal: React.FC<{
-    rank: Partial<Rank> | null,
-    tiers: Tier[],
+    rank: Partial<SubRank & { tierId?: string }> | null,
+    tiers: RankTier[],
     onClose: () => void,
-    onSave: (rank: Omit<Rank, 'id'> | Rank) => void
+    onSave: (rank: (Omit<SubRank, 'id'> | SubRank) & { tierId: string }) => void
 }> = ({ rank, tiers, onClose, onSave }) => {
     const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
@@ -230,7 +226,7 @@ const RankEditorModal: React.FC<{
         tierId: rank?.tierId || (tiers.length > 0 ? tiers[0].id : ''),
         minXp: rank?.minXp || 0,
         iconUrl: rank?.iconUrl || '',
-        unlocks: rank?.unlocks?.join(', ') || '',
+        perks: rank?.perks?.join(', ') || '',
     });
 
     const handleSave = () => {
@@ -238,10 +234,11 @@ const RankEditorModal: React.FC<{
             alert("Rank Name and Tier are required.");
             return;
         }
+        const { tierId, ...restOfRank } = rank || {};
         const finalRank = {
-            ...rank,
+            ...restOfRank,
             ...formData,
-            unlocks: formData.unlocks.split(',').map(s => s.trim()).filter(Boolean),
+            perks: formData.perks.split(',').map(s => s.trim()).filter(Boolean),
             minXp: Number(formData.minXp)
         };
         onSave(finalRank);
@@ -260,7 +257,7 @@ const RankEditorModal: React.FC<{
                     </select>
                 </div>
                 <Input label="Minimum XP Required" type="number" value={formData.minXp} onChange={e => setFormData(f => ({...f, minXp: Number(e.target.value)}))} />
-                <Input label="Unlocks (comma-separated)" value={formData.unlocks} onChange={e => setFormData(f => ({...f, unlocks: e.target.value}))} />
+                <Input label="Perks (comma-separated)" value={formData.perks} onChange={e => setFormData(f => ({...f, perks: e.target.value}))} />
                 <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1.5">Rank Icon</label>
                     <ImageUpload onUpload={(urls) => { if(urls.length) setFormData(f => ({...f, iconUrl: urls[0]}))}} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
@@ -278,10 +275,13 @@ const RankEditorModal: React.FC<{
 
 export const ProgressionTab: React.FC<ProgressionTabProps> = ({ 
     gamificationSettings, 
+    setGamificationSettings,
     badges, 
+    setBadges,
     legendaryBadges, 
-    ranks, 
-    tiers,
+    setLegendaryBadges,
+    rankTiers,
+    setRankTiers,
     addDoc, 
     updateDoc, 
     deleteDoc 
@@ -295,11 +295,11 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     const [editingLegendaryBadge, setEditingLegendaryBadge] = useState<Partial<LegendaryBadge> | null>(null);
     const [deletingLegendaryBadge, setDeletingLegendaryBadge] = useState<LegendaryBadge | null>(null);
 
-    const [editingTier, setEditingTier] = useState<Partial<Tier> | null>(null);
-    const [deletingTier, setDeletingTier] = useState<Tier | null>(null);
+    const [editingTier, setEditingTier] = useState<Partial<RankTier> | null>(null);
+    const [deletingTier, setDeletingTier] = useState<RankTier | null>(null);
 
-    const [editingRank, setEditingRank] = useState<Partial<Rank> | null>(null);
-    const [deletingRank, setDeletingRank] = useState<Rank | null>(null);
+    const [editingRank, setEditingRank] = useState<Partial<SubRank & { tierId: string }> | null>(null);
+    const [deletingRank, setDeletingRank] = useState<(SubRank & { tierId: string }) | null>(null);
     
     // Handlers
     const handleSaveRule = (rule: Omit<GamificationRule, 'id'> | GamificationRule) => { 'id' in rule ? updateDoc('gamificationSettings', rule) : addDoc('gamificationSettings', rule); };
@@ -311,14 +311,54 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     const handleSaveLegendaryBadge = (badge: Omit<LegendaryBadge, 'id'> | LegendaryBadge) => { 'id' in badge ? updateDoc('legendaryBadges', badge) : addDoc('legendaryBadges', badge); setEditingLegendaryBadge(null); }
     const handleDeleteLegendaryBadge = () => { if (deletingLegendaryBadge) { deleteDoc('legendaryBadges', deletingLegendaryBadge.id); setDeletingLegendaryBadge(null); } }
 
-    const handleSaveTier = (tier: Omit<Tier, 'id'> | Tier) => { 'id' in tier ? updateDoc('tiers', tier) : addDoc('tiers', tier); setEditingTier(null); }
-    const handleDeleteTier = () => { if (deletingTier) { deleteDoc('tiers', deletingTier.id); setDeletingTier(null); } }
+    const handleSaveTier = (tier: Omit<RankTier, 'id'> | RankTier) => { 'id' in tier ? updateDoc('rankTiers', tier) : addDoc('rankTiers', tier); setEditingTier(null); }
+    const handleDeleteTier = () => { if (deletingTier) { deleteDoc('rankTiers', deletingTier.id); setDeletingTier(null); } }
 
-    const handleSaveRank = (rank: Omit<Rank, 'id'> | Rank) => { 'id' in rank ? updateDoc('ranks', rank) : addDoc('ranks', rank); setEditingRank(null); }
-    const handleDeleteRank = () => { if (deletingRank) { deleteDoc('ranks', deletingRank.id); setDeletingRank(null); } }
+    const handleSaveRank = (rank: (Omit<SubRank, 'id'> | SubRank) & { tierId: string }) => {
+        setRankTiers(prevTiers => {
+            const newTiers = [...prevTiers];
+            const tierIndex = newTiers.findIndex(t => t.id === rank.tierId);
+            if (tierIndex === -1) return prevTiers; // Should not happen
+
+            const tier = { ...newTiers[tierIndex] };
+            
+            const { tierId, ...subRankData } = rank;
+
+            if ('id' in subRankData) { // Editing existing rank
+                const rankIndex = tier.subranks.findIndex(r => r.id === subRankData.id);
+                if (rankIndex > -1) {
+                    tier.subranks = [...tier.subranks];
+                    tier.subranks[rankIndex] = subRankData;
+                }
+            } else { // Adding new rank
+                 tier.subranks = [...tier.subranks, { ...subRankData, id: `sr_${Date.now()}` }];
+            }
+            
+            newTiers[tierIndex] = tier;
+            updateDoc('rankTiers', tier); // Persist change to the parent document.
+            return newTiers;
+        });
+        setEditingRank(null);
+    }
+    const handleDeleteRank = () => { 
+        if (!deletingRank) return;
+        const { tierId, id: rankId } = deletingRank;
+        setRankTiers(prevTiers => {
+             const newTiers = [...prevTiers];
+            const tierIndex = newTiers.findIndex(t => t.id === tierId);
+            if (tierIndex === -1) return prevTiers;
+
+            const tier = { ...newTiers[tierIndex] };
+            tier.subranks = tier.subranks.filter(r => r.id !== rankId);
+            newTiers[tierIndex] = tier;
+            updateDoc('rankTiers', tier);
+            return newTiers;
+        });
+        setDeletingRank(null); 
+    }
     
-    const sortedRanks = [...ranks].sort((a,b) => a.minXp - b.minXp);
-
+    const sortedRanks = rankTiers.flatMap(t => t.subranks.map(sr => ({...sr, tierId: t.id }))).sort((a,b) => a.minXp - b.minXp);
+    
     return (
         <div className="space-y-6">
             {/* Modals */}
@@ -330,7 +370,7 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
             {deletingLegendaryBadge && <Modal isOpen={true} onClose={() => setDeletingLegendaryBadge(null)} title="Confirm Deletion"><p>Delete "{deletingLegendaryBadge.name}"?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingLegendaryBadge(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteLegendaryBadge}>Delete</Button></div></Modal>}
             {editingTier && <TierEditorModal tier={editingTier} onClose={() => setEditingTier(null)} onSave={handleSaveTier} />}
             {deletingTier && <Modal isOpen={true} onClose={() => setDeletingTier(null)} title="Confirm Deletion"><p>Delete "{deletingTier.name}" tier?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingTier(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteTier}>Delete</Button></div></Modal>}
-            {editingRank && <RankEditorModal rank={editingRank} tiers={tiers} onClose={() => setEditingRank(null)} onSave={handleSaveRank} />}
+            {editingRank && <RankEditorModal rank={editingRank} tiers={rankTiers} onClose={() => setEditingRank(null)} onSave={handleSaveRank} />}
             {deletingRank && <Modal isOpen={true} onClose={() => setDeletingRank(null)} title="Confirm Deletion"><p>Delete "{deletingRank.name}" rank?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingRank(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteRank}>Delete</Button></div></Modal>}
 
              {/* Main Content */}
@@ -362,9 +402,8 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
                         <div className="p-4">
                             <div className="flex justify-end mb-4"><Button size="sm" onClick={() => setEditingTier({})}><PlusIcon className="w-5 h-5 mr-2" /> Add Tier</Button></div>
                             <div className="space-y-2 max-h-60 overflow-y-auto">
-                                {tiers.map(tier => (
+                                {rankTiers.map(tier => (
                                     <div key={tier.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg">
-                                        <img src={tier.badgeIconUrl} alt={tier.name} className="w-10 h-10"/>
                                         <p className="font-bold text-white flex-grow">{tier.name}</p>
                                         <Button size="sm" variant="secondary" onClick={() => setEditingTier(tier)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
                                         <Button size="sm" variant="danger" onClick={() => setDeletingTier(tier)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
@@ -378,7 +417,7 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
                             <div className="flex justify-end mb-4"><Button size="sm" onClick={() => setEditingRank({})}><PlusIcon className="w-5 h-5 mr-2" /> Add Rank</Button></div>
                             <div className="space-y-2 max-h-96 overflow-y-auto">
                                 {sortedRanks.map(rank => {
-                                    const tier = tiers.find(t => t.id === rank.tierId);
+                                    const tier = rankTiers.find(t => t.id === rank.tierId);
                                     return (
                                          <div key={rank.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg">
                                             <img src={rank.iconUrl} alt={rank.name} className="w-10 h-10"/>

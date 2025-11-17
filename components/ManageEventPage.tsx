@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
-import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee } from '../types';
+import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee, Signup } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -20,6 +20,9 @@ interface ManageEventPageProps {
     onDelete: (eventId: string) => void;
     setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
     setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
+    signups: Signup[];
+    setDoc: (collectionName: string, docId: string, data: object) => Promise<void>;
+    deleteDoc: (collectionName: string, docId: string) => Promise<void>;
 }
 
 const defaultEvent: Omit<GameEvent, 'id'> = {
@@ -33,17 +36,15 @@ const defaultEvent: Omit<GameEvent, 'id'> = {
     rules: '',
     participationXp: 50,
     attendees: [],
-    signedUpPlayers: [],
     absentPlayers: [],
     status: 'Upcoming',
     gameFee: 0,
     gearForRent: [],
-    rentalSignups: [],
     liveStats: {},
 };
 
 export const ManageEventPage: React.FC<ManageEventPageProps> = ({
-    event, players, inventory, gamificationSettings, onBack, onSave, onDelete, setPlayers, setTransactions
+    event, players, inventory, gamificationSettings, onBack, onSave, onDelete, setPlayers, setTransactions, signups, setDoc, deleteDoc
 }) => {
     const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState<Omit<GameEvent, 'id'>>(() => {
@@ -55,9 +56,11 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     
     const [liveStats, setLiveStats] = useState<Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>>>(event?.liveStats || {});
 
-    const signedUpPlayersDetails = useMemo(() =>
-        players.filter(p => formData.signedUpPlayers.includes(p.id)),
-    [players, formData.signedUpPlayers]);
+    const signedUpPlayersDetails = useMemo(() => {
+        const signedUpPlayerIds = signups.filter(s => s.eventId === event?.id).map(s => s.playerId);
+        return players.filter(p => signedUpPlayerIds.includes(p.id));
+    }, [signups, event?.id, players]);
+
 
     const attendeesDetails = useMemo(() =>
         players.filter(p => formData.attendees.some(a => a.playerId === p.id)),
@@ -73,27 +76,49 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
         }));
     };
     
-    const handleCheckIn = (playerId: string) => {
-        const rentalSignup = formData.rentalSignups?.find(s => s.playerId === playerId);
+    const handleCheckIn = async (playerId: string) => {
+        if (!event) return;
+        const signup = signups.find(s => s.playerId === playerId && s.eventId === event.id);
+        if (!signup) return;
+
         const newAttendee: EventAttendee = {
             playerId,
             paymentStatus: 'Unpaid',
-            rentedGearIds: rentalSignup?.requestedGearIds || [],
-            note: rentalSignup?.note,
+            rentedGearIds: signup.requestedGearIds || [],
+            note: signup.note,
         };
+        
+        // This is an optimistic update. We update the local form state immediately.
         setFormData(prev => ({
             ...prev,
-            signedUpPlayers: prev.signedUpPlayers.filter(id => id !== playerId),
             attendees: [...prev.attendees, newAttendee]
         }));
+        
+        // Then we perform the database operation to remove the signup doc.
+        await deleteDoc('signups', signup.id);
     };
 
-    const handleCheckOut = (playerId: string) => {
+    const handleCheckOut = async (playerId: string) => {
+        if (!event) return;
+
+        const attendee = formData.attendees.find(a => a.playerId === playerId);
+        if (!attendee) return;
+
+        const newSignupData = {
+            eventId: event.id,
+            playerId: playerId,
+            requestedGearIds: attendee.rentedGearIds || [],
+            note: attendee.note || '',
+        };
+
+        // Optimistic update: update local state first
         setFormData(prev => ({
             ...prev,
             attendees: prev.attendees.filter(a => a.playerId !== playerId),
-            signedUpPlayers: [...prev.signedUpPlayers, playerId]
         }));
+        
+        // Perform database operation
+        await setDoc('signups', `${event.id}_${playerId}`, newSignupData);
     }
     
     const handlePaymentStatus = (playerId: string, status: PaymentStatus) => {

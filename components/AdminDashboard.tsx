@@ -1,14 +1,15 @@
 
+
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Player, GameEvent, Rank, Tier, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, RentalSignup, CarouselMedia } from '../types';
+import type { Player, GameEvent, SubRank, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, Signup, CarouselMedia, RankTier } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { UsersIcon, CogIcon, CalendarIcon, TrashIcon, ShieldCheckIcon, PlusIcon, TrophyIcon, BuildingOfficeIcon, SparklesIcon, PencilIcon, XIcon, TicketIcon, AtSymbolIcon, PhoneIcon, GlobeAltIcon, ArrowLeftIcon, ArchiveBoxIcon, CurrencyDollarIcon, TruckIcon, MapPinIcon, MinusIcon, KeyIcon, Bars3Icon, ExclamationTriangleIcon, InformationCircleIcon, CreditCardIcon, CheckCircleIcon, PrinterIcon, PlusCircleIcon, CodeBracketIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
 import { Modal } from './Modal';
-import { MOCK_RANKS, UNRANKED_RANK } from '../constants';
+import { UNRANKED_SUB_RANK } from '../constants';
 import { PlayerProfilePage } from './PlayerProfilePage';
 import { FinanceTab } from './FinanceTab';
 import { SuppliersTab } from './SuppliersTab';
@@ -38,9 +39,9 @@ const NewPlayerModal: React.FC<{
     onClose: () => void;
     players: Player[];
     companyDetails: CompanyDetails;
-    ranks: Rank[];
+    rankTiers: RankTier[];
     addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<void>;
-}> = ({ onClose, players, companyDetails, ranks, addPlayerDoc }) => {
+}> = ({ onClose, players, companyDetails, rankTiers, addPlayerDoc }) => {
     const [formData, setFormData] = useState({
         name: '',
         surname: '',
@@ -107,26 +108,9 @@ const NewPlayerModal: React.FC<{
         
         setIsSaving(true);
         
-        const sortedRanks = [...ranks].sort((a, b) => a.minXp - b.minXp);
-        
-        // Find the rank with the lowest minXp, but ensure it's a valid rank object.
-        // If not, fall back to UNRANKED_RANK. This prevents saving a rank with `tierId: undefined`.
-        const firstRank = sortedRanks[0];
-        const defaultRank = (firstRank && firstRank.id && firstRank.tierId) ? firstRank : UNRANKED_RANK;
-
-        // Create a clean rank object for saving to prevent any undefined properties
-        const rankToSave: Rank = {
-            id: defaultRank.id,
-            tierId: defaultRank.tierId,
-            name: defaultRank.name,
-            minXp: defaultRank.minXp,
-            iconUrl: defaultRank.iconUrl,
-            unlocks: defaultRank.unlocks,
-        };
-        if (defaultRank.badgeAwarded) {
-            rankToSave.badgeAwarded = defaultRank.badgeAwarded;
-        }
-
+        const allSubRanks = rankTiers.flatMap(t => t.subranks).sort((a,b) => a.minXp - b.minXp);
+        const firstRank = allSubRanks.length > 0 ? allSubRanks[0] : UNRANKED_SUB_RANK;
+       
         const newPlayerData: Omit<Player, 'id'> = {
             name: formData.name,
             surname: formData.surname,
@@ -138,7 +122,7 @@ const NewPlayerModal: React.FC<{
             idNumber: formData.idNumber,
             role: 'player',
             callsign: formData.name, // Default callsign to first name
-            rank: rankToSave,
+            rank: firstRank,
             status: 'Active',
             avatarUrl: `https://api.dicebear.com/8.x/bottts/svg?seed=${formData.name}${formData.surname}`, // Default avatar
             stats: { kills: 0, deaths: 0, headshots: 0, gamesPlayed: 0, xp: 0 },
@@ -276,7 +260,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     );
 }
 
-const PlayerListItem = React.memo(({ player, rank, onViewPlayer }: { player: Player; rank: Rank; onViewPlayer: (id: string) => void }) => {
+const PlayerListItem: React.memo(({ player, rank, onViewPlayer }: { player: Player; rank: SubRank; onViewPlayer: (id: string) => void }) => {
     const kills = player.stats?.kills || 0;
     const deaths = player.stats?.deaths || 0;
     const xp = player.stats?.xp || 0;
@@ -302,7 +286,7 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer }: { player: Pla
     );
 });
 
-const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' | 'ranks' | 'companyDetails'> & { onViewPlayer: (id: string) => void }> = ({ players, addPlayerDoc, ranks, companyDetails, onViewPlayer }) => {
+const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' | 'rankTiers' | 'companyDetails'> & { onViewPlayer: (id: string) => void }> = ({ players, addPlayerDoc, rankTiers, companyDetails, onViewPlayer }) => {
     const [showNewPlayerModal, setShowNewPlayerModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -314,7 +298,7 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
 
     return (
         <div>
-            {showNewPlayerModal && <NewPlayerModal onClose={() => setShowNewPlayerModal(false)} players={players} addPlayerDoc={addPlayerDoc} companyDetails={companyDetails} ranks={ranks} />}
+            {showNewPlayerModal && <NewPlayerModal onClose={() => setShowNewPlayerModal(false)} players={players} addPlayerDoc={addPlayerDoc} companyDetails={companyDetails} rankTiers={rankTiers} />}
             <DashboardCard title="Player Management" icon={<UsersIcon className="w-6 h-6" />}>
                 <div className="p-4">
                     <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
@@ -332,10 +316,7 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
                     <div className="max-h-[60vh] overflow-y-auto pr-2">
                         <ul className="space-y-2">
                             {filteredPlayers.map(p => {
-                                // Robustly find rank to prevent crashes from malformed player data.
-                                // Handles if p.rank is an object, a string ID, null, or undefined.
-                                const rankId = typeof p.rank === 'string' ? p.rank : p.rank?.id;
-                                const rank = ranks.find(r => r.id === rankId) || UNRANKED_RANK;
+                                const rank = p.rank || UNRANKED_SUB_RANK;
                                 return (
                                     <PlayerListItem key={p.id} player={p} rank={rank} onViewPlayer={onViewPlayer} />
                                 );
@@ -367,7 +348,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     if (!dataContext) throw new Error("DataContext not found");
     const auth = useContext(AuthContext);
 
-    const { players, setPlayers, events, setEvents, legendaryBadges, ranks, updateDoc, addDoc, deleteDoc, restoreFromBackup } = props;
+    const { players, setPlayers, events, legendaryBadges, rankTiers, updateDoc, addDoc, deleteDoc, restoreFromBackup, setDoc, signups } = props;
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -434,8 +415,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 legendaryBadges={legendaryBadges}
                 onBack={() => setView('dashboard')}
                 onUpdatePlayer={handleUpdatePlayer}
-                ranks={ranks}
-                tiers={props.tiers}
+                rankTiers={rankTiers}
             />
         );
     }
@@ -453,6 +433,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 onDelete={handleDeleteEvent}
                 setPlayers={props.setPlayers}
                 setTransactions={props.setTransactions}
+                signups={signups}
+                setDoc={setDoc}
+                deleteDoc={deleteDoc}
             />
         )
     }
@@ -461,10 +444,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         <div className="p-4 sm:p-6 lg:p-8">
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
-            {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}
+            {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} rankTiers={props.rankTiers} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}
             {activeTab === 'Progression' && <ProgressionTab 
-                ranks={props.ranks} setRanks={props.setRanks}
-                tiers={props.tiers} setTiers={props.setTiers}
+                rankTiers={props.rankTiers} setRankTiers={props.setRankTiers}
                 badges={props.badges} setBadges={props.setBadges}
                 legendaryBadges={props.legendaryBadges} setLegendaryBadges={props.setLegendaryBadges}
                 gamificationSettings={props.gamificationSettings} setGamificationSettings={props.setGamificationSettings}

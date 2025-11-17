@@ -64,7 +64,7 @@ export type PlayerRole = 'Assault' | 'Recon' | 'Support' | 'Sniper';
 export interface Player extends User {
   role: 'player';
   callsign: string;
-  rank: Rank;
+  rank: SubRank;
   status: 'Active' | 'On Leave' | 'Retired';
   avatarUrl: string;
   stats: PlayerStats;
@@ -145,7 +145,9 @@ export interface InventoryItem {
   warrantyInfo?: string;
 }
 
-export interface RentalSignup {
+export interface Signup {
+    id: string; // Composite key: eventId_playerId
+    eventId: string;
     playerId: string;
     requestedGearIds: string[];
     note?: string;
@@ -163,7 +165,6 @@ export interface GameEvent {
   rules: string;
   participationXp: number;
   attendees: EventAttendee[];
-  signedUpPlayers: string[];
   absentPlayers: string[];
   status: EventStatus;
   imageUrl?: string;
@@ -176,7 +177,6 @@ export interface GameEvent {
     bravo: string[];
   };
   xpOverrides?: Partial<Record<string, number>>; // { [ruleId]: newXpValue }
-  rentalSignups?: RentalSignup[];
   liveStats?: Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>>;
   gameDurationSeconds?: number;
   eventBadges?: string[]; // Array of LegendaryBadge IDs
@@ -193,21 +193,21 @@ export interface Briefing {
   date: string;
 }
 
-export interface Tier {
-    id: string;
-    name: string;
-    badgeIconUrl: string;
+export interface SubRank {
+  id: string;
+  name: string;
+  minXp: number;
+  perks: string[];
+  iconUrl: string;
 }
 
-export interface Rank {
-    id: string;
-    tierId: string;
-    name: string;
-    minXp: number; // Represents Rank Points
-    iconUrl: string;
-    unlocks: string[];
-    badgeAwarded?: string;
+export interface RankTier {
+  id: string;
+  name: string;
+  description: string;
+  subranks: SubRank[];
 }
+
 
 export interface Voucher {
     id: string;

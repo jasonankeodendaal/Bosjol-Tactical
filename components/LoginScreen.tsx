@@ -41,7 +41,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
       e.preventDefault();
 
       try {
-        const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_c359e9a583.mp3');
+        const audio = new Audio('https://soundbible.com/mp3/ui-click-431968871.mp3');
         audio.volume = 0.5;
         audio.play();
       } catch (err) {

@@ -1,6 +1,9 @@
 
 
 
+
+
+
 import React, { useState, useEffect, useContext } from 'react';
 import type { CreatorDetails } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -10,6 +13,7 @@ import { ImageUpload } from './ImageUpload';
 import { UserCircleIcon, CodeBracketIcon, ShieldCheckIcon, InformationCircleIcon, CircleStackIcon, DocumentIcon, CloudArrowDownIcon } from './icons/Icons';
 import { DataContext, DataContextType } from '../data/DataContext';
 import { SystemScanner } from './SystemScanner';
+// FIX: The component 'SetupGuideTab' was not exported from its module.
 import { SetupGuideTab } from './SetupGuideTab';
 
 const FirebaseRulesCard: React.FC<{
@@ -24,27 +28,38 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
   
+    // --- Helper Functions ---
     function isAdmin() {
       return request.auth != null && request.auth.token.email == 'bosjoltactical@gmail.com';
     }
-
     function isCreator() {
       return request.auth != null && request.auth.token.email == 'jstypme@gmail.com';
     }
 
+    // --- Default Security Posture ---
     match /{document=**} {
       allow read, write: if false;
     }
-    
+
+    // --- Special Rules for Collections ---
     match /players/{playerId} {
       allow read: if true;
-      allow write: if isAdmin() || isCreator();
-      // A logged-in user can update ONLY the activeAuthUID field on any player document.
-      // This is required for the anonymous login flow to work without server-side code.
-      allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['activeAuthUID']);
+      allow create, delete: if isAdmin() || isCreator();
+      
+      // Allow updates under specific conditions:
+      allow update: if 
+        // 1. Admins/Creators can update anything.
+        (isAdmin() || isCreator()) ||
+        // 2. The login flow can update ONLY the activeAuthUID.
+        (request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['activeAuthUID'])) ||
+        // 3. The player can update their own non-sensitive profile data.
+        (request.auth != null && request.auth.uid == resource.data.activeAuthUID &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+           'name', 'surname', 'callsign', 'bio', 'preferredRole', 'email', 'phone', 'address', 'allergies', 'medicalNotes', 'avatarUrl', 'loadout'
+         ]));
     }
-
-    // Publicly readable, Admin/Creator writable collections
+    
+    // --- Publicly Readable, Admin/Creator Writable Collections ---
     match /settings/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /socialLinks/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /carouselMedia/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
@@ -60,9 +75,11 @@ service cloud.firestore {
     match /raffles/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /vouchers/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     
-    // Admin/Creator only collections
+    // --- Admin-Only Collections ---
     match /transactions/{transactionId} { allow read, write: if isAdmin() || isCreator(); }
     match /admins/{adminId} { allow read, write: if isAdmin() || isCreator(); }
+    
+    // --- System Collections ---
     match /_health/{testId} { allow read, write: if isAdmin() || isCreator(); }
   }
 }
@@ -103,7 +120,8 @@ const RawDataEditorCard: React.FC = () => {
     const dataContext = useContext(DataContext);
     if (!dataContext) throw new Error("DataContext not found");
 
-    const collectionNames: CollectionName[] = ['players', 'events', 'ranks', 'badges', 'legendaryBadges', 'gamificationSettings', 'sponsors', 'companyDetails', 'creatorDetails', 'socialLinks', 'carouselMedia', 'vouchers', 'inventory', 'suppliers', 'transactions', 'locations', 'raffles'];
+    // FIX: "ranks" is not a valid collection name in the data context. It should be "rankTiers".
+    const collectionNames: CollectionName[] = ['players', 'events', 'rankTiers', 'badges', 'legendaryBadges', 'gamificationSettings', 'sponsors', 'companyDetails', 'creatorDetails', 'socialLinks', 'carouselMedia', 'vouchers', 'inventory', 'suppliers', 'transactions', 'locations', 'raffles'];
 
     const [selectedCollection, setSelectedCollection] = useState<CollectionName>('companyDetails');
     const [jsonData, setJsonData] = useState('');

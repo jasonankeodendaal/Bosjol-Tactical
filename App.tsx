@@ -1,12 +1,10 @@
 
 
-
-
 import React, { useContext, useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
 import { Button } from './components/Button';
-import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails, Rank, Badge } from './types';
+import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails, SubRank, Badge, Signup, RankTier } from './types';
 import { XIcon, KeyIcon, ShieldCheckIcon, TrophyIcon } from './components/icons/Icons';
 import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
 import { Loader } from './components/Loader';
@@ -149,7 +147,7 @@ const PublicPageFloatingIcons: React.FC<{
 // --- END Creator Popup ---
 
 const PromotionModal: React.FC<{
-    promotion: { newRank?: Rank; newBadges: Badge[] };
+    promotion: { newRank?: SubRank; newBadges: Badge[] };
     onDismiss: () => void;
 }> = ({ promotion, onDismiss }) => {
     return (
@@ -208,7 +206,7 @@ const AppContent: React.FC = () => {
     const [showCreatorPopup, setShowCreatorPopup] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const [promotion, setPromotion] = useState<{ newRank?: Rank; newBadges: Badge[] } | null>(null);
+    const [promotion, setPromotion] = useState<{ newRank?: SubRank; newBadges: Badge[] } | null>(null);
 
 
     if (!auth) throw new Error("AuthContext not found.");
@@ -226,22 +224,24 @@ const AppContent: React.FC = () => {
         isSeeding,
         updateDoc,
         addDoc,
+        deleteDoc,
+        setDoc,
         creatorDetails,
-        ranks,
+        rankTiers,
+        signups,
     } = data;
     
     const currentPlayer = players.find(p => p.id === user?.id);
 
     const checkForPromotions = useCallback((player: Player) => {
-        // Don't run this check if modal is already open
-        if (promotion) return;
-        
+        if (promotion || !rankTiers || rankTiers.length === 0) return;
+
         const lastSeenXp = parseInt(localStorage.getItem(`lastSeenXp_${player.id}`) || '0', 10);
         const lastSeenBadges: string[] = JSON.parse(localStorage.getItem(`lastSeenBadges_${player.id}`) || '[]');
-        
-        // Check only if XP has actually changed.
+
         if (player.stats.xp > lastSeenXp) {
-            const getRankForXp = (xp: number) => ranks.slice().sort((a, b) => b.minXp - a.minXp).find(r => xp >= r.minXp);
+            const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => b.minXp - a.minXp);
+            const getRankForXp = (xp: number): SubRank | undefined => allSubRanks.find(r => xp >= r.minXp);
             
             const oldRank = getRankForXp(lastSeenXp);
             const newRank = getRankForXp(player.stats.xp);
@@ -254,7 +254,7 @@ const AppContent: React.FC = () => {
                 setPromotion({ newRank: hasNewRank ? newRank : undefined, newBadges });
             }
         }
-    }, [ranks, promotion]);
+    }, [rankTiers, promotion]);
 
     const dismissPromotion = () => {
         if (user?.role === 'player' && currentPlayer) {
@@ -348,239 +348,185 @@ const AppContent: React.FC = () => {
         const audioUrl = companyDetails.loginAudioUrl;
         const shouldPlay = !showFrontPage;
 
-        const handleCanPlay = () => {
-            if (shouldPlay) {
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(error => console.log("Audio play failed due to browser policy:", error));
-                }
+        const handleAudioError = (e: Event) => {
+            console.error("Audio Element Error:", e);
+            if (audio.error) {
+                console.error(`Audio error code ${audio.error.code}: ${audio.error.message}`);
             }
         };
 
-        // Always clean up previous listeners before attaching new ones
-        audio.removeEventListener('canplaythrough', handleCanPlay);
+        const playAudio = async () => {
+            try {
+                await audio.play();
+            } catch (err) {
+                console.error("Audio play was prevented by the browser:", err);
+            }
+        };
 
-        // Case 1: Audio should stop or is not configured
-        if (!audioUrl || !shouldPlay) {
+        audio.addEventListener('error', handleAudioError);
+
+        if (shouldPlay && audioUrl) {
+            if (audio.src !== audioUrl) {
+                audio.src = audioUrl;
+            }
+            if (audio.paused) {
+                playAudio();
+            }
+        } else {
             if (!audio.paused) {
                 audio.pause();
             }
-            // If the URL was intentionally cleared, also remove the src attribute
-            if (!audioUrl && audio.src) {
-                audio.removeAttribute('src');
-                audio.load(); // Stop buffering
-            }
-            return; // Exit early
         }
 
-        // Case 2: A URL exists and audio should be playing
-        audio.volume = !isAuthenticated ? 0.5 : 0.2;
-
-        // If the source URL is different, update it and wait for it to be playable
-        if (audio.src !== audioUrl) {
-            audio.src = audioUrl;
-            audio.load(); // This will trigger 'canplaythrough' when ready
-            audio.addEventListener('canplaythrough', handleCanPlay, { once: true });
-        } else if (audio.paused && shouldPlay) {
-            // If src is already correct but it's paused, try playing it
-            handleCanPlay();
-        }
-
-        // Cleanup on effect change
         return () => {
-            audio.removeEventListener('canplaythrough', handleCanPlay);
+            audio.removeEventListener('error', handleAudioError);
         };
-    }, [showFrontPage, isAuthenticated, companyDetails.loginAudioUrl]);
+    }, [showFrontPage, companyDetails.loginAudioUrl]);
 
+    const onPlayerUpdate = async (player: Player) => {
+        await updateDoc('players', player);
+    };
 
-    
-
-    const handleUpdatePlayer = async (updatedPlayer: Player) => {
-        await updateDoc('players', updatedPlayer);
-        if (auth.user?.id === updatedPlayer.id) {
-            auth.updateUser(updatedPlayer);
-        }
-    }
-
-    const handleEventSignUp = async (eventId: string, requestedGearIds: string[], note: string) => {
+    const onEventSignUp = async (eventId: string, requestedGearIds: string[], note: string) => {
         if (!user || user.role !== 'player') return;
-        const playerId = user.id;
 
-        const eventToUpdate = events.find(e => e.id === eventId);
-        if (!eventToUpdate) return;
-        
-        const isSignedUp = eventToUpdate.signedUpPlayers.includes(playerId);
-        const rentalSignups = eventToUpdate.rentalSignups || [];
-        let updatedEvent: GameEvent;
+        const signupId = `${eventId}_${user.id}`;
+        const existingSignup = signups.find(s => s.id === signupId);
 
-        if (isSignedUp) { // Withdraw
-            updatedEvent = {
-                ...eventToUpdate,
-                signedUpPlayers: eventToUpdate.signedUpPlayers.filter(id => id !== playerId),
-                rentalSignups: rentalSignups.filter(s => s.playerId !== playerId)
+        if (existingSignup) {
+            // Withdraw from event
+            await deleteDoc('signups', signupId);
+        } else {
+            // Sign up for event
+            const newSignupData = {
+                eventId,
+                playerId: user.id,
+                requestedGearIds,
+                note,
             };
-        } else { // Sign up
-            updatedEvent = {
-                ...eventToUpdate,
-                signedUpPlayers: [...eventToUpdate.signedUpPlayers, playerId],
-                rentalSignups: [...rentalSignups, { playerId, requestedGearIds, note }]
-            };
-        }
-        await updateDoc('events', updatedEvent);
-    };
-    
-    const handleDeleteAllData = async () => {
-        if (confirm('ARE YOU ABSOLUTELY SURE? This will wipe all data except for system settings (ranks, badges, etc). This cannot be undone.')) {
-            await data.deleteAllData();
-            alert("All transactional data has been deleted.");
-            logout();
+            await setDoc('signups', signupId, newSignupData);
         }
     };
 
-    if (isSeeding) {
-        return (
-            <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-[100]">
-                <div className="w-16 h-16 border-4 border-zinc-700 border-t-red-500 rounded-full animate-spin"></div>
-                <h1 className="mt-4 text-lg font-semibold text-gray-300 tracking-wider">
-                    New Project Detected
-                </h1>
-                <p className="text-gray-400">Seeding initial database configuration. Please wait...</p>
-            </div>
-        );
-    }
+
+    const handleEnterFrontPage = () => {
+        setShowFrontPage(false);
+        setHelpTopic('login-screen');
+    };
 
     if (loading) {
         return <Loader />;
     }
-
-    let dashboardBackground: string | undefined;
-    let creatorBackgroundStyle = {};
-
-    if(user?.role === 'creator') {
-        creatorBackgroundStyle = {
-             backgroundImage: "linear-gradient(rgba(10, 10, 10, 0.7), rgba(10, 10, 10, 0.7)), url('https://i.ibb.co/dsh2c2hp/unnamed.jpg')",
-             backgroundSize: 'cover',
-             backgroundPosition: 'center',
-             backgroundAttachment: 'fixed',
-        };
-    } else if (user) {
-        dashboardBackground = user.role === 'admin' 
-        ? companyDetails.adminDashboardBackgroundUrl 
-        : companyDetails.playerDashboardBackgroundUrl;
-    }
-
+    
     return (
-        <div className="min-h-screen flex flex-col bg-transparent text-white" style={creatorBackgroundStyle}>
+        <div className="bg-zinc-950 text-gray-100 font-sans min-h-screen flex flex-col antialiased">
             <AnimatePresence>
-                {showCreatorPopup && <CreatorPopup onClose={() => setShowCreatorPopup(false)} creatorDetails={creatorDetails} />}
-                {promotion && <PromotionModal promotion={promotion} onDismiss={dismissPromotion} />}
+                {isSeeding && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-[100]"
+                    >
+                        <Loader />
+                        <p className="text-lg font-semibold text-gray-300 tracking-wider">Seeding initial database configuration...</p>
+                    </motion.div>
+                )}
             </AnimatePresence>
+
+            {!IS_LIVE_DATA && <MockDataWatermark />}
+
             <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
+            <AnimatePresence>
+                {showCreatorPopup && creatorDetails && <CreatorPopup creatorDetails={creatorDetails} onClose={() => setShowCreatorPopup(false)} />}
+            </AnimatePresence>
+            
+            {promotion && <PromotionModal promotion={promotion} onDismiss={dismissPromotion} />}
 
-            <Suspense fallback={<Loader />}>
-                {!isAuthenticated || !user ? (
-                    <>
-                         {showFrontPage ? (
-                            <FrontPage companyDetails={companyDetails} socialLinks={socialLinks} carouselMedia={carouselMedia} onEnter={() => setShowFrontPage(false)} />
-                        ) : (
+            <AnimatePresence mode="wait">
+                {showFrontPage ? (
+                    <motion.div key="frontpage" exit={{ opacity: 0 }}>
+                        <Suspense fallback={<Loader />}>
+                            <FrontPage 
+                                companyDetails={companyDetails}
+                                socialLinks={socialLinks}
+                                carouselMedia={carouselMedia}
+                                onEnter={handleEnterFrontPage}
+                            />
+                             <PublicPageFloatingIcons onHelpClick={() => setShowHelp(true)} onCreatorClick={() => setShowCreatorPopup(true)} />
+                        </Suspense>
+                    </motion.div>
+                ) : !isAuthenticated ? (
+                    <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        <Suspense fallback={<Loader />}>
                             <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />
-                        )}
-                        <PublicPageFloatingIcons 
-                            onHelpClick={() => setShowHelp(true)} 
-                            onCreatorClick={() => setShowCreatorPopup(true)} 
-                        />
-                    </>
+                            <PublicPageFloatingIcons onHelpClick={() => setShowHelp(true)} onCreatorClick={() => setShowCreatorPopup(true)} />
+                        </Suspense>
+                    </motion.div>
                 ) : (
-                    <>
-                        <header className="bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-800 p-4 flex justify-between items-center sticky top-0 z-30">
-                            <div className="flex items-center">
-                                <div className="mr-3">
-                                    <img src={companyDetails.logoUrl} alt="Logo" className="h-8 w-8 rounded-md"/>
-                                </div>
-                                <h1 className="text-xl font-black text-red-500 tracking-wider uppercase">
-                                    BOSJOL TACTICAL
-                                </h1>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <p className="text-sm text-gray-300 mr-2 hidden sm:block">Welcome, <span className="font-bold">{user.name}</span></p>
-                                
-                                <motion.button
-                                    onClick={() => setShowHelp(true)}
-                                    whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.95 }}
-                                    className="p-1 rounded-full hover:bg-zinc-700" title="Help" aria-label="Open help menu"
-                                >
-                                    <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Help Icon" className="w-6 h-6 object-contain" />
-                                </motion.button>
-                                
-                                <motion.button
-                                    onClick={() => setShowCreatorPopup(true)}
-                                    whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.95 }}
-                                    className="p-1 rounded-full hover:bg-zinc-700" title="Creator Information" aria-label="Open creator information"
-                                >
-                                    <img src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png" alt="Creator Icon" className="w-6 h-6 rounded-full" />
-                                </motion.button>
-
-                                <Button onClick={logout} size="sm" variant="secondary">Logout</Button>
-                            </div>
-                        </header>
-                        <main 
-                            className="flex-grow relative pb-20" // Padding bottom to avoid footer overlap
-                            style={{
-                                backgroundImage: dashboardBackground ? `url(${dashboardBackground})` : 'none',
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                                backgroundAttachment: 'fixed'
-                            }}
-                        >
-                            {dashboardBackground && <div className="absolute inset-0 bg-black/50 z-0"/>}
-                            <div className="relative z-10">
-                                {user.role === 'player' && currentPlayer ? 
-                                    <PlayerDashboard 
+                    <motion.div
+                        key="dashboard"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex-grow flex flex-col"
+                        style={{ 
+                            backgroundImage: `url(${user?.role === 'admin' ? companyDetails.adminDashboardBackgroundUrl : companyDetails.playerDashboardBackgroundUrl})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundAttachment: 'fixed'
+                        }}
+                    >
+                        <div className="flex-grow bg-black/50 backdrop-blur-sm">
+                            <Suspense fallback={<Loader />}>
+                                {user?.role === 'player' && currentPlayer && (
+                                    <PlayerDashboard
                                         player={currentPlayer}
                                         players={players}
-                                        sponsors={data.sponsors} 
-                                        onPlayerUpdate={handleUpdatePlayer}
+                                        sponsors={data.sponsors}
+                                        onPlayerUpdate={onPlayerUpdate}
                                         events={events}
-                                        onEventSignUp={handleEventSignUp}
+                                        onEventSignUp={onEventSignUp}
                                         legendaryBadges={data.legendaryBadges}
                                         raffles={data.raffles}
-                                        ranks={data.ranks}
-                                        tiers={data.tiers}
+                                        rankTiers={rankTiers}
                                         locations={data.locations}
-                                    /> : user.role === 'admin' ?
-                                    <AdminDashboard 
-                                        // Pass all data and functions from context to AdminDashboard
-                                        {...data}
-                                        addPlayerDoc={(playerData) => addDoc('players', playerData)}
-                                        onDeleteAllData={handleDeleteAllData}
-                                    /> : user.role === 'creator' ?
-                                    <CreatorDashboard 
-                                        {...data}
-                                        setShowHelp={setShowHelp} 
-                                        setHelpTopic={setHelpTopic} 
+                                        signups={signups}
                                     />
-                                    : null
-                                }
-                            </div>
-                        </main>
-                        <Footer details={companyDetails} />
-                    </>
+                                )}
+                                {user?.role === 'admin' && (
+                                    <AdminDashboard
+                                        {...data}
+                                        onDeleteAllData={data.deleteAllData}
+                                        addPlayerDoc={(playerData) => addDoc('players', playerData)}
+                                    />
+                                )}
+                                 {user?.role === 'creator' && (
+                                    <CreatorDashboard
+                                        {...data}
+                                        setShowHelp={setShowHelp}
+                                        setHelpTopic={setHelpTopic}
+                                    />
+                                )}
+                            </Suspense>
+                        </div>
+                        
+                        {!showFrontPage && isAuthenticated && <Footer details={companyDetails} />}
+                    </motion.div>
                 )}
-            </Suspense>
-            
-            {!IS_LIVE_DATA && <MockDataWatermark />}
+            </AnimatePresence>
         </div>
     );
 };
 
+
 const App: React.FC = () => {
-    return (
-        <AuthProvider>
-            <DataProvider>
-                <AppContent />
-            </DataProvider>
-        </AuthProvider>
-    );
-}
+  return (
+    <AuthProvider>
+      <DataProvider>
+          <AppContent />
+      </DataProvider>
+    </AuthProvider>
+  );
+};
 
 export default App;

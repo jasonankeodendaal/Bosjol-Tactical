@@ -56,7 +56,7 @@ export const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ player, companyD
     }
     
     try {
-        const audio = new Audio('https://www.myinstants.com/media/sounds/cod-mw-ui-sfx-2.mp3');
+        const audio = new Audio('https://soundbible.com/mp3/ui-click-431968871.mp3');
         audio.volume = 0.5;
         audio.play();
     } catch (err) {

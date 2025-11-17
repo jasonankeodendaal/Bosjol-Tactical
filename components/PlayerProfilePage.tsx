@@ -1,21 +1,21 @@
 import React, { useState, useMemo, useEffect, useContext } from 'react';
-import type { Player, GameEvent, Rank, Tier, XpAdjustment, LegendaryBadge, PlayerRole } from '../types';
+import type { Player, GameEvent, SubRank, XpAdjustment, LegendaryBadge, PlayerRole, RankTier } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { BadgePill } from './BadgePill';
 import { EventCard } from './EventCard';
-import { MOCK_RANKS, UNRANKED_RANK, MOCK_PLAYER_ROLES } from '../constants';
+import { MOCK_PLAYER_ROLES, UNRANKED_SUB_RANK } from '../constants';
 import { ArrowLeftIcon, UserIcon, ChartBarIcon, CalendarIcon, TrophyIcon, CrosshairsIcon, PlusCircleIcon, TrashIcon } from './icons/Icons';
 import { ImageUpload } from './ImageUpload';
 import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
 
-const getRankForPlayer = (player: Player, ranks: Rank[]): Rank => {
-    if (player.stats.gamesPlayed < 10) return UNRANKED_RANK;
-    const sortedRanks = [...ranks].sort((a, b) => b.minXp - a.minXp);
-    return sortedRanks.find(r => player.stats.xp >= r.minXp) || ranks[0] || UNRANKED_RANK;
+const getRankForPlayer = (player: Player, rankTiers: RankTier[]): SubRank => {
+    if (player.stats.gamesPlayed < 10) return UNRANKED_SUB_RANK;
+    const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => b.minXp - a.minXp);
+    return allSubRanks.find(r => player.stats.xp >= r.minXp) || UNRANKED_SUB_RANK;
 };
 
 interface PlayerProfilePageProps {
@@ -24,8 +24,7 @@ interface PlayerProfilePageProps {
     legendaryBadges: LegendaryBadge[];
     onBack: () => void;
     onUpdatePlayer: (player: Player) => void;
-    ranks: Rank[];
-    tiers: Tier[];
+    rankTiers: RankTier[];
 }
 
 const StatDisplay: React.FC<{ value: string | number, label: string, tooltip?: string }> = ({ value, label, tooltip }) => (
@@ -84,7 +83,7 @@ const AwardXpModal: React.FC<{ onClose: () => void, onSave: (amount: number, rea
     );
 };
 
-export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, events, legendaryBadges, onBack, onUpdatePlayer, ranks }) => {
+export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, events, legendaryBadges, onBack, onUpdatePlayer, rankTiers }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ ...player });
     const [isAwardingXp, setIsAwardingXp] = useState(false);
@@ -97,12 +96,13 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
         setFormData(player);
     }, [player]);
 
-    const playerRank = getRankForPlayer(player, ranks);
+    const playerRank = getRankForPlayer(player, rankTiers);
+    const playerTier = rankTiers.find(tier => tier.subranks.some(sr => sr.id === playerRank.id));
     const { stats, matchHistory } = player;
     const kdr = stats.deaths > 0 ? (stats.kills / stats.deaths).toFixed(2) : stats.kills.toFixed(2);
 
     const handleSave = () => {
-        onUpdatePlayer({...formData, age: Number(formData.age) });
+        onUpdatePlayer({...formData, age: Number(formData.age), rank: player.rank }); // Ensure rank object isn't overwritten by stale form data
         setIsEditing(false);
     };
 
@@ -128,13 +128,18 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
             reason,
             date: new Date().toISOString(),
         };
+        
+        const newXp = player.stats.xp + amount;
+        const newRank = getRankForPlayer({ ...player, stats: { ...player.stats, xp: newXp }}, rankTiers);
+        
         const updatedPlayer: Player = {
             ...player,
             stats: {
                 ...player.stats,
-                xp: player.stats.xp + amount,
+                xp: newXp,
             },
             xpAdjustments: [...player.xpAdjustments, newAdjustment],
+            rank: newRank,
         };
         onUpdatePlayer(updatedPlayer);
         setIsAwardingXp(false);
@@ -233,7 +238,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                     <h1 className="text-2xl font-bold text-white">{player.name} "{player.callsign}" {player.surname}</h1>
                     <div className="flex items-center mt-1">
                         <img src={playerRank.iconUrl} alt={playerRank.name} className="w-6 h-6 mr-2" />
-                        <span className="text-md font-semibold text-red-400">{playerRank.name}</span>
+                        <span className="text-md font-semibold text-red-400">{playerTier?.name} - {playerRank.name}</span>
                         <span className="text-gray-400 mx-2">|</span>
                         <BadgePill color={player.status === 'Active' ? 'green' : 'red'}>{player.status}</BadgePill>
                     </div>

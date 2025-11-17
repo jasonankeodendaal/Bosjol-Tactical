@@ -3,6 +3,7 @@
 
 
 
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { DashboardCard } from './DashboardCard';
@@ -11,7 +12,6 @@ import type { CreatorDetails } from '../types';
 import { Button } from './Button';
 
 const CodeBlock: React.FC<{ children: React.ReactNode, language?: string, fileName?: string }> = ({ children, language = 'bash', fileName }) => {
-    // Fix: useState was not defined. Imported from 'react'.
     const [copyStatus, setCopyStatus] = useState('Copy');
 
     const handleCopy = () => {
@@ -156,7 +156,6 @@ interface ApiSetupTabProps {
 
 const StepCard: React.FC<{ number?: number, title: string, children: React.ReactNode }> = ({ number, title, children }) => {
     return (
-        // Fix: motion was not defined. Imported from 'framer-motion'.
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

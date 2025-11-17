@@ -1,12 +1,13 @@
 
+
 import React, { useState, useEffect, useMemo, useContext, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Rank, Badge, LegendaryBadge, Raffle, Location } from '../types';
+import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, RankTier, SubRank } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
 import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
-import { MOCK_RANKS, MOCK_WEAPONS, MOCK_EQUIPMENT, MOCK_PLAYER_ROLES, UNRANKED_RANK, MOCK_BADGES } from '../constants';
+import { MOCK_WEAPONS, MOCK_EQUIPMENT, MOCK_PLAYER_ROLES, UNRANKED_SUB_RANK, MOCK_BADGES, MOCK_RANK_TIERS } from '../constants';
 import { ImageUpload } from './ImageUpload';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -16,14 +17,15 @@ import { Leaderboard } from './Leaderboard';
 import { AuthContext } from '../auth/AuthContext';
 import { DataContext } from '../data/DataContext';
 import { Loader } from './Loader';
+import { RankProgressionDisplay } from './RankProgressionDisplay';
 
-const getRankForPlayer = (player: Player, ranks: Rank[]): Rank => {
+const getRankForPlayer = (player: Player, rankTiers: RankTier[]): SubRank => {
     if (player.stats.gamesPlayed < 10) {
-        return UNRANKED_RANK;
+        return UNRANKED_SUB_RANK;
     }
-    const sortedRanks = [...ranks].sort((a, b) => b.minXp - a.minXp);
-    const rank = sortedRanks.find(r => player.stats.xp >= r.minXp);
-    return rank || ranks[0] || UNRANKED_RANK;
+    const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => b.minXp - a.minXp);
+    const rank = allSubRanks.find(r => player.stats.xp >= r.minXp);
+    return rank || UNRANKED_SUB_RANK;
 };
 
 interface PlayerDashboardProps {
@@ -35,11 +37,12 @@ interface PlayerDashboardProps {
     onEventSignUp: (eventId: string, requestedGearIds: string[], note: string) => void;
     legendaryBadges: LegendaryBadge[];
     raffles: Raffle[];
-    ranks: Rank[];
+    rankTiers: RankTier[];
     locations: Location[];
+    signups: Signup[];
 }
 
-type Tab = 'Overview' | 'Events' | 'Raffles' | 'Stats' | 'Achievements' | 'Leaderboard' | 'Settings';
+type Tab = 'Overview' | 'Events' | 'Raffles' | 'Ranks' | 'Stats' | 'Achievements' | 'Leaderboard' | 'Loadout' | 'Settings';
 
 const ProgressBar: React.FC<{ value: number; max: number; isThin?: boolean }> = ({ value, max, isThin=false }) => {
     const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -50,8 +53,8 @@ const ProgressBar: React.FC<{ value: number; max: number; isThin?: boolean }> = 
     );
 };
 
-const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: () => void, onSignUp: (id: string, requestedGearIds: string[], note: string) => void, locations: Location[] }> = ({ event, player, onClose, onSignUp, locations }) => {
-    const isSignedUp = event.signedUpPlayers.includes(player.id);
+const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: () => void, onSignUp: (id: string, requestedGearIds: string[], note: string) => void, locations: Location[], signups: Signup[] }> = ({ event, player, onClose, onSignUp, locations, signups }) => {
+    const isSignedUp = useMemo(() => signups.some(s => s.eventId === event.id && s.playerId === player.id), [signups, event.id, player.id]);
     const [selectedGear, setSelectedGear] = useState<string[]>([]);
     const [note, setNote] = useState('');
     const dataContext = useContext(DataContext);
@@ -76,7 +79,8 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
             });
         });
         // Count from players signed up but not yet confirmed
-        (event.rentalSignups || []).forEach(s => {
+        const eventSignups = signups.filter(s => s.eventId === event.id);
+        eventSignups.forEach(s => {
             // Exclude the current player from this count if they are already signed up, to allow them to "re-signup" without their own rentals blocking them.
             if (s.playerId !== player.id || !isSignedUp) {
                  (s.requestedGearIds || []).forEach(id => {
@@ -85,7 +89,7 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
             }
         });
         return counts;
-    }, [event.attendees, event.rentalSignups, player.id, isSignedUp]);
+    }, [event.attendees, event.id, player.id, isSignedUp, signups]);
 
     const totalCost = useMemo(() => {
         const gearCost = selectedGear.reduce((sum, gearId) => {
@@ -260,9 +264,11 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Overview', icon: <HomeIcon className="w-5 h-5"/>},
         {name: 'Events', icon: <CalendarIcon className="w-5 h-5"/>},
         {name: 'Raffles', icon: <TicketIcon className="w-5 h-5"/>},
+        {name: 'Ranks', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Stats', icon: <ChartBarIcon className="w-5 h-5"/>},
         {name: 'Achievements', icon: <TrophyIcon className="w-5 h-5"/>},
         {name: 'Leaderboard', icon: <TrophyIcon className="w-5 h-5"/>},
+        {name: 'Loadout', icon: <CrosshairsIcon className="w-5 h-5"/>},
         {name: 'Settings', icon: <UserCircleIcon className="w-5 h-5"/>},
     ];
     const activeTabInfo = tabs.find(t => t.name === activeTab);
@@ -324,7 +330,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     );
 }
 
-const calculateBadgeProgress = (badge: Badge, player: Player, ranks: Rank[]) => {
+const calculateBadgeProgress = (badge: Badge, player: Player, rankTiers: RankTier[]) => {
     const isEarned = player.badges.some(b => b.id === badge.id);
     if (isEarned) return { current: 1, max: 1, percentage: 100, isEarned: true, text: 'Unlocked' };
 
@@ -346,7 +352,7 @@ const calculateBadgeProgress = (badge: Badge, player: Player, ranks: Rank[]) => 
             max = Number(criteria.value);
             break;
         case 'rank':
-            const playerRank = getRankForPlayer(player, ranks);
+            const playerRank = getRankForPlayer(player, rankTiers);
             if (playerRank.name === criteria.value) {
                  return { current: 1, max: 1, percentage: 100, isEarned: true, text: 'Unlocked' };
             }
@@ -359,8 +365,8 @@ const calculateBadgeProgress = (badge: Badge, player: Player, ranks: Rank[]) => 
     return { current, max, percentage, isEarned: false, text: `${current.toLocaleString()} / ${max.toLocaleString()}` };
 };
 
-const BadgeProgressCard: React.FC<{badge: Badge, player: Player, ranks: Rank[]}> = ({ badge, player, ranks }) => {
-    const progress = calculateBadgeProgress(badge, player, ranks);
+const BadgeProgressCard: React.FC<{badge: Badge, player: Player, rankTiers: RankTier[]}> = ({ badge, player, rankTiers }) => {
+    const progress = calculateBadgeProgress(badge, player, rankTiers);
     
     const baseClasses = "bg-zinc-800/50 p-3 rounded-lg border flex items-center gap-4 transition-all duration-300";
     const unlockedClasses = "border-red-500/50 shadow-lg shadow-red-900/10";
@@ -383,13 +389,16 @@ const BadgeProgressCard: React.FC<{badge: Badge, player: Player, ranks: Rank[]}>
     );
 }
 
-const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sponsors' | 'ranks'>> = ({ player, events, sponsors, ranks }) => {
+const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sponsors' | 'rankTiers'>> = ({ player, events, sponsors, rankTiers }) => {
     const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 
-    const playerRank = getRankForPlayer(player, ranks);
-    const currentRankIndex = ranks.findIndex(r => r.name === playerRank.name);
-    const nextRank = ranks[currentRankIndex + 1];
+    const playerRank = getRankForPlayer(player, rankTiers);
+    const playerTier = rankTiers.find(tier => tier.subranks.some(sr => sr.id === playerRank.id));
+    
+    const allSubRanks = useMemo(() => rankTiers.flatMap(tier => tier.subranks).sort((a, b) => a.minXp - b.minXp), [rankTiers]);
+    const currentRankIndex = allSubRanks.findIndex(r => r.id === playerRank.id);
+    const nextRank = currentRankIndex !== -1 && currentRankIndex < allSubRanks.length - 1 ? allSubRanks[currentRankIndex + 1] : null;
 
     const xpForCurrentRank = playerRank.minXp;
     const xpForNextRank = nextRank ? nextRank.minXp : playerRank.minXp;
@@ -419,7 +428,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sp
                     <div className="p-6 space-y-4">
                         <div className="text-center">
                             <img src={playerRank.iconUrl} alt={playerRank.name} className="h-16 mx-auto mb-2" />
-                            <h3 className="text-lg font-bold text-red-500">{playerRank.name}</h3>
+                            <h3 className="text-lg font-bold text-red-500">{playerTier?.name} - {playerRank.name}</h3>
                             <p className="text-sm text-gray-400">{player.stats.xp.toLocaleString()} Rank Points</p>
                         </div>
                         {nextRank && playerRank.name !== "Unranked" ? (
@@ -444,10 +453,10 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sp
                          <div className="pt-4 border-t border-zinc-800">
                             <h4 className="font-bold text-gray-300 text-sm mb-2 text-center">Current Rank Unlocks</h4>
                             <ul className="space-y-1.5 text-xs text-center">
-                                {playerRank.unlocks.map((unlock, i) => (
+                                {playerRank.perks.map((perk, i) => (
                                     <li key={i} className="flex items-center justify-center text-gray-400">
                                         <CheckCircleIcon className="w-4 h-4 mr-2 text-green-400 flex-shrink-0" />
-                                        <span>{unlock}</span>
+                                        <span>{perk}</span>
                                     </li>
                                 ))}
                             </ul>
@@ -519,7 +528,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sp
     )
 };
 
-const EventsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'onEventSignUp' | 'locations'>> = ({ player, events, onEventSignUp, locations }) => {
+const EventsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'onEventSignUp' | 'locations' | 'signups'>> = ({ player, events, onEventSignUp, locations, signups }) => {
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');
     const dataContext = useContext(DataContext);
@@ -553,7 +562,7 @@ const EventsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'onEv
                     </div>
                 )) : <p className="text-center text-gray-500 py-4 sm:col-span-full">No {filter} events found.</p>}
             </div>
-             {eventForModal && <EventDetailsModal event={eventForModal} player={player} onClose={() => setSelectedEventId(null)} onSignUp={onEventSignUp} locations={locations} />}
+             {eventForModal && <EventDetailsModal event={eventForModal} player={player} onClose={() => setSelectedEventId(null)} onSignUp={onEventSignUp} locations={locations} signups={signups} />}
         </div>
     )
 }
@@ -647,7 +656,7 @@ const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ p
     )
 }
 
-const AchievementsTab: React.FC<{ player: Player, ranks: Rank[] }> = ({ player, ranks }) => {
+const AchievementsTab: React.FC<{ player: Player, rankTiers: RankTier[] }> = ({ player, rankTiers }) => {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <DashboardCard 
@@ -657,7 +666,7 @@ const AchievementsTab: React.FC<{ player: Player, ranks: Rank[] }> = ({ player, 
             >
                 <div className="p-6 space-y-3 max-h-[30rem] overflow-y-auto">
                     {MOCK_BADGES.map(badge => (
-                        <BadgeProgressCard key={badge.id} badge={badge} player={player} ranks={ranks} />
+                        <BadgeProgressCard key={badge.id} badge={badge} player={player} rankTiers={rankTiers} />
                     ))}
                 </div>
             </DashboardCard>
@@ -687,6 +696,76 @@ const LeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players'>>
         </DashboardCard>
     );
 }
+
+const LoadoutTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate'>> = ({ player, onPlayerUpdate }) => {
+    const [loadout, setLoadout] = useState(player.loadout);
+    const [isDirty, setIsDirty] = useState(false);
+
+    useEffect(() => {
+        setIsDirty(JSON.stringify(player.loadout) !== JSON.stringify(loadout));
+    }, [loadout, player.loadout]);
+
+    const handleSave = () => {
+        onPlayerUpdate({ ...player, loadout });
+    };
+
+    const SelectGroup: React.FC<{ label: string, value: string, onChange: (val: string) => void, options: string[] }> = ({ label, value, onChange, options }) => (
+        <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1.5">{label}</label>
+            <select
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+            >
+                {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+        </div>
+    );
+
+    return (
+        <DashboardCard title="Operator Loadout" icon={<CrosshairsIcon className="w-6 h-6" />}>
+            <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-6 bg-zinc-900/50 p-6 rounded-lg border border-zinc-700/50">
+                        <h3 className="text-xl font-bold text-red-400 border-b border-zinc-700 pb-2">Weapons</h3>
+                        <SelectGroup
+                            label="Primary Weapon"
+                            value={loadout.primaryWeapon}
+                            onChange={(val) => setLoadout(l => ({...l, primaryWeapon: val}))}
+                            options={MOCK_WEAPONS.primary}
+                        />
+                        <SelectGroup
+                            label="Secondary Weapon"
+                            value={loadout.secondaryWeapon}
+                            onChange={(val) => setLoadout(l => ({...l, secondaryWeapon: val}))}
+                            options={MOCK_WEAPONS.secondary}
+                        />
+                    </div>
+                    <div className="space-y-6 bg-zinc-900/50 p-6 rounded-lg border border-zinc-700/50">
+                        <h3 className="text-xl font-bold text-red-400 border-b border-zinc-700 pb-2">Equipment</h3>
+                         <SelectGroup
+                            label="Lethal Equipment"
+                            value={loadout.lethal}
+                            onChange={(val) => setLoadout(l => ({...l, lethal: val}))}
+                            options={MOCK_EQUIPMENT.lethal}
+                        />
+                         <SelectGroup
+                            label="Tactical Equipment"
+                            value={loadout.tactical}
+                            onChange={(val) => setLoadout(l => ({...l, tactical: val}))}
+                            options={MOCK_EQUIPMENT.tactical}
+                        />
+                    </div>
+                </div>
+                <div className="mt-6">
+                    <Button onClick={handleSave} disabled={!isDirty} className="w-full">
+                        {isDirty ? 'Save Loadout' : 'Loadout Saved'}
+                    </Button>
+                </div>
+            </div>
+        </DashboardCard>
+    );
+};
 
 const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate'>> = ({ player, onPlayerUpdate }) => {
     const [isUploading, setIsUploading] = useState(false);
@@ -899,15 +978,14 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'raffles' | 'pl
     );
 }
 
-export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, players, sponsors, onPlayerUpdate, events, onEventSignUp, legendaryBadges, raffles, ranks, locations }) => {
+export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, players, sponsors, onPlayerUpdate, events, onEventSignUp, legendaryBadges, raffles, rankTiers, locations, signups }) => {
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
     const auth = useContext(AuthContext);
-    const dataContext = useContext(DataContext);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab') as Tab | null;
-        const validTabs: Tab[] = ['Overview', 'Events', 'Raffles', 'Stats', 'Achievements', 'Leaderboard', 'Settings'];
+        const validTabs: Tab[] = ['Overview', 'Events', 'Raffles', 'Ranks', 'Stats', 'Achievements', 'Leaderboard', 'Loadout', 'Settings'];
         if (tab && validTabs.includes(tab)) {
             setActiveTab(tab);
         }
@@ -923,12 +1001,14 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, player
         <div className="p-4 sm:p-6 lg:p-8">
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             <Suspense fallback={<Loader />}>
-                {activeTab === 'Overview' && <OverviewTab player={player} events={events} sponsors={sponsors} ranks={ranks} />}
-                {activeTab === 'Events' && <EventsTab player={player} events={events} onEventSignUp={onEventSignUp} locations={locations} />}
+                {activeTab === 'Overview' && <OverviewTab player={player} events={events} sponsors={sponsors} rankTiers={rankTiers} />}
+                {activeTab === 'Events' && <EventsTab player={player} events={events} onEventSignUp={onEventSignUp} locations={locations} signups={signups} />}
                 {activeTab === 'Raffles' && <RafflesTab player={player} raffles={raffles} players={players} />}
+                {activeTab === 'Ranks' && <RankProgressionDisplay rankTiers={rankTiers} />}
                 {activeTab === 'Stats' && <StatsTab player={player} events={events} />}
-                {activeTab === 'Achievements' && <AchievementsTab player={player} ranks={ranks} />}
+                {activeTab === 'Achievements' && <AchievementsTab player={player} rankTiers={rankTiers} />}
                 {activeTab === 'Leaderboard' && <LeaderboardTab player={player} players={players} />}
+                {activeTab === 'Loadout' && <LoadoutTab player={player} onPlayerUpdate={onPlayerUpdate} />}
                 {activeTab === 'Settings' && <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />}
             </Suspense>
         </div>

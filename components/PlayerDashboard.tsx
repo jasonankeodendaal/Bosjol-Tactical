@@ -7,7 +7,7 @@ import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
 import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
-import { MOCK_WEAPONS, MOCK_EQUIPMENT, MOCK_PLAYER_ROLES, UNRANKED_SUB_RANK, MOCK_BADGES, MOCK_RANK_TIERS } from '../constants';
+import { MOCK_WEAPONS, MOCK_EQUIPMENT, MOCK_PLAYER_ROLES, UNRANKED_SUB_RANK, MOCK_BADGES } from '../constants';
 import { ImageUpload } from './ImageUpload';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -17,7 +17,78 @@ import { Leaderboard } from './Leaderboard';
 import { AuthContext } from '../auth/AuthContext';
 import { DataContext } from '../data/DataContext';
 import { Loader } from './Loader';
-import { RankProgressionDisplay } from './RankProgressionDisplay';
+
+const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[] }> = ({ rankTiers }) => {
+    const [query, setQuery] = useState("");
+    const [showXP, setShowXP] = useState(true);
+
+    const filtered = rankTiers.filter((r) => r.name.toLowerCase().includes(query.toLowerCase()));
+    
+    const getRangeForTier = (tier: RankTier) => {
+        if (tier.subranks.length === 0) return 'N/A';
+        const min = tier.subranks[0].minXp;
+        const max = tier.subranks[tier.subranks.length - 1].minXp; // This isn't quite right for the top of the range but it's what we have
+        if (tier.name === "Legendary") return `${min.toLocaleString()}+`;
+        return `${min.toLocaleString()} - ${max.toLocaleString()}`; // Simplified range
+    }
+
+    return (
+        <DashboardCard title="Rank Progression & Rewards" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
+            <div className="p-6">
+                 <div className="mb-4 flex flex-col sm:flex-row gap-3">
+                    <Input
+                        type="search"
+                        placeholder="Filter tiers (e.g. 'Pro', 'Master')"
+                        className="flex-1"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                    />
+                    <label className="inline-flex items-center gap-2 text-sm text-gray-300 bg-zinc-800/50 px-3 py-2 rounded-md border border-zinc-700">
+                        <input type="checkbox" checked={showXP} onChange={() => setShowXP(!showXP)} className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"/>
+                        Show XP ranges
+                    </label>
+                </div>
+
+                <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+                    {filtered.map((tier) => (
+                        <section key={tier.id} className="bg-zinc-900/50 rounded-xl shadow p-6 border border-zinc-800">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-red-400">{tier.name}</h2>
+                                    <p className="mt-1 text-sm text-gray-400">{tier.description}</p>
+                                    {showXP && <p className="mt-1 text-sm text-gray-500">XP Range: {getRangeForTier(tier)}</p>}
+                                </div>
+                            </div>
+
+                            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {tier.subranks.map((sub) => (
+                                    <article key={sub.id} className="border border-zinc-700/50 rounded-lg p-4 bg-zinc-800/40">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <img src={sub.iconUrl} alt={sub.name} className="w-6 h-6"/>
+                                                <h3 className="font-semibold text-white">{sub.name}</h3>
+                                            </div>
+                                            {showXP && <span className="text-sm text-gray-400 font-mono">{sub.minXp.toLocaleString()}+</span>}
+                                        </div>
+                                        <ul className="mt-3 list-disc list-inside text-sm text-gray-300 space-y-1">
+                                            {sub.perks.map((p, i) => (
+                                                <li key={i}>{p}</li>
+                                            ))}
+                                        </ul>
+                                    </article>
+                                ))}
+                            </div>
+                        </section>
+                    ))}
+                    {filtered.length === 0 && (
+                        <div className="text-center text-gray-500 py-8">No tiers matched your search.</div>
+                    )}
+                </div>
+            </div>
+        </DashboardCard>
+    );
+};
+
 
 const getRankForPlayer = (player: Player, rankTiers: RankTier[]): SubRank => {
     if (player.stats.gamesPlayed < 10) {

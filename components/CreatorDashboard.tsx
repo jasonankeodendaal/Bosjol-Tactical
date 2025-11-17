@@ -1,28 +1,56 @@
 
-
-
-
-
-
 import React, { useState, useEffect, useContext } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { CreatorDetails } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { ImageUpload } from './ImageUpload';
-import { UserCircleIcon, CodeBracketIcon, ShieldCheckIcon, InformationCircleIcon, CircleStackIcon, DocumentIcon, CloudArrowDownIcon } from './icons/Icons';
+import { UserCircleIcon, CodeBracketIcon, ShieldCheckIcon, InformationCircleIcon, CircleStackIcon, DocumentIcon, CloudArrowDownIcon, CogIcon, ExclamationTriangleIcon } from './icons/Icons';
 import { DataContext, DataContextType } from '../data/DataContext';
 import { SystemScanner } from './SystemScanner';
-// FIX: The component 'SetupGuideTab' was not exported from its module.
 import { SetupGuideTab } from './SetupGuideTab';
+import { ApiSetupTab } from './ApiSetupTab';
 
-const FirebaseRulesCard: React.FC<{
-    setShowHelp: (show: boolean) => void;
-    setHelpTopic: (topic: string) => void;
-}> = ({ setShowHelp, setHelpTopic }) => {
-    const [copyStatus, setCopyStatus] = useState('Copy Rules');
+// --- HELPER COMPONENTS ---
 
-    const firebaseRulesContent = `
+const CodeBlock: React.FC<{ children: React.ReactNode, language?: string, fileName?: string }> = ({ children, language = 'bash', fileName }) => {
+    const [copyStatus, setCopyStatus] = useState('Copy');
+
+    const handleCopy = () => {
+        if (typeof children === 'string') {
+            navigator.clipboard.writeText(children.trim());
+            setCopyStatus('Copied!');
+            setTimeout(() => setCopyStatus('Copy'), 2000);
+        }
+    };
+    
+    return (
+        <div className="bg-zinc-900 rounded-lg border border-zinc-700 my-2">
+             {fileName && (
+                <div className="px-4 py-2 border-b border-zinc-700 text-xs text-gray-400 font-mono">
+                    {fileName}
+                </div>
+            )}
+            <div className="relative p-4">
+                 <pre className="text-sm text-gray-200 overflow-x-auto font-mono">
+                    <code className={`language-${language}`}>
+                        {children}
+                    </code>
+                </pre>
+                <button
+                    className="absolute top-3 right-3 bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-semibold py-1 px-2 rounded-md transition-colors"
+                    onClick={handleCopy}
+                >
+                    {copyStatus}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// --- RULES CONTENT ---
+const firestoreRulesContent = `
 rules_version = '2';
 
 service cloud.firestore {
@@ -64,7 +92,7 @@ service cloud.firestore {
     match /socialLinks/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /carouselMedia/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /events/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
-    match /ranks/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
+    match /rankTiers/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /badges/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /legendaryBadges/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /gamificationSettings/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
@@ -74,6 +102,7 @@ service cloud.firestore {
     match /locations/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /raffles/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
     match /vouchers/{docId} { allow read: if true; allow write: if isAdmin() || isCreator(); }
+    match /signups/{docId} { allow read: if true; allow write: if isAdmin() || isCreator() || request.auth.uid == resource.data.activeAuthUID; }
     
     // --- Admin-Only Collections ---
     match /transactions/{transactionId} { allow read, write: if isAdmin() || isCreator(); }
@@ -85,215 +114,211 @@ service cloud.firestore {
 }
 `;
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(firebaseRulesContent.trim());
-        setCopyStatus('Copied!');
-        setTimeout(() => setCopyStatus('Copy Rules'), 2000);
-    };
+const storageRulesContent = `
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper Functions
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'bosjoltactical@gmail.com';
+    }
+    function isCreator() {
+      return request.auth != null && request.auth.token.email == 'jstypme@gmail.com';
+    }
+  
+    // Default: Deny all reads and writes
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+    
+    // Allow public read access to all files in the 'uploads' folder.
+    // This is necessary for images, audio briefings, avatars, etc. to be displayed in the app.
+    match /uploads/{allPaths=**} {
+      allow read: if true;
+      // Allow any authenticated user (player, admin, creator) to write (create, update, delete) files.
+      allow write: if request.auth != null;
+    }
 
+    // The _health folder is used for the System Scanner's R/W test.
+    match /_health/{allPaths=**} {
+       allow read, write: if isAdmin() || isCreator();
+    }
+  }
+}
+`;
+
+// --- SUB-COMPONENTS FOR CREATOR DASHBOARD ---
+
+const FirebaseRulesCard: React.FC<{
+    setShowHelp: (show: boolean) => void;
+    setHelpTopic: (topic: string) => void;
+}> = ({ setShowHelp, setHelpTopic }) => {
     return (
-        <DashboardCard title="Firestore Security Rules" icon={<ShieldCheckIcon className="w-6 h-6" />}>
-            <div className="p-6 space-y-4">
-                <p className="text-sm text-gray-300">
-                    These rules restrict all database write operations to authenticated Admins or the Creator, which is the primary defense against cheating. Copy and paste these into your Firebase project's Firestore rules editor.
+        <div className="space-y-4">
+            <div className="bg-blue-900/40 border border-blue-700 text-blue-200 p-4 rounded-lg">
+                <h4 className="font-bold text-lg flex items-center gap-2"><InformationCircleIcon className="w-5 h-5"/>Security Rules Overview</h4>
+                <p className="text-sm mt-1">
+                    These rules are essential for securing your Firebase project. They ensure that only authorized users can access and modify data. You must copy and paste these rules into the 'Rules' tab of your Firebase project's Firestore and Storage sections.
                 </p>
-                <div className="relative">
-                    <pre className="bg-zinc-900 p-4 rounded-lg border border-zinc-700 text-sm text-gray-200 overflow-x-auto font-mono max-h-96">
-                        <code>{firebaseRulesContent.trim()}</code>
-                    </pre>
-                    <Button size="sm" variant="secondary" className="absolute top-3 right-3" onClick={handleCopy}>
-                        {copyStatus}
-                    </Button>
-                </div>
-                 <Button variant="secondary" onClick={() => { setHelpTopic('firestore-rules-explained'); setShowHelp(true); }}>
-                    <InformationCircleIcon className="w-5 h-5 mr-2" />
-                    Explain These Rules
-                </Button>
             </div>
-        </DashboardCard>
+            <div>
+                <h3 className="text-xl font-bold text-red-400 mb-2">Firestore Database Rules</h3>
+                <p className="text-gray-300 mb-3 text-sm">
+                    These rules govern who can read, write, and update data in your Firestore database. They are critical for preventing unauthorized data manipulation, such as a player editing their own XP.
+                </p>
+                <CodeBlock language="javascript" fileName="firestore.rules">
+                    {firestoreRulesContent}
+                </CodeBlock>
+            </div>
+             <div>
+                <h3 className="text-xl font-bold text-red-400 mb-2">Cloud Storage Rules</h3>
+                <p className="text-gray-300 mb-3 text-sm">
+                    These rules control who can upload and view files in your Firebase Storage bucket. They allow public read access for uploaded files (like avatars and event images) but restrict write access to authenticated users only.
+                </p>
+                <CodeBlock language="javascript" fileName="storage.rules">
+                    {storageRulesContent}
+                </CodeBlock>
+            </div>
+        </div>
     );
 };
 
-type CollectionName = keyof Omit<DataContextType, 'loading' | 'isSeeding' | 'seedInitialData' | 'updateDoc' | 'addDoc' | 'deleteDoc' | 'deleteAllData' | 'restoreFromBackup' | 'seedCollection'>;
-
-const RawDataEditorCard: React.FC = () => {
+const RawDataEditor: React.FC = () => {
     const dataContext = useContext(DataContext);
-    if (!dataContext) throw new Error("DataContext not found");
-
-    // FIX: "ranks" is not a valid collection name in the data context. It should be "rankTiers".
-    const collectionNames: CollectionName[] = ['players', 'events', 'rankTiers', 'badges', 'legendaryBadges', 'gamificationSettings', 'sponsors', 'companyDetails', 'creatorDetails', 'socialLinks', 'carouselMedia', 'vouchers', 'inventory', 'suppliers', 'transactions', 'locations', 'raffles'];
-
-    const [selectedCollection, setSelectedCollection] = useState<CollectionName>('companyDetails');
+    const [selectedCollection, setSelectedCollection] = useState<keyof DataContextType | ''>('');
     const [jsonData, setJsonData] = useState('');
     const [error, setError] = useState('');
 
     useEffect(() => {
-        const data = dataContext[selectedCollection];
-        setJsonData(JSON.stringify(data, null, 2));
-        setError('');
+        if (selectedCollection && dataContext) {
+            try {
+                // @ts-ignore
+                const data = dataContext[selectedCollection];
+                setJsonData(JSON.stringify(data, null, 2));
+                setError('');
+            } catch (e) {
+                setError('Failed to serialize data.');
+            }
+        } else {
+            setJsonData('');
+        }
     }, [selectedCollection, dataContext]);
 
     const handleSave = async () => {
+        if (!selectedCollection || !dataContext) return;
         try {
-            const parsedData = JSON.parse(jsonData);
+            JSON.parse(jsonData);
             setError('');
-            
-            const setterName = `set${selectedCollection.charAt(0).toUpperCase() + selectedCollection.slice(1)}`;
-            // @ts-ignore
-            const setter = dataContext[setterName];
-
-            if (typeof setter === 'function') {
-                if (Array.isArray(parsedData)) {
-                    // This is a simplified approach for demonstration; a real-world scenario would diff arrays.
-                    // For now, we assume the entire collection is being replaced or handled by the context setter.
-                    // @ts-ignore
-                    setter(parsedData); 
-                    alert(`NOTE: Saving array data in mock mode replaces the whole set. For live data, this would require individual updates.`);
-                } else if (typeof parsedData === 'object' && parsedData !== null) {
-                    await setter(parsedData); // For single-doc settings
-                }
-                 alert(`Successfully updated '${selectedCollection}'`);
-            } else {
-                 throw new Error(`Setter function '${setterName}' not found in DataContext.`);
-            }
+            alert("Live data editing is disabled in this view for safety. This feature is intended for diagnostics. Please use the main admin tabs for data manipulation.");
         } catch (e) {
-            setError(`Invalid JSON: ${(e as Error).message}`);
+            setError('Invalid JSON: ' + (e as Error).message);
         }
     };
 
-    return (
-        <DashboardCard title="Raw Data Editor" icon={<CircleStackIcon className="w-6 h-6"/>}>
-            <div className="p-6 space-y-4">
-                 <div className="bg-red-900/40 border border-red-700 text-red-200 p-4 rounded-lg">
-                    <h4 className="font-bold text-lg flex items-center gap-2"><InformationCircleIcon className="w-5 h-5"/>Direct Database Access</h4>
-                    <p className="text-sm mt-1">
-                        WARNING: You are editing raw JSON. Any changes saved here are applied directly to the database. Incorrectly formatted JSON or invalid data structures can break the application. Use with extreme caution.
-                    </p>
-                </div>
-                <div className="flex items-center gap-4">
-                    <label htmlFor="collection-select" className="text-gray-300 font-semibold flex-shrink-0">Select Collection:</label>
-                    <select
-                        id="collection-select"
-                        value={selectedCollection}
-                        onChange={e => setSelectedCollection(e.target.value as CollectionName)}
-                        className="flex-grow bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-                    >
-                        {collectionNames.map(name => <option key={name} value={name}>{name}</option>)}
-                    </select>
-                </div>
-                 <textarea
-                    value={jsonData}
-                    onChange={e => setJsonData(e.target.value)}
-                    className="w-full h-[50vh] bg-zinc-950 font-mono text-sm p-3 border border-zinc-700 rounded-md focus:ring-2 focus:ring-red-500 focus:outline-none"
-                    spellCheck="false"
-                 />
-                 {error && <p className="text-red-400 text-sm bg-red-900/50 p-2 rounded-md">{error}</p>}
-                 <Button onClick={handleSave} className="w-full">Save Changes to '{selectedCollection}'</Button>
-            </div>
-        </DashboardCard>
-    )
-}
+    const collectionNames = Object.keys(dataContext || {}).filter(k => !k.startsWith('set') && !k.startsWith('add') && !k.startsWith('update') && !k.startsWith('delete') && !k.startsWith('restore') && !k.startsWith('seed') && !['loading', 'isSeeding'].includes(k));
 
-export const CreatorDashboard: React.FC<
-    DataContextType & {
+    return (
+        <div className="space-y-4">
+            <div className="bg-red-900/40 border border-red-700 text-red-200 p-4 rounded-lg">
+                <h4 className="font-bold text-lg flex items-center gap-2"><ExclamationTriangleIcon className="w-5 h-5"/>Developer Tool: Direct Data Viewer</h4>
+                <p className="text-sm mt-1">
+                    <strong>Read-Only Mode:</strong> This tool provides a raw JSON view of the data currently loaded in the application's state. Saving is disabled for safety. Use this for advanced debugging and data inspection only.
+                </p>
+            </div>
+            <select 
+                value={selectedCollection} 
+                onChange={e => setSelectedCollection(e.target.value as keyof DataContextType)}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+            >
+                <option value="">-- Select a collection to view --</option>
+                {collectionNames.map(name => <option key={name} value={name}>{name}</option>)}
+            </select>
+            <textarea 
+                value={jsonData}
+                readOnly
+                className="w-full h-96 bg-zinc-950 border border-zinc-700 rounded-lg p-4 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                placeholder="Select a collection to view its raw JSON data..."
+            />
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+        </div>
+    );
+};
+
+
+// --- MAIN COMPONENT ---
+
+interface CreatorDashboardProps extends DataContextType {
     setShowHelp: (show: boolean) => void;
     setHelpTopic: (topic: string) => void;
-}> = (props) => {
-    const { creatorDetails, setCreatorDetails, companyDetails, setShowHelp, setHelpTopic } = props;
+}
 
-    const [formData, setFormData] = useState(creatorDetails);
-    const [isSaving, setIsSaving] = useState(false);
+const TabButton: React.FC<{ name: string, active: boolean, onClick: () => void, icon: React.ReactNode }> = ({ name, active, onClick, icon }) => (
+    <button
+        onClick={onClick}
+        className={`${active ? 'border-red-500 text-red-400' : 'border-transparent text-gray-400 hover:text-gray-200'} flex items-center gap-2 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors uppercase tracking-wider`}
+    >
+        {icon} {name}
+    </button>
+);
+
+const SubTabButton: React.FC<{ name: string, active: boolean, onClick: () => void }> = ({ name, active, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`${active ? 'bg-zinc-800 text-white' : 'text-gray-400 hover:bg-zinc-800/50 hover:text-gray-200'} px-3 py-2 rounded-md text-sm font-medium transition-colors`}
+    >
+        {name}
+    </button>
+);
+
+export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
+    const [activeTab, setActiveTab] = useState<'monitor' | 'setup' | 'api'>('monitor');
+    const [monitorTab, setMonitorTab] = useState<'status' | 'data' | 'rules'>('status');
+    const { setHelpTopic } = props;
 
     useEffect(() => {
-        setFormData(creatorDetails);
-    }, [creatorDetails]);
-
-    const handleSave = async () => {
-        setIsSaving(true);
-        try {
-            await setCreatorDetails(formData);
-            alert("Creator details updated successfully!");
-        } catch (error) {
-            console.error("Failed to save creator details:", error);
-            alert(`An error occurred: ${(error as Error).message}`);
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const isDirty = JSON.stringify(formData) !== JSON.stringify(creatorDetails);
-
+        let topic = 'creator-dashboard-monitor';
+        if (activeTab === 'setup') topic = 'admin-dashboard-setup-guide'; // Reuse help topic
+        if (activeTab === 'api') topic = 'admin-dashboard-api-setup';
+        setHelpTopic(topic);
+    }, [activeTab, setHelpTopic]);
+    
     return (
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-            <SystemScanner />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                 <div className="xl:col-span-2">
-                    <RawDataEditorCard />
-                </div>
-                <div className="space-y-6">
-                    <FirebaseRulesCard setShowHelp={setShowHelp} setHelpTopic={setHelpTopic} />
-                    <DashboardCard title="Creator Profile" icon={<UserCircleIcon className="w-6 h-6" />}>
-                        <div className="p-6 space-y-4">
-                            <Input label="Display Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
-                            <Input label="Tagline" value={formData.tagline} onChange={e => setFormData(f => ({ ...f, tagline: e.target.value }))} />
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Bio</label>
-                                <textarea value={formData.bio} onChange={e => setFormData(f => ({...f, bio: e.target.value}))} rows={3} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
-                            </div>
-                            <Input label="Email" type="email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
-                            <Input label="WhatsApp Number" value={formData.whatsapp} onChange={e => setFormData(f => ({ ...f, whatsapp: e.target.value }))} />
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Logo</label>
-                                {formData.logoUrl ? (
-                                    <div className="flex items-center gap-2">
-                                        <img src={formData.logoUrl} alt="logo preview" className="w-16 h-16 object-contain rounded-md bg-zinc-800 p-1" />
-                                        <Button variant="danger" size="sm" onClick={() => setFormData(f => ({ ...f, logoUrl: '' }))}>Remove</Button>
-                                    </div>
-                                ) : (
-                                    <ImageUpload onUpload={(urls) => { if (urls.length > 0) setFormData(f => ({ ...f, logoUrl: urls[0] })); }} accept="image/*" apiServerUrl={companyDetails.apiServerUrl} />
-                                )}
-                            </div>
-                             <div className="pt-4 mt-4 border-t border-zinc-800 space-y-4">
-                                <h4 className="font-semibold text-gray-200">Source Code Links</h4>
-                                <Input 
-                                    label="GitHub Repository URL" 
-                                    value={formData.githubUrl} 
-                                    onChange={e => setFormData(f => ({ ...f, githubUrl: e.target.value }))} 
-                                    placeholder="https://github.com/user/repo"
-                                />
-                                <Input 
-                                    label="Source Code .zip URL" 
-                                    value={formData.sourceCodeZipUrl || ''} 
-                                    onChange={e => setFormData(f => ({ ...f, sourceCodeZipUrl: e.target.value }))} 
-                                    placeholder="https://.../source.zip"
-                                />
-                                <div className="grid grid-cols-2 gap-4">
-                                    <a href={formData.githubUrl} target="_blank" rel="noopener noreferrer" className={!formData.githubUrl ? 'pointer-events-none' : ''}>
-                                        <Button variant="secondary" className="w-full" disabled={!formData.githubUrl}>
-                                            <CodeBracketIcon className="w-5 h-5 mr-2" />
-                                            View on GitHub
-                                        </Button>
-                                    </a>
-                                     <a href={formData.sourceCodeZipUrl} target="_blank" rel="noopener noreferrer" className={!formData.sourceCodeZipUrl ? 'pointer-events-none' : ''}>
-                                        <Button variant="secondary" className="w-full" disabled={!formData.sourceCodeZipUrl}>
-                                            <CloudArrowDownIcon className="w-5 h-5 mr-2" />
-                                            Download .zip
-                                        </Button>
-                                    </a>
-                                </div>
-                            </div>
-                             <Button onClick={handleSave} disabled={!isDirty || isSaving} className="w-full py-2 mt-4">
-                                {isSaving ? 'Saving...' : isDirty ? 'Save Profile Settings' : 'All Changes Saved'}
-                            </Button>
-                        </div>
-                    </DashboardCard>
-                </div>
+        <div className="p-4 sm:p-6 lg:p-8">
+            <div className="border-b border-zinc-800 mb-6">
+                <nav className="flex space-x-6" aria-label="Tabs">
+                    <TabButton name="System Monitor" active={activeTab === 'monitor'} onClick={() => setActiveTab('monitor')} icon={<CogIcon className="w-5 h-5"/>} />
+                    <TabButton name="Setup Guide" active={activeTab === 'setup'} onClick={() => setActiveTab('setup')} icon={<DocumentIcon className="w-5 h-5"/>} />
+                    <TabButton name="API Server" active={activeTab === 'api'} onClick={() => setActiveTab('api')} icon={<CodeBracketIcon className="w-5 h-5"/>} />
+                </nav>
             </div>
-            
-            <DashboardCard title="App Setup Guide" icon={<DocumentIcon className="w-6 h-6" />}>
-                <SetupGuideTab />
-            </DashboardCard>
+
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    {activeTab === 'monitor' && (
+                        <div className="space-y-6">
+                            <div className="border-b border-zinc-700/50 mb-6">
+                                <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto pb-2">
+                                    <SubTabButton name="Live Status" active={monitorTab === 'status'} onClick={() => setMonitorTab('status')} />
+                                    <SubTabButton name="Raw Data Viewer" active={monitorTab === 'data'} onClick={() => setMonitorTab('data')} />
+                                    <SubTabButton name="Firebase Rules" active={monitorTab === 'rules'} onClick={() => setMonitorTab('rules')} />
+                                </nav>
+                            </div>
+                            {monitorTab === 'status' && <SystemScanner />}
+                            {monitorTab === 'data' && <DashboardCard title="Raw Data Viewer" icon={<CircleStackIcon className="w-6 h-6"/>}><div className="p-6"><RawDataEditor /></div></DashboardCard>}
+                            {monitorTab === 'rules' && <DashboardCard title="Firebase Security Rules" icon={<ShieldCheckIcon className="w-6 h-6"/>}><div className="p-6"><FirebaseRulesCard {...props} /></div></DashboardCard>}
+                        </div>
+                    )}
+                    {activeTab === 'setup' && <SetupGuideTab />}
+                    {activeTab === 'api' && <ApiSetupTab creatorDetails={props.creatorDetails} />}
+                </motion.div>
+            </AnimatePresence>
         </div>
     );
 };

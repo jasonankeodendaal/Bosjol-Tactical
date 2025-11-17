@@ -644,10 +644,10 @@ export const MOCK_RAFFLES: Raffle[] = [
 
 
 export const MOCK_SPONSORS: Sponsor[] = [
-    { id: 's01', name: 'Tactical Gear Co.', logoUrl: 'https://img.logoipsum.com/284.svg', email: 'contact@tacticalgear.com', phone: '555-0201', website: 'https://tacticalgear.com' },
-    { id: 's02', name: 'Adrenaline Fuel', logoUrl: 'https://img.logoipsum.com/285.svg', email: 'sponsorship@adrenaline.com', phone: '555-0202', website: 'https://adrenaline.com' },
-    { id: 's03', name: 'Vortex Optics', logoUrl: 'https://img.logoipsum.com/286.svg', email: 'info@vortex.com', phone: '555-0203', website: 'https://vortex.com' },
-    { id: 's04', name: '5.11 Tactical', logoUrl: 'https://img.logoipsum.com/287.svg', email: 'support@511.com', phone: '555-0204', website: 'https://511.com' },
+    { id: 's01', name: 'Tactical Gear Co.', logoUrl: 'https://img.logoipsum.com/296.svg', email: 'contact@tacticalgear.com', phone: '555-0201', website: 'https://tacticalgear.com' },
+    { id: 's02', name: 'Adrenaline Fuel', logoUrl: 'https://img.logoipsum.com/297.svg', email: 'sponsorship@adrenaline.com', phone: '555-0202', website: 'https://adrenaline.com' },
+    { id: 's03', name: 'Vortex Optics', logoUrl: 'https://img.logoipsum.com/298.svg', email: 'info@vortex.com', phone: '555-0203', website: 'https://vortex.com' },
+    { id: 's04', name: '5.11 Tactical', logoUrl: 'https://img.logoipsum.com/299.svg', email: 'support@511.com', phone: '555-0204', website: 'https://511.com' },
 ];
 
 export const MOCK_LOCATIONS: Location[] = [

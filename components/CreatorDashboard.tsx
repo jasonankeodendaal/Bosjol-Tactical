@@ -42,7 +42,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
         <div className="flex flex-col h-full">
             <header className="flex items-center justify-between p-3 sm:p-4 bg-zinc-950/70 backdrop-blur-sm border-b border-zinc-800 flex-shrink-0">
                 <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
-                    {props.creatorDetails?.logoUrl && <img src={props.creatorDetails.logoUrl} alt={creatorUser.name} className="w-10 h-10 sm:w-12 sm:h-12 object-contain flex-shrink-0"/>}
+                    {props.creatorDetails?.logoUrl && <img src={props.creatorDetails.logoUrl} alt={creatorUser?.name || 'Creator'} className="w-10 h-10 sm:w-12 sm:h-12 object-contain flex-shrink-0"/>}
                     <div className="overflow-hidden">
                         <h1 className="text-base sm:text-xl font-bold text-white truncate">{creatorUser?.name || 'Creator'}</h1>
                         <p className="text-xs sm:text-sm text-red-400">System Creator</p>

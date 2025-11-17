@@ -109,6 +109,13 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
         const finalData = typeof newData === 'function' ? (newData as (prev: T) => T)(data) : newData;
         if (IS_LIVE_DATA) {
             try {
+                if (collectionName === 'settings') {
+                    const dataSize = new TextEncoder().encode(JSON.stringify(finalData)).length;
+                    const FIRESTORE_LIMIT = 1048576; // 1 MiB
+                    if (dataSize > FIRESTORE_LIMIT * 0.95) { // Check at 95% of the limit
+                         throw new Error(`Settings data size (${(dataSize / 1024 / 1024).toFixed(2)} MB) is close to or exceeds the 1MB Firestore limit. This is likely due to large uploaded images/videos. Please use an external URL for large media files or configure an API Server in the settings.`);
+                    }
+                }
                 const docRef = db.collection(collectionName).doc(docId);
                 await docRef.set(finalData, { merge: true });
             } catch (error: any) {

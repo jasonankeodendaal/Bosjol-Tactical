@@ -1,11 +1,9 @@
 
-
-
 import React, { useState, useContext } from 'react';
-import type { Rank, Badge, LegendaryBadge, GamificationRule, GamificationSettings } from '../types';
+import type { Rank, Tier, Badge, LegendaryBadge, GamificationRule, GamificationSettings } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
-import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, PlusIcon } from './icons/Icons';
+import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, PlusIcon, XIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { ImageUpload } from './ImageUpload';
 import { DashboardCard } from './DashboardCard';
@@ -15,6 +13,8 @@ import { DataContext } from '../data/DataContext';
 interface ProgressionTabProps {
     ranks: Rank[];
     setRanks: React.Dispatch<React.SetStateAction<Rank[]>>;
+    tiers: Tier[];
+    setTiers: React.Dispatch<React.SetStateAction<Tier[]>>;
     badges: Badge[];
     setBadges: React.Dispatch<React.SetStateAction<Badge[]>>;
     legendaryBadges: LegendaryBadge[];
@@ -177,14 +177,110 @@ const LegendaryBadgeEditorModal: React.FC<{
             </div>
         </Modal>
     );
-}
+};
+
+const TierEditorModal: React.FC<{
+    tier: Partial<Tier> | null,
+    onClose: () => void,
+    onSave: (tier: Omit<Tier, 'id'> | Tier) => void
+}> = ({ tier, onClose, onSave }) => {
+    const dataContext = useContext(DataContext);
+    const [formData, setFormData] = useState({
+        name: tier?.name || '',
+        badgeIconUrl: tier?.badgeIconUrl || '',
+    });
+
+    const handleSave = () => {
+        if (!formData.name) {
+            alert("Tier name cannot be empty.");
+            return;
+        }
+        const finalTier = { ...tier, ...formData };
+        onSave(finalTier);
+        onClose();
+    };
+
+    return (
+        <Modal isOpen={true} onClose={onClose} title={tier?.id ? 'Edit Tier' : 'Create Tier'}>
+            <div className="space-y-4">
+                <Input label="Tier Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
+                <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Tier Badge Icon</label>
+                    <ImageUpload onUpload={(urls) => { if(urls.length) setFormData(f => ({...f, badgeIconUrl: urls[0]}))}} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
+                    {formData.badgeIconUrl && <img src={formData.badgeIconUrl} alt="Tier Badge Preview" className="w-16 h-16 mt-2"/>}
+                </div>
+            </div>
+            <div className="mt-6">
+                <Button onClick={handleSave} className="w-full">Save Tier</Button>
+            </div>
+        </Modal>
+    );
+};
+
+const RankEditorModal: React.FC<{
+    rank: Partial<Rank> | null,
+    tiers: Tier[],
+    onClose: () => void,
+    onSave: (rank: Omit<Rank, 'id'> | Rank) => void
+}> = ({ rank, tiers, onClose, onSave }) => {
+    const dataContext = useContext(DataContext);
+    const [formData, setFormData] = useState({
+        name: rank?.name || '',
+        tierId: rank?.tierId || (tiers.length > 0 ? tiers[0].id : ''),
+        minXp: rank?.minXp || 0,
+        iconUrl: rank?.iconUrl || '',
+        unlocks: rank?.unlocks?.join(', ') || '',
+    });
+
+    const handleSave = () => {
+        if (!formData.name || !formData.tierId) {
+            alert("Rank Name and Tier are required.");
+            return;
+        }
+        const finalRank = {
+            ...rank,
+            ...formData,
+            unlocks: formData.unlocks.split(',').map(s => s.trim()).filter(Boolean),
+            minXp: Number(formData.minXp)
+        };
+        onSave(finalRank);
+        onClose();
+    };
+    
+    return (
+        <Modal isOpen={true} onClose={onClose} title={rank?.id ? 'Edit Rank' : 'Create Rank'}>
+            <div className="space-y-4">
+                 <Input label="Rank Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))} />
+                <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Tier</label>
+                    <select value={formData.tierId} onChange={e => setFormData(f => ({...f, tierId: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                        {tiers.length === 0 && <option value="">Create a Tier first</option>}
+                        {tiers.map(tier => <option key={tier.id} value={tier.id}>{tier.name}</option>)}
+                    </select>
+                </div>
+                <Input label="Minimum XP Required" type="number" value={formData.minXp} onChange={e => setFormData(f => ({...f, minXp: Number(e.target.value)}))} />
+                <Input label="Unlocks (comma-separated)" value={formData.unlocks} onChange={e => setFormData(f => ({...f, unlocks: e.target.value}))} />
+                <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Rank Icon</label>
+                    <ImageUpload onUpload={(urls) => { if(urls.length) setFormData(f => ({...f, iconUrl: urls[0]}))}} accept="image/*" apiServerUrl={dataContext?.companyDetails.apiServerUrl} />
+                    {formData.iconUrl && <img src={formData.iconUrl} alt="Rank Icon Preview" className="w-16 h-16 mt-2"/>}
+                </div>
+            </div>
+            <div className="mt-6">
+                <Button onClick={handleSave} className="w-full">Save Rank</Button>
+            </div>
+        </Modal>
+    )
+
+};
+
 
 export const ProgressionTab: React.FC<ProgressionTabProps> = ({ 
     gamificationSettings, 
     badges, 
     legendaryBadges, 
     ranks, 
-    setRanks, 
+    tiers,
     addDoc, 
     updateDoc, 
     deleteDoc 
@@ -197,146 +293,124 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
 
     const [editingLegendaryBadge, setEditingLegendaryBadge] = useState<Partial<LegendaryBadge> | null>(null);
     const [deletingLegendaryBadge, setDeletingLegendaryBadge] = useState<LegendaryBadge | null>(null);
-    
-    // Gamification Handlers
-    const handleSaveRule = (rule: Omit<GamificationRule, 'id'> | GamificationRule) => {
-        if ('id' in rule) {
-            updateDoc('gamificationSettings', rule);
-        } else {
-            addDoc('gamificationSettings', rule);
-        }
-    };
 
-    const handleDeleteRule = () => {
-        if (!deletingRule) return;
-        deleteDoc('gamificationSettings', deletingRule.id);
-        setDeletingRule(null);
-    };
-    
-    // Standard Badge Handlers
-    const handleSaveBadge = (badge: Omit<Badge, 'id'> | Badge) => {
-        if ('id' in badge) {
-            updateDoc('badges', badge);
-        } else {
-            addDoc('badges', badge);
-        }
-        setEditingBadge(null);
-    }
-    
-    const handleDeleteBadge = () => {
-        if (!deletingBadge) return;
-        deleteDoc('badges', deletingBadge.id);
-        setDeletingBadge(null);
-    }
+    const [editingTier, setEditingTier] = useState<Partial<Tier> | null>(null);
+    const [deletingTier, setDeletingTier] = useState<Tier | null>(null);
 
-    // Legendary Badge Handlers
-    const handleSaveLegendaryBadge = (badge: Omit<LegendaryBadge, 'id'> | LegendaryBadge) => {
-        if ('id' in badge) {
-            updateDoc('legendaryBadges', badge);
-        } else {
-            addDoc('legendaryBadges', badge);
-        }
-        setEditingLegendaryBadge(null);
-    }
+    const [editingRank, setEditingRank] = useState<Partial<Rank> | null>(null);
+    const [deletingRank, setDeletingRank] = useState<Rank | null>(null);
+    
+    // Handlers
+    const handleSaveRule = (rule: Omit<GamificationRule, 'id'> | GamificationRule) => { 'id' in rule ? updateDoc('gamificationSettings', rule) : addDoc('gamificationSettings', rule); };
+    const handleDeleteRule = () => { if (deletingRule) { deleteDoc('gamificationSettings', deletingRule.id); setDeletingRule(null); } };
+    
+    const handleSaveBadge = (badge: Omit<Badge, 'id'> | Badge) => { 'id' in badge ? updateDoc('badges', badge) : addDoc('badges', badge); setEditingBadge(null); }
+    const handleDeleteBadge = () => { if (deletingBadge) { deleteDoc('badges', deletingBadge.id); setDeletingBadge(null); } }
 
-    const handleDeleteLegendaryBadge = () => {
-        if (!deletingLegendaryBadge) return;
-        deleteDoc('legendaryBadges', deletingLegendaryBadge.id);
-        setDeletingLegendaryBadge(null);
-    }
+    const handleSaveLegendaryBadge = (badge: Omit<LegendaryBadge, 'id'> | LegendaryBadge) => { 'id' in badge ? updateDoc('legendaryBadges', badge) : addDoc('legendaryBadges', badge); setEditingLegendaryBadge(null); }
+    const handleDeleteLegendaryBadge = () => { if (deletingLegendaryBadge) { deleteDoc('legendaryBadges', deletingLegendaryBadge.id); setDeletingLegendaryBadge(null); } }
+
+    const handleSaveTier = (tier: Omit<Tier, 'id'> | Tier) => { 'id' in tier ? updateDoc('tiers', tier) : addDoc('tiers', tier); setEditingTier(null); }
+    const handleDeleteTier = () => { if (deletingTier) { deleteDoc('tiers', deletingTier.id); setDeletingTier(null); } }
+
+    const handleSaveRank = (rank: Omit<Rank, 'id'> | Rank) => { 'id' in rank ? updateDoc('ranks', rank) : addDoc('ranks', rank); setEditingRank(null); }
+    const handleDeleteRank = () => { if (deletingRank) { deleteDoc('ranks', deletingRank.id); setDeletingRank(null); } }
+    
+    const sortedRanks = [...ranks].sort((a,b) => a.minXp - b.minXp);
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-6">
             {/* Modals */}
             {editingRule && <GamificationRuleEditorModal rule={editingRule} onClose={() => setEditingRule(null)} onSave={handleSaveRule} />}
-            {deletingRule && (
-                <Modal isOpen={true} onClose={() => setDeletingRule(null)} title="Confirm Deletion">
-                    <p>Are you sure you want to delete the rule "{deletingRule.name}"?</p>
-                    <div className="flex justify-end gap-4 mt-6">
-                        <Button variant="secondary" onClick={() => setDeletingRule(null)}>Cancel</Button>
-                        <Button variant="danger" onClick={handleDeleteRule}>Delete</Button>
-                    </div>
-                </Modal>
-            )}
+            {deletingRule && <Modal isOpen={true} onClose={() => setDeletingRule(null)} title="Confirm Deletion"><p>Delete "{deletingRule.name}"?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingRule(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteRule}>Delete</Button></div></Modal>}
             {editingBadge && <BadgeEditorModal badge={editingBadge} onClose={() => setEditingBadge(null)} onSave={handleSaveBadge} />}
-            {deletingBadge && (
-                 <Modal isOpen={true} onClose={() => setDeletingBadge(null)} title="Confirm Deletion">
-                    <p>Are you sure you want to delete the badge "{deletingBadge.name}"?</p>
-                    <div className="flex justify-end gap-4 mt-6">
-                        <Button variant="secondary" onClick={() => setDeletingBadge(null)}>Cancel</Button>
-                        <Button variant="danger" onClick={handleDeleteBadge}>Delete</Button>
-                    </div>
-                </Modal>
-            )}
+            {deletingBadge && <Modal isOpen={true} onClose={() => setDeletingBadge(null)} title="Confirm Deletion"><p>Delete "{deletingBadge.name}"?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingBadge(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteBadge}>Delete</Button></div></Modal>}
             {editingLegendaryBadge && <LegendaryBadgeEditorModal badge={editingLegendaryBadge} onClose={() => setEditingLegendaryBadge(null)} onSave={handleSaveLegendaryBadge} />}
-            {deletingLegendaryBadge && (
-                 <Modal isOpen={true} onClose={() => setDeletingLegendaryBadge(null)} title="Confirm Deletion">
-                    <p>Are you sure you want to delete the badge "{deletingLegendaryBadge.name}"?</p>
-                    <div className="flex justify-end gap-4 mt-6">
-                        <Button variant="secondary" onClick={() => setDeletingLegendaryBadge(null)}>Cancel</Button>
-                        <Button variant="danger" onClick={handleDeleteLegendaryBadge}>Delete</Button>
-                    </div>
-                </Modal>
-            )}
+            {deletingLegendaryBadge && <Modal isOpen={true} onClose={() => setDeletingLegendaryBadge(null)} title="Confirm Deletion"><p>Delete "{deletingLegendaryBadge.name}"?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingLegendaryBadge(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteLegendaryBadge}>Delete</Button></div></Modal>}
+            {editingTier && <TierEditorModal tier={editingTier} onClose={() => setEditingTier(null)} onSave={handleSaveTier} />}
+            {deletingTier && <Modal isOpen={true} onClose={() => setDeletingTier(null)} title="Confirm Deletion"><p>Delete "{deletingTier.name}" tier?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingTier(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteTier}>Delete</Button></div></Modal>}
+            {editingRank && <RankEditorModal rank={editingRank} tiers={tiers} onClose={() => setEditingRank(null)} onSave={handleSaveRank} />}
+            {deletingRank && <Modal isOpen={true} onClose={() => setDeletingRank(null)} title="Confirm Deletion"><p>Delete "{deletingRank.name}" rank?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingRank(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteRank}>Delete</Button></div></Modal>}
 
             {/* Main Content */}
-            <div className="space-y-6">
-                <DashboardCard title="Gamification Settings" icon={<ShieldCheckIcon className="w-6 h-6" />}>
-                     <div className="p-4">
-                        <div className="flex justify-end mb-4">
-                            <Button size="sm" onClick={() => setEditingRule({})}>
-                                <PlusIcon className="w-5 h-5 mr-2" /> Add Rule
-                            </Button>
-                        </div>
-                        <div className="space-y-2">
-                            {gamificationSettings.map(rule => (
-                                <GamificationRuleItem key={rule.id} rule={rule} onEdit={setEditingRule} onDelete={setDeletingRule} />
-                            ))}
-                        </div>
-                    </div>
-                </DashboardCard>
-            </div>
-            <div className="space-y-6">
-                 <DashboardCard title="Standard Badges" icon={<TrophyIcon className="w-6 h-6" />}>
-                     <div className="p-4">
-                        <div className="flex justify-end mb-4">
-                            <Button size="sm" onClick={() => setEditingBadge({})}><PlusIcon className="w-5 h-5 mr-2"/>Add Badge</Button>
-                        </div>
-                        <div className="space-y-2 max-h-60 overflow-y-auto">
-                            {badges.map(badge => (
-                                <div key={badge.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg">
-                                    <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10"/>
-                                    <div className="flex-grow">
-                                        <p className="font-bold text-white">{badge.name}</p>
-                                        <p className="text-xs text-gray-400">{badge.description}</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                     <DashboardCard title="Tier Management" icon={<ShieldCheckIcon className="w-6 h-6" />}>
+                        <div className="p-4">
+                            <div className="flex justify-end mb-4"><Button size="sm" onClick={() => setEditingTier({})}><PlusIcon className="w-5 h-5 mr-2" /> Add Tier</Button></div>
+                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                                {tiers.map(tier => (
+                                    <div key={tier.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg">
+                                        <img src={tier.badgeIconUrl} alt={tier.name} className="w-10 h-10"/>
+                                        <p className="font-bold text-white flex-grow">{tier.name}</p>
+                                        <Button size="sm" variant="secondary" onClick={() => setEditingTier(tier)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
+                                        <Button size="sm" variant="danger" onClick={() => setDeletingTier(tier)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
                                     </div>
-                                    <Button size="sm" variant="secondary" onClick={() => setEditingBadge(badge)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
-                                    <Button size="sm" variant="danger" onClick={() => setDeletingBadge(badge)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                </DashboardCard>
-                <DashboardCard title="Legendary Badges" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
-                    <div className="p-4">
-                        <div className="flex justify-end mb-4">
-                            <Button size="sm" onClick={() => setEditingLegendaryBadge({})}><PlusIcon className="w-5 h-5 mr-2"/>Add Badge</Button>
+                    </DashboardCard>
+                    <DashboardCard title="Rank Structure" icon={<ShieldCheckIcon className="w-6 h-6" />}>
+                        <div className="p-4">
+                            <div className="flex justify-end mb-4"><Button size="sm" onClick={() => setEditingRank({})}><PlusIcon className="w-5 h-5 mr-2" /> Add Rank</Button></div>
+                            <div className="space-y-2 max-h-96 overflow-y-auto">
+                                {sortedRanks.map(rank => {
+                                    const tier = tiers.find(t => t.id === rank.tierId);
+                                    return (
+                                         <div key={rank.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg">
+                                            <img src={rank.iconUrl} alt={rank.name} className="w-10 h-10"/>
+                                            <div className="flex-grow">
+                                                <p className="font-bold text-white">{rank.name}</p>
+                                                <p className="text-xs text-gray-400">{tier?.name || 'No Tier'} | {rank.minXp} XP</p>
+                                            </div>
+                                            <Button size="sm" variant="secondary" onClick={() => setEditingRank(rank)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
+                                            <Button size="sm" variant="danger" onClick={() => setDeletingRank(rank)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
+                                        </div>
+                                    )
+                                })}
+                            </div>
                         </div>
-                        <div className="space-y-2 max-h-60 overflow-y-auto">
-                             {legendaryBadges.map(badge => (
-                                <div key={badge.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg">
-                                    <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10"/>
-                                    <div className="flex-grow">
-                                        <p className="font-bold text-amber-300">{badge.name}</p>
-                                        <p className="text-xs text-gray-400">{badge.description}</p>
+                    </DashboardCard>
+                </div>
+
+                <div className="space-y-6">
+                    <DashboardCard title="Gamification Settings" icon={<PlusCircleIcon className="w-6 h-6" />}>
+                        <div className="p-4">
+                            <div className="flex justify-end mb-4"><Button size="sm" onClick={() => setEditingRule({})}><PlusIcon className="w-5 h-5 mr-2" /> Add Rule</Button></div>
+                            <div className="space-y-2">{gamificationSettings.map(rule => <GamificationRuleItem key={rule.id} rule={rule} onEdit={setEditingRule} onDelete={setDeletingRule} />)}</div>
+                        </div>
+                    </DashboardCard>
+                    <DashboardCard title="Standard Badges" icon={<TrophyIcon className="w-6 h-6" />}>
+                        <div className="p-4">
+                            <div className="flex justify-end mb-4"><Button size="sm" onClick={() => setEditingBadge({})}><PlusIcon className="w-5 h-5 mr-2"/>Add Badge</Button></div>
+                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                                {badges.map(badge => (
+                                    <div key={badge.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg">
+                                        <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10"/>
+                                        <div className="flex-grow"><p className="font-bold text-white">{badge.name}</p><p className="text-xs text-gray-400">{badge.description}</p></div>
+                                        <Button size="sm" variant="secondary" onClick={() => setEditingBadge(badge)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
+                                        <Button size="sm" variant="danger" onClick={() => setDeletingBadge(badge)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
                                     </div>
-                                    <Button size="sm" variant="secondary" onClick={() => setEditingLegendaryBadge(badge)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
-                                    <Button size="sm" variant="danger" onClick={() => setDeletingLegendaryBadge(badge)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                </DashboardCard>
+                    </DashboardCard>
+                    <DashboardCard title="Legendary Badges" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
+                        <div className="p-4">
+                            <div className="flex justify-end mb-4"><Button size="sm" onClick={() => setEditingLegendaryBadge({})}><PlusIcon className="w-5 h-5 mr-2"/>Add Badge</Button></div>
+                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                                {legendaryBadges.map(badge => (
+                                    <div key={badge.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg">
+                                        <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10"/>
+                                        <div className="flex-grow"><p className="font-bold text-amber-300">{badge.name}</p><p className="text-xs text-gray-400">{badge.description}</p></div>
+                                        <Button size="sm" variant="secondary" onClick={() => setEditingLegendaryBadge(badge)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
+                                        <Button size="sm" variant="danger" onClick={() => setDeletingLegendaryBadge(badge)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </DashboardCard>
+                </div>
             </div>
         </div>
     );

@@ -248,3 +248,151 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                 <Input label="Date" type="date" value={formData.date} onChange={e => setFormData(f => ({ ...f, date: e.target.value }))} />
                                 <Input label="Start Time" type="time" value={formData.startTime} onChange={e => setFormData(f => ({ ...f, startTime: e.target.value }))} />
                                 <Input label="Location" value={formData.location} onChange={e => setFormData(f => ({ ...f, location: e.target.value }))} />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Event Type</label>
+                                    <select value={formData.type} onChange={e => setFormData(f => ({ ...f, type: e.target.value as EventType }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                        {EVENT_TYPES.map(type => <option key={type}>{type}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Theme</label>
+                                    <select value={formData.theme} onChange={e => setFormData(f => ({ ...f, theme: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                        {MOCK_EVENT_THEMES.map(theme => <option key={theme}>{theme}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Description</label>
+                                <textarea value={formData.description} onChange={e => setFormData(f => ({...f, description: e.target.value}))} rows={3} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Rules</label>
+                                <textarea value={formData.rules} onChange={e => setFormData(f => ({...f, rules: e.target.value}))} rows={3} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <Input label="Game Fee (R)" type="number" value={formData.gameFee} onChange={e => setFormData(f => ({ ...f, gameFee: Number(e.target.value) }))} />
+                                <Input label="Participation XP" type="number" value={formData.participationXp} onChange={e => setFormData(f => ({ ...f, participationXp: Number(e.target.value) }))} />
+                                 <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Event Status</label>
+                                    <select value={formData.status} onChange={e => setFormData(f => ({ ...f, status: e.target.value as EventStatus }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                        {EVENT_STATUSES.map(s => <option key={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <UrlOrUploadField
+                                    label="Event Image"
+                                    fileUrl={formData.imageUrl}
+                                    onUrlSet={(url) => setFormData(f => ({...f, imageUrl: url}))}
+                                    onRemove={() => setFormData(f => ({...f, imageUrl: ''}))}
+                                    accept="image/*"
+                                />
+                                <UrlOrUploadField
+                                    label="Audio Briefing"
+                                    fileUrl={formData.audioBriefingUrl}
+                                    onUrlSet={(url) => setFormData(f => ({...f, audioBriefingUrl: url}))}
+                                    onRemove={() => setFormData(f => ({...f, audioBriefingUrl: ''}))}
+                                    accept="audio/*"
+                                    previewType="audio"
+                                />
+                            </div>
+                        </div>
+                    </DashboardCard>
+                    <DashboardCard title="Event Live Stats" icon={<ChartBarIcon className="w-6 h-6" />}>
+                        <div className="p-6">
+                            <ul className="space-y-3">
+                                {attendeesDetails.map(player => (
+                                    <li key={player.id} className="bg-zinc-900/50 p-3 rounded-lg">
+                                        <p className="font-bold text-white mb-2">{player.name}</p>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <Input 
+                                                label="Kills" type="number" 
+                                                value={liveStats[player.id]?.kills || 0}
+                                                onChange={e => handleStatChange(player.id, 'kills', Number(e.target.value))}
+                                                className="!py-1.5 text-center"
+                                            />
+                                            <Input 
+                                                label="Deaths" type="number"
+                                                value={liveStats[player.id]?.deaths || 0}
+                                                onChange={e => handleStatChange(player.id, 'deaths', Number(e.target.value))}
+                                                className="!py-1.5 text-center"
+                                            />
+                                            <Input 
+                                                label="Headshots" type="number"
+                                                value={liveStats[player.id]?.headshots || 0}
+                                                onChange={e => handleStatChange(player.id, 'headshots', Number(e.target.value))}
+                                                className="!py-1.5 text-center"
+                                            />
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </DashboardCard>
+                </div>
+
+                {/* Right Column - Players & Actions */}
+                <div className="lg:col-span-1 space-y-6">
+                     <DashboardCard title={`Signed Up (${signedUpPlayersDetails.length})`} icon={<UserIcon className="w-6 h-6" />}>
+                        <div className="p-4 space-y-2 max-h-60 overflow-y-auto">
+                            {signedUpPlayersDetails.length > 0 ? signedUpPlayersDetails.map(player => (
+                                <div key={player.id} className="bg-zinc-800/50 p-2 rounded-md flex justify-between items-center">
+                                    <p className="font-semibold text-white">{player.name}</p>
+                                    <Button size="sm" onClick={() => handleCheckIn(player.id)}>Check In</Button>
+                                </div>
+                            )) : <p className="text-center text-gray-500 text-sm py-4">No players signed up yet.</p>}
+                        </div>
+                    </DashboardCard>
+                    <DashboardCard title={`Attendees (${formData.attendees.length})`} icon={<UserIcon className="w-6 h-6" />}>
+                        <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
+                             {attendeesDetails.length > 0 ? attendeesDetails.map(player => {
+                                const attendee = formData.attendees.find(a => a.playerId === player.id)!;
+                                return (
+                                <div key={player.id} className="bg-zinc-800/50 p-3 rounded-md">
+                                    <div className="flex justify-between items-center">
+                                        <p className="font-semibold text-white">{player.name}</p>
+                                        <Button size="sm" variant="danger" onClick={() => handleCheckOut(player.id)}>
+                                            <MinusIcon className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                    <div className="flex gap-2 items-center mt-2">
+                                        <Button size="sm" variant={attendee.paymentStatus === 'Paid (Card)' ? 'primary' : 'secondary'} onClick={() => handlePaymentStatus(player.id, 'Paid (Card)')}>Card</Button>
+                                        <Button size="sm" variant={attendee.paymentStatus === 'Paid (Cash)' ? 'primary' : 'secondary'} onClick={() => handlePaymentStatus(player.id, 'Paid (Cash)')}>Cash</Button>
+                                        <Button size="sm" variant={attendee.paymentStatus === 'Unpaid' ? 'primary' : 'secondary'} onClick={() => handlePaymentStatus(player.id, 'Unpaid')}>Unpaid</Button>
+                                    </div>
+                                </div>
+                                )
+                             }) : <p className="text-center text-gray-500 text-sm py-4">No players checked in.</p>}
+                        </div>
+                    </DashboardCard>
+                    <div className="space-y-3">
+                         {event && formData.status === 'Completed' && (
+                            <div className="bg-green-900/50 border border-green-700 p-3 rounded-lg text-center">
+                                <CheckCircleIcon className="w-8 h-8 mx-auto text-green-400 mb-2" />
+                                <p className="font-semibold text-green-300">This event has been finalized.</p>
+                                <p className="text-xs text-green-400">XP and stats have been awarded.</p>
+                            </div>
+                        )}
+                        {event && formData.status !== 'Completed' && (
+                            <Button onClick={handleFinalizeEvent} variant="primary" className="w-full !bg-green-600 hover:!bg-green-500">
+                                <CheckCircleIcon className="w-5 h-5 mr-2" />
+                                Finalize Event & Award XP
+                            </Button>
+                        )}
+                        <Button onClick={handleSaveClick} variant="secondary" className="w-full">
+                            Save Changes
+                        </Button>
+                        {event && (
+                            <Button onClick={() => onDelete(event.id)} variant="danger" className="w-full">
+                                <TrashIcon className="w-5 h-5 mr-2" />
+                                Delete Event
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};

@@ -7,7 +7,7 @@ import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
 import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
-import { MOCK_WEAPONS, MOCK_EQUIPMENT, MOCK_PLAYER_ROLES, UNRANKED_SUB_RANK, MOCK_BADGES } from '../constants';
+import { UNRANKED_SUB_RANK, MOCK_PLAYER_ROLES, MOCK_BADGES } from '../constants';
 import { ImageUpload } from './ImageUpload';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -21,6 +21,16 @@ import { Loader } from './Loader';
 const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[] }> = ({ rankTiers }) => {
     const [query, setQuery] = useState("");
     const [showXP, setShowXP] = useState(true);
+
+    if (!rankTiers || rankTiers.length === 0) {
+        return (
+            <DashboardCard title="Rank Progression & Rewards" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
+                <div className="p-6 text-center text-gray-500">
+                    <p>Rank progression data is currently unavailable.</p>
+                </div>
+            </DashboardCard>
+        );
+    }
 
     const filtered = rankTiers.filter((r) => r.name.toLowerCase().includes(query.toLowerCase()));
     
@@ -49,7 +59,7 @@ const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[] }> = ({ rankTiers
                     </label>
                 </div>
 
-                <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+                <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
                     {filtered.map((tier) => (
                         <section key={tier.id} className="bg-zinc-900/50 rounded-xl shadow p-6 border border-zinc-800">
                             <div className="flex items-start justify-between gap-4">
@@ -62,7 +72,7 @@ const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[] }> = ({ rankTiers
 
                             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {tier.subranks.map((sub) => (
-                                    <article key={sub.id} className="border border-zinc-700/50 rounded-lg p-4 bg-zinc-800/40">
+                                    <article key={sub.id} className="border border-zinc-700/50 rounded-lg p-4 bg-zinc-800/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-red-900/30 hover:border-red-500/40">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <img src={sub.iconUrl} alt={sub.name} className="w-6 h-6"/>
@@ -70,9 +80,12 @@ const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[] }> = ({ rankTiers
                                             </div>
                                             {showXP && <span className="text-sm text-gray-400 font-mono">{sub.minXp.toLocaleString()}+</span>}
                                         </div>
-                                        <ul className="mt-3 list-disc list-inside text-sm text-gray-300 space-y-1">
+                                        <ul className="mt-3 list-none text-sm text-gray-300 space-y-1.5">
                                             {sub.perks.map((p, i) => (
-                                                <li key={i}>{p}</li>
+                                                <li key={i} className="flex items-start gap-2">
+                                                    <CheckCircleIcon className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                                                    <span>{p}</span>
+                                                </li>
                                             ))}
                                         </ul>
                                     </article>
@@ -91,6 +104,7 @@ const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[] }> = ({ rankTiers
 
 
 const getRankForPlayer = (player: Player, rankTiers: RankTier[]): SubRank => {
+    if (!rankTiers || rankTiers.length === 0) return UNRANKED_SUB_RANK;
     if (player.stats.gamesPlayed < 10) {
         return UNRANKED_SUB_RANK;
     }
@@ -778,20 +792,8 @@ const LoadoutTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate
 
     const handleSave = () => {
         onPlayerUpdate({ ...player, loadout });
+        setIsDirty(false);
     };
-
-    const SelectGroup: React.FC<{ label: string, value: string, onChange: (val: string) => void, options: string[] }> = ({ label, value, onChange, options }) => (
-        <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1.5">{label}</label>
-            <select
-                value={value}
-                onChange={e => onChange(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-                {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
-        </div>
-    );
 
     return (
         <DashboardCard title="Operator Loadout" icon={<CrosshairsIcon className="w-6 h-6" />}>
@@ -799,32 +801,32 @@ const LoadoutTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-6 bg-zinc-900/50 p-6 rounded-lg border border-zinc-700/50">
                         <h3 className="text-xl font-bold text-red-400 border-b border-zinc-700 pb-2">Weapons</h3>
-                        <SelectGroup
+                        <Input
                             label="Primary Weapon"
                             value={loadout.primaryWeapon}
-                            onChange={(val) => setLoadout(l => ({...l, primaryWeapon: val}))}
-                            options={MOCK_WEAPONS.primary}
+                            onChange={(e) => setLoadout(l => ({...l, primaryWeapon: e.target.value}))}
+                            placeholder="Enter primary weapon..."
                         />
-                        <SelectGroup
+                        <Input
                             label="Secondary Weapon"
                             value={loadout.secondaryWeapon}
-                            onChange={(val) => setLoadout(l => ({...l, secondaryWeapon: val}))}
-                            options={MOCK_WEAPONS.secondary}
+                            onChange={(e) => setLoadout(l => ({...l, secondaryWeapon: e.target.value}))}
+                            placeholder="Enter secondary weapon..."
                         />
                     </div>
                     <div className="space-y-6 bg-zinc-900/50 p-6 rounded-lg border border-zinc-700/50">
                         <h3 className="text-xl font-bold text-red-400 border-b border-zinc-700 pb-2">Equipment</h3>
-                         <SelectGroup
+                         <Input
                             label="Lethal Equipment"
                             value={loadout.lethal}
-                            onChange={(val) => setLoadout(l => ({...l, lethal: val}))}
-                            options={MOCK_EQUIPMENT.lethal}
+                            onChange={(e) => setLoadout(l => ({...l, lethal: e.target.value}))}
+                            placeholder="Enter lethal equipment..."
                         />
-                         <SelectGroup
+                         <Input
                             label="Tactical Equipment"
                             value={loadout.tactical}
-                            onChange={(val) => setLoadout(l => ({...l, tactical: val}))}
-                            options={MOCK_EQUIPMENT.tactical}
+                            onChange={(e) => setLoadout(l => ({...l, tactical: e.target.value}))}
+                            placeholder="Enter tactical equipment..."
                         />
                     </div>
                 </div>
@@ -1052,6 +1054,7 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'raffles' | 'pl
 export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, players, sponsors, onPlayerUpdate, events, onEventSignUp, legendaryBadges, raffles, rankTiers, locations, signups }) => {
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
     const auth = useContext(AuthContext);
+    const playerRank = getRankForPlayer(player, rankTiers);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -1069,19 +1072,33 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = ({ player, player
     }, [activeTab, auth]);
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8">
-            <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-            <Suspense fallback={<Loader />}>
-                {activeTab === 'Overview' && <OverviewTab player={player} events={events} sponsors={sponsors} rankTiers={rankTiers} />}
-                {activeTab === 'Events' && <EventsTab player={player} events={events} onEventSignUp={onEventSignUp} locations={locations} signups={signups} />}
-                {activeTab === 'Raffles' && <RafflesTab player={player} raffles={raffles} players={players} />}
-                {activeTab === 'Ranks' && <RankProgressionDisplay rankTiers={rankTiers} />}
-                {activeTab === 'Stats' && <StatsTab player={player} events={events} />}
-                {activeTab === 'Achievements' && <AchievementsTab player={player} rankTiers={rankTiers} />}
-                {activeTab === 'Leaderboard' && <LeaderboardTab player={player} players={players} />}
-                {activeTab === 'Loadout' && <LoadoutTab player={player} onPlayerUpdate={onPlayerUpdate} />}
-                {activeTab === 'Settings' && <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />}
-            </Suspense>
+        <div className="flex flex-col h-full">
+            <header className="flex items-center justify-between p-3 sm:p-4 bg-zinc-950/70 backdrop-blur-sm border-b border-zinc-800 flex-shrink-0">
+                <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
+                    <img src={player.avatarUrl} alt={player.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-red-600 flex-shrink-0"/>
+                    <div className="overflow-hidden">
+                        <h1 className="text-base sm:text-xl font-bold text-white truncate">{player.name} "{player.callsign}"</h1>
+                        <p className="text-xs sm:text-sm text-red-400">{playerRank.name}</p>
+                    </div>
+                </div>
+                <Button onClick={() => auth?.logout()} variant="secondary" size="sm" className="flex-shrink-0">Logout</Button>
+            </header>
+            <main className="flex-grow overflow-y-auto">
+                <div className="p-4 sm:p-6 lg:p-8">
+                    <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
+                    <Suspense fallback={<Loader />}>
+                        {activeTab === 'Overview' && <OverviewTab player={player} events={events} sponsors={sponsors} rankTiers={rankTiers} />}
+                        {activeTab === 'Events' && <EventsTab player={player} events={events} onEventSignUp={onEventSignUp} locations={locations} signups={signups} />}
+                        {activeTab === 'Raffles' && <RafflesTab player={player} raffles={raffles} players={players} />}
+                        {activeTab === 'Ranks' && <RankProgressionDisplay rankTiers={rankTiers} />}
+                        {activeTab === 'Stats' && <StatsTab player={player} events={events} />}
+                        {activeTab === 'Achievements' && <AchievementsTab player={player} rankTiers={rankTiers} />}
+                        {activeTab === 'Leaderboard' && <LeaderboardTab player={player} players={players} />}
+                        {activeTab === 'Loadout' && <LoadoutTab player={player} onPlayerUpdate={onPlayerUpdate} />}
+                        {activeTab === 'Settings' && <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />}
+                    </Suspense>
+                </div>
+            </main>
         </div>
     );
 };

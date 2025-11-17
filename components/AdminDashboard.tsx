@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Player, GameEvent, SubRank, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, Signup, CarouselMedia, RankTier } from '../types';
+import type { Player, GameEvent, SubRank, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, Signup, CarouselMedia, RankTier, Admin } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -347,6 +347,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const dataContext = useContext(DataContext);
     if (!dataContext) throw new Error("DataContext not found");
     const auth = useContext(AuthContext);
+    const adminUser = auth?.user as Admin;
 
     const { players, setPlayers, events, legendaryBadges, rankTiers, updateDoc, addDoc, deleteDoc, restoreFromBackup, setDoc, signups } = props;
 
@@ -441,60 +442,74 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8">
-            <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-            {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
-            {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} rankTiers={props.rankTiers} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}
-            {activeTab === 'Progression' && <ProgressionTab 
-                rankTiers={props.rankTiers} setRankTiers={props.setRankTiers}
-                badges={props.badges} setBadges={props.setBadges}
-                legendaryBadges={props.legendaryBadges} setLegendaryBadges={props.setLegendaryBadges}
-                gamificationSettings={props.gamificationSettings} setGamificationSettings={props.setGamificationSettings}
-                addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
-            />}
-            {activeTab === 'Inventory' && <InventoryTab 
-                inventory={props.inventory} setInventory={props.setInventory}
-                suppliers={props.suppliers}
-                addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
-            />}
-            {activeTab === 'Locations' && <LocationsTab 
-                locations={props.locations} setLocations={props.setLocations}
-                addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
-            />}
-            {activeTab === 'Suppliers' && <SuppliersTab 
-                suppliers={props.suppliers} setSuppliers={props.setSuppliers}
-                addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
-            />}
-            {activeTab === 'Finance' && <FinanceTab 
-                 transactions={props.transactions}
-                 players={props.players}
-                 events={props.events}
-                 locations={props.locations}
-                 companyDetails={props.companyDetails}
-            />}
-            {activeTab === 'Vouchers & Raffles' && <VouchersRafflesTab 
-                vouchers={props.vouchers} setVouchers={props.setVouchers}
-                raffles={props.raffles} setRaffles={props.setRaffles}
-                players={props.players}
-                addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
-            />}
-            {activeTab === 'Sponsors' && <SponsorsTab 
-                sponsors={props.sponsors} setSponsors={props.setSponsors}
-                addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
-            />}
-            {activeTab === 'Leaderboard' && <LeaderboardTab players={props.players} />}
-            {activeTab === 'Settings' && <SettingsTab 
-                companyDetails={props.companyDetails} 
-                setCompanyDetails={props.setCompanyDetails}
-                socialLinks={props.socialLinks}
-                setSocialLinks={props.setSocialLinks}
-                carouselMedia={props.carouselMedia}
-                setCarouselMedia={props.setCarouselMedia}
-                onDeleteAllData={props.onDeleteAllData}
-                addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
-                restoreFromBackup={restoreFromBackup}
-            />}
-            {activeTab === 'API Setup' && <ApiSetupTab creatorDetails={props.creatorDetails} />}
+        <div className="flex flex-col h-full">
+            <header className="flex items-center justify-between p-3 sm:p-4 bg-zinc-950/70 backdrop-blur-sm border-b border-zinc-800 flex-shrink-0">
+                <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
+                    {adminUser?.avatarUrl && <img src={adminUser.avatarUrl} alt={adminUser.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-red-600 flex-shrink-0"/>}
+                    <div className="overflow-hidden">
+                        <h1 className="text-base sm:text-xl font-bold text-white truncate">{adminUser?.name || 'Admin'}</h1>
+                        <p className="text-xs sm:text-sm text-red-400">Administrator</p>
+                    </div>
+                </div>
+                <Button onClick={() => auth?.logout()} variant="secondary" size="sm" className="flex-shrink-0">Logout</Button>
+            </header>
+            <main className="flex-grow overflow-y-auto">
+                <div className="p-4 sm:p-6 lg:p-8">
+                    <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
+                    {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
+                    {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} rankTiers={props.rankTiers} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}
+                    {activeTab === 'Progression' && <ProgressionTab 
+                        rankTiers={props.rankTiers} setRankTiers={props.setRankTiers}
+                        badges={props.badges} setBadges={props.setBadges}
+                        legendaryBadges={props.legendaryBadges} setLegendaryBadges={props.setLegendaryBadges}
+                        gamificationSettings={props.gamificationSettings} setGamificationSettings={props.setGamificationSettings}
+                        addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+                    />}
+                    {activeTab === 'Inventory' && <InventoryTab 
+                        inventory={props.inventory} setInventory={props.setInventory}
+                        suppliers={props.suppliers}
+                        addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+                    />}
+                    {activeTab === 'Locations' && <LocationsTab 
+                        locations={props.locations} setLocations={props.setLocations}
+                        addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+                    />}
+                    {activeTab === 'Suppliers' && <SuppliersTab 
+                        suppliers={props.suppliers} setSuppliers={props.setSuppliers}
+                        addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+                    />}
+                    {activeTab === 'Finance' && <FinanceTab 
+                        transactions={props.transactions}
+                        players={props.players}
+                        events={props.events}
+                        locations={props.locations}
+                        companyDetails={props.companyDetails}
+                    />}
+                    {activeTab === 'Vouchers & Raffles' && <VouchersRafflesTab 
+                        vouchers={props.vouchers} setVouchers={props.setVouchers}
+                        raffles={props.raffles} setRaffles={props.setRaffles}
+                        players={props.players}
+                        addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+                    />}
+                    {activeTab === 'Sponsors' && <SponsorsTab 
+                        sponsors={props.sponsors} setSponsors={props.setSponsors}
+                        addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+                    />}
+                    {activeTab === 'Leaderboard' && <LeaderboardTab players={props.players} />}
+                    {activeTab === 'Settings' && <SettingsTab 
+                        companyDetails={props.companyDetails} 
+                        setCompanyDetails={props.setCompanyDetails}
+                        socialLinks={props.socialLinks}
+                        setSocialLinks={props.setSocialLinks}
+                        carouselMedia={props.carouselMedia}
+                        setCarouselMedia={props.setCarouselMedia}
+                        onDeleteAllData={props.onDeleteAllData}
+                        addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+                        restoreFromBackup={restoreFromBackup}
+                    />}
+                    {activeTab === 'API Setup' && <ApiSetupTab creatorDetails={props.creatorDetails} />}
+                </div>
+            </main>
         </div>
     );
 };

@@ -1,3 +1,4 @@
+
 import type { Player, Admin, GameEvent, Briefing, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails, Signup, RankTier, SubRank } from './types';
 
 export const MOCK_BADGES: Badge[] = [
@@ -25,82 +26,82 @@ export const MOCK_RANK_TIERS: RankTier[] = [
   {
     id: "tier_rookie",
     name: "Rookie",
-    description: "Introductory tier. Players learn basics, unlock introductory cosmetics and small credit rewards at season end.",
+    description: "Introductory tier for new operators learning the ropes.",
     subranks: [
-      { id: "r_i", name: "Rookie I", minXp: 0, perks: ["Season cosmetic (banner)", "Small credit reward"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
-      { id: "r_ii", name: "Rookie II", minXp: 201, perks: ["Calling card", "Small credit reward"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
-      { id: "r_iii", name: "Rookie III", minXp: 401, perks: ["Weapon XP card (minor)", "Profile frame"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
-      { id: "r_iv", name: "Rookie IV", minXp: 601, perks: ["Skin fragment", "Credits"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
-      { id: "r_v", name: "Rookie V", minXp: 801, perks: ["Season-end credits", "Badge"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" }
+      { id: "r_i", name: "Rookie I", minXp: 0, perks: ["Basic Calling Card"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
+      { id: "r_ii", name: "Rookie II", minXp: 201, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
+      { id: "r_iii", name: "Rookie III", minXp: 401, perks: ["Custom Banner"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
+      { id: "r_iv", name: "Rookie IV", minXp: 601, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
+      { id: "r_v", name: "Rookie V", minXp: 801, perks: ["Credits Reward"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" }
     ]
   },
   {
     id: "tier_vet",
     name: "Veteran",
-    description: "Established players — better season rewards and more cosmetics unlocked per subrank.",
+    description: "For established players who have proven their skills in the field.",
     subranks: [
-      { id: "v_i", name: "Veteran I", minXp: 1001, perks: ["Credits", "Calling card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
-      { id: "v_ii", name: "Veteran II", minXp: 1201, perks: ["Weapon XP Card", "Profile frame"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
-      { id: "v_iii", name: "Veteran III", minXp: 1401, perks: ["Weapon skin (basic)", "Credits"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
-      { id: "v_iv", name: "Veteran IV", minXp: 1601, perks: ["Calling card", "Season cosmetic"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
-      { id: "v_v", name: "Veteran V", minXp: 1801, perks: ["Higher credits", "Badge"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" }
+      { id: "v_i", name: "Veteran I", minXp: 1001, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
+      { id: "v_ii", name: "Veteran II", minXp: 1201, perks: ["Custom Banner"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
+      { id: "v_iii", name: "Veteran III", minXp: 1401, perks: ["Credits Reward"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
+      { id: "v_iv", name: "Veteran IV", minXp: 1601, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
+      { id: "v_v", name: "Veteran V", minXp: 1801, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" }
     ]
   },
   {
     id: "tier_elite",
     name: "Elite",
-    description: "Mid-tier competitive players — unlock stronger cosmetics and weapon XP rewards.",
+    description: "Recognizing mid-tier competitive players with advanced tactical abilities.",
     subranks: [
-      { id: "e_i", name: "Elite I", minXp: 2001, perks: ["Weapon XP Card x2", "Profile frame"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
-      { id: "e_ii", name: "Elite II", minXp: 2201, perks: ["Weapon skin (uncommon)", "Credits"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
-      { id: "e_iii", name: "Elite III", minXp: 2401, perks: ["Calling card", "Weapon XP Card x3"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
-      { id: "e_iv", name: "Elite IV", minXp: 2601, perks: ["Season costume fragment", "Higher credits"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
-      { id: "e_v", name: "Elite V", minXp: 2801, perks: ["Distinct banner", "XP boost token (cosmetic)"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" }
+      { id: "e_i", name: "Elite I", minXp: 2001, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
+      { id: "e_ii", name: "Elite II", minXp: 2201, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
+      { id: "e_iii", name: "Elite III", minXp: 2401, perks: ["Custom Calling Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
+      { id: "e_iv", name: "Elite IV", minXp: 2601, perks: ["Credits Reward"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
+      { id: "e_v", name: "Elite V", minXp: 2801, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" }
     ]
   },
   {
     id: "tier_pro",
     name: "Pro",
-    description: "High-skill players. Season rewards include multiple Weapon XP cards, rarer skins and valuable credits.",
+    description: "High-skill players demonstrating professional-level gameplay.",
     subranks: [
-      { id: "p_i", name: "Pro I", minXp: 3001, perks: ["Weapon XP Card x5", "Calling card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
-      { id: "p_ii", name: "Pro II", minXp: 3301, perks: ["Rare weapon skin", "Large credits"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
-      { id: "p_iii", name: "Pro III", minXp: 3601, perks: ["Weapon XP Card x8", "Profile frame (rare)"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
-      { id: "p_iv", name: "Pro IV", minXp: 3901, perks: ["Premium calling card", "Season cosmetic set"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
-      { id: "p_v", name: "Pro V", minXp: 4201, perks: ["Large skin shard pack", "High credits"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" }
+      { id: "p_i", name: "Pro I", minXp: 3001, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
+      { id: "p_ii", name: "Pro II", minXp: 3301, perks: ["Exclusive Camo"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
+      { id: "p_iii", name: "Pro III", minXp: 3601, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
+      { id: "p_iv", name: "Pro IV", minXp: 3901, perks: ["Credits Reward"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" },
+      { id: "p_v", name: "Pro V", minXp: 4201, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png" }
     ]
   },
   {
     id: "tier_master",
     name: "Master",
-    description: "Competitive tier — strong season rewards: multiple premium Weapon XP cards, exclusive camos and higher credits.",
+    description: "Top-tier competitive operators with mastery over all aspects of combat.",
     subranks: [
-      { id: "m_i", name: "Master I", minXp: 4501, perks: ["Premium weapon skin", "Weapon XP Card x10"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
-      { id: "m_ii", name: "Master II", minXp: 4901, perks: ["Exclusive profile frame", "Large credits"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
-      { id: "m_iii", name: "Master III", minXp: 5201, perks: ["Rare camo", "Weapon XP Card x12"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
-      { id: "m_iv", name: "Master IV", minXp: 5401, perks: ["Cosmetic bundle (small)", "Season badge"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
-      { id: "m_v", name: "Master V", minXp: 5701, perks: ["High-tier skin", "Mass Weapon XP Cards"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" }
+      { id: "m_i", name: "Master I", minXp: 4501, perks: ["Weapon XP Card + Camo"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
+      { id: "m_ii", name: "Master II", minXp: 4801, perks: ["Exclusive Calling Card"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
+      { id: "m_iii", name: "Master III", minXp: 5101, perks: ["Credits Reward"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
+      { id: "m_iv", name: "Master IV", minXp: 5401, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" },
+      { id: "m_v", name: "Master V", minXp: 5701, perks: ["Exclusive Skin + Camo"], iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png" }
     ]
   },
   {
     id: "tier_gm",
     name: "Grand Master",
-    description: "Top competitive tier — exclusive cosmetics, banner effects, and significant season rewards.",
+    description: "Among the best of the best, with access to exclusive rewards.",
     subranks: [
-      { id: "gm_i", name: "Grand Master I", minXp: 6001, perks: ["Exclusive banner effect", "Large credits"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
-      { id: "gm_ii", name: "Grand Master II", minXp: 6401, perks: ["Elite weapon skin", "Weapon XP Card x20"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
-      { id: "gm_iii", name: "Grand Master III", minXp: 6801, perks: ["Profile frame (epic)", "Season cosmetic set"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
-      { id: "gm_iv", name: "Grand Master IV", minXp: 7201, perks: ["Huge credits pack", "Exclusive calling card"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
-      { id: "gm_v", name: "Grand Master V", minXp: 7601, perks: ["Top-tier skin", "Legendary shard token"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" }
+      { id: "gm_i", name: "Grand Master I", minXp: 6001, perks: ["Permanent Cosmetic Reward"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
+      { id: "gm_ii", name: "Grand Master II", minXp: 6401, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
+      { id: "gm_iii", name: "Grand Master III", minXp: 6801, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
+      { id: "gm_iv", name: "Grand Master IV", minXp: 7201, perks: ["Custom Calling Card"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" },
+      { id: "gm_v", name: "Grand Master V", minXp: 7601, perks: ["Credits Reward"], iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png" }
     ]
   },
   {
     id: "tier_leg",
     name: "Legendary",
-    description: "Elite elite — special season rewards, top-tier cosmetics and the Legendary points mechanic for reconstructing certain Battle Pass rewards.",
+    description: "The pinnacle of achievement, reserved for the most elite operators.",
     subranks: [
-      { id: "l_i", name: "Legendary", minXp: 8001, perks: ["Legendary banner & frame", "Top cosmetic bundle", "Legendary Points (BP reconstruction)"], iconUrl: "https://img.icons8.com/color/96/medal-of-honor.png" },
-      { id: "l_top", name: "Legendary (Top 5,000)", minXp: 99999, perks: ["Exclusive Top-Player Badge", "Unique visual effect"], iconUrl: "https://img.icons8.com/fluency/48/star-medal.png" }
+      { id: "l_i", name: "Legendary", minXp: 8001, perks: ["Legendary Banner / Frame"], iconUrl: "https://img.icons8.com/color/96/medal-of-honor.png" },
+      { id: "l_top", name: "Legendary (Top 5000)", minXp: 99999, perks: ["Special Badge / Glow Effect"], iconUrl: "https://img.icons8.com/fluency/48/star-medal.png" }
     ]
   }
 ];

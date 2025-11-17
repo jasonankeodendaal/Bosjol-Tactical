@@ -25,7 +25,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             return;
         }
 
+        // On initial mount, sign out any existing user to enforce re-login on every app load/refresh.
+        auth.signOut();
+
         const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: firebase.User | null) => {
+            // This listener now primarily handles logins that happen *during* the session,
+            // like an admin using email/password.
             if (firebaseUser && !firebaseUser.isAnonymous) {
                  const email = firebaseUser.email?.toLowerCase();
 
@@ -60,16 +65,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                          setUser(null);
                     }
                 } else {
-                    // Non-admin/creator Firebase user, sign them out
+                    // A non-admin/creator user is logged in with email/pass, which shouldn't happen.
                     await auth.signOut();
                     setUser(null);
                 }
-            } else if (!firebaseUser) {
-                // No Firebase user, clear admin/creator/player state
+            } else {
+                // This handles the initial load (after signOut) and any anonymous user sessions from previous player logins.
+                // It ensures we always start with a clean slate.
                 setUser(null);
             }
-            // If firebaseUser is anonymous, we don't need to do anything here,
-            // because the user state is already set with player data during login.
             setLoading(false);
         });
 

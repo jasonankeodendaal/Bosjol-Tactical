@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CreatorDetails } from '../types';
@@ -10,6 +11,7 @@ import { DataContext, DataContextType } from '../data/DataContext';
 import { SystemScanner } from './SystemScanner';
 import { SetupGuideTab } from './SetupGuideTab';
 import { ApiSetupTab } from './ApiSetupTab';
+import { AuthContext } from '../auth/AuthContext';
 
 // --- HELPER COMPONENTS ---
 
@@ -288,6 +290,8 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
     const [activeTab, setActiveTab] = useState<'monitor' | 'setup' | 'api'>('monitor');
     const [monitorTab, setMonitorTab] = useState<'status' | 'data' | 'rules'>('status');
     const { setHelpTopic } = props;
+    const auth = useContext(AuthContext);
+    const creatorUser = auth?.user as (CreatorDetails & { role: 'creator' });
 
     useEffect(() => {
         let topic = 'creator-dashboard-monitor';
@@ -297,41 +301,55 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
     }, [activeTab, setHelpTopic]);
     
     return (
-        <div className="p-4 sm:p-6 lg:p-8">
-            <div className="border-b border-zinc-800 mb-6">
-                <nav className="flex space-x-6" aria-label="Tabs">
-                    <TabButton name="System Monitor" active={activeTab === 'monitor'} onClick={() => setActiveTab('monitor')} icon={<CogIcon className="w-5 h-5"/>} />
-                    <TabButton name="Setup Guide" active={activeTab === 'setup'} onClick={() => setActiveTab('setup')} icon={<DocumentIcon className="w-5 h-5"/>} />
-                    <TabButton name="API Server" active={activeTab === 'api'} onClick={() => setActiveTab('api')} icon={<CodeBracketIcon className="w-5 h-5"/>} />
-                </nav>
-            </div>
+        <div className="flex flex-col h-full">
+            <header className="flex items-center justify-between p-3 sm:p-4 bg-zinc-950/70 backdrop-blur-sm border-b border-zinc-800 flex-shrink-0">
+                <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
+                    {props.creatorDetails?.logoUrl && <img src={props.creatorDetails.logoUrl} alt={creatorUser.name} className="w-10 h-10 sm:w-12 sm:h-12 object-contain flex-shrink-0"/>}
+                    <div className="overflow-hidden">
+                        <h1 className="text-base sm:text-xl font-bold text-white truncate">{creatorUser?.name || 'Creator'}</h1>
+                        <p className="text-xs sm:text-sm text-red-400">System Creator</p>
+                    </div>
+                </div>
+                <Button onClick={() => auth?.logout()} variant="secondary" size="sm" className="flex-shrink-0">Logout</Button>
+            </header>
+            <main className="flex-grow overflow-y-auto">
+                <div className="p-4 sm:p-6 lg:p-8">
+                    <div className="border-b border-zinc-800 mb-6">
+                        <nav className="flex space-x-6" aria-label="Tabs">
+                            <TabButton name="System Monitor" active={activeTab === 'monitor'} onClick={() => setActiveTab('monitor')} icon={<CogIcon className="w-5 h-5"/>} />
+                            <TabButton name="Setup Guide" active={activeTab === 'setup'} onClick={() => setActiveTab('setup')} icon={<DocumentIcon className="w-5 h-5"/>} />
+                            <TabButton name="API Server" active={activeTab === 'api'} onClick={() => setActiveTab('api')} icon={<CodeBracketIcon className="w-5 h-5"/>} />
+                        </nav>
+                    </div>
 
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={activeTab}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                >
-                    {activeTab === 'monitor' && (
-                        <div className="space-y-6">
-                            <div className="border-b border-zinc-700/50 mb-6">
-                                <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto pb-2">
-                                    <SubTabButton name="Live Status" active={monitorTab === 'status'} onClick={() => setMonitorTab('status')} />
-                                    <SubTabButton name="Raw Data Viewer" active={monitorTab === 'data'} onClick={() => setMonitorTab('data')} />
-                                    <SubTabButton name="Firebase Rules" active={monitorTab === 'rules'} onClick={() => setMonitorTab('rules')} />
-                                </nav>
-                            </div>
-                            {monitorTab === 'status' && <SystemScanner />}
-                            {monitorTab === 'data' && <DashboardCard title="Raw Data Viewer" icon={<CircleStackIcon className="w-6 h-6"/>}><div className="p-6"><RawDataEditor /></div></DashboardCard>}
-                            {monitorTab === 'rules' && <DashboardCard title="Firebase Security Rules" icon={<ShieldCheckIcon className="w-6 h-6"/>}><div className="p-6"><FirebaseRulesCard {...props} /></div></DashboardCard>}
-                        </div>
-                    )}
-                    {activeTab === 'setup' && <SetupGuideTab />}
-                    {activeTab === 'api' && <ApiSetupTab creatorDetails={props.creatorDetails} />}
-                </motion.div>
-            </AnimatePresence>
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            {activeTab === 'monitor' && (
+                                <div className="space-y-6">
+                                    <div className="border-b border-zinc-700/50 mb-6">
+                                        <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto pb-2">
+                                            <SubTabButton name="Live Status" active={monitorTab === 'status'} onClick={() => setMonitorTab('status')} />
+                                            <SubTabButton name="Raw Data Viewer" active={monitorTab === 'data'} onClick={() => setMonitorTab('data')} />
+                                            <SubTabButton name="Firebase Rules" active={monitorTab === 'rules'} onClick={() => setMonitorTab('rules')} />
+                                        </nav>
+                                    </div>
+                                    {monitorTab === 'status' && <SystemScanner />}
+                                    {monitorTab === 'data' && <DashboardCard title="Raw Data Viewer" icon={<CircleStackIcon className="w-6 h-6"/>}><div className="p-6"><RawDataEditor /></div></DashboardCard>}
+                                    {monitorTab === 'rules' && <DashboardCard title="Firebase Security Rules" icon={<ShieldCheckIcon className="w-6 h-6"/>}><div className="p-6"><FirebaseRulesCard {...props} /></div></DashboardCard>}
+                                </div>
+                            )}
+                            {activeTab === 'setup' && <SetupGuideTab />}
+                            {activeTab === 'api' && <ApiSetupTab creatorDetails={props.creatorDetails} />}
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+            </main>
         </div>
     );
 };

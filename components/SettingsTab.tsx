@@ -219,7 +219,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         const backupData = {
             players: dataContext.players,
             events: dataContext.events,
-            ranks: dataContext.ranks,
+// FIX: Property 'ranks' does not exist on type 'DataContextType'. Changed to 'rankTiers' to match the type definition in DataContext.
+            rankTiers: dataContext.rankTiers,
             badges: dataContext.badges,
             legendaryBadges: dataContext.legendaryBadges,
             gamificationSettings: dataContext.gamificationSettings,

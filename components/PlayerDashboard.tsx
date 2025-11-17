@@ -531,20 +531,6 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 
     const { current, next, rank } = getRankProgression(player, ranks);
-
-    if (!rank || !current) {
-        return (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                    <DashboardCard title="Rank & Progression" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
-                        <div className="p-6 text-center text-gray-500">
-                            <p>Your rank is being calculated...</p>
-                        </div>
-                    </DashboardCard>
-                </div>
-            </div>
-        );
-    }
     
     const startXp = current.minXp;
     const endXp = next ? next.minXp : 0;
@@ -589,9 +575,9 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                 <DashboardCard title="Rank & Progression" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
                     <div className="p-6">
                         <div className="flex items-center gap-4 mb-4">
-                            <img src={rank.rankBadgeUrl} alt={rank.name} className="w-16 h-16"/>
+                            {rank && <img src={rank.rankBadgeUrl} alt={rank.name} className="w-16 h-16"/>}
                             <div>
-                                <p className="text-sm text-gray-400 uppercase tracking-wider">{rank.name}</p>
+                                <p className="text-sm text-gray-400 uppercase tracking-wider">{rank?.name || 'Unranked'}</p>
                                 <p className="text-2xl font-bold text-white">{current.name}</p>
                             </div>
                         </div>

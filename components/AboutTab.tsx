@@ -24,9 +24,45 @@ const StepCard: React.FC<{ number: number, title: string, children: React.ReactN
 export const AboutTab: React.FC = () => {
     return (
         <div className="space-y-6">
-            <DashboardCard title="About This Dashboard & Hosting Guide" icon={<InformationCircleIcon className="w-6 h-6" />}>
+            <DashboardCard title="About This Dashboard & System Guide" icon={<InformationCircleIcon className="w-6 h-6" />}>
                 <div className="p-6 space-y-6">
-                    <StepCard number={1} title="Using External URLs vs. Direct Uploads">
+
+                     <StepCard number={1} title="System Automations & Features Guide">
+                        <p>This guide explains the automated processes and key features available to both Players and Administrators, designed to streamline management and enhance the player experience.</p>
+                        
+                        <h4 className="font-semibold text-gray-200 mt-6 mb-2 text-lg">For Players</h4>
+                        <div className="prose prose-sm prose-invert max-w-none text-gray-300">
+                           <ul>
+                                <li><strong>Automatic Rank Progression:</strong> Your Rank and Tier are determined solely by your total Rank Points (RP). As you earn RP, you will automatically be promoted to the next tier once you meet the minimum XP requirement.</li>
+                                <li><strong>Real-Time Leaderboard:</strong> The global leaderboard is updated instantly whenever any player's RP changes, ensuring the rankings are always current.</li>
+                                <li><strong>Automated Badge Unlocking:</strong> Standard Badges (e.g., 'Sharpshooter' for 50 headshots) are automatically awarded the moment your lifetime stats meet the required criteria.</li>
+                                <li><strong>Instant Stat Updates:</strong> After an admin finalizes an event you attended, your lifetime stats (Kills, Deaths, Headshots, Games Played) and match history are updated immediately.</li>
+                                <li><strong>Smart Event Signups:</strong> When signing up for an event, the availability of rental gear is shown in real-time. If an item is fully booked, it's automatically marked as 'Out of Stock' to prevent overbooking.</li>
+                                <li><strong>Rank Up Celebrations:</strong> If your rank or tier has increased since your last session, you will be greeted with a full-screen "Promotion" summary upon your next login, celebrating your achievement.</li>
+                            </ul>
+                        </div>
+
+                        <h4 className="font-semibold text-gray-200 mt-6 mb-2 text-lg">For Administrators</h4>
+                        <div className="prose prose-sm prose-invert max-w-none text-gray-300">
+                             <ul>
+                                <li><strong>Automated Player Code Generation:</strong> When creating a new player, the system automatically suggests a unique Player Code based on the player's initials and a sequential number (e.g., John Smith becomes JS01), preventing duplicates.</li>
+                                <li><strong>Core Automation - Finalize Event:</strong> This is the most powerful automation. When you click "Finalize Event" on the Manage Event page, the system automatically performs a cascade of actions:
+                                    <ul className="mt-2">
+                                        <li>Calculates and awards RP to every attendee based on participation and their recorded in-game stats (kills, deaths, headshots).</li>
+                                        <li>Applies a configurable RP penalty to any player who signed up for the event but did not attend (a "no-show").</li>
+                                        <li>Updates each attendee's lifetime stats and creates a permanent Match History record for that event.</li>
+                                        <li>Recalculates each attendee's total RP and automatically promotes their Rank/Tier if they've met a new threshold.</li>
+                                        <li>Automatically generates 'Event Revenue' and 'Rental Revenue' transactions in the Finance tab for every attendee marked as 'Paid'.</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Automated Financial Tracking:</strong> As described above, the Finance tab is automatically populated with revenue data from finalized events, providing a live look at profitability without manual data entry.</li>
+                                <li><strong>Automatic Raffle Winner Drawing:</strong> On the Vouchers & Raffles tab, clicking "Draw Winners" for an active raffle instantly and randomly selects winners from all purchased tickets, assigns prizes, and marks the raffle as 'Completed'.</li>
+                                <li><strong>Inventory Stock Alerts:</strong> In the Inventory tab, any item whose stock level drops to or below its defined "Re-order Level" will have its stock count highlighted in red, serving as a visual reminder to restock.</li>
+                            </ul>
+                        </div>
+                    </StepCard>
+
+                    <StepCard number={2} title="Hosting Guide: External URLs vs. Direct Uploads">
                         <p>This dashboard offers two ways to handle images, audio, and video files:</p>
                         <ul className="list-disc list-inside space-y-2 pl-2 mt-2">
                             <li><strong>Direct Upload:</strong> You can upload files directly from your device. The file is converted into a 'data URL' and stored in the database. <strong>This has a 500KB file size limit.</strong></li>
@@ -37,7 +73,7 @@ export const AboutTab: React.FC = () => {
                         </div>
                     </StepCard>
 
-                    <StepCard number={2} title="How to Get a Direct URL (Free Image Hosting)">
+                    <StepCard number={3} title="How to Get a Direct URL (Free Image Hosting)">
                         <p>You need a <strong>direct link</strong> to the image file itself (usually ending in .jpg, .png, .gif), not a link to the webpage where the image is displayed.</p>
                         <h4 className="font-semibold text-gray-200 mt-4 mb-2">Recommended Service: ImgBB</h4>
                         <ol className="list-decimal list-inside space-y-2 pl-4">
@@ -50,7 +86,7 @@ export const AboutTab: React.FC = () => {
                         <p className="mt-4">Other services like <a href="https://imgur.com/upload" target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline">Imgur</a> work too, but make sure you right-click the uploaded image and select "Copy Image Address" to get the direct link.</p>
                     </StepCard>
 
-                    <StepCard number={3} title="Handling Video and Audio Files">
+                    <StepCard number={4} title="Handling Video and Audio Files">
                          <p>For video and audio, you cannot use image hosting sites. The best free options are platforms designed for media streaming. It's also recommended to use web-optimized formats like <strong>MP3</strong> over large formats like WAV for faster loading.</p>
                          <h4 className="font-semibold text-gray-200 mt-4 mb-2">Cloud Storage (Dropbox, Google Drive)</h4>
                          <p>You can use services like Dropbox or Google Drive, but you must modify the sharing link to create a direct download link. This process varies by service and can be unreliable for streaming due to security policies.</p>

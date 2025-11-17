@@ -1,4 +1,3 @@
-
 import React, { useState, useContext } from 'react';
 import type { Rank, Tier, Badge, LegendaryBadge, GamificationRule, GamificationSettings } from '../types';
 import { Button } from './Button';
@@ -255,7 +254,6 @@ const TierEditorModal: React.FC<{
             minXp: Number(formData.minXp)
         };
         onSave(finalTier);
-        onClose();
     };
     
     return (
@@ -319,46 +317,42 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     const handleDeleteRank = () => { if (deletingRank) { deleteDoc('ranks', deletingRank.id); setDeletingRank(null); } }
 
     const handleSaveTier = (tier: (Omit<Tier, 'id'> | Tier) & { rankId: string }) => {
-        setRanks(prevRanks => {
-            const newRanks = [...prevRanks];
-            const rankIndex = newRanks.findIndex(r => r.id === tier.rankId);
-            if (rankIndex === -1) return prevRanks;
+        const { rankId, ...tierData } = tier;
+        const rankToUpdate = ranks.find(r => r.id === rankId);
+        if (!rankToUpdate) return;
+        
+        let updatedTiers;
+        if ('id' in tierData && tierData.id) { // Editing existing tier
+            updatedTiers = rankToUpdate.tiers.map(t => t.id === tierData.id ? (tierData as Tier) : t);
+        } else { // Adding new tier
+            const newTier = { ...tierData, id: `t_${Date.now()}` } as Tier;
+            updatedTiers = [...rankToUpdate.tiers, newTier];
+        }
 
-            const rank = { ...newRanks[rankIndex] };
-            const { rankId, ...tierData } = tier;
-
-            if ('id' in tierData) { // Editing
-                const tierIndex = rank.tiers.findIndex(t => t.id === tierData.id);
-                if (tierIndex > -1) {
-                    rank.tiers = [...rank.tiers];
-                    rank.tiers[tierIndex] = tierData;
-                }
-            } else { // Adding
-                 rank.tiers = [...rank.tiers, { ...tierData, id: `t_${Date.now()}` }];
-            }
-            
-            newRanks[rankIndex] = rank;
-            updateDoc('ranks', rank);
-            return newRanks;
-        });
+        const updatedRank = { ...rankToUpdate, tiers: updatedTiers };
+        
+        updateDoc('ranks', updatedRank);
         setEditingTier(null);
-    }
-    const handleDeleteTier = () => { 
+    };
+
+    const handleDeleteTier = () => {
         if (!deletingTier) return;
         const { rankId, id: tierId } = deletingTier;
-        setRanks(prevRanks => {
-             const newRanks = [...prevRanks];
-            const rankIndex = newRanks.findIndex(r => r.id === rankId);
-            if (rankIndex === -1) return prevRanks;
+        
+        const rankToUpdate = ranks.find(r => r.id === rankId);
+        if (!rankToUpdate) {
+            setDeletingTier(null);
+            return;
+        }
 
-            const rank = { ...newRanks[rankIndex] };
-            rank.tiers = rank.tiers.filter(t => t.id !== tierId);
-            newRanks[rankIndex] = rank;
-            updateDoc('ranks', rank);
-            return newRanks;
-        });
-        setDeletingTier(null); 
-    }
+        const updatedRank = {
+            ...rankToUpdate,
+            tiers: rankToUpdate.tiers.filter(t => t.id !== tierId)
+        };
+        
+        updateDoc('ranks', updatedRank);
+        setDeletingTier(null);
+    };
     
     const allTiers = ranks.flatMap(r => r.tiers).sort((a,b) => a.minXp - b.minXp);
     const sortedRanks = [...ranks].sort((a, b) => {

@@ -482,7 +482,180 @@ export const MOCK_CAROUSEL_MEDIA: CarouselMedia[] = [
     { id: 'car01', type: 'image', url: 'https://images.pexels.com/photos/163822/soldier-airsoft-gun-weapon-163822.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
 ];
 
-export const MOCK_API_GUIDE: ApiGuideStep[] = [{id: 'step1', title: 'Welcome', content: 'This is a mock guide.'}];
+export const MOCK_API_GUIDE: ApiGuideStep[] = [
+    {
+        id: 'step1',
+        title: 'Introduction & Goal',
+        content: 'This guide provides the necessary code to run a self-hosted API server for handling file uploads and serving application data. This completely replaces the client-side Firebase connection, offering greater security, scalability, and the ability to handle large file uploads (like videos) that exceed Firestore\'s 1MB document limit. The server is built with Node.js and Express.',
+    },
+    {
+        id: 'step2',
+        title: 'Prerequisites & Setup',
+        content: 'You will need [Node.js](https://nodejs.org/) installed on your server or local machine. Create a new folder for your server, and inside it, create a file named `package.json` with the following content. Then, run `npm install` in your terminal to install the required dependencies.',
+        codeBlock: `{
+  "name": "bosjol-tactical-api",
+  "version": "1.0.0",
+  "description": "API server for the Bosjol Tactical Dashboard.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}`,
+        codeLanguage: 'json',
+        fileName: 'package.json'
+    },
+    {
+        id: 'step3',
+        title: 'The Database File',
+        content: 'This server uses a simple JSON file as its database. Create a file named `db.json` in the same folder. This file should contain all your application data, structured by collection name. You can generate this file using the "Download Backup" button in the Settings tab.',
+        codeBlock: `{
+  "players": [...],
+  "events": [...],
+  "ranks": [...],
+  "badges": [...],
+  "inventory": [...],
+  "transactions": [...],
+  "sponsors": [...],
+  "companyDetails": {...},
+  "socialLinks": [...]
+}`,
+        codeLanguage: 'json',
+        fileName: 'db.json'
+    },
+    {
+        id: 'step4',
+        title: 'The Server Code',
+        content: 'Create a file named `server.js`. This code sets up an Express server with endpoints to read your `db.json` file, handle CRUD operations (examples for players included), and manage file uploads to a local `uploads/` directory.',
+        codeBlock: `const express = require('express');
+const cors = require('cors');
+const multer = require('multer');
+const fs = require('fs').promises;
+const path = require('path');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+const DB_PATH = path.join(__dirname, 'db.json');
+
+// --- Middleware ---
+app.use(cors());
+app.use(express.json());
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// --- File Upload Setup (Multer) ---
+const storage = multer.diskStorage({
+  destination: async (req, file, cb) => {
+    const uploadPath = path.join(__dirname, 'uploads');
+    await fs.mkdir(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: storage });
+
+// --- Helper Functions ---
+const readDb = async () => {
+  try {
+    const data = await fs.readFile(DB_PATH, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error("Error reading database:", error);
+    throw new Error('Could not read database.');
+  }
+};
+
+const writeDb = async (data) => {
+  try {
+    await fs.writeFile(DB_PATH, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error("Error writing to database:", error);
+    throw new Error('Could not write to database.');
+  }
+};
+
+// --- API Endpoints ---
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).send({ status: 'ok' });
+});
+
+// File upload endpoint
+app.post('/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).send({ message: 'No file uploaded.' });
+  }
+  // Construct the full URL to the uploaded file
+  const fileUrl = \`\${req.protocol}://\${req.get('host')}/uploads/\${req.file.filename}\`;
+  res.status(200).send({ url: fileUrl });
+});
+
+// Get all data endpoint
+app.get('/api/data', async (req, res) => {
+  try {
+    const db = await readDb();
+    res.json(db);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Example: Get all players
+app.get('/api/players', async (req, res) => {
+  const db = await readDb();
+  res.json(db.players || []);
+});
+
+// Example: Update a player
+app.put('/api/players/:id', async (req, res) => {
+  const { id } = req.params;
+  const updatedPlayerData = req.body;
+  
+  try {
+    const db = await readDb();
+    const playerIndex = db.players.findIndex(p => p.id === id);
+
+    if (playerIndex === -1) {
+      return res.status(404).json({ message: 'Player not found' });
+    }
+
+    db.players[playerIndex] = { ...db.players[playerIndex], ...updatedPlayerData, id: id }; // Ensure ID is not changed
+    await writeDb(db);
+    res.json(db.players[playerIndex]);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// --- Start Server ---
+app.listen(PORT, () => {
+  console.log(\`Bosjol Tactical API server running on http://localhost:\${PORT}\`);
+});
+`,
+        codeLanguage: 'javascript',
+        fileName: 'server.js'
+    },
+    {
+        id: 'step5',
+        title: 'Running the Server',
+        content: 'Open your terminal in the server folder and run the start command. Your API is now running!',
+        codeBlock: 'npm start',
+        codeLanguage: 'bash'
+    },
+     {
+        id: 'step6',
+        title: 'Connecting the Frontend',
+        content: 'In the Admin Settings, go to "App & Content Settings" and set the "API Server URL" to the address of your running server (e.g., `http://localhost:3001`). The application will now use this server for all file uploads, bypassing database storage limits.',
+    }
+];
 
 export const MOCK_COMPANY_CORE = { name: 'Bosjol Tactical', address: 'Nelspruit, SA', phone: '123-456-7890', email: 'bosjoltactical@gmail.com', website: 'https://example.com', regNumber: '123/456', vatNumber: '7890123', apiServerUrl: '', bankInfo: { bankName: 'FNB', accountNumber: '12345', routingNumber: '67890' }, minimumSignupAge: 16 };
 export const MOCK_BRANDING_DETAILS = { logoUrl: 'https://i.ibb.co/HL2Lc6Rz/file-0000000043b061f7b655a0077343e063.png', loginBackgroundUrl: 'https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png', loginAudioUrl: '', playerDashboardBackgroundUrl: '', adminDashboardBackgroundUrl: '', playerDashboardAudioUrl: '', adminDashboardAudioUrl: '' };

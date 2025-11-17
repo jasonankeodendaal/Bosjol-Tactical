@@ -1,4 +1,4 @@
-import type { Player, Admin, GameEvent, Briefing, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails } from './types';
+import type { Player, Admin, GameEvent, Briefing, Rank, Tier, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails } from './types';
 
 export const MOCK_BADGES: Badge[] = [
     { id: 'b01', name: 'Sharpshooter', description: 'Achieve 50 headshots', iconUrl: 'https://cdn.pixabay.com/photo/2012/04/13/19/27/target-33391_1280.png', criteria: { type: 'headshots', value: 50 }},
@@ -15,60 +15,44 @@ export const MOCK_LEGENDARY_BADGES: LegendaryBadge[] = [
 
 export const UNRANKED_RANK: Rank = { 
     id: 'rank_unranked',
+    tierId: 'tier_unranked',
     name: 'Unranked',
-    tier: 'N/A',
     minXp: 0, 
     iconUrl: 'https://img.icons8.com/ios-filled/100/737373/shield.png',
     unlocks: ["Access to standard loadout"],
 };
 
-// New 30-rank structure
+export const MOCK_TIERS: Tier[] = [
+    { id: 't1', name: 'Recruit', badgeIconUrl: 'https://img.icons8.com/external-flatart-icons-outline-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-outline-flatarticons.png' },
+    { id: 't2', name: 'Operator', badgeIconUrl: 'https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-solid-flatarticons.png' },
+    { id: 't3', name: 'Veteran', badgeIconUrl: 'https://img.icons8.com/external-flatart-icons-flat-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-flat-flatarticons.png' },
+    { id: 't4', name: 'Elite', badgeIconUrl: 'https://img.icons8.com/external-justicon-flat-justicon/64/external-shield-gaming-justicon-flat-justicon.png' },
+    { id: 't5', name: 'Commander', badgeIconUrl: 'https://img.icons8.com/color/96/laurel-wreath.png' },
+];
+
+
+// New 15-rank structure across 5 tiers
 export const MOCK_RANKS: Rank[] = [
     // Tier 1 - Recruit
-    { id: "rank_t01_1", tier: "Tier 1 – Recruit", name: "Trainee", minXp: 0, iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png", unlocks: ["Basic Loadout"] },
-    { id: "rank_t01_2", tier: "Tier 1 – Recruit", name: "Novice", minXp: 100, iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png", unlocks: ["New Pistol Option"] },
-    // Tier 2 - Cadet
-    { id: "rank_t02_1", tier: "Tier 2 – Cadet", name: "Cadet 1", minXp: 250, iconUrl: "https://img.icons8.com/external-flatart-icons-outline-flatarticons/64/external-rank-military-flatart-icons-outline-flatarticons.png", unlocks: ["New SMG Option"] },
-    { id: "rank_t02_2", tier: "Tier 2 – Cadet", name: "Cadet 2", minXp: 400, iconUrl: "https://img.icons8.com/external-flatart-icons-outline-flatarticons/64/external-rank-military-flatart-icons-outline-flatarticons.png", unlocks: ["First Perk Slot"] },
-    // Tier 3 - Private
-    { id: "rank_t03_1", tier: "Tier 3 – Private", name: "Private 1", minXp: 600, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png", unlocks: ["New AR Option"] },
-    { id: "rank_t03_2", tier: "Tier 3 – Private", name: "Private 2", minXp: 800, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png", unlocks: ["New Tactical Grenade"] },
-    // Tier 4 - Corporal
-    { id: "rank_t04_1", tier: "Tier 4 – Corporal", name: "Corporal 1", minXp: 1050, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png", unlocks: ["New Scope Attachment"] },
-    { id: "rank_t04_2", tier: "Tier 4 – Corporal", name: "Corporal 2", minXp: 1300, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png", unlocks: ["5% Store Discount"] },
-    // Tier 5 - Sergeant
-    { id: "rank_t05_1", tier: "Tier 5 – Sergeant", name: "Sergeant 1", minXp: 1600, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png", unlocks: ["New Sniper Rifle"] },
-    { id: "rank_t05_2", tier: "Tier 5 – Sergeant", name: "Sergeant 2", minXp: 1900, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png", unlocks: ["Second Perk Slot"] },
-    // Tier 6 - Staff Sergeant
-    { id: "rank_t06_1", tier: "Tier 6 – Staff Sergeant", name: "Staff Sergeant 1", minXp: 2250, iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png", unlocks: ["New Shotgun"] },
-    { id: "rank_t06_2", tier: "Tier 6 – Staff Sergeant", name: "Staff Sergeant 2", minXp: 2600, iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png", unlocks: ["New Lethal Grenade"] },
-    // Tier 7 - Gunnery Sergeant
-    { id: "rank_t07_1", tier: "Tier 7 – Gunnery Sergeant", name: "Gunnery Sergeant 1", minXp: 3000, iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png", unlocks: ["Custom Weapon Charm"] },
-    { id: "rank_t07_2", tier: "Tier 7 – Gunnery Sergeant", name: "Gunnery Sergeant 2", minXp: 3400, iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png", unlocks: ["10% Store Discount"] },
-    // Tier 8 - First Sergeant
-    { id: "rank_t08_1", tier: "Tier 8 – First Sergeant", name: "First Sergeant 1", minXp: 3850, iconUrl: "https://img.icons8.com/ios-filled/50/insignia.png", unlocks: ["New Underbarrel Attachment"] },
-    { id: "rank_t08_2", tier: "Tier 8 – First Sergeant", name: "First Sergeant 2", minXp: 4300, iconUrl: "https://img.icons8.com/ios-filled/50/insignia.png", unlocks: ["New Operator Skin"] },
-    // Tier 9 - Master Sergeant
-    { id: "rank_t09_1", tier: "Tier 9 – Master Sergeant", name: "Master Sergeant 1", minXp: 4800, iconUrl: "https://img.icons8.com/ios-filled/50/military-rank.png", unlocks: ["Third Perk Slot"] },
-    { id: "rank_t09_2", tier: "Tier 9 – Master Sergeant", name: "Master Sergeant 2", minXp: 5300, iconUrl: "https://img.icons8.com/ios-filled/50/military-rank.png", unlocks: ["New LMG"] },
-    // Tier 10 - Sergeant Major
-    { id: "rank_t10_1", tier: "Tier 10 – Sergeant Major", name: "Sergeant Major 1", minXp: 5850, iconUrl: "https://img.icons8.com/color/48/sergeant-major-of-the-army.png", unlocks: ["Exclusive Calling Card"] },
-    { id: "rank_t10_2", tier: "Tier 10 – Sergeant Major", name: "Sergeant Major 2", minXp: 6400, iconUrl: "https://img.icons8.com/color/48/sergeant-major-of-the-army.png", unlocks: ["15% Store Discount"] },
-    // Tier 11 - Warrant Officer
-    { id: "rank_t11_1", tier: "Tier 11 – Warrant Officer", name: "Warrant Officer 1", minXp: 7000, iconUrl: "https://img.icons8.com/external-justicon-flat-justicon/64/external-award-reward-and-badges-justicon-flat-justicon-1.png", unlocks: ["New Marksman Rifle"] },
-    { id: "rank_t11_2", tier: "Tier 11 – Warrant Officer", name: "Warrant Officer 2", minXp: 7600, iconUrl: "https://img.icons8.com/external-justicon-flat-justicon/64/external-award-reward-and-badges-justicon-flat-justicon-1.png", unlocks: ["Free Gear Rental Coupon"] },
-    // Tier 12 - Lieutenant
-    { id: "rank_t12_1", tier: "Tier 12 – Lieutenant", name: "Lieutenant 1", minXp: 8250, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-rank-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["New Laser Sight"] },
-    { id: "rank_t12_2", tier: "Tier 12 – Lieutenant", name: "Lieutenant 2", minXp: 8900, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-rank-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["Additional Loadout Slot"] },
-    // Tier 13 - Captain
-    { id: "rank_t13_1", tier: "Tier 13 – Captain", name: "Captain 1", minXp: 9600, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-badge-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["New Suppressor"] },
-    { id: "rank_t13_2", tier: "Tier 13 – Captain", name: "Captain 2", minXp: 10300, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-badge-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["20% Store Discount"] },
-    // Tier 14 - Major
-    { id: "rank_t14_1", tier: "Tier 14 – Major", name: "Major 1", minXp: 11050, iconUrl: "https://img.icons8.com/fluency/48/medal2.png", unlocks: ["Elite Operator Skin"] },
-    { id: "rank_t14_2", tier: "Tier 14 – Major", name: "Major 2", minXp: 11800, iconUrl: "https://img.icons8.com/fluency/48/medal2.png", unlocks: ["Prestige Weapon Blueprint"] },
-    // Tier 15 - Colonel
-    { id: "rank_t15_1", tier: "Tier 15 – Colonel", name: "Colonel 1", minXp: 12600, iconUrl: "https://img.icons8.com/officel/40/command-sergeant-major.png", unlocks: ["Hall of Fame Entry"] },
-    { id: "rank_t15_2", tier: "Tier 15 – Colonel", name: "Colonel 2", minXp: 13500, iconUrl: "https://img.icons8.com/officel/40/command-sergeant-major.png", unlocks: ["Lifetime 25% Discount"] }
+    { id: "r01", tierId: "t1", name: "Trainee", minXp: 0, iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png", unlocks: ["Basic Loadout"] },
+    { id: "r02", tierId: "t1", name: "Private", minXp: 250, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png", unlocks: ["New Sidearm Option"] },
+    { id: "r03", tierId: "t1", name: "Corporal", minXp: 500, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png", unlocks: ["New Tactical Grenade"] },
+    // Tier 2 - Operator
+    { id: "r04", tierId: "t2", name: "Sergeant", minXp: 1000, iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks-2.png", unlocks: ["New Assault Rifle", "First Perk Slot"] },
+    { id: "r05", tierId: "t2", name: "Staff Sergeant", minXp: 1500, iconUrl: "https://img.icons8.com/ios-filled/50/air-force-rank.png", unlocks: ["5% Store Discount"] },
+    { id: "r06", tierId: "t2", name: "Gunnery Sergeant", minXp: 2000, iconUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-rank-military-flatart-icons-solid-flatarticons.png", unlocks: ["New SMG Option"] },
+    // Tier 3 - Veteran
+    { id: "r07", tierId: "t3", name: "Master Sergeant", minXp: 3000, iconUrl: "https://img.icons8.com/ios-filled/50/military-rank.png", unlocks: ["New Sniper Rifle", "Second Perk Slot"] },
+    { id: "r08", tierId: "t3", name: "First Sergeant", minXp: 4000, iconUrl: "https://img.icons8.com/ios-filled/50/insignia.png", unlocks: ["10% Store Discount", "Custom Weapon Charm"] },
+    { id: "r09", tierId: "t3", name: "Sergeant Major", minXp: 5000, iconUrl: "https://img.icons8.com/color/48/sergeant-major-of-the-army.png", unlocks: ["New LMG Option"] },
+    // Tier 4 - Elite
+    { id: "r10", tierId: "t4", name: "Lieutenant", minXp: 6500, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-rank-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["Third Perk Slot", "Free Gear Rental Voucher"] },
+    { id: "r11", tierId: "t4", name: "Captain", minXp: 8000, iconUrl: "https://img.icons8.com/external-flat-icons-vectors-co/48/external-badge-military-maps-and-flags-flat-icons-vectors-co.png", unlocks: ["15% Store Discount"] },
+    { id: "r12", tierId: "t4", name: "Major", minXp: 10000, iconUrl: "https://img.icons8.com/fluency/48/medal2.png", unlocks: ["Elite Operator Skin"] },
+    // Tier 5 - Commander
+    { id: "r13", tierId: "t5", name: "Colonel", minXp: 12500, iconUrl: "https://img.icons8.com/officel/40/command-sergeant-major.png", unlocks: ["Prestige Weapon Blueprint"] },
+    { id: "r14", tierId: "t5", name: "Brigadier", minXp: 15000, iconUrl: "https://img.icons8.com/fluency/48/star-medal.png", unlocks: ["20% Store Discount"] },
+    { id: "r15", tierId: "t5", name: "General", minXp: 20000, iconUrl: "https://img.icons8.com/color/96/medal-of-honor.png", unlocks: ["Hall of Fame Entry", "Lifetime 25% Discount"] }
 ];
 
 
@@ -263,7 +247,7 @@ export const MOCK_PLAYERS: Player[] = [
     medicalNotes: 'Resistant to flashbangs.',
     role: 'player',
     callsign: 'Soap',
-    rank: MOCK_RANKS[7], // Corporal 2
+    rank: MOCK_RANKS[4], // Staff Sergeant
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2017/11/06/13/45/cap-2923682_1280.jpg',
     stats: {
@@ -271,7 +255,7 @@ export const MOCK_PLAYERS: Player[] = [
         deaths: 45,
         headshots: 32,
         gamesPlayed: 15,
-        xp: 1350,
+        xp: 1650,
     },
     matchHistory: MOCK_PLAYER_MATCH_HISTORY.p001,
     xpAdjustments: [
@@ -303,7 +287,7 @@ export const MOCK_PLAYERS: Player[] = [
     medicalNotes: 'Prefers to remain masked.',
     role: 'player',
     callsign: 'Ghost',
-    rank: MOCK_RANKS[9], // Sergeant 2
+    rank: MOCK_RANKS[6], // Master Sergeant
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2023/07/04/19/43/man-8107142_1280.jpg',
     stats: {
@@ -311,7 +295,7 @@ export const MOCK_PLAYERS: Player[] = [
         deaths: 30,
         headshots: 88,
         gamesPlayed: 18,
-        xp: 2050,
+        xp: 3100,
     },
     matchHistory: MOCK_PLAYER_MATCH_HISTORY.p002,
     xpAdjustments: [],
@@ -339,7 +323,7 @@ export const MOCK_PLAYERS: Player[] = [
     address: 'London, UK',
     role: 'player',
     callsign: 'Gaz',
-    rank: MOCK_RANKS[8], // Sergeant 1
+    rank: MOCK_RANKS[5], // Gunnery Sergeant
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2015/01/07/20/53/hat-591973_1280.jpg',
     stats: {
@@ -347,7 +331,7 @@ export const MOCK_PLAYERS: Player[] = [
         deaths: 55,
         headshots: 41,
         gamesPlayed: 16,
-        xp: 1610,
+        xp: 2200,
     },
     matchHistory: MOCK_PLAYER_MATCH_HISTORY.p003,
     xpAdjustments: [],
@@ -374,7 +358,7 @@ export const MOCK_PLAYERS: Player[] = [
     idNumber: 'D55667788',
     role: 'player',
     callsign: 'Rook',
-    rank: MOCK_RANKS[3], // Cadet 2
+    rank: MOCK_RANKS[1], // Private
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2016/03/09/10/22/girl-1246022_1280.jpg',
     stats: {
@@ -382,7 +366,7 @@ export const MOCK_PLAYERS: Player[] = [
         deaths: 8,
         headshots: 1,
         gamesPlayed: 3,
-        xp: 450,
+        xp: 350,
     },
     matchHistory: [],
     xpAdjustments: [],
@@ -409,7 +393,7 @@ export const MOCK_PLAYERS: Player[] = [
     idNumber: 'E99887766',
     role: 'player',
     callsign: 'Nomad',
-    rank: MOCK_RANKS[12], // Lieutenant 1
+    rank: MOCK_RANKS[10], // Captain
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2018/01/15/07/52/woman-3083390_1280.jpg',
     stats: { kills: 350, deaths: 120, headshots: 95, gamesPlayed: 30, xp: 8500 },
@@ -430,10 +414,10 @@ export const MOCK_PLAYERS: Player[] = [
     idNumber: 'F12123434',
     role: 'player',
     callsign: 'Valkyrie',
-    rank: MOCK_RANKS[10], // Staff Sergeant 1
+    rank: MOCK_RANKS[6], // Master Sergeant
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2021/06/25/19/33/woman-6364433_1280.jpg',
-    stats: { kills: 180, deaths: 80, headshots: 50, gamesPlayed: 22, xp: 2300 },
+    stats: { kills: 180, deaths: 80, headshots: 50, gamesPlayed: 22, xp: 3300 },
     matchHistory: [], xpAdjustments: [], badges: [MOCK_BADGES[1], MOCK_BADGES[2]], legendaryBadges: [],
     loadout: { primaryWeapon: 'Vector', secondaryWeapon: 'Glock 19', lethal: 'Semtex', tactical: 'Stun Grenade' },
     bio: "Aggressive front-line fighter specializing in SMGs and rapid assaults.",
@@ -451,10 +435,10 @@ export const MOCK_PLAYERS: Player[] = [
     idNumber: 'G56567878',
     role: 'player',
     callsign: 'Oni',
-    rank: MOCK_RANKS[5], // Private 2
+    rank: MOCK_RANKS[3], // Sergeant
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2016/11/29/08/59/man-1868552_1280.jpg',
-    stats: { kills: 95, deaths: 65, headshots: 20, gamesPlayed: 12, xp: 950 },
+    stats: { kills: 95, deaths: 65, headshots: 20, gamesPlayed: 12, xp: 1100 },
     matchHistory: [], xpAdjustments: [], badges: [MOCK_BADGES[2]], legendaryBadges: [],
     loadout: { primaryWeapon: 'AK-47', secondaryWeapon: 'Combat Knife', lethal: 'Throwing Knife', tactical: 'Flashbang' },
     bio: "A disciplined and honorable warrior, deadly with an AK-47.",
@@ -472,7 +456,7 @@ export const MOCK_PLAYERS: Player[] = [
     idNumber: 'H90901212',
     role: 'player',
     callsign: 'Echo',
-    rank: MOCK_RANKS[15], // First Sergeant 2
+    rank: MOCK_RANKS[7], // First Sergeant
     status: 'On Leave',
     avatarUrl: 'https://cdn.pixabay.com/photo/2015/07/09/23/15/woman-839352_1280.jpg',
     stats: { kills: 250, deaths: 90, headshots: 110, gamesPlayed: 28, xp: 4500 },
@@ -493,10 +477,10 @@ export const MOCK_PLAYERS: Player[] = [
     idNumber: 'I34345656',
     role: 'player',
     callsign: 'Breach',
-    rank: MOCK_RANKS[6], // Corporal 1
+    rank: MOCK_RANKS[2], // Corporal
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2017/08/01/01/33/beanie-2562646_1280.jpg',
-    stats: { kills: 115, deaths: 95, headshots: 35, gamesPlayed: 19, xp: 1100 },
+    stats: { kills: 115, deaths: 95, headshots: 35, gamesPlayed: 19, xp: 800 },
     matchHistory: [], xpAdjustments: [], badges: [MOCK_BADGES[1], MOCK_BADGES[2]], legendaryBadges: [],
     loadout: { primaryWeapon: 'P90', secondaryWeapon: 'X12 Pistol', lethal: 'Frag Grenade', tactical: 'Stim' },
     bio: "Demolitions expert. If there's a wall in the way, he'll make a door.",
@@ -514,7 +498,7 @@ export const MOCK_PLAYERS: Player[] = [
     idNumber: 'J78789090',
     role: 'player',
     callsign: 'Spectre',
-    rank: MOCK_RANKS[1], // Novice
+    rank: MOCK_RANKS[0], // Trainee
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2018/04/27/03/50/portrait-3353699_1280.jpg',
     stats: { kills: 2, deaths: 5, headshots: 0, gamesPlayed: 2, xp: 150 },

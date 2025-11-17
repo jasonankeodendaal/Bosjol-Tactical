@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useContext } from 'react';
-import type { Player, GameEvent, Rank, XpAdjustment, LegendaryBadge, PlayerRole } from '../types';
+import type { Player, GameEvent, Rank, Tier, XpAdjustment, LegendaryBadge, PlayerRole } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -25,6 +25,7 @@ interface PlayerProfilePageProps {
     onBack: () => void;
     onUpdatePlayer: (player: Player) => void;
     ranks: Rank[];
+    tiers: Tier[];
 }
 
 const StatDisplay: React.FC<{ value: string | number, label: string, tooltip?: string }> = ({ value, label, tooltip }) => (

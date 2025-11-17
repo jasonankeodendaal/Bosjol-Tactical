@@ -1,5 +1,6 @@
 
 
+
 import React, { useContext, useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -458,6 +459,7 @@ const AppContent: React.FC = () => {
                                         legendaryBadges={data.legendaryBadges}
                                         raffles={data.raffles}
                                         ranks={data.ranks}
+                                        tiers={data.tiers}
                                         locations={data.locations}
                                     /> : user.role === 'admin' ?
                                     <AdminDashboard 

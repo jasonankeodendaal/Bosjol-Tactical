@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import { USE_FIREBASE, db, firebaseInitializationError } from '../firebase';
 import * as mock from '../constants';
-import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails } from '../types';
+import type { Player, GameEvent, Rank, Tier, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails } from '../types';
 import { AuthContext } from '../auth/AuthContext';
 
 export const IS_LIVE_DATA = USE_FIREBASE && !!db && !firebaseInitializationError;
@@ -113,6 +113,7 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
 }
 
 const MOCK_DATA_MAP = {
+    tiers: mock.MOCK_TIERS,
     ranks: mock.MOCK_RANKS,
     badges: mock.MOCK_BADGES,
     legendaryBadges: mock.MOCK_LEGENDARY_BADGES,
@@ -138,6 +139,7 @@ type SeedableCollection = keyof typeof MOCK_DATA_MAP;
 export interface DataContextType {
     players: Player[]; setPlayers: (d: Player[] | ((p: Player[]) => Player[])) => void;
     events: GameEvent[]; setEvents: (d: GameEvent[] | ((p: GameEvent[]) => GameEvent[])) => void;
+    tiers: Tier[]; setTiers: (d: Tier[] | ((p: Tier[]) => Tier[])) => void;
     ranks: Rank[]; setRanks: (d: Rank[] | ((p: Rank[]) => Rank[])) => void;
     badges: Badge[]; setBadges: (d: Badge[] | ((p: Badge[]) => Badge[])) => void;
     legendaryBadges: LegendaryBadge[]; setLegendaryBadges: (d: LegendaryBadge[] | ((p: LegendaryBadge[]) => LegendaryBadge[])) => void;
@@ -175,6 +177,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Protected collections (require auth)
     const [players, setPlayers, loadingPlayers] = useCollection<Player>('players', mock.MOCK_PLAYERS, [], { isProtected: true });
     const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', mock.MOCK_EVENTS, [], { isProtected: true });
+    const [tiers, setTiers, loadingTiers] = useCollection<Tier>('tiers', mock.MOCK_TIERS, [], { isProtected: true });
     const [ranks, setRanks, loadingRanks] = useCollection<Rank>('ranks', mock.MOCK_RANKS, [], { isProtected: true });
     const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', mock.MOCK_BADGES, [], { isProtected: true });
     const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', mock.MOCK_LEGENDARY_BADGES, [], { isProtected: true });
@@ -195,11 +198,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const [isSeeding, setIsSeeding] = useState(false);
 
-    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingCompanyDetails || loadingCreatorDetails || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia;
+    const loading = loadingPlayers || loadingEvents || loadingTiers || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingCompanyDetails || loadingCreatorDetails || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia;
     
     const collectionSetters = {
         players: setPlayers,
         events: setEvents,
+        tiers: setTiers,
         ranks: setRanks,
         badges: setBadges,
         legendaryBadges: setLegendaryBadges,
@@ -286,6 +290,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const batch = db.batch();
 
             // System Settings & Config
+            mock.MOCK_TIERS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('tiers').doc(id), data); });
             mock.MOCK_RANKS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('ranks').doc(id), data); });
             mock.MOCK_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('badges').doc(id), data); });
             mock.MOCK_LEGENDARY_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('legendaryBadges').doc(id), data); });
@@ -375,6 +380,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             console.log("Restoring from backup for mock data environment...");
             setPlayers(backupData.players || []);
             setEvents(backupData.events || []);
+            setTiers(backupData.tiers || []);
             setRanks(backupData.ranks || []);
             setBadges(backupData.badges || []);
             setLegendaryBadges(backupData.legendaryBadges || []);
@@ -395,7 +401,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         console.log("Starting Firebase restore from backup...");
         const collectionsToRestore = [
-            'players', 'events', 'ranks', 'badges', 'legendaryBadges', 'gamificationSettings',
+            'players', 'events', 'tiers', 'ranks', 'badges', 'legendaryBadges', 'gamificationSettings',
             'sponsors', 'socialLinks', 'carouselMedia', 'vouchers', 'inventory', 'suppliers',
             'transactions', 'locations', 'raffles'
         ];
@@ -452,6 +458,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const value: DataContextType = {
         players, setPlayers,
         events, setEvents,
+        tiers, setTiers,
         ranks, setRanks,
         badges, setBadges,
         legendaryBadges, setLegendaryBadges,

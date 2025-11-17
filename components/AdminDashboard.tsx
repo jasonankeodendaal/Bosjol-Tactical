@@ -1,9 +1,11 @@
 
 
 
+
+
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Player, GameEvent, Rank, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, RentalSignup, CarouselMedia } from '../types';
+import type { Player, GameEvent, Rank, Tier, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicket, LegendaryBadge, Prize, RentalSignup, CarouselMedia } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -91,6 +93,19 @@ const NewPlayerModal: React.FC<{
         const sortedRanks = [...ranks].sort((a, b) => a.minXp - b.minXp);
         const defaultRank = sortedRanks[0] || UNRANKED_RANK;
 
+        // Create a clean rank object for saving to prevent any undefined properties
+        const rankToSave: Rank = {
+            id: defaultRank.id,
+            tierId: defaultRank.tierId,
+            name: defaultRank.name,
+            minXp: defaultRank.minXp,
+            iconUrl: defaultRank.iconUrl,
+            unlocks: defaultRank.unlocks,
+        };
+        if (defaultRank.badgeAwarded) {
+            rankToSave.badgeAwarded = defaultRank.badgeAwarded;
+        }
+
         const newPlayerData: Omit<Player, 'id'> = {
             name: formData.name,
             surname: formData.surname,
@@ -102,7 +117,7 @@ const NewPlayerModal: React.FC<{
             idNumber: formData.idNumber,
             role: 'player',
             callsign: formData.name, // Default callsign to first name
-            rank: defaultRank,
+            rank: rankToSave,
             status: 'Active',
             avatarUrl: `https://api.dicebear.com/8.x/bottts/svg?seed=${formData.name}${formData.surname}`, // Default avatar
             stats: { kills: 0, deaths: 0, headshots: 0, gamesPlayed: 0, xp: 0 },
@@ -395,6 +410,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 onBack={() => setView('dashboard')}
                 onUpdatePlayer={handleUpdatePlayer}
                 ranks={ranks}
+                tiers={props.tiers}
             />
         );
     }
@@ -423,6 +439,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}
             {activeTab === 'Progression' && <ProgressionTab 
                 ranks={props.ranks} setRanks={props.setRanks}
+                tiers={props.tiers} setTiers={props.setTiers}
                 badges={props.badges} setBadges={props.setBadges}
                 legendaryBadges={props.legendaryBadges} setLegendaryBadges={props.setLegendaryBadges}
                 gamificationSettings={props.gamificationSettings} setGamificationSettings={props.setGamificationSettings}

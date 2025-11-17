@@ -193,10 +193,16 @@ export interface Briefing {
   date: string;
 }
 
-export interface Rank {
+export interface Tier {
     id: string;
     name: string;
-    tier: string;
+    badgeIconUrl: string;
+}
+
+export interface Rank {
+    id: string;
+    tierId: string;
+    name: string;
     minXp: number; // Represents Rank Points
     iconUrl: string;
     unlocks: string[];

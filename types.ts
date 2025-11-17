@@ -47,10 +47,22 @@ export interface MatchRecord {
     }
 }
 
+// Sub-collection document type
+export interface MatchHistoryDoc extends MatchRecord {
+    id: string; // doc id
+    playerId: string; // parent player id
+}
+
 export interface XpAdjustment {
     amount: number;
     reason: string;
     date: string;
+}
+
+// Sub-collection document type
+export interface XpAdjustmentDoc extends XpAdjustment {
+    id: string;
+    playerId: string;
 }
 
 export interface Loadout {
@@ -63,15 +75,14 @@ export interface Loadout {
 
 export type PlayerRole = 'Assault' | 'Recon' | 'Support' | 'Sniper';
 
-export interface Player extends User {
+// This is the core data stored in the `players` collection document
+export interface PlayerCore extends User {
   role: 'player';
   callsign: string;
   rank: SubRank;
   status: 'Active' | 'On Leave' | 'Retired';
   avatarUrl: string;
   stats: PlayerStats;
-  matchHistory: MatchRecord[];
-  xpAdjustments: XpAdjustment[];
   badges: Badge[];
   legendaryBadges: LegendaryBadge[];
   loadout: Loadout;
@@ -89,6 +100,12 @@ export interface Player extends User {
   bio?: string;
   preferredRole?: PlayerRole;
   activeAuthUID?: string;
+}
+
+// This is the composed type used by components, with sub-collection data merged in.
+export interface Player extends PlayerCore {
+    matchHistory: MatchHistoryDoc[];
+    xpAdjustments: XpAdjustmentDoc[];
 }
 
 export interface Admin extends User {
@@ -120,6 +137,13 @@ export interface EventAttendee {
     note?: string;
     discountAmount?: number;
     discountReason?: string;
+}
+
+// Sub-collection document type
+export interface AttendeeDoc extends EventAttendee {
+    id: string; // doc id is playerId
+    eventId: string; // parent event id
+    stats?: Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>;
 }
 
 export type InventoryCategory = 'AEG Rifle' | 'GBB Rifle' | 'Sniper Rifle' | 'Sidearm' | 'SMG' | 'Tactical Gear' | 'Attachments' | 'Consumables' | 'Other';
@@ -155,7 +179,8 @@ export interface Signup {
     note?: string;
 }
 
-export interface GameEvent {
+// Core data stored in the `events` collection document
+export interface EventCore {
   id: string;
   title: string;
   type: EventType;
@@ -166,8 +191,6 @@ export interface GameEvent {
   theme: string;
   rules: string;
   participationXp: number;
-  attendees: EventAttendee[];
-  absentPlayers: string[];
   status: EventStatus;
   imageUrl?: string;
   audioBriefingUrl?: string;
@@ -179,10 +202,15 @@ export interface GameEvent {
     bravo: string[];
   };
   xpOverrides?: Partial<Record<string, number>>; // { [ruleId]: newXpValue }
-  liveStats?: Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>>;
   gameDurationSeconds?: number;
   eventBadges?: string[]; // Array of LegendaryBadge IDs
   awardedBadges?: { [playerId: string]: string[] }; // { 'p001': ['badgeId1'], 'p002': ['badgeId2'] }
+}
+
+// Composed type used by components
+export interface GameEvent extends EventCore {
+    attendees: AttendeeDoc[];
+    liveStats: Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>>;
 }
 
 
@@ -212,7 +240,16 @@ export interface RankTier {
 }
 
 
-export interface Voucher {
+export interface VoucherRedemption {
+    id: string; // doc id
+    voucherId: string; // parent voucher id
+    playerId: string;
+    eventId: string;
+    date: string;
+}
+
+// Core voucher data
+export interface VoucherCore {
     id: string;
     code: string;
     discount: number;
@@ -222,11 +259,11 @@ export interface Voucher {
     assignedToPlayerId?: string;
     usageLimit?: number; // Total uses for this voucher code
     perUserLimit?: number; // How many times a single player can use it
-    redemptions: {
-        playerId: string;
-        eventId: string;
-        date: string;
-    }[];
+}
+
+// Composed type
+export interface Voucher extends VoucherCore {
+    redemptions: VoucherRedemption[];
 }
 
 export interface Prize {
@@ -235,31 +272,41 @@ export interface Prize {
     place: 1 | 2 | 3;
 }
 
-export interface RaffleWinner {
+// Sub-collection doc
+export interface RaffleWinnerDoc {
+    id: string; // doc id
+    raffleId: string; // parent id
     prizeId: string;
     ticketId: string;
     playerId: string;
 }
 
-export interface RaffleTicket {
-    id: string;
+// Sub-collection doc
+export interface RaffleTicketDoc {
+    id: string; // doc id
+    raffleId: string; // parent id
     code: string;
     playerId: string;
     purchaseDate: string;
     paymentStatus: PaymentStatus;
 }
 
-export interface Raffle {
+// Core raffle data
+export interface RaffleCore {
     id: string;
     name: string; // Raffle event name
     location: string;
     contactPhone: string;
     prizes: Prize[];
-    tickets: RaffleTicket[];
     drawDate: string; // ISO date string
     status: 'Upcoming' | 'Active' | 'Completed';
-    winners: RaffleWinner[];
     createdAt: string;
+}
+
+// Composed type
+export interface Raffle extends RaffleCore {
+    tickets: RaffleTicketDoc[];
+    winners: RaffleWinnerDoc[];
 }
 
 

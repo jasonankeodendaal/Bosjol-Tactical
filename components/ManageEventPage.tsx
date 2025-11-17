@@ -37,7 +37,7 @@ const defaultEvent: Omit<GameEvent, 'id'> = {
     rules: '',
     participationXp: 50,
     attendees: [],
-    absentPlayers: [],
+    // FIX: Removed absentPlayers as it's not a valid property of GameEvent
     status: 'Upcoming',
     gameFee: 0,
     gearForRent: [],

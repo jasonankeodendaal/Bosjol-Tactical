@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { DataContext, IS_LIVE_DATA, DataContextType } from '../data/DataContext';
 import { Button } from './Button';
@@ -169,32 +170,6 @@ service cloud.firestore {
     
     // --- System Collections ---
     match /_health/{testId} { allow read, write: if isAdmin() || isCreator(); }
-  }
-}
-`;
-
-const storageRulesContent = `
-rules_version = '2';
-
-service firebase.storage {
-  match /b/{bucket}/o {
-    // Default deny all to secure your bucket.
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
-    
-    // Allow public read access to all files.
-    // This is simple and suitable for this app's public assets like logos and event images.
-    match /{allPaths=**} {
-      allow read: if true;
-    }
-    
-    // Allow any authenticated user (player, admin, creator) to upload/write files.
-    // For a production app with user-specific content, you would restrict this further,
-    // e.g., match /users/{userId}/{fileName} { allow write: if request.auth.uid == userId; }
-    match /{allPaths=**} {
-      allow write: if request.auth != null;
-    }
   }
 }
 `;
@@ -619,13 +594,10 @@ export const SystemScanner: React.FC = () => {
                            <div>
                                 <h3 className="font-semibold text-gray-200 mb-3 text-lg">Required Firebase Security Rules</h3>
                                 <p className="text-sm text-gray-400 mb-4">
-                                    For the application to function correctly with a live Firebase backend, these security rules must be published in your project's Firestore and Storage settings. They secure your data by preventing unauthorized access (e.g., players editing their own XP).
+                                    For the application to function correctly with a live Firebase backend, these security rules must be published in your project's Firestore settings. They secure your data by preventing unauthorized access (e.g., a player editing their own XP).
                                 </p>
                                 <CodeBlock title="firestore.rules">
                                     {firestoreRulesContent}
-                                </CodeBlock>
-                                 <CodeBlock title="storage.rules">
-                                    {storageRulesContent}
                                 </CodeBlock>
                             </div>
                         )}

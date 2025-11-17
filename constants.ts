@@ -1,6 +1,8 @@
 
 
-import type { Player, Admin, GameEvent, Briefing, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails, Signup, RankTier, SubRank, ApiGuideStep } from './types';
+
+// FIX: Import `PlayerStats` to resolve TypeScript error on line 516.
+import type { Player, PlayerCore, Admin, GameEvent, EventCore, Briefing, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails, Signup, RankTier, SubRank, ApiGuideStep, MatchHistoryDoc, XpAdjustmentDoc, AttendeeDoc, RaffleCore, RaffleTicketDoc, RaffleWinnerDoc, VoucherCore, VoucherRedemption, PlayerStats } from './types';
 
 export const MOCK_BADGES: Badge[] = [
     { id: 'b01', name: 'Sharpshooter', description: 'Achieve 50 headshots', iconUrl: 'https://img.icons8.com/color/96/target.png', criteria: { type: 'headshots', value: 50 }},
@@ -165,7 +167,7 @@ export const MOCK_INVENTORY: InventoryItem[] = [
     {id: 'g07', name: 'Glock 17 Sidearm', salePrice: 150, stock: 8, type: 'Weapon', description: 'Reliable GBB pistol for CQB or as a secondary.', isRental: true, category: 'Sidearm', condition: 'Needs Repair', purchaseDate: '2021-11-20', lastServiceDate: '2023-05-10', sku: 'BT-WPN-G17-R', supplierId: 'sup01', purchasePrice: 90, reorderLevel: 4},
 ];
 
-const initialEvents: GameEvent[] = [
+const initialEventsCore: EventCore[] = [
   {
     id: 'e001',
     title: 'Operation Nightfall',
@@ -174,8 +176,6 @@ const initialEvents: GameEvent[] = [
     startTime: "18:00",
     location: 'Verdansk CQB Arena',
     description: 'Infiltrate the enemy stronghold under the cover of darkness. Your primary objective is to retrieve sensitive intel from a heavily guarded command post. Secondary objectives include disrupting enemy communications and sabotaging their supply lines. Expect heavy resistance.',
-    attendees: [],
-    absentPlayers: [],
     status: 'Upcoming',
     imageUrl: 'https://images.pexels.com/photos/163822/soldier-airsoft-gun-weapon-163822.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
     audioBriefingUrl: 'https://cdn.pixabay.com/audio/2022/04/18/audio_2910795790.mp3',
@@ -192,7 +192,6 @@ const initialEvents: GameEvent[] = [
       g_kill: 20, // Double kill XP for this event
       g_headshot: 50, // Double headshot XP
     },
-    liveStats: {},
     gameDurationSeconds: 0,
   },
   {
@@ -203,8 +202,6 @@ const initialEvents: GameEvent[] = [
     startTime: "10:00",
     location: 'Verdansk CQB Arena',
     description: 'Hone your close-quarters combat skills in a series of intense training drills. Focus will be on room clearing, door breaching, and team communication in tight spaces. All skill levels welcome.',
-    attendees: [],
-    absentPlayers: [],
     status: 'Upcoming',
     imageUrl: 'https://images.pexels.com/photos/7984333/pexels-photo-7984333.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
     theme: 'Drill',
@@ -212,7 +209,6 @@ const initialEvents: GameEvent[] = [
     participationXp: 25,
     gameFee: 150,
     gearForRent: [],
-    liveStats: {},
     gameDurationSeconds: 0,
   },
   {
@@ -223,8 +219,6 @@ const initialEvents: GameEvent[] = [
     startTime: "14:00",
     location: 'Armory',
     description: 'Standard weapon cleaning and system checks for all personnel. Ensure your gear is in top condition for the next operation. Armorers will be on site to assist with any technical issues.',
-    attendees: [],
-    absentPlayers: [],
     status: 'Upcoming',
     imageUrl: 'https://images.pexels.com/photos/53860/pexels-photo-53860.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
     theme: 'Logistics',
@@ -232,7 +226,6 @@ const initialEvents: GameEvent[] = [
     participationXp: 10,
     gameFee: 0,
     gearForRent: [],
-    liveStats: {},
     gameDurationSeconds: 0,
   },
    {
@@ -243,11 +236,6 @@ const initialEvents: GameEvent[] = [
     startTime: "18:00",
     location: 'Al Mazrah Desert Outpost',
     description: 'Successful HVT extraction under heavy fire. Operators infiltrated a desert compound, neutralized threats, and exfiltrated the high-value target before enemy reinforcements could arrive.',
-    attendees: [
-        { playerId: 'p001', paymentStatus: 'Paid (Card)', rentedGearIds: ['g01', 'g05'], voucherCode: 'LOYALTY50' },
-        { playerId: 'p002', paymentStatus: 'Paid (Cash)', rentedGearIds: ['g02'] },
-    ],
-    absentPlayers: [],
     status: 'Completed',
     imageUrl: 'https://images.pexels.com/photos/8354527/pexels-photo-8354527.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
     theme: 'Desert Ops',
@@ -255,12 +243,13 @@ const initialEvents: GameEvent[] = [
     participationXp: 100,
     gameFee: 350,
     gearForRent: MOCK_INVENTORY.filter(i => i.isRental).map(i => i.id),
-    liveStats: {
-        'p001': { kills: 8, deaths: 3, headshots: 2 },
-        'p002': { kills: 12, deaths: 1, headshots: 5 }
-    },
     gameDurationSeconds: 2750, // e.g., 45 minutes and 50 seconds
   },
+];
+
+export const MOCK_ALL_ATTENDEES: AttendeeDoc[] = [
+    { id: 'p001', eventId: 'e000', playerId: 'p001', paymentStatus: 'Paid (Card)', rentedGearIds: ['g01', 'g05'], voucherCode: 'LOYALTY50', stats: { kills: 8, deaths: 3, headshots: 2 } },
+    { id: 'p002', eventId: 'e000', playerId: 'p002', paymentStatus: 'Paid (Cash)', rentedGearIds: ['g02'], stats: { kills: 12, deaths: 1, headshots: 5 } },
 ];
 
 export const MOCK_SIGNUPS: Signup[] = [
@@ -274,26 +263,16 @@ export const MOCK_SIGNUPS: Signup[] = [
     { id: 'e003_p003', eventId: 'e003', playerId: 'p003', requestedGearIds: [], note: '' },
 ];
 
+export const MOCK_ALL_MATCH_HISTORY: MatchHistoryDoc[] = [
+    { id: 'mh001', playerId: 'p001', eventId: 'e000', playerStats: { kills: 8, deaths: 3, headshots: 2 }},
+    { id: 'mh002', playerId: 'p002', eventId: 'e000', playerStats: { kills: 12, deaths: 1, headshots: 5 }},
+];
 
-const MOCK_PLAYER_MATCH_HISTORY: Record<string, MatchRecord[]> = {
-    p001: [
-        { eventId: 'e000', playerStats: { kills: 8, deaths: 3, headshots: 2 }}
-    ],
-    p002: [
-        { eventId: 'e000', playerStats: { kills: 12, deaths: 1, headshots: 5 }}
-    ],
-    p003: [],
-    p004: [],
-    p005: [],
-    p006: [],
-    p007: [],
-    p008: [],
-    p009: [],
-    p010: [],
-};
+export const MOCK_ALL_XP_ADJUSTMENTS: XpAdjustmentDoc[] = [
+    { id: 'xp001', playerId: 'p001', amount: 50, reason: 'Bonus for excellent teamwork in Operation Kingslayer', date: '2023-10-21T10:00:00Z' }
+];
 
-
-export const MOCK_PLAYERS: Player[] = [
+export const MOCK_PLAYERS_CORE: PlayerCore[] = [
   {
     id: 'p001',
     name: 'John "Soap"',
@@ -312,25 +291,10 @@ export const MOCK_PLAYERS: Player[] = [
     rank: MOCK_RANK_TIERS[1].subranks[3], // Veteran IV (1650 XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2017/11/06/13/45/cap-2923682_1280.jpg',
-    stats: {
-        kills: 128,
-        deaths: 45,
-        headshots: 32,
-        gamesPlayed: 15,
-        xp: 1650,
-    },
-    matchHistory: MOCK_PLAYER_MATCH_HISTORY.p001,
-    xpAdjustments: [
-      { amount: 50, reason: 'Bonus for excellent teamwork in Operation Kingslayer', date: '2023-10-21T10:00:00Z' }
-    ],
+    stats: { kills: 128, deaths: 45, headshots: 32, gamesPlayed: 15, xp: 1650 },
     badges: [MOCK_BADGES[2]],
     legendaryBadges: [],
-    loadout: {
-        primaryWeapon: 'M4A1 Assault Rifle',
-        secondaryWeapon: 'X12 Pistol',
-        lethal: 'Frag Grenade',
-        tactical: 'Flashbang',
-    },
+    loadout: { primaryWeapon: 'M4A1 Assault Rifle', secondaryWeapon: 'X12 Pistol', lethal: 'Frag Grenade', tactical: 'Flashbang' },
     bio: "Task Force 141's youngest and most reckless member. Expert in demolitions and close-quarters combat. Always ready for a fight.",
     preferredRole: 'Assault',
   },
@@ -352,23 +316,10 @@ export const MOCK_PLAYERS: Player[] = [
     rank: MOCK_RANK_TIERS[3].subranks[0], // Pro I (3100 XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2023/07/04/19/43/man-8107142_1280.jpg',
-    stats: {
-        kills: 210,
-        deaths: 30,
-        headshots: 88,
-        gamesPlayed: 18,
-        xp: 3100,
-    },
-    matchHistory: MOCK_PLAYER_MATCH_HISTORY.p002,
-    xpAdjustments: [],
+    stats: { kills: 210, deaths: 30, headshots: 88, gamesPlayed: 18, xp: 3100 },
     badges: [MOCK_BADGES[0], MOCK_BADGES[2]],
     legendaryBadges: [MOCK_LEGENDARY_BADGES[0]],
-    loadout: {
-        primaryWeapon: 'Honey Badger SMG',
-        secondaryWeapon: '.50 GS Pistol',
-        lethal: 'Semtex',
-        tactical: 'Heartbeat Sensor',
-    },
+    loadout: { primaryWeapon: 'Honey Badger SMG', secondaryWeapon: '.50 GS Pistol', lethal: 'Semtex', tactical: 'Heartbeat Sensor' },
     bio: "A mysterious operator known for his stealth and efficiency. His past is classified, but his skills in the field are legendary.",
     preferredRole: 'Recon',
   },
@@ -388,23 +339,10 @@ export const MOCK_PLAYERS: Player[] = [
     rank: MOCK_RANK_TIERS[2].subranks[1], // Elite II (2200 XP)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2015/01/07/20/53/hat-591973_1280.jpg',
-    stats: {
-        kills: 142,
-        deaths: 55,
-        headshots: 41,
-        gamesPlayed: 16,
-        xp: 2200,
-    },
-    matchHistory: MOCK_PLAYER_MATCH_HISTORY.p003,
-    xpAdjustments: [],
+    stats: { kills: 142, deaths: 55, headshots: 41, gamesPlayed: 16, xp: 2200 },
     badges: [MOCK_BADGES[2]],
     legendaryBadges: [],
-    loadout: {
-        primaryWeapon: 'M13B Assault Rifle',
-        secondaryWeapon: 'P890 Pistol',
-        lethal: 'Claymore',
-        tactical: 'Smoke Grenade',
-    },
+    loadout: { primaryWeapon: 'M13B Assault Rifle', secondaryWeapon: 'P890 Pistol', lethal: 'Claymore', tactical: 'Smoke Grenade' },
     bio: "A seasoned veteran of the SAS, Gaz is a reliable and versatile operator. Excels in any situation, from covert ops to direct action.",
     preferredRole: 'Support',
   },
@@ -423,23 +361,10 @@ export const MOCK_PLAYERS: Player[] = [
     rank: UNRANKED_SUB_RANK, // (350 XP, < 10 games)
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2016/03/09/10/22/girl-1246022_1280.jpg',
-    stats: {
-        kills: 5,
-        deaths: 8,
-        headshots: 1,
-        gamesPlayed: 3,
-        xp: 350,
-    },
-    matchHistory: [],
-    xpAdjustments: [],
+    stats: { kills: 5, deaths: 8, headshots: 1, gamesPlayed: 3, xp: 350 },
     badges: [],
     legendaryBadges: [],
-    loadout: {
-        primaryWeapon: 'MP5',
-        secondaryWeapon: 'Glock 19',
-        lethal: 'Frag Grenade',
-        tactical: 'Smoke Grenade',
-    },
+    loadout: { primaryWeapon: 'MP5', secondaryWeapon: 'Glock 19', lethal: 'Frag Grenade', tactical: 'Smoke Grenade' },
     bio: "New recruit showing a lot of promise. Eager to learn and prove herself on the field.",
     preferredRole: 'Support',
   },
@@ -459,7 +384,8 @@ export const MOCK_PLAYERS: Player[] = [
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2018/01/15/07/52/woman-3083390_1280.jpg',
     stats: { kills: 350, deaths: 120, headshots: 95, gamesPlayed: 30, xp: 8500 },
-    matchHistory: [], xpAdjustments: [], badges: [MOCK_BADGES[0], MOCK_BADGES[1], MOCK_BADGES[2]], legendaryBadges: [],
+    badges: [MOCK_BADGES[0], MOCK_BADGES[1], MOCK_BADGES[2]],
+    legendaryBadges: [],
     loadout: { primaryWeapon: 'MSR Sniper Rifle', secondaryWeapon: 'X12 Pistol', lethal: 'Claymore', tactical: 'Smoke Grenade' },
     bio: "A lone wolf who excels at long-range engagements and reconnaissance.",
     preferredRole: 'Sniper',
@@ -480,7 +406,8 @@ export const MOCK_PLAYERS: Player[] = [
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2021/06/25/19/33/woman-6364433_1280.jpg',
     stats: { kills: 180, deaths: 80, headshots: 50, gamesPlayed: 22, xp: 3300 },
-    matchHistory: [], xpAdjustments: [], badges: [MOCK_BADGES[1], MOCK_BADGES[2]], legendaryBadges: [],
+    badges: [MOCK_BADGES[1], MOCK_BADGES[2]],
+    legendaryBadges: [],
     loadout: { primaryWeapon: 'Vector', secondaryWeapon: 'Glock 19', lethal: 'Semtex', tactical: 'Stun Grenade' },
     bio: "Aggressive front-line fighter specializing in SMGs and rapid assaults.",
     preferredRole: 'Assault',
@@ -501,7 +428,8 @@ export const MOCK_PLAYERS: Player[] = [
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2016/11/29/08/59/man-1868552_1280.jpg',
     stats: { kills: 95, deaths: 65, headshots: 20, gamesPlayed: 12, xp: 1100 },
-    matchHistory: [], xpAdjustments: [], badges: [MOCK_BADGES[2]], legendaryBadges: [],
+    badges: [MOCK_BADGES[2]],
+    legendaryBadges: [],
     loadout: { primaryWeapon: 'AK-47', secondaryWeapon: 'Combat Knife', lethal: 'Throwing Knife', tactical: 'Flashbang' },
     bio: "A disciplined and honorable warrior, deadly with an AK-47.",
     preferredRole: 'Assault',
@@ -522,7 +450,8 @@ export const MOCK_PLAYERS: Player[] = [
     status: 'On Leave',
     avatarUrl: 'https://cdn.pixabay.com/photo/2015/07/09/23/15/woman-839352_1280.jpg',
     stats: { kills: 250, deaths: 90, headshots: 110, gamesPlayed: 28, xp: 4500 },
-    matchHistory: [], xpAdjustments: [], badges: [MOCK_BADGES[0], MOCK_BADGES[1], MOCK_BADGES[2]], legendaryBadges: [MOCK_LEGENDARY_BADGES[1]],
+    badges: [MOCK_BADGES[0], MOCK_BADGES[1], MOCK_BADGES[2]],
+    legendaryBadges: [MOCK_LEGENDARY_BADGES[1]],
     loadout: { primaryWeapon: 'L86 LSW', secondaryWeapon: '.50 GS Pistol', lethal: 'C4', tactical: 'Heartbeat Sensor' },
     bio: "Expert in intel gathering and communications. Can turn the tide with the right information.",
     preferredRole: 'Support',
@@ -543,7 +472,8 @@ export const MOCK_PLAYERS: Player[] = [
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2017/08/01/01/33/beanie-2562646_1280.jpg',
     stats: { kills: 115, deaths: 95, headshots: 35, gamesPlayed: 19, xp: 800 },
-    matchHistory: [], xpAdjustments: [], badges: [MOCK_BADGES[1], MOCK_BADGES[2]], legendaryBadges: [],
+    badges: [MOCK_BADGES[1], MOCK_BADGES[2]],
+    legendaryBadges: [],
     loadout: { primaryWeapon: 'P90', secondaryWeapon: 'X12 Pistol', lethal: 'Frag Grenade', tactical: 'Stim' },
     bio: "Demolitions expert. If there's a wall in the way, he'll make a door.",
     preferredRole: 'Assault',
@@ -564,7 +494,8 @@ export const MOCK_PLAYERS: Player[] = [
     status: 'Active',
     avatarUrl: 'https://cdn.pixabay.com/photo/2018/04/27/03/50/portrait-3353699_1280.jpg',
     stats: { kills: 2, deaths: 5, headshots: 0, gamesPlayed: 2, xp: 150 },
-    matchHistory: [], xpAdjustments: [], badges: [], legendaryBadges: [],
+    badges: [],
+    legendaryBadges: [],
     loadout: { primaryWeapon: 'MP5', secondaryWeapon: 'Glock 19', lethal: 'Frag Grenade', tactical: 'Smoke Grenade' },
     bio: "Newest recruit, still learning the ropes.",
     preferredRole: 'Support',
@@ -580,7 +511,26 @@ export const MOCK_ADMIN: Admin = {
   avatarUrl: 'https://cdn.pixabay.com/photo/2018/03/13/11/13/program-3222397_1280.jpg',
 };
 
-export const MOCK_EVENTS: GameEvent[] = initialEvents;
+// FIX: Update MOCK_EVENTS to be of the composed GameEvent[] type, including attendees and live stats.
+const composedEvents: GameEvent[] = initialEventsCore.map(eventCore => {
+    const attendees = MOCK_ALL_ATTENDEES.filter(a => a.eventId === eventCore.id);
+    const liveStats: Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>> = {};
+    
+    if (eventCore.status === 'Completed') {
+        attendees.forEach(attendee => {
+            if (attendee.stats) {
+                liveStats[attendee.playerId] = attendee.stats;
+            }
+        });
+    }
+    
+    return {
+        ...eventCore,
+        attendees,
+        liveStats,
+    };
+});
+export const MOCK_EVENTS: GameEvent[] = composedEvents;
 
 export const MOCK_BRIEFINGS: Briefing[] = [
     {
@@ -593,14 +543,19 @@ export const MOCK_BRIEFINGS: Briefing[] = [
     }
 ];
 
-export const MOCK_VOUCHERS: Voucher[] = [
-    { id: 'v01', code: 'NEWPLAYER100', discount: 100, type: 'fixed', description: 'Welcome discount for new players', status: 'Active', perUserLimit: 1, redemptions: [] },
-    { id: 'v02', code: 'GHOSTMVP', discount: 100, type: 'percentage', description: 'Free entry for MVP performance', status: 'Active', assignedToPlayerId: 'p002', usageLimit: 1, redemptions: [] },
-    { id: 'v03', code: 'LOYALTY50', discount: 50, type: 'fixed', description: 'Loyalty discount', status: 'Depleted', usageLimit: 1, redemptions: [{ playerId: 'p001', eventId: 'e000', date: '2023-10-20T18:00:00Z' }] },
-    { id: 'v04', code: 'WEEKLY10', discount: 10, type: 'percentage', description: '10% off any event fee this week', status: 'Active', usageLimit: 20, perUserLimit: 1, redemptions: [] },
+export const MOCK_VOUCHERS_CORE: VoucherCore[] = [
+    { id: 'v01', code: 'NEWPLAYER100', discount: 100, type: 'fixed', description: 'Welcome discount for new players', status: 'Active', perUserLimit: 1 },
+    { id: 'v02', code: 'GHOSTMVP', discount: 100, type: 'percentage', description: 'Free entry for MVP performance', status: 'Active', assignedToPlayerId: 'p002', usageLimit: 1 },
+    { id: 'v03', code: 'LOYALTY50', discount: 50, type: 'fixed', description: 'Loyalty discount', status: 'Depleted', usageLimit: 1 },
+    { id: 'v04', code: 'WEEKLY10', discount: 10, type: 'percentage', description: '10% off any event fee this week', status: 'Active', usageLimit: 20, perUserLimit: 1 },
 ];
 
-export const MOCK_RAFFLES: Raffle[] = [
+export const MOCK_ALL_VOUCHER_REDEMPTIONS: VoucherRedemption[] = [
+    { id: 'vr01', voucherId: 'v03', playerId: 'p001', eventId: 'e000', date: '2023-10-20T18:00:00Z' }
+];
+
+
+export const MOCK_RAFFLES_CORE: RaffleCore[] = [
     {
         id: 'r01',
         name: 'End of Year Gear Giveaway',
@@ -614,11 +569,6 @@ export const MOCK_RAFFLES: Raffle[] = [
             { id: 'p01-2', name: 'Tactical Vest Package', place: 2 },
             { id: 'p01-3', name: '5 Free Game Entries', place: 3 },
         ],
-        tickets: [
-            { id: 't01-1', code: 'RAFFLE-GEAR-001', playerId: 'p001', purchaseDate: new Date().toISOString(), paymentStatus: 'Paid (Card)'},
-            { id: 't01-2', code: 'RAFFLE-GEAR-002', playerId: 'p003', purchaseDate: new Date().toISOString(), paymentStatus: 'Paid (Cash)'},
-        ],
-        winners: [],
     },
     {
         id: 'r02',
@@ -631,17 +581,20 @@ export const MOCK_RAFFLES: Raffle[] = [
         prizes: [
             { id: 'p02-1', name: 'Custom Glock 17 GBB', place: 1 },
         ],
-        tickets: [
-            { id: 't02-1', code: 'RAFFLE-SIDEARM-001', playerId: 'p001', purchaseDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(), paymentStatus: 'Paid (Card)'},
-            { id: 't02-2', code: 'RAFFLE-SIDEARM-002', playerId: 'p002', purchaseDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(), paymentStatus: 'Paid (Card)'},
-            { id: 't02-3', code: 'RAFFLE-SIDEARM-003', playerId: 'p004', purchaseDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(), paymentStatus: 'Paid (Cash)'},
-        ],
-        winners: [
-            { prizeId: 'p02-1', ticketId: 't02-2', playerId: 'p002' }
-        ],
     }
 ];
 
+export const MOCK_ALL_RAFFLE_TICKETS: RaffleTicketDoc[] = [
+    { id: 't01-1', raffleId: 'r01', code: 'RAFFLE-GEAR-001', playerId: 'p001', purchaseDate: new Date().toISOString(), paymentStatus: 'Paid (Card)'},
+    { id: 't01-2', raffleId: 'r01', code: 'RAFFLE-GEAR-002', playerId: 'p003', purchaseDate: new Date().toISOString(), paymentStatus: 'Paid (Cash)'},
+    { id: 't02-1', raffleId: 'r02', code: 'RAFFLE-SIDEARM-001', playerId: 'p001', purchaseDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(), paymentStatus: 'Paid (Card)'},
+    { id: 't02-2', raffleId: 'r02', code: 'RAFFLE-SIDEARM-002', playerId: 'p002', purchaseDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(), paymentStatus: 'Paid (Card)'},
+    { id: 't02-3', raffleId: 'r02', code: 'RAFFLE-SIDEARM-003', playerId: 'p004', purchaseDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(), paymentStatus: 'Paid (Cash)'},
+];
+
+export const MOCK_ALL_RAFFLE_WINNERS: RaffleWinnerDoc[] = [
+    { id: 'w01', raffleId: 'r02', prizeId: 'p02-1', ticketId: 't02-2', playerId: 'p002' }
+];
 
 export const MOCK_SPONSORS: Sponsor[] = [
     { id: 's01', name: 'Tactical Gear Co.', logoUrl: 'https://img.logoipsum.com/296.svg', email: 'contact@tacticalgear.com', phone: '555-0201', website: 'https://tacticalgear.com' },
@@ -812,6 +765,24 @@ export const MOCK_CREATOR_CORE: CreatorDetails = {
     sourceCodeZipUrl: 'https://github.com/jstyp/bosjol-tactical-api-server/archive/refs/heads/main.zip',
 };
 
+// FIX: Export composed mock data arrays to be used throughout the application.
+export const MOCK_PLAYERS: Player[] = MOCK_PLAYERS_CORE.map(p => ({
+    ...p,
+    matchHistory: MOCK_ALL_MATCH_HISTORY.filter(mh => mh.playerId === p.id),
+    xpAdjustments: MOCK_ALL_XP_ADJUSTMENTS.filter(xa => xa.playerId === p.id),
+}));
+
+export const MOCK_VOUCHERS: Voucher[] = MOCK_VOUCHERS_CORE.map(vc => ({
+    ...vc,
+    redemptions: MOCK_ALL_VOUCHER_REDEMPTIONS.filter(vr => vr.voucherId === vc.id),
+}));
+
+export const MOCK_RAFFLES: Raffle[] = MOCK_RAFFLES_CORE.map(rc => ({
+    ...rc,
+    tickets: MOCK_ALL_RAFFLE_TICKETS.filter(rt => rt.raffleId === rc.id),
+    winners: MOCK_ALL_RAFFLE_WINNERS.filter(rw => rw.raffleId === rc.id),
+}));
+
 
 // Generate detailed transactions from mock data
 const generateMockTransactions = (): Transaction[] => {
@@ -830,8 +801,8 @@ const generateMockTransactions = (): Transaction[] => {
     });
 
     // Event & Rental Revenue from completed events
-    initialEvents.filter(e => e.status === 'Completed').forEach(event => {
-        event.attendees.forEach(attendee => {
+    initialEventsCore.filter(e => e.status === 'Completed').forEach(event => {
+        MOCK_ALL_ATTENDEES.filter(a => a.eventId === event.id).forEach(attendee => {
             // Event Fee Transaction
             transactions.push({
                 id: `txn-rev-event-${event.id}-${attendee.playerId}`,

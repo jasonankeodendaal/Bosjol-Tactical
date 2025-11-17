@@ -252,48 +252,88 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </DashboardCard>
             
             <DashboardCard title="Branding & Visuals" icon={<SparklesIcon className="w-6 h-6" />}>
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <UrlOrUploadField
-                        label="Company Logo"
-                        fileUrl={formData.logoUrl}
-                        onUrlSet={(url) => setFormData(f => ({ ...f, logoUrl: url }))}
-                        onRemove={() => setFormData(f => ({ ...f, logoUrl: '' }))}
-                        accept="image/*"
-                        apiServerUrl={formData.apiServerUrl}
-                    />
-                    <UrlOrUploadField
-                        label="Login Screen Background"
-                        fileUrl={formData.loginBackgroundUrl}
-                        onUrlSet={(url) => setFormData(f => ({ ...f, loginBackgroundUrl: url }))}
-                        onRemove={() => setFormData(f => ({ ...f, loginBackgroundUrl: '' }))}
-                        accept="image/*,video/*"
-                        apiServerUrl={formData.apiServerUrl}
-                    />
-                     <UrlOrUploadField
-                        label="Login Screen Audio"
-                        fileUrl={formData.loginAudioUrl}
-                        onUrlSet={(url) => setFormData(f => ({ ...f, loginAudioUrl: url }))}
-                        onRemove={() => setFormData(f => ({ ...f, loginAudioUrl: '' }))}
-                        accept="audio/*"
-                        previewType="audio"
-                        apiServerUrl={formData.apiServerUrl}
-                    />
-                    <UrlOrUploadField
-                        label="Player Dashboard BG"
-                        fileUrl={formData.playerDashboardBackgroundUrl}
-                        onUrlSet={(url) => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: url }))}
-                        onRemove={() => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: '' }))}
-                        accept="image/*"
-                        apiServerUrl={formData.apiServerUrl}
-                    />
-                    <UrlOrUploadField
-                        label="Admin Dashboard BG"
-                        fileUrl={formData.adminDashboardBackgroundUrl}
-                        onUrlSet={(url) => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: url }))}
-                        onRemove={() => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: '' }))}
-                        accept="image/*"
-                        apiServerUrl={formData.apiServerUrl}
-                    />
+                <div className="p-6 space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <UrlOrUploadField
+                            label="Company Logo"
+                            fileUrl={formData.logoUrl}
+                            onUrlSet={(url) => setFormData(f => ({ ...f, logoUrl: url }))}
+                            onRemove={() => setFormData(f => ({ ...f, logoUrl: '' }))}
+                            accept="image/*"
+                            apiServerUrl={formData.apiServerUrl}
+                        />
+                    </div>
+                    
+                    <div className="pt-6 border-t border-zinc-800">
+                        <h4 className="font-semibold text-gray-200 mb-4 text-lg">Login Screen Media</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <UrlOrUploadField
+                                label="Login Screen Background"
+                                fileUrl={formData.loginBackgroundUrl}
+                                onUrlSet={(url) => setFormData(f => ({ ...f, loginBackgroundUrl: url }))}
+                                onRemove={() => setFormData(f => ({ ...f, loginBackgroundUrl: '' }))}
+                                accept="image/*,video/*"
+                                apiServerUrl={formData.apiServerUrl}
+                            />
+                             <UrlOrUploadField
+                                label="Login Screen Audio"
+                                fileUrl={formData.loginAudioUrl}
+                                onUrlSet={(url) => setFormData(f => ({ ...f, loginAudioUrl: url }))}
+                                onRemove={() => setFormData(f => ({ ...f, loginAudioUrl: '' }))}
+                                accept="audio/*"
+                                previewType="audio"
+                                apiServerUrl={formData.apiServerUrl}
+                            />
+                        </div>
+                    </div>
+
+                     <div className="pt-6 border-t border-zinc-800">
+                        <h4 className="font-semibold text-gray-200 mb-4 text-lg">Player Dashboard Media</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <UrlOrUploadField
+                                label="Player Dashboard BG"
+                                fileUrl={formData.playerDashboardBackgroundUrl}
+                                onUrlSet={(url) => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: url }))}
+                                onRemove={() => setFormData(f => ({ ...f, playerDashboardBackgroundUrl: '' }))}
+                                accept="image/*,video/*"
+                                previewType="video"
+                                apiServerUrl={formData.apiServerUrl}
+                            />
+                            <UrlOrUploadField
+                                label="Player Dashboard Audio"
+                                fileUrl={formData.playerDashboardAudioUrl}
+                                onUrlSet={(url) => setFormData(f => ({ ...f, playerDashboardAudioUrl: url }))}
+                                onRemove={() => setFormData(f => ({ ...f, playerDashboardAudioUrl: '' }))}
+                                accept="audio/*"
+                                previewType="audio"
+                                apiServerUrl={formData.apiServerUrl}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-zinc-800">
+                        <h4 className="font-semibold text-gray-200 mb-4 text-lg">Admin Dashboard Media</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <UrlOrUploadField
+                                label="Admin Dashboard BG"
+                                fileUrl={formData.adminDashboardBackgroundUrl}
+                                onUrlSet={(url) => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: url }))}
+                                onRemove={() => setFormData(f => ({ ...f, adminDashboardBackgroundUrl: '' }))}
+                                accept="image/*,video/*"
+                                previewType="video"
+                                apiServerUrl={formData.apiServerUrl}
+                            />
+                            <UrlOrUploadField
+                                label="Admin Dashboard Audio"
+                                fileUrl={formData.adminDashboardAudioUrl}
+                                onUrlSet={(url) => setFormData(f => ({ ...f, adminDashboardAudioUrl: url }))}
+                                onRemove={() => setFormData(f => ({ ...f, adminDashboardAudioUrl: '' }))}
+                                accept="audio/*"
+                                previewType="audio"
+                                apiServerUrl={formData.apiServerUrl}
+                            />
+                        </div>
+                    </div>
                 </div>
             </DashboardCard>
 

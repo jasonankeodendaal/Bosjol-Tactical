@@ -53,18 +53,8 @@ export const AboutTab: React.FC = () => {
                     <StepCard number={3} title="Handling Video and Audio Files">
                          <p>For video and audio, you cannot use image hosting sites. The best free options are platforms designed for media streaming. It's also recommended to use web-optimized formats like <strong>MP3</strong> over large formats like WAV for faster loading.</p>
                          <h4 className="font-semibold text-gray-200 mt-4 mb-2">Cloud Storage (Dropbox, Google Drive)</h4>
-                         <p>You can use services like Dropbox or Google Drive, but you must modify the sharing link to create a direct download link. This process varies by service.</p>
+                         <p>You can use services like Dropbox or Google Drive, but you must modify the sharing link to create a direct download link. This process varies by service and can be unreliable for streaming due to security policies.</p>
                          
-                         <div className="mt-4 bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-sm">
-                            <div className="flex items-start">
-                                <ExclamationTriangleIcon className="w-8 h-8 mr-3 flex-shrink-0"/>
-                                <div>
-                                    <p className="font-bold">IMPORTANT: Cloud storage is NOT reliable for streaming.</p>
-                                    <p className="mt-1">Services like Google Drive often force a file **download** instead of allowing it to **stream**, even with a modified link. This will break the audio/video player in the application. For guaranteed playback, it is <span className="font-bold">highly recommended</span> to use the <strong>Direct Upload</strong> feature instead.</p>
-                                </div>
-                            </div>
-                        </div>
-
                          <div className="mt-4 bg-blue-900/40 border border-blue-700 text-blue-200 p-3 rounded-lg text-sm">
                             <p><span className="font-bold">Advanced Option:</span> The most reliable method is to use a proper file hosting service (like Amazon S3, or your own web hosting via FTP) that provides true direct streaming links.</p>
                         </div>

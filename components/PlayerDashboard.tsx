@@ -7,7 +7,7 @@ import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
 import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
-import { UNRANKED_SUB_RANK, MOCK_PLAYER_ROLES, MOCK_BADGES, MOCK_WEAPONS, MOCK_EQUIPMENT } from '../constants';
+import { UNRANKED_SUB_RANK, MOCK_PLAYER_ROLES, MOCK_BADGES } from '../constants';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
@@ -816,30 +816,30 @@ const LoadoutTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate
     return (
         <DashboardCard title="Loadout" icon={<CrosshairsIcon className="w-6 h-6" />}>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label className="font-semibold text-lg text-red-400 mb-2 block">Primary Weapon</label>
-                    <select value={loadout.primaryWeapon} onChange={e => setLoadout(l => ({...l, primaryWeapon: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                        {MOCK_WEAPONS.primary.map(w => <option key={w}>{w}</option>)}
-                    </select>
-                </div>
-                 <div>
-                    <label className="font-semibold text-lg text-red-400 mb-2 block">Secondary Weapon</label>
-                    <select value={loadout.secondaryWeapon} onChange={e => setLoadout(l => ({...l, secondaryWeapon: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                        {MOCK_WEAPONS.secondary.map(w => <option key={w}>{w}</option>)}
-                    </select>
-                </div>
-                 <div>
-                    <label className="font-semibold text-lg text-red-400 mb-2 block">Lethal Equipment</label>
-                    <select value={loadout.lethal} onChange={e => setLoadout(l => ({...l, lethal: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                        {MOCK_EQUIPMENT.lethal.map(e => <option key={e}>{e}</option>)}
-                    </select>
-                </div>
-                 <div>
-                    <label className="font-semibold text-lg text-red-400 mb-2 block">Tactical Equipment</label>
-                    <select value={loadout.tactical} onChange={e => setLoadout(l => ({...l, tactical: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                        {MOCK_EQUIPMENT.tactical.map(e => <option key={e}>{e}</option>)}
-                    </select>
-                </div>
+                <Input
+                    label="Primary Weapon"
+                    value={loadout.primaryWeapon}
+                    onChange={e => setLoadout(l => ({...l, primaryWeapon: e.target.value}))}
+                    placeholder="e.g., M4A1 Assault Rifle"
+                />
+                 <Input
+                    label="Secondary Weapon"
+                    value={loadout.secondaryWeapon}
+                    onChange={e => setLoadout(l => ({...l, secondaryWeapon: e.target.value}))}
+                    placeholder="e.g., X12 Pistol"
+                />
+                 <Input
+                    label="Lethal Equipment"
+                    value={loadout.lethal}
+                    onChange={e => setLoadout(l => ({...l, lethal: e.target.value}))}
+                    placeholder="e.g., Frag Grenade"
+                />
+                 <Input
+                    label="Tactical Equipment"
+                    value={loadout.tactical}
+                    onChange={e => setLoadout(l => ({...l, tactical: e.target.value}))}
+                    placeholder="e.g., Flashbang"
+                />
                 <div className="md:col-span-2">
                     <Button onClick={handleSave} disabled={!isDirty || isSaving} className="w-full mt-4">
                         {isSaving ? 'Saving...' : 'Save Loadout'}

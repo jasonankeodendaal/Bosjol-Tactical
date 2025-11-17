@@ -1,6 +1,6 @@
 
 
-import React, { useContext, useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
 import { Button } from './components/Button';
@@ -14,14 +14,15 @@ import { HelpSystem } from './components/Help';
 import { StorageStatusIndicator } from './components/StorageStatusIndicator';
 import { MockDataWatermark } from './components/MockDataWatermark';
 import { Input } from './components/Input';
+import { DashboardBackground } from './components/DashboardBackground';
 
 
-// --- Lazy Load Components for Code Splitting ---
-const LoginScreen = lazy(() => import('./components/LoginScreen').then(module => ({ default: module.LoginScreen })));
-const PlayerDashboard = lazy(() => import('./components/PlayerDashboard').then(module => ({ default: module.PlayerDashboard })));
-const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
-const FrontPage = lazy(() => import('./components/FrontPage').then(module => ({ default: module.FrontPage })));
-const CreatorDashboard = lazy(() => import('./components/CreatorDashboard').then(module => ({ default: module.CreatorDashboard })));
+// --- Switched from lazy to direct imports to fix critical module loading error ---
+import { LoginScreen } from './components/LoginScreen';
+import { PlayerDashboard } from './components/PlayerDashboard';
+import { AdminDashboard } from './components/AdminDashboard';
+import FrontPage from './components/FrontPage';
+import { CreatorDashboard } from './components/CreatorDashboard';
 
 
 // --- Creator Popup Component and Icons ---
@@ -343,10 +344,21 @@ const AppContent: React.FC = () => {
         if (!audioRef.current) {
             audioRef.current = new Audio();
             audioRef.current.loop = true;
+            audioRef.current.volume = 0.3; // Set a default, non-intrusive volume
         }
         const audio = audioRef.current;
-        const audioUrl = companyDetails.loginAudioUrl;
-        const shouldPlay = !showFrontPage;
+
+        let targetAudioUrl: string | undefined;
+
+        if (showFrontPage) {
+            targetAudioUrl = undefined; // No audio on the front page
+        } else if (!isAuthenticated) {
+            targetAudioUrl = companyDetails.loginAudioUrl; // Login screen audio
+        } else if (user?.role === 'player') {
+            targetAudioUrl = companyDetails.playerDashboardAudioUrl; // Player dashboard audio
+        } else if (user?.role === 'admin' || user?.role === 'creator') {
+            targetAudioUrl = companyDetails.adminDashboardAudioUrl; // Admin/Creator dashboard audio
+        }
 
         const handleAudioError = (e: Event) => {
             console.error("Audio Element Error:", e);
@@ -357,31 +369,44 @@ const AppContent: React.FC = () => {
 
         const playAudio = async () => {
             try {
-                await audio.play();
+                if (audio.src) { // Only play if there's a source
+                    await audio.play();
+                }
             } catch (err) {
-                console.error("Audio play was prevented by the browser:", err);
+                // This error is common if the user hasn't interacted with the page yet.
+                // It will be attempted again on user interaction in handleEnterFrontPage.
+                console.warn("Audio play was prevented by the browser:", err);
             }
         };
 
         audio.addEventListener('error', handleAudioError);
+        
+        const currentSrc = audio.currentSrc;
+        const isPlayingSomething = !!currentSrc && !audio.paused;
 
-        if (shouldPlay && audioUrl) {
-            if (audio.src !== audioUrl) {
-                audio.src = audioUrl;
-            }
-            if (audio.paused) {
+        if (targetAudioUrl) {
+            // If the target is different from what's currently playing, change it.
+            const absoluteTargetUrl = new URL(targetAudioUrl, window.location.href).href;
+            if (currentSrc !== absoluteTargetUrl) {
+                audio.src = targetAudioUrl;
+                playAudio();
+            } 
+            // If the source is correct but playback is paused, try to play.
+            else if (audio.paused) {
                 playAudio();
             }
         } else {
-            if (!audio.paused) {
+            // If there should be no audio but something is playing, stop it.
+            if (isPlayingSomething) {
                 audio.pause();
+                audio.src = ''; // Release resource
             }
         }
-
+        
         return () => {
             audio.removeEventListener('error', handleAudioError);
         };
-    }, [showFrontPage, companyDetails.loginAudioUrl]);
+    }, [showFrontPage, isAuthenticated, user, companyDetails]);
 
     const onPlayerUpdate = async (player: Player) => {
         await updateDoc('players', player);
@@ -457,68 +482,57 @@ const AppContent: React.FC = () => {
             <AnimatePresence mode="wait">
                 {showFrontPage ? (
                     <motion.div key="frontpage" exit={{ opacity: 0 }}>
-                        <Suspense fallback={<Loader />}>
-                            <FrontPage 
-                                companyDetails={companyDetails}
-                                socialLinks={socialLinks}
-                                carouselMedia={carouselMedia}
-                                onEnter={handleEnterFrontPage}
-                            />
-                             <PublicPageFloatingIcons onHelpClick={() => setShowHelp(true)} onCreatorClick={() => setShowCreatorPopup(true)} />
-                        </Suspense>
+                        <FrontPage 
+                            companyDetails={companyDetails}
+                            socialLinks={socialLinks}
+                            carouselMedia={carouselMedia}
+                            onEnter={handleEnterFrontPage}
+                        />
+                         <PublicPageFloatingIcons onHelpClick={() => setShowHelp(true)} onCreatorClick={() => setShowCreatorPopup(true)} />
                     </motion.div>
                 ) : !isAuthenticated ? (
                     <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <Suspense fallback={<Loader />}>
-                            <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />
-                            <PublicPageFloatingIcons onHelpClick={() => setShowHelp(true)} onCreatorClick={() => setShowCreatorPopup(true)} />
-                        </Suspense>
+                        <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />
+                        <PublicPageFloatingIcons onHelpClick={() => setShowHelp(true)} onCreatorClick={() => setShowCreatorPopup(true)} />
                     </motion.div>
                 ) : (
                     <motion.div
                         key="dashboard"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="flex-grow flex flex-col"
-                        style={{ 
-                            backgroundImage: `url(${user?.role === 'admin' ? companyDetails.adminDashboardBackgroundUrl : companyDetails.playerDashboardBackgroundUrl})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            backgroundAttachment: 'fixed'
-                        }}
+                        className="flex-grow flex flex-col relative isolate"
                     >
+                        <DashboardBackground url={user?.role === 'admin' ? companyDetails.adminDashboardBackgroundUrl : companyDetails.playerDashboardBackgroundUrl} />
                         <div className="flex-grow bg-black/50 backdrop-blur-sm">
-                            <Suspense fallback={<Loader />}>
-                                {user?.role === 'player' && currentPlayer && (
-                                    <PlayerDashboard
-                                        player={currentPlayer}
-                                        players={players}
-                                        sponsors={data.sponsors}
-                                        onPlayerUpdate={onPlayerUpdate}
-                                        events={events}
-                                        onEventSignUp={onEventSignUp}
-                                        legendaryBadges={data.legendaryBadges}
-                                        raffles={data.raffles}
-                                        rankTiers={rankTiers}
-                                        locations={data.locations}
-                                        signups={signups}
-                                    />
-                                )}
-                                {user?.role === 'admin' && (
-                                    <AdminDashboard
-                                        {...data}
-                                        onDeleteAllData={data.deleteAllData}
-                                        addPlayerDoc={(playerData) => addDoc('players', playerData)}
-                                    />
-                                )}
-                                 {user?.role === 'creator' && (
-                                    <CreatorDashboard
-                                        {...data}
-                                        setShowHelp={setShowHelp}
-                                        setHelpTopic={setHelpTopic}
-                                    />
-                                )}
-                            </Suspense>
+                            {user?.role === 'player' && currentPlayer && (
+                                <PlayerDashboard
+                                    player={currentPlayer}
+                                    players={players}
+                                    sponsors={data.sponsors}
+                                    onPlayerUpdate={onPlayerUpdate}
+                                    events={events}
+                                    onEventSignUp={onEventSignUp}
+                                    legendaryBadges={data.legendaryBadges}
+                                    raffles={data.raffles}
+                                    rankTiers={rankTiers}
+                                    locations={data.locations}
+                                    signups={signups}
+                                />
+                            )}
+                            {user?.role === 'admin' && (
+                                <AdminDashboard
+                                    {...data}
+                                    onDeleteAllData={data.deleteAllData}
+                                    addPlayerDoc={(playerData) => addDoc('players', playerData)}
+                                />
+                            )}
+                             {user?.role === 'creator' && (
+                                <CreatorDashboard
+                                    {...data}
+                                    setShowHelp={setShowHelp}
+                                    setHelpTopic={setHelpTopic}
+                                />
+                            )}
                         </div>
                         
                         {!showFrontPage && isAuthenticated && <Footer details={companyDetails} apiServerUrl={companyDetails.apiServerUrl} />}

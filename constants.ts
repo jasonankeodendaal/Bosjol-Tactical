@@ -703,6 +703,8 @@ export const MOCK_COMPANY_DETAILS: CompanyDetails = {
     loginAudioUrl: 'https://cdn.pixabay.com/audio/2022/08/03/audio_5a6914c622.mp3',
     playerDashboardBackgroundUrl: '',
     adminDashboardBackgroundUrl: '',
+    playerDashboardAudioUrl: '',
+    adminDashboardAudioUrl: '',
     apkUrl: '',
     apiServerUrl: '',
     minimumSignupAge: 18,

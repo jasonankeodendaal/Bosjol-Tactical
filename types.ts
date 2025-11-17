@@ -344,6 +344,8 @@ export interface CompanyDetails {
     loginAudioUrl?: string;
     playerDashboardBackgroundUrl?: string;
     adminDashboardBackgroundUrl?: string;
+    playerDashboardAudioUrl?: string;
+    adminDashboardAudioUrl?: string;
     apkUrl?: string;
     apiServerUrl?: string;
     bankInfo: {

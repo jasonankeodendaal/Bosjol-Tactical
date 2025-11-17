@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect, useMemo, useContext, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, RankTier, SubRank, PlayerRole } from '../types';
@@ -19,9 +16,47 @@ import { DataContext } from '../data/DataContext';
 import { Loader } from './Loader';
 import { UrlOrUploadField } from './UrlOrUploadField';
 
+const getRankForPlayer = (player: Player, rankTiers: RankTier[]): SubRank => {
+    if (!rankTiers || rankTiers.length === 0) return UNRANKED_SUB_RANK;
+    if (player.stats.gamesPlayed < 10) {
+        return UNRANKED_SUB_RANK;
+    }
+    const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => b.minXp - a.minXp);
+    const rank = allSubRanks.find(r => player.stats.xp >= r.minXp);
+    return rank || allSubRanks[allSubRanks.length - 1] || UNRANKED_SUB_RANK;
+};
+
+const getRankProgression = (player: Player, rankTiers: RankTier[]) => {
+    const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => a.minXp - b.minXp);
+    
+    if (player.stats.gamesPlayed < 10) {
+        return {
+            previous: null,
+            current: UNRANKED_SUB_RANK,
+            next: allSubRanks[0] || null,
+            tier: null
+        };
+    }
+
+    let currentRankIndex = -1;
+    for (let i = allSubRanks.length - 1; i >= 0; i--) {
+        if (player.stats.xp >= allSubRanks[i].minXp) {
+            currentRankIndex = i;
+            break;
+        }
+    }
+    
+    const current = currentRankIndex !== -1 ? allSubRanks[currentRankIndex] : allSubRanks[0] || UNRANKED_SUB_RANK;
+    const previous = currentRankIndex > 0 ? allSubRanks[currentRankIndex - 1] : null;
+    const next = currentRankIndex < allSubRanks.length - 1 ? allSubRanks[currentRankIndex + 1] : null;
+    
+    const tier = rankTiers.find(t => t.subranks.some(sr => sr.id === current.id)) || null;
+
+    return { previous, current, next, tier };
+}
+
 const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[], player: Player }> = ({ rankTiers, player }) => {
     const [query, setQuery] = useState("");
-    const [showXP, setShowXP] = useState(true);
 
     if (!rankTiers || rankTiers.length === 0) {
         return (
@@ -33,24 +68,26 @@ const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[], player: Player }
         );
     }
     
-    const playerRankId = getRankForPlayer(player, rankTiers).id;
+    const { current: playerRank } = getRankProgression(player, rankTiers);
 
-    const filtered = rankTiers.map(tier => ({
+    const filteredTiers = rankTiers.map(tier => ({
         ...tier,
         subranks: tier.subranks.filter(subrank => subrank.name.toLowerCase().includes(query.toLowerCase()))
     })).filter(tier => tier.subranks.length > 0);
     
-    const getRangeForSubRank = (subrank: SubRank, tier: RankTier) => {
-        const rankIndex = tier.subranks.findIndex(r => r.id === subrank.id);
-        const nextRank = tier.subranks[rankIndex + 1];
-        if (nextRank) {
-            return `${subrank.minXp.toLocaleString()} - ${(nextRank.minXp - 1).toLocaleString()} XP`;
+    const getRangeForSubRank = (subrank: SubRank, tier: RankTier, tierIndex: number) => {
+        const sortedRanksInTier = [...tier.subranks].sort((a,b) => a.minXp - b.minXp);
+        const rankIndex = sortedRanksInTier.findIndex(r => r.id === subrank.id);
+        const nextRankInTier = sortedRanksInTier[rankIndex + 1];
+
+        if (nextRankInTier) {
+            return `${subrank.minXp.toLocaleString()} - ${(nextRankInTier.minXp - 1).toLocaleString()} XP`;
         }
-        // Find next tier's first rank
-        const currentTierIndex = rankTiers.findIndex(t => t.id === tier.id);
-        const nextTier = rankTiers[currentTierIndex + 1];
+        
+        const nextTier = rankTiers[tierIndex + 1];
         if(nextTier && nextTier.subranks.length > 0) {
-            return `${subrank.minXp.toLocaleString()} - ${(nextTier.subranks[0].minXp - 1).toLocaleString()} XP`;
+            const nextTierFirstRank = [...nextTier.subranks].sort((a,b) => a.minXp - b.minXp)[0];
+            return `${subrank.minXp.toLocaleString()} - ${(nextTierFirstRank.minXp - 1).toLocaleString()} XP`;
         }
         return `${subrank.minXp.toLocaleString()}+ XP`;
     }
@@ -58,72 +95,61 @@ const RankProgressionDisplay: React.FC<{ rankTiers: RankTier[], player: Player }
     return (
         <DashboardCard title="Rank Progression & Rewards" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
             <div className="p-6">
-                 <div className="mb-4 flex flex-col sm:flex-row gap-3">
+                 <div className="mb-4">
                     <Input
                         type="search"
                         placeholder="Filter ranks (e.g. 'Pro V', 'Master')"
-                        className="flex-1"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                     />
-                    <label className="inline-flex items-center gap-2 text-sm text-gray-300 bg-zinc-800/50 px-3 py-2 rounded-md border border-zinc-700">
-                        <input type="checkbox" checked={showXP} onChange={() => setShowXP(!showXP)} className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"/>
-                        Show XP Requirements
-                    </label>
                 </div>
 
-                <div className="space-y-8 max-h-[70vh] overflow-y-auto pr-2">
-                    {filtered.map((tier) => (
-                        <section key={tier.id} className="bg-zinc-900/50 rounded-xl shadow p-6 border border-zinc-800">
-                            <div className="flex items-center gap-4 mb-5">
-                                <img src={tier.tierBadgeUrl} alt={tier.name} className="w-12 h-12"/>
+                <div className="space-y-12 max-h-[70vh] overflow-y-auto pr-2">
+                    {filteredTiers.map((tier, tierIndex) => (
+                        <section key={tier.id} className="tier-section">
+                            <div className="tier-header">
+                                <img src={tier.tierBadgeUrl} alt={tier.name} className="w-16 h-16 flex-shrink-0"/>
                                 <div>
-                                    <h2 className="text-2xl font-bold text-red-400">{tier.name}</h2>
+                                    <h2 className="text-3xl font-bold text-red-400 uppercase tracking-wider">{tier.name}</h2>
                                     <p className="mt-1 text-sm text-gray-400">{tier.description}</p>
                                 </div>
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                {tier.subranks.map((sub) => (
-                                    <article key={sub.id} className={`border rounded-lg p-4 transition-all duration-300 ${playerRankId === sub.id ? 'bg-amber-800/20 border-amber-500/50' : 'bg-zinc-800/40 border-zinc-700/50 hover:bg-zinc-700/50'}`}>
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <img src={sub.iconUrl} alt={sub.name} className="w-8 h-8"/>
-                                                <h3 className={`font-semibold ${playerRankId === sub.id ? 'text-amber-300' : 'text-white'}`}>{sub.name}</h3>
+                            <div className="subrank-grid">
+                                {tier.subranks.sort((a,b) => a.minXp - b.minXp).map((sub) => {
+                                    const isCurrent = playerRank.id === sub.id;
+                                    const isUnlocked = player.stats.xp >= sub.minXp && player.stats.gamesPlayed >= 10;
+                                    const cardClass = isCurrent ? 'subrank-card--current' : !isUnlocked ? 'subrank-card--locked' : '';
+                                    return (
+                                        <article key={sub.id} className={`subrank-card ${cardClass}`}>
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <img src={sub.iconUrl} alt={sub.name} className="w-10 h-10"/>
+                                                <div>
+                                                    <h3 className={`font-semibold ${isCurrent ? 'text-amber-300' : 'text-white'}`}>{sub.name}</h3>
+                                                    <p className="text-xs text-gray-400 font-mono">{getRangeForSubRank(sub, tier, tierIndex)}</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                         {showXP && <p className="mt-2 text-sm text-gray-400 font-mono">{getRangeForSubRank(sub, tier)}</p>}
-                                        <ul className="mt-3 list-none text-sm text-gray-300 space-y-1.5">
-                                            {sub.perks.map((p, i) => (
-                                                <li key={i} className="flex items-start gap-2">
-                                                    <CheckCircleIcon className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
-                                                    <span>{p}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </article>
-                                ))}
+                                            <ul className="list-none text-xs text-gray-300 space-y-1">
+                                                {sub.perks.map((p, i) => (
+                                                    <li key={i} className="flex items-start gap-1.5">
+                                                        <CheckCircleIcon className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
+                                                        <span>{p}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </article>
+                                    )
+                                })}
                             </div>
                         </section>
                     ))}
-                    {filtered.length === 0 && (
+                    {filteredTiers.length === 0 && (
                         <div className="text-center text-gray-500 py-8">No ranks matched your search.</div>
                     )}
                 </div>
             </div>
         </DashboardCard>
     );
-};
-
-
-const getRankForPlayer = (player: Player, rankTiers: RankTier[]): SubRank => {
-    if (!rankTiers || rankTiers.length === 0) return UNRANKED_SUB_RANK;
-    if (player.stats.gamesPlayed < 10) {
-        return UNRANKED_SUB_RANK;
-    }
-    const allSubRanks = rankTiers.flatMap(tier => tier.subranks).sort((a, b) => b.minXp - a.minXp);
-    const rank = allSubRanks.find(r => player.stats.xp >= r.minXp);
-    return rank || UNRANKED_SUB_RANK;
 };
 
 interface PlayerDashboardProps {
@@ -460,18 +486,26 @@ const calculateBadgeProgress = (badge: Badge, player: Player, rankTiers: RankTie
             max = Number(criteria.value);
             break;
         case 'rank':
-             const allTiers = rankTiers.map(t => t.name);
-             const targetTierIndex = allTiers.indexOf(criteria.value as string);
-             const playerTierName = rankTiers.find(t => t.subranks.some(sr => sr.id === player.rank.id))?.name;
-             const playerTierIndex = playerTierName ? allTiers.indexOf(playerTierName) : -1;
+            const allTiers = rankTiers.map(t => t.name);
+            const targetTierName = criteria.value as string;
 
+            // Find player's current tier name
+            const playerTier = rankTiers.find(tier => tier.subranks.some(sub => sub.id === player.rank.id));
+            const playerTierName = playerTier?.name;
+
+            // Find the index of the player's tier and target tier
+            const playerTierIndex = playerTierName ? allTiers.indexOf(playerTierName) : -1;
+            const targetTierIndex = allTiers.indexOf(targetTierName);
+            
             if (targetTierIndex > -1) {
-                 current = playerTierIndex > -1 ? playerTierIndex + 1 : 0;
-                 max = targetTierIndex + 1;
-                 if(current >= max) return { current: 1, max: 1, percentage: 100, isEarned: true, text: 'Unlocked' };
-                 return { current, max, percentage: (current / max) * 100, isEarned: false, text: `Reach ${criteria.value} Tier` };
+                current = playerTierIndex > -1 ? playerTierIndex : 0;
+                max = targetTierIndex;
+                if (current >= max) {
+                     return { current: max, max, percentage: 100, isEarned: true, text: 'Unlocked' };
+                }
+                 return { current, max, percentage: (current / max) * 100, isEarned: false, text: `Reach ${targetTierName} Tier` };
             }
-             return { current: 0, max: 1, percentage: 0, isEarned: false, text: `Reach ${criteria.value} Tier` };
+            return { current: 0, max: 1, percentage: 0, isEarned: false, text: `Reach ${targetTierName} Tier` };
         case 'custom':
             return { current: 0, max: 1, percentage: 0, isEarned: false, text: 'Admin Awarded' };
     }
@@ -504,23 +538,21 @@ const BadgeProgressCard: React.FC<{badge: Badge, player: Player, rankTiers: Rank
     );
 }
 
-const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sponsors' | 'rankTiers'>> = ({ player, events, sponsors, rankTiers }) => {
+const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'events' | 'sponsors' | 'rankTiers'>> = ({ player, players, events, sponsors, rankTiers }) => {
     const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 
-    const playerRank = getRankForPlayer(player, rankTiers);
-    const playerTier = rankTiers.find(tier => tier.subranks.some(sr => sr.id === playerRank.id));
-    
-    const allSubRanks = useMemo(() => rankTiers.flatMap(tier => tier.subranks).sort((a, b) => a.minXp - b.minXp), [rankTiers]);
-    const currentRankIndex = allSubRanks.findIndex(r => r.id === playerRank.id);
-    const nextRank = currentRankIndex !== -1 && currentRankIndex < allSubRanks.length - 1 ? allSubRanks[currentRankIndex + 1] : null;
+    const { previous, current, next } = getRankProgression(player, rankTiers);
 
-    const xpForCurrentRank = playerRank.minXp;
-    const xpForNextRank = nextRank ? nextRank.minXp : playerRank.minXp;
-    
-    const xpProgressTowardsNext = player.stats.xp - xpForCurrentRank;
-    const xpNeededForNextRank = xpForNextRank - xpForCurrentRank;
+    const startXp = current.minXp;
+    const endXp = next ? next.minXp : current.minXp;
+    const progressPercentage = endXp > startXp ? Math.min(((player.stats.xp - startXp) / (endXp - startXp)) * 100, 100) : 100;
 
+    const rankedPlayers = players.filter(p => p.stats.gamesPlayed >= 10);
+    const percentile = rankedPlayers.length > 1
+        ? (rankedPlayers.filter(p => p.stats.xp < player.stats.xp).length / (rankedPlayers.length - 1)) * 100
+        : 100;
+    
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {selectedSponsor && (
@@ -552,36 +584,52 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'sp
                 </DashboardCard>
 
                 {/* Rank Progression */}
-                 <div className="bg-zinc-950/80 backdrop-blur-md border border-zinc-800/60 rounded-lg shadow-lg p-6 relative overflow-hidden">
-                    <div className="absolute inset-0 hex-bg opacity-50"></div>
-                    <div className="relative z-10 text-center">
-                        <div className="relative w-40 h-40 mx-auto flex items-center justify-center mb-4">
-                            <div className="absolute inset-0 hex-bg hex-clip bg-amber-400/10 animate-gold-glow"></div>
-                            <img src={playerRank.iconUrl} alt={playerRank.name} className="h-28 z-10" style={{filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.5))'}}/>
+                <div className="rank-progress-display">
+                    <div className="rank-display-grid">
+                        <div className="rank-item previous">
+                            {previous && <>
+                                <img src={previous.iconUrl} alt={previous.name} className="w-20 h-20" />
+                                <p>{previous.name}</p>
+                            </>}
                         </div>
-                        <p className="text-sm text-gray-400 uppercase tracking-wider">{playerTier?.name || 'Unranked'}</p>
-                        <h3 className="text-3xl font-bold text-amber-300 uppercase tracking-widest">{playerRank.name}</h3>
+                        
+                        <div className="rank-item current">
+                            <div className="rank-item-hex">
+                               <img src={current.iconUrl} alt={current.name} />
+                            </div>
+                            <p>{current.name}</p>
+                        </div>
 
-                        <div className="mt-6 max-w-md mx-auto">
-                            {nextRank ? (
-                                <>
-                                    <div className="w-full bg-black/50 border border-amber-400/20 rounded-full h-3 p-0.5">
-                                        <div className="progress-bar-glow h-full rounded-full" style={{ width: `${(xpProgressTowardsNext / xpNeededForNextRank) * 100}%` }}></div>
-                                    </div>
-                                    <div className="flex justify-between text-xs text-amber-200/60 mt-1 font-mono">
-                                        <span>{player.stats.xp.toLocaleString()} XP</span>
-                                        <span>{xpForNextRank.toLocaleString()} XP</span>
-                                    </div>
-                                    <p className="text-sm mt-2 text-gray-300">
-                                      {(xpNeededForNextRank - xpProgressTowardsNext).toLocaleString()} XP to <span className="font-bold text-white">{nextRank.name}</span>
-                                    </p>
-                                </>
-                            ) : (
-                                <p className="text-lg font-semibold text-amber-400">Maximum Rank Achieved!</p>
-                            )}
+                        <div className="rank-item next">
+                             {next && <>
+                                <img src={next.iconUrl} alt={next.name} className="w-20 h-20" />
+                                <p>{next.name}</p>
+                            </>}
                         </div>
                     </div>
+
+                    <div className="rank-progress-widget">
+                        <div className="rank-percentile-container">
+                            <p>You beat <span>{percentile.toFixed(1)}%</span> of players in Ranked.</p>
+                        </div>
+                        <div className="xp-bar-container">
+                            <div className="xp-bar-info">
+                                <span className="xp-earned">Earned Rank XP</span>
+                                <span className="xp-values">{player.stats.xp.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'}{!next && '+'}</span>
+                            </div>
+                            <div className="xp-bar-track">
+                                <motion.div 
+                                    className="xp-bar-fill" 
+                                    initial={{ width: '0%' }}
+                                    animate={{ width: `${progressPercentage}%` }}
+                                    transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+                                />
+                            </div>
+                        </div>
+                        {next && <div className="next-rank-label">{next.name}</div>}
+                    </div>
                 </div>
+
 
                 {/* Sponsors */}
                 <DashboardCard title="Sponsors" icon={<SparklesIcon className="w-6 h-6" />} fullHeight>

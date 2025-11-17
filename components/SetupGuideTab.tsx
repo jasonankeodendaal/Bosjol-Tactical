@@ -1,40 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
-const storageRulesContent = `
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    
-    // Helper Functions
-    function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'bosjoltactical@gmail.com';
-    }
-    function isCreator() {
-      return request.auth != null && request.auth.token.email == 'jstypme@gmail.com';
-    }
-  
-    // Default: Deny all reads and writes
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
-    
-    // Allow public read access to all files in the 'uploads' folder.
-    // This is necessary for images, audio briefings, avatars, etc. to be displayed in the app.
-    match /uploads/{allPaths=**} {
-      allow read: if true;
-      // Allow any authenticated user (player, admin, creator) to write (create, update, delete) files.
-      allow write: if request.auth != null;
-    }
-
-    // The _health folder is used for the System Scanner's R/W test.
-    match /_health/{allPaths=**} {
-       allow read, write: if isAdmin() || isCreator();
-    }
-  }
-}
-`;
-
 const firestoreRulesContent = `
 rules_version = '2';
 
@@ -234,33 +200,15 @@ VITE_FIREBASE_APP_ID="your-app-id"
                  </ul>
             </StepCard>
 
-             <StepCard number={4} title="Set Up Security Rules">
-                <p>By default, your database and storage are locked down. You need to apply security rules to allow the application to work correctly while remaining secure.</p>
-                <p><strong>For Firestore:</strong> Go to 'Firestore Database' -&gt; 'Rules', paste the following, and click 'Publish'.</p>
+             <StepCard number={4} title="Set Up Firestore Security Rules">
+                <p>By default, your database is locked down. You need to apply security rules to allow the application to work correctly while remaining secure.</p>
+                <p>Go to 'Firestore Database' -&gt; 'Rules' in your Firebase console, paste the following, and click 'Publish'.</p>
                 <CodeBlock title="firestore.rules">
                     {firestoreRulesContent}
                 </CodeBlock>
-                 <p><strong>For Storage:</strong> Go to 'Storage' -&gt; 'Rules', paste the following, and click 'Publish'.</p>
-                <CodeBlock title="storage.rules">
-                    {storageRulesContent}
-                </CodeBlock>
             </StepCard>
-
-            <StepCard number={5} title="Fix File Uploads (CORS)">
-                <p>Firebase Storage often requires you to manually configure Cross-Origin Resource Sharing (CORS) to allow file uploads from your web app. This is the most common reason for upload failures.</p>
-                <ol className="list-decimal list-inside space-y-2 pl-4">
-                    <li>Install the Google Cloud CLI on your computer by following the <a href="https://cloud.google.com/sdk/docs/install" target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline">official installation guide</a>.</li>
-                    <li>Authenticate the CLI by running: <CodeBlock title="Terminal">gcloud auth login</CodeBlock></li>
-                    <li>Create a file named <code className="text-sm bg-zinc-700 p-1 rounded">cors.json</code> on your computer with the exact content below:</li>
-                    <CodeBlock title="cors.json">{corsJsonContent}</CodeBlock>
-                    <li>Find your Storage Bucket URL in your Firebase project (Firebase Console -&gt; Storage). It will look like <code className="text-sm bg-zinc-700 p-1 rounded">gs://your-project-id.appspot.com</code>.</li>
-                    <li>Run the following command in your terminal, replacing the placeholder with your actual bucket URL:</li>
-                    <CodeBlock title="Terminal">gsutil cors set cors.json gs://your-project-id.appspot.com</CodeBlock>
-                </ol>
-                <p>This one-time setup permanently fixes the upload issue.</p>
-            </StepCard>
-
-             <StepCard number={6} title="Create Admin & Creator Users">
+            
+             <StepCard number={5} title="Create Admin & Creator Users">
                 <p>Go to 'Authentication' -&gt; 'Users' and click 'Add user'. Manually create two users:</p>
                  <ul className="list-disc list-inside space-y-2 pl-2">
                     <li><strong>Admin User:</strong> Email: <code className="text-sm bg-zinc-700 p-1 rounded">bosjoltactical@gmail.com</code>. Set a secure password.</li>
@@ -269,7 +217,7 @@ VITE_FIREBASE_APP_ID="your-app-id"
                  <p>The application is hard-coded to recognize these two emails as privileged users. After creating them, you can log in with their credentials.</p>
             </StepCard>
 
-            <StepCard number={7} title="Initial Data Seeding">
+            <StepCard number={6} title="Initial Data Seeding">
                 <p>When you run the app for the first time connected to a new, empty Firestore database, it will automatically detect this and "seed" all the initial mock data (players, events, settings, etc.) into your live database. You will see a "Seeding initial database..." loading screen. After it completes, the app will reload, and you will be running on your own live Firebase backend.</p>
             </StepCard>
         </div>

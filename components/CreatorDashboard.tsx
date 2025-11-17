@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CreatorDetails } from '../types';
@@ -129,40 +130,6 @@ service cloud.firestore {
 }
 `;
 
-const storageRulesContent = `
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    
-    // Helper Functions
-    function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'bosjoltactical@gmail.com';
-    }
-    function isCreator() {
-      return request.auth != null && request.auth.token.email == 'jstypme@gmail.com';
-    }
-  
-    // Default: Deny all reads and writes
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
-    
-    // Allow public read access to all files in the 'uploads' folder.
-    // This is necessary for images, audio briefings, avatars, etc. to be displayed in the app.
-    match /uploads/{allPaths=**} {
-      allow read: if true;
-      // Allow any authenticated user (player, admin, creator) to write (create, update, delete) files.
-      allow write: if request.auth != null;
-    }
-
-    // The _health folder is used for the System Scanner's R/W test.
-    match /_health/{allPaths=**} {
-       allow read, write: if isAdmin() || isCreator();
-    }
-  }
-}
-`;
-
 // --- SUB-COMPONENTS FOR CREATOR DASHBOARD ---
 
 const FirebaseRulesCard: React.FC<{
@@ -184,15 +151,6 @@ const FirebaseRulesCard: React.FC<{
                 </p>
                 <CodeBlock language="javascript" fileName="firestore.rules">
                     {firestoreRulesContent}
-                </CodeBlock>
-            </div>
-             <div>
-                <h3 className="text-xl font-bold text-red-400 mb-2">Cloud Storage Rules</h3>
-                <p className="text-gray-300 mb-3 text-sm">
-                    These rules control who can upload and view files in your Firebase Storage bucket. They allow public read access for uploaded files (like avatars and event images) but restrict write access to authenticated users only.
-                </p>
-                <CodeBlock language="javascript" fileName="storage.rules">
-                    {storageRulesContent}
                 </CodeBlock>
             </div>
         </div>

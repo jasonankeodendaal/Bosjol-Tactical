@@ -42,7 +42,10 @@ const getRankProgression = (player: Player, ranks: Rank[]) => {
     return { previous, current: currentTier, next, rank };
 }
 
-const SponsorModal: React.FC<{ sponsor: Sponsor, onClose: () => void, onImageClick: (url: string) => void }> = ({ sponsor, onClose, onImageClick }) => {
+const SponsorModal: React.FC<{ sponsor: Sponsor, onClose: () => void, onImageClick: (url: string) => void, backgroundUrl?: string }> = ({ sponsor, onClose, onImageClick, backgroundUrl }) => {
+    const defaultBg = "https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png";
+    const bgUrl = backgroundUrl || defaultBg;
+    
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -57,61 +60,72 @@ const SponsorModal: React.FC<{ sponsor: Sponsor, onClose: () => void, onImageCli
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.95, y: 10 }}
                 onClick={(e) => e.stopPropagation()}
-                className="relative bg-zinc-900 border border-zinc-700/50 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden"
+                className="relative bg-zinc-900 border border-zinc-700/50 rounded-xl shadow-2xl w-full max-w-2xl"
                  style={{
-                    backgroundImage: "linear-gradient(rgba(10, 10, 10, 0.9), rgba(10, 10, 10, 0.9)), url('https://i.ibb.co/dsh2c2hp/unnamed.jpg')",
+                    backgroundImage: `linear-gradient(rgba(10, 10, 10, 0.92), rgba(10, 10, 10, 0.92)), url('${bgUrl}')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}
             >
-                <div className="flex justify-between items-center p-5 border-b border-red-600/30">
-                  <h2 className="text-xl font-bold text-white tracking-wide">{sponsor.name}</h2>
-                  <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors" aria-label="Close sponsor details">
-                    <XIcon className="w-6 h-6" />
-                  </button>
-                </div>
-                 <div className="p-6 text-center max-h-[70vh] overflow-y-auto pr-3">
-                    <img src={sponsor.logoUrl} alt={sponsor.name} className="h-20 object-contain mx-auto mb-4" />
-                    
-                    {sponsor.bio && <p className="text-gray-300 text-sm mb-6 text-left">{sponsor.bio}</p>}
-
-                    {sponsor.imageUrls && sponsor.imageUrls.length > 0 && (
-                        <div className="mb-6 text-left">
-                            <h4 className="font-semibold text-gray-200 mb-2 uppercase tracking-wider text-red-400 border-b border-red-600/30 pb-1">Gallery</h4>
-                            <div className="flex gap-2 pb-2 overflow-x-auto mt-3">
-                                {sponsor.imageUrls.map((url, index) => (
-                                    <img 
-                                        key={index} 
-                                        src={url} 
-                                        alt={`${sponsor.name} gallery image ${index + 1}`} 
-                                        className="w-32 h-20 object-cover rounded-md flex-shrink-0 cursor-pointer hover:scale-105 transition-transform border-2 border-transparent hover:border-red-500" 
-                                        onClick={() => onImageClick(url)}
-                                    />
-                                ))}
+                <div className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-4">
+                            <img src={sponsor.logoUrl} alt={sponsor.name} className="h-16 w-auto object-contain bg-black/20 p-2 rounded-md" />
+                            <div>
+                                <h2 className="text-2xl font-bold text-white tracking-wide">{sponsor.name}</h2>
+                                {sponsor.bio && <p className="text-gray-300 text-sm max-w-md">{sponsor.bio}</p>}
                             </div>
                         </div>
-                    )}
-                    
-                    <div className="space-y-3 text-left bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50">
-                        <h4 className="font-semibold text-gray-200 mb-2 uppercase tracking-wider text-red-400 border-b border-red-600/30 pb-1">Contact Intel</h4>
-                        {sponsor.website && (
-                            <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-red-400 hover:underline">
-                                <GlobeAltIcon className="w-5 h-5"/>
-                                <span>Visit Website</span>
-                            </a>
+                        <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors" aria-label="Close sponsor details">
+                            <XIcon className="w-6 h-6" />
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 max-h-[60vh] overflow-y-auto pr-2">
+                        {/* Gallery Section */}
+                        {sponsor.imageUrls && sponsor.imageUrls.length > 0 && (
+                            <div className="md:col-span-2">
+                                <h4 className="font-semibold text-gray-200 mb-2 uppercase tracking-wider text-red-400 border-b border-red-600/30 pb-1">Gallery</h4>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
+                                    {sponsor.imageUrls.map((url, index) => (
+                                        <motion.img 
+                                            key={index} 
+                                            src={url} 
+                                            alt={`${sponsor.name} gallery image ${index + 1}`} 
+                                            className="w-full aspect-video object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-red-500" 
+                                            onClick={() => onImageClick(url)}
+                                            whileHover={{ scale: 1.05 }}
+                                            transition={{ type: 'spring', stiffness: 300 }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
                         )}
-                        {sponsor.email && (
-                            <p className="flex items-center gap-2 text-gray-300">
-                                <AtSymbolIcon className="w-5 h-5"/>
-                                <span>{sponsor.email}</span>
-                            </p>
-                        )}
-                        {sponsor.phone && (
-                            <p className="flex items-center gap-2 text-gray-300">
-                                <PhoneIcon className="w-5 h-5"/>
-                                <span>{sponsor.phone}</span>
-                            </p>
-                        )}
+
+                        {/* Contact Section */}
+                        <div className="md:col-span-1">
+                            <h4 className="font-semibold text-gray-200 mb-2 uppercase tracking-wider text-red-400 border-b border-red-600/30 pb-1">Contact Intel</h4>
+                             <div className="space-y-3 mt-3">
+                                {sponsor.website && (
+                                    <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-red-400 hover:underline">
+                                        <GlobeAltIcon className="w-5 h-5"/>
+                                        <span>Visit Website</span>
+                                    </a>
+                                )}
+                                {sponsor.email && (
+                                    <p className="flex items-center gap-2 text-gray-300">
+                                        <AtSymbolIcon className="w-5 h-5"/>
+                                        <span>{sponsor.email}</span>
+                                    </p>
+                                )}
+                                {sponsor.phone && (
+                                    <p className="flex items-center gap-2 text-gray-300">
+                                        <PhoneIcon className="w-5 h-5"/>
+                                        <span>{sponsor.phone}</span>
+                                    </p>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </motion.div>
@@ -670,6 +684,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                         sponsor={selectedSponsor} 
                         onClose={() => setSelectedSponsor(null)} 
                         onImageClick={setFullscreenImage}
+                        backgroundUrl={sponsorsBackgroundUrl}
                     />
                 )}
             </AnimatePresence>

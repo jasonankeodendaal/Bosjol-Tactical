@@ -108,8 +108,8 @@ export const ServerSetupTab: React.FC = () => {
                             <li><strong>Create Instance:</strong> Once logged in, click <strong>"Create a VM instance"</strong>.</li>
                             <li><strong>Image & Shape (Crucial):</strong>
                                 <ul className="list-disc list-inside ml-6 mt-1 text-sm space-y-1 text-gray-400">
-                                    <li>Click "Change Image" -> Select <strong>Canonical Ubuntu 22.04</strong>.</li>
-                                    <li>Click "Change Shape" -> Select <strong>Ampere</strong> (VM.Standard.A1.Flex).</li>
+                                    <li>Click "Change Image" &rarr; Select <strong>Canonical Ubuntu 22.04</strong>.</li>
+                                    <li>Click "Change Shape" &rarr; Select <strong>Ampere</strong> (VM.Standard.A1.Flex).</li>
                                     <li>Set <strong>OCPUs</strong> to <strong>4</strong> and <strong>Memory</strong> to <strong>24 GB</strong>.</li>
                                 </ul>
                             </li>

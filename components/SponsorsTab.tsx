@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useContext } from 'react';
 import type { Sponsor } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -27,16 +26,28 @@ const SponsorEditorModal: React.FC<{ sponsor: Partial<Sponsor>, onClose: () => v
         email: sponsor.email || '',
         phone: sponsor.phone || '',
         website: sponsor.website || '',
+        bio: sponsor.bio || '',
     });
+    const [imageUrls, setImageUrls] = useState<string[]>(sponsor.imageUrls || []);
+
+    const handleAddImage = (url: string) => {
+        if (url && !imageUrls.includes(url)) {
+            setImageUrls(prev => [...prev, url]);
+        }
+    };
+    
+    const handleRemoveImage = (index: number) => {
+        setImageUrls(current => current.filter((_, i) => i !== index));
+    }
     
     const handleSaveClick = () => {
-        const finalSponsor = { ...sponsor, ...formData };
+        const finalSponsor = { ...sponsor, ...formData, imageUrls };
         onSave(finalSponsor);
     };
 
     return (
         <Modal isOpen={true} onClose={onClose} title={sponsor.id ? 'Edit Sponsor' : 'Add New Sponsor'}>
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 <Input label="Sponsor Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                 <div className="grid grid-cols-2 gap-4">
                     <Input label="Email" type="email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
@@ -50,6 +61,37 @@ const SponsorEditorModal: React.FC<{ sponsor: Partial<Sponsor>, onClose: () => v
                     onRemove={() => setFormData(f => ({ ...f, logoUrl: '' }))}
                     accept="image/*"
                 />
+                 <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Sponsor Bio</label>
+                    <textarea 
+                        placeholder="Sponsor Bio" 
+                        value={formData.bio} 
+                        onChange={e => setFormData(f => ({ ...f, bio: e.target.value }))} 
+                        rows={4} 
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" 
+                    />
+                </div>
+                 <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Sponsor Images</label>
+                    <div className="space-y-2">
+                        {imageUrls.map((url, index) => (
+                             <div key={index} className="flex items-center gap-2 bg-zinc-800/50 p-2 rounded-md">
+                                <img src={url} alt={`Preview ${index+1}`} className="w-12 h-12 object-cover rounded"/>
+                                <p className="text-xs text-gray-400 truncate flex-grow">{url}</p>
+                                <Button variant="danger" size="sm" onClick={() => handleRemoveImage(index)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-4">
+                         <UrlOrUploadField 
+                            label="Add New Image"
+                            fileUrl={undefined}
+                            onUrlSet={handleAddImage}
+                            onRemove={() => {}} // Not used in 'add' mode
+                            accept="image/*"
+                        />
+                    </div>
+                </div>
             </div>
             <div className="mt-6">
                 <Button className="w-full" onClick={handleSaveClick}>Save Sponsor</Button>

@@ -661,12 +661,43 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
             </div>
             {selectedSponsor && (
                 <Modal isOpen={true} onClose={() => setSelectedSponsor(null)} title={selectedSponsor.name}>
-                     <div className="text-center">
-                        <img src={selectedSponsor.logoUrl} alt={selectedSponsor.name} className="h-24 mx-auto mb-4" />
-                        <p className="text-gray-400">Contact them via:</p>
-                        <p className="text-white font-semibold">{selectedSponsor.email || 'N/A'}</p>
-                        <p className="text-white font-semibold">{selectedSponsor.phone || 'N/A'}</p>
-                        {selectedSponsor.website && <a href={selectedSponsor.website} target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline mt-2 inline-block">Visit Website</a>}
+                    <div className="text-center max-h-[70vh] overflow-y-auto pr-2">
+                        <img src={selectedSponsor.logoUrl} alt={selectedSponsor.name} className="h-24 object-contain mx-auto mb-4" />
+                        
+                        {selectedSponsor.bio && <p className="text-gray-300 text-sm mb-6">{selectedSponsor.bio}</p>}
+
+                        {selectedSponsor.imageUrls && selectedSponsor.imageUrls.length > 0 && (
+                            <div className="mb-6">
+                                <h4 className="font-semibold text-gray-200 mb-2 text-left">Gallery</h4>
+                                <div className="flex gap-2 pb-2 overflow-x-auto">
+                                    {selectedSponsor.imageUrls.map((url, index) => (
+                                        <img key={index} src={url} alt={`${selectedSponsor.name} gallery image ${index + 1}`} className="w-32 h-20 object-cover rounded-md flex-shrink-0" />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="space-y-3 text-left bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50">
+                            <h4 className="font-semibold text-gray-200 mb-2">Contact Information</h4>
+                            {selectedSponsor.website && (
+                                <a href={selectedSponsor.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-red-400 hover:underline">
+                                    <GlobeAltIcon className="w-5 h-5"/>
+                                    <span>Visit Website</span>
+                                </a>
+                            )}
+                            {selectedSponsor.email && (
+                                <p className="flex items-center gap-2 text-gray-300">
+                                    <AtSymbolIcon className="w-5 h-5"/>
+                                    <span>{selectedSponsor.email}</span>
+                                </p>
+                            )}
+                            {selectedSponsor.phone && (
+                                <p className="flex items-center gap-2 text-gray-300">
+                                    <PhoneIcon className="w-5 h-5"/>
+                                    <span>{selectedSponsor.phone}</span>
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </Modal>
             )}

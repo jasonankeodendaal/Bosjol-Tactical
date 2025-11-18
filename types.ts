@@ -326,6 +326,8 @@ export interface Sponsor {
     email?: string;
     phone?: string;
     website?: string;
+    bio?: string;
+    imageUrls?: string[];
 }
 
 export interface Supplier {

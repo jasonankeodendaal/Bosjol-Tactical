@@ -307,10 +307,10 @@ export const MOCK_GAMIFICATION_SETTINGS: GamificationSettings = [
 ];
 
 export const MOCK_SPONSORS: Sponsor[] = [
-    { id: 'sp001', name: 'Valken', logoUrl: 'https://i.ibb.co/L6TySzL/image.png', website: 'https://valken.com' },
-    { id: 'sp002', name: 'Lancer Tactical', logoUrl: 'https://i.ibb.co/hLkTb1d/image.png', website: 'https://lancertactical.com' },
-    { id: 'sp003', name: 'Evike.com', logoUrl: 'https://i.ibb.co/9hM2FzK/image.png', website: 'https://evike.com' },
-    { id: 'sp004', name: 'G&G Armament', logoUrl: 'https://i.ibb.co/bF9gqGH/image.png', website: 'https://guay2.com' },
+    { id: 'sp001', name: 'Valken', logoUrl: 'https://i.ibb.co/L6TySzL/image.png', website: 'https://valken.com', bio: 'Valken offers a full range of airsoft products, from guns and gear to BBs and accessories, designed for every level of player.', imageUrls: ['https://i.ibb.co/3k5fV82/image.png', 'https://i.ibb.co/B285bKq/image.png'] },
+    { id: 'sp002', name: 'Lancer Tactical', logoUrl: 'https://i.ibb.co/hLkTb1d/image.png', website: 'https://lancertactical.com', bio: 'Known for affordable and reliable airsoft AEGs, Lancer Tactical provides a great entry point for new players.', imageUrls: ['https://i.ibb.co/YyVqL0r/image.png'] },
+    { id: 'sp003', name: 'Evike.com', logoUrl: 'https://i.ibb.co/9hM2FzK/image.png', website: 'https://evike.com', bio: 'The world\'s largest airsoft retailer, offering an unparalleled selection of guns, gear, and parts from top brands.', imageUrls: ['https://i.ibb.co/f4n7xfr/image.png', 'https://i.ibb.co/3k5fV82/image.png'] },
+    { id: 'sp004', name: 'G&G Armament', logoUrl: 'https://i.ibb.co/bF9gqGH/image.png', website: 'https://guay2.com', bio: 'A leading manufacturer of high-quality airsoft replicas, known for their innovative designs and performance.', imageUrls: [] },
 ];
 
 export const MOCK_SOCIAL_LINKS: SocialLink[] = [

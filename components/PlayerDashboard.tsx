@@ -42,6 +42,112 @@ const getRankProgression = (player: Player, ranks: Rank[]) => {
     return { previous, current: currentTier, next, rank };
 }
 
+const SponsorModal: React.FC<{ sponsor: Sponsor, onClose: () => void, onImageClick: (url: string) => void }> = ({ sponsor, onClose, onImageClick }) => {
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50"
+            aria-modal="true" role="dialog"
+        >
+            <motion.div
+                initial={{ scale: 0.95, y: 10 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 10 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative bg-zinc-900 border border-zinc-700/50 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden"
+                 style={{
+                    backgroundImage: "linear-gradient(rgba(10, 10, 10, 0.9), rgba(10, 10, 10, 0.9)), url('https://i.ibb.co/dsh2c2hp/unnamed.jpg')",
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}
+            >
+                <div className="flex justify-between items-center p-5 border-b border-red-600/30">
+                  <h2 className="text-xl font-bold text-white tracking-wide">{sponsor.name}</h2>
+                  <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors" aria-label="Close sponsor details">
+                    <XIcon className="w-6 h-6" />
+                  </button>
+                </div>
+                 <div className="p-6 text-center max-h-[70vh] overflow-y-auto pr-3">
+                    <img src={sponsor.logoUrl} alt={sponsor.name} className="h-20 object-contain mx-auto mb-4" />
+                    
+                    {sponsor.bio && <p className="text-gray-300 text-sm mb-6 text-left">{sponsor.bio}</p>}
+
+                    {sponsor.imageUrls && sponsor.imageUrls.length > 0 && (
+                        <div className="mb-6 text-left">
+                            <h4 className="font-semibold text-gray-200 mb-2 uppercase tracking-wider text-red-400 border-b border-red-600/30 pb-1">Gallery</h4>
+                            <div className="flex gap-2 pb-2 overflow-x-auto mt-3">
+                                {sponsor.imageUrls.map((url, index) => (
+                                    <img 
+                                        key={index} 
+                                        src={url} 
+                                        alt={`${sponsor.name} gallery image ${index + 1}`} 
+                                        className="w-32 h-20 object-cover rounded-md flex-shrink-0 cursor-pointer hover:scale-105 transition-transform border-2 border-transparent hover:border-red-500" 
+                                        onClick={() => onImageClick(url)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    
+                    <div className="space-y-3 text-left bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50">
+                        <h4 className="font-semibold text-gray-200 mb-2 uppercase tracking-wider text-red-400 border-b border-red-600/30 pb-1">Contact Intel</h4>
+                        {sponsor.website && (
+                            <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-red-400 hover:underline">
+                                <GlobeAltIcon className="w-5 h-5"/>
+                                <span>Visit Website</span>
+                            </a>
+                        )}
+                        {sponsor.email && (
+                            <p className="flex items-center gap-2 text-gray-300">
+                                <AtSymbolIcon className="w-5 h-5"/>
+                                <span>{sponsor.email}</span>
+                            </p>
+                        )}
+                        {sponsor.phone && (
+                            <p className="flex items-center gap-2 text-gray-300">
+                                <PhoneIcon className="w-5 h-5"/>
+                                <span>{sponsor.phone}</span>
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+};
+
+const FullscreenImageViewer: React.FC<{ imageUrl: string, onClose: () => void }> = ({ imageUrl, onClose }) => {
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[60]"
+            aria-modal="true"
+            role="dialog"
+        >
+            <motion.img
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                src={imageUrl}
+                alt="Fullscreen sponsor image"
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+            />
+            <button onClick={onClose} className="absolute top-4 right-4 text-white hover:text-red-400 transition-colors" aria-label="Close image viewer">
+                <XIcon className="w-8 h-8"/>
+            </button>
+        </motion.div>
+    );
+};
+
+
 const RankAndLeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'ranks'>> = ({ player, players, ranks }) => {
     const { previous, current, next } = getRankProgression(player, ranks);
 
@@ -519,6 +625,7 @@ const BadgeProgressCard: React.FC<{badge: Badge, player: Player, ranks: Rank[]}>
 
 const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'events' | 'sponsors' | 'ranks'>> = ({ player, players, events, sponsors, ranks }) => {
     const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
+    const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
     const { current, next, rank } = getRankProgression(player, ranks);
     const dataContext = useContext(DataContext);
@@ -552,6 +659,20 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
 
     return (
         <div className="space-y-4 mobile-overview-grid">
+            <AnimatePresence>
+                {fullscreenImage && (
+                    <FullscreenImageViewer imageUrl={fullscreenImage} onClose={() => setFullscreenImage(null)} />
+                )}
+            </AnimatePresence>
+            <AnimatePresence>
+                {selectedSponsor && (
+                    <SponsorModal 
+                        sponsor={selectedSponsor} 
+                        onClose={() => setSelectedSponsor(null)} 
+                        onImageClick={setFullscreenImage}
+                    />
+                )}
+            </AnimatePresence>
             <div className="overview-card">
                 <h3 className="overview-section-title">Current Rank & Progression</h3>
                 <div className="flex items-center gap-4 mb-4">
@@ -659,48 +780,6 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                     )}
                 </div>
             </div>
-            {selectedSponsor && (
-                <Modal isOpen={true} onClose={() => setSelectedSponsor(null)} title={selectedSponsor.name}>
-                    <div className="text-center max-h-[70vh] overflow-y-auto pr-2">
-                        <img src={selectedSponsor.logoUrl} alt={selectedSponsor.name} className="h-24 object-contain mx-auto mb-4" />
-                        
-                        {selectedSponsor.bio && <p className="text-gray-300 text-sm mb-6">{selectedSponsor.bio}</p>}
-
-                        {selectedSponsor.imageUrls && selectedSponsor.imageUrls.length > 0 && (
-                            <div className="mb-6">
-                                <h4 className="font-semibold text-gray-200 mb-2 text-left">Gallery</h4>
-                                <div className="flex gap-2 pb-2 overflow-x-auto">
-                                    {selectedSponsor.imageUrls.map((url, index) => (
-                                        <img key={index} src={url} alt={`${selectedSponsor.name} gallery image ${index + 1}`} className="w-32 h-20 object-cover rounded-md flex-shrink-0" />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        
-                        <div className="space-y-3 text-left bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50">
-                            <h4 className="font-semibold text-gray-200 mb-2">Contact Information</h4>
-                            {selectedSponsor.website && (
-                                <a href={selectedSponsor.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-red-400 hover:underline">
-                                    <GlobeAltIcon className="w-5 h-5"/>
-                                    <span>Visit Website</span>
-                                </a>
-                            )}
-                            {selectedSponsor.email && (
-                                <p className="flex items-center gap-2 text-gray-300">
-                                    <AtSymbolIcon className="w-5 h-5"/>
-                                    <span>{selectedSponsor.email}</span>
-                                </p>
-                            )}
-                            {selectedSponsor.phone && (
-                                <p className="flex items-center gap-2 text-gray-300">
-                                    <PhoneIcon className="w-5 h-5"/>
-                                    <span>{selectedSponsor.phone}</span>
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                </Modal>
-            )}
         </div>
     );
 };

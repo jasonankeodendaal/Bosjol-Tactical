@@ -118,13 +118,6 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
     }, [carouselMedia.length]);
 
     const handleEnter = () => {
-        try {
-            const audio = new Audio('https://cdn.pixabay.com/audio/2022/04/18/audio_0062b027d1.mp3');
-            audio.volume = 0.5;
-            audio.play();
-        } catch (err) {
-            console.error("Failed to play enter sound:", err);
-        }
         onEnter();
     };
 

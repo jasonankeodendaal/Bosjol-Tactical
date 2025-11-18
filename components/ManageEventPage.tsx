@@ -45,12 +45,12 @@ const defaultEvent: Omit<GameEvent, 'id'> = {
     liveStats: {},
 };
 
-const getRankForPlayer = (player: Player, ranks: Rank[]): Tier | null => {
-    if (!ranks || ranks.length === 0) return null;
-    const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => b.minXp - a.minXp);
-    const tier = allTiers.find(r => player.stats.xp >= r.minXp);
+const getRankForPlayer = (player: Player, ranks: Rank[]): Tier => {
+    if (!ranks || ranks.length === 0) return UNRANKED_TIER;
+    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - a.minXp);
+    const tier = allTiers.find(r => (player.stats?.xp ?? 0) >= r.minXp);
     const lowestTier = [...allTiers].sort((a,b) => a.minXp - b.minXp)[0];
-    return tier || lowestTier || null;
+    return tier || lowestTier || UNRANKED_TIER;
 };
 
 
@@ -200,22 +200,24 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                     }
                 };
     
+                const currentStats = mutablePlayer.stats || { kills: 0, deaths: 0, headshots: 0, gamesPlayed: 0, xp: 0 };
                 mutablePlayer = {
                     ...mutablePlayer,
                     stats: {
-                        ...mutablePlayer.stats,
-                        xp: mutablePlayer.stats.xp + xpGained,
-                        kills: mutablePlayer.stats.kills + (playerLiveStats.kills || 0),
-                        deaths: mutablePlayer.stats.deaths + (playerLiveStats.deaths || 0),
-                        headshots: mutablePlayer.stats.headshots + (playerLiveStats.headshots || 0),
-                        gamesPlayed: mutablePlayer.stats.gamesPlayed + 1,
+                        ...currentStats,
+                        xp: currentStats.xp + xpGained,
+                        kills: currentStats.kills + (playerLiveStats.kills || 0),
+                        deaths: currentStats.deaths + (playerLiveStats.deaths || 0),
+                        headshots: currentStats.headshots + (playerLiveStats.headshots || 0),
+                        gamesPlayed: currentStats.gamesPlayed + 1,
                     },
-                    matchHistory: [...mutablePlayer.matchHistory, newMatchRecord]
+                    matchHistory: [...(mutablePlayer.matchHistory || []), newMatchRecord]
                 };
             }
             // Case 2: Player was a no-show
             else if (noShowPlayerIds.has(player.id) && noShowPenaltyXp < 0) {
-                const newXp = mutablePlayer.stats.xp + noShowPenaltyXp;
+                const currentStats = mutablePlayer.stats || { kills: 0, deaths: 0, headshots: 0, gamesPlayed: 0, xp: 0 };
+                const newXp = currentStats.xp + noShowPenaltyXp;
                 const newAdjustment: XpAdjustment = {
                     amount: noShowPenaltyXp,
                     reason: `Penalty for no-show at event: ${formData.title}`,
@@ -223,13 +225,13 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                 };
                 mutablePlayer = {
                     ...mutablePlayer,
-                    stats: { ...mutablePlayer.stats, xp: newXp },
-                    xpAdjustments: [...mutablePlayer.xpAdjustments, newAdjustment],
+                    stats: { ...currentStats, xp: newXp },
+                    xpAdjustments: [...(mutablePlayer.xpAdjustments || []), newAdjustment],
                 };
             }
     
             // Recalculate rank for any player whose XP changed
-            if (mutablePlayer.stats.xp !== player.stats.xp) {
+            if (mutablePlayer.stats && mutablePlayer.stats.xp !== (player.stats?.xp ?? 0)) {
                 const newRank = getRankForPlayer(mutablePlayer, dataContext!.ranks);
                 if (newRank) {
                     mutablePlayer.rank = newRank;

@@ -1,3 +1,5 @@
+
+
 // FIX: Import `PlayerStats` to resolve TypeScript error on line 516.
 import type { Player, PlayerCore, Admin, GameEvent, EventCore, Briefing, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, Tier, ApiGuideStep, MatchHistoryDoc, XpAdjustmentDoc, AttendeeDoc, RaffleCore, RaffleTicketDoc, RaffleWinnerDoc, VoucherCore, VoucherRedemption, PlayerStats, InventoryCategory, InventoryCondition } from './types';
 
@@ -340,11 +342,11 @@ export const MOCK_COMPANY_CORE: Pick<CompanyDetails, 'name' | 'address' | 'phone
 export const MOCK_BRANDING_DETAILS: Pick<CompanyDetails, 'logoUrl' | 'loginBackgroundUrl' | 'loginAudioUrl' | 'playerDashboardBackgroundUrl' | 'adminDashboardBackgroundUrl' | 'playerDashboardAudioUrl' | 'adminDashboardAudioUrl'> = {
     logoUrl: 'https://i.ibb.co/7k1pWpY/Bosjol-Tactical-Logo-White-Red.png',
     loginBackgroundUrl: 'https://i.ibb.co/dsh2c2hp/unnamed.jpg',
-    loginAudioUrl: 'https://cdn.pixabay.com/audio/2022/03/21/audio_09245538bf.mp3',
+    loginAudioUrl: '',
     playerDashboardBackgroundUrl: 'https://i.ibb.co/C5fBF6p/image.png',
-    playerDashboardAudioUrl: 'https://cdn.pixabay.com/audio/2024/05/18/audio_291b80d7d2.mp3',
+    playerDashboardAudioUrl: '',
     adminDashboardBackgroundUrl: 'https://i.ibb.co/bJxtzYw/image.png',
-    adminDashboardAudioUrl: 'https://cdn.pixabay.com/audio/2022/08/04/audio_34b07c2fb2.mp3',
+    adminDashboardAudioUrl: '',
 };
 
 export const MOCK_CONTENT_DETAILS: Pick<CompanyDetails, 'fixedEventRules' | 'apkUrl'> = {

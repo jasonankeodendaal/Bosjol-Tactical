@@ -16,8 +16,8 @@ import { SendCredentialsModal } from './SendCredentialsModal';
 const getTierForPlayer = (player: Player, ranks: Rank[]): Tier => {
     // Determines a player's tier based on their total XP.
     if (!ranks || ranks.length === 0) return UNRANKED_TIER;
-    const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => b.minXp - a.minXp);
-    const tier = allTiers.find(r => player.stats.xp >= r.minXp);
+    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - a.minXp);
+    const tier = allTiers.find(r => (player.stats?.xp ?? 0) >= r.minXp);
     const lowestTier = [...allTiers].sort((a,b) => a.minXp - b.minXp)[0];
     return tier || lowestTier || UNRANKED_TIER;
 };
@@ -103,9 +103,11 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
     }, [player]);
 
     const playerTier = getTierForPlayer(player, ranks);
-    const playerRank = ranks.find(rank => rank.tiers.some(t => t.id === playerTier.id));
+    const playerRank = ranks.find(rank => (rank.tiers || []).some(t => t.id === playerTier.id));
     const { stats, matchHistory } = player;
-    const kdr = stats.deaths > 0 ? (stats.kills / stats.deaths).toFixed(2) : stats.kills.toFixed(2);
+    const kills = stats?.kills ?? 0;
+    const deaths = stats?.deaths ?? 0;
+    const kdr = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
 
     const handleSave = () => {
         onUpdatePlayer({...formData, age: Number(formData.age), rank: player.rank }); // Ensure rank object isn't overwritten by stale form data
@@ -135,16 +137,19 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
             date: new Date().toISOString(),
         };
         
-        const newXp = player.stats.xp + amount;
-        const newTier = getTierForPlayer({ ...player, stats: { ...player.stats, xp: newXp }}, ranks);
+        const currentStats = player.stats || { kills: 0, deaths: 0, headshots: 0, gamesPlayed: 0, xp: 0 };
+        const newXp = currentStats.xp + amount;
+        
+        const tempPlayerForRankCalc = { ...player, stats: { ...currentStats, xp: newXp }};
+        const newTier = getTierForPlayer(tempPlayerForRankCalc, ranks);
         
         const updatedPlayer: Player = {
             ...player,
             stats: {
-                ...player.stats,
+                ...currentStats,
                 xp: newXp,
             },
-            xpAdjustments: [...player.xpAdjustments, newAdjustment],
+            xpAdjustments: [...(player.xpAdjustments || []), newAdjustment],
             rank: newTier,
         };
         onUpdatePlayer(updatedPlayer);
@@ -382,7 +387,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                     </DashboardCard>
                     <DashboardCard title="XP History" icon={<PlusCircleIcon className="w-6 h-6" />} titleAddon={<InfoTooltip text="This section displays a complete history of all manual Rank Point (XP) adjustments made to this player's account by an administrator. It does not include XP earned automatically from playing matches. Each entry shows the amount, the reason provided by the admin, and the date of the adjustment." />}>
                         <div className="p-6 space-y-3 max-h-60 overflow-y-auto">
-                           {player.xpAdjustments.length > 0 ? [...player.xpAdjustments].reverse().map((adj, i) => (
+                           {(player.xpAdjustments || []).length > 0 ? [...player.xpAdjustments].reverse().map((adj, i) => (
                                <div key={i} className="bg-zinc-800/50 p-2.5 rounded-md">
                                     <div className="flex justify-between items-center">
                                         <p className={`font-bold text-lg ${adj.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -402,16 +407,16 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                     <DashboardCard title="Lifetime Performance" icon={<ChartBarIcon className="w-6 h-6"/>}>
                         <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-y-6">
                             <StatDisplay value={kdr} label="K/D Ratio" tooltip="Kill/Death Ratio. Calculated as Total Kills divided by Total Deaths."/>
-                            <StatDisplay value={stats.kills.toLocaleString()} label="Total Kills"/>
-                            <StatDisplay value={stats.deaths.toLocaleString()} label="Total Deaths"/>
-                            <StatDisplay value={stats.headshots.toLocaleString()} label="Total Headshots"/>
-                            <StatDisplay value={stats.gamesPlayed.toLocaleString()} label="Matches Played"/>
-                            <StatDisplay value={stats.xp.toLocaleString()} label="Total Rank Points"/>
+                            <StatDisplay value={(stats?.kills ?? 0).toLocaleString()} label="Total Kills"/>
+                            <StatDisplay value={(stats?.deaths ?? 0).toLocaleString()} label="Total Deaths"/>
+                            <StatDisplay value={(stats?.headshots ?? 0).toLocaleString()} label="Total Headshots"/>
+                            <StatDisplay value={(stats?.gamesPlayed ?? 0).toLocaleString()} label="Matches Played"/>
+                            <StatDisplay value={(stats?.xp ?? 0).toLocaleString()} label="Total Rank Points"/>
                         </div>
                     </DashboardCard>
                      <DashboardCard title="Match History" icon={<CalendarIcon className="w-6 h-6" />}>
                         <div className="p-6 space-y-4 max-h-[40rem] overflow-y-auto">
-                            {player.matchHistory.length > 0 ? (
+                            {player.matchHistory && player.matchHistory.length > 0 ? (
                                 player.matchHistory
                                     .map(record => ({...record, event: events.find(e => e.id === record.eventId)}))
                                     .filter(record => record.event)

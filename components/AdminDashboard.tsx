@@ -111,7 +111,7 @@ const NewPlayerModal: React.FC<{
         
         setIsSaving(true);
         
-        const allTiers = ranks.flatMap(r => r.tiers).sort((a,b) => a.minXp - b.minXp);
+        const allTiers = ranks.flatMap(r => r.tiers || []).filter(Boolean).sort((a,b) => a.minXp - b.minXp);
         const firstTier = allTiers.length > 0 ? allTiers[0] : UNRANKED_TIER;
        
         const newPlayerData: Omit<Player, 'id'> = {

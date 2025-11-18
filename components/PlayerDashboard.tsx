@@ -20,14 +20,14 @@ import { UrlOrUploadField } from './UrlOrUploadField';
 
 const getRankForPlayer = (player: Player, ranks: Rank[]): Tier => {
     if (!ranks || ranks.length === 0) return UNRANKED_TIER;
-    const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => b.minXp - a.minXp);
-    const tier = allTiers.find(r => player.stats.xp >= r.minXp);
+    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - a.minXp);
+    const tier = allTiers.find(r => (player.stats?.xp ?? 0) >= r.minXp);
     const lowestTier = [...allTiers].sort((a,b) => a.minXp - b.minXp)[0];
     return tier || lowestTier || UNRANKED_TIER;
 };
 
 const getRankProgression = (player: Player, ranks: Rank[]) => {
-    const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => a.minXp - b.minXp);
+    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => a.minXp - b.minXp);
     
     // The player's current rank based on XP
     const currentTier = getRankForPlayer(player, ranks);
@@ -36,7 +36,7 @@ const getRankProgression = (player: Player, ranks: Rank[]) => {
     const previous = currentTierIndex > 0 ? allTiers[currentTierIndex - 1] : null;
     const next = currentTierIndex < allTiers.length - 1 ? allTiers[currentTierIndex + 1] : null;
     
-    const rank = ranks.find(r => r.tiers.some(t => t.id === currentTier.id)) || null;
+    const rank = ranks.find(r => (r.tiers || []).some(t => t.id === currentTier.id)) || null;
 
     return { previous, current: currentTier, next, rank };
 }
@@ -58,11 +58,11 @@ const RankProgressionDisplay: React.FC<{ ranks: Rank[], player: Player }> = ({ r
 
     const filteredRanks = ranks.map(rank => ({
         ...rank,
-        tiers: rank.tiers.filter(tier => tier.name.toLowerCase().includes(query.toLowerCase()))
+        tiers: (rank.tiers || []).filter(tier => tier.name.toLowerCase().includes(query.toLowerCase()))
     })).filter(rank => rank.tiers.length > 0);
     
     const getRangeForTier = (tier: Tier, rank: Rank, rankIndex: number) => {
-        const sortedTiersInRank = [...rank.tiers].sort((a,b) => a.minXp - b.minXp);
+        const sortedTiersInRank = [...(rank.tiers || [])].sort((a,b) => a.minXp - b.minXp);
         const tierIndex = sortedTiersInRank.findIndex(r => r.id === tier.id);
         const nextTierInRank = sortedTiersInRank[tierIndex + 1];
 
@@ -71,7 +71,7 @@ const RankProgressionDisplay: React.FC<{ ranks: Rank[], player: Player }> = ({ r
         }
         
         const nextRank = ranks[rankIndex + 1];
-        if(nextRank && nextRank.tiers.length > 0) {
+        if(nextRank && nextRank.tiers && nextRank.tiers.length > 0) {
             const nextRankFirstTier = [...nextRank.tiers].sort((a,b) => a.minXp - b.minXp)[0];
             return `${tier.minXp.toLocaleString()} - ${(nextRankFirstTier.minXp - 1).toLocaleString()} RP`;
         }
@@ -102,9 +102,9 @@ const RankProgressionDisplay: React.FC<{ ranks: Rank[], player: Player }> = ({ r
                             </div>
 
                             <div className="subrank-grid">
-                                {rank.tiers.sort((a,b) => a.minXp - b.minXp).map((sub) => {
-                                    const isCurrent = playerTier.id === sub.id;
-                                    const isUnlocked = player.stats.xp >= sub.minXp;
+                                {(rank.tiers || []).sort((a,b) => a.minXp - b.minXp).map((sub) => {
+                                    const isCurrent = playerTier?.id === sub.id;
+                                    const isUnlocked = (player.stats?.xp ?? 0) >= sub.minXp;
                                     const cardClass = isCurrent ? 'subrank-card--current' : !isUnlocked ? 'subrank-card--locked' : '';
                                     return (
                                         <article key={sub.id} className={`subrank-card ${cardClass}`}>
@@ -454,21 +454,25 @@ const calculateBadgeProgress = (badge: Badge, player: Player, ranks: Rank[]) => 
     const isEarned = player.badges.some(b => b.id === badge.id);
     if (isEarned) return { current: 1, max: 1, percentage: 100, isEarned: true, text: 'Unlocked' };
 
+    if (!player.rank) { // Safety check for corrupted player data
+        return { current: 0, max: 1, percentage: 0, isEarned: false, text: 'Rank data missing' };
+    }
+
     const { criteria } = badge;
     let current = 0;
     let max = 1;
 
     switch (criteria.type) {
         case 'kills':
-            current = player.stats.kills;
+            current = player.stats?.kills ?? 0;
             max = Number(criteria.value);
             break;
         case 'headshots':
-            current = player.stats.headshots;
+            current = player.stats?.headshots ?? 0;
             max = Number(criteria.value);
             break;
         case 'gamesPlayed':
-            current = player.stats.gamesPlayed;
+            current = player.stats?.gamesPlayed ?? 0;
             max = Number(criteria.value);
             break;
         case 'rank':
@@ -476,7 +480,7 @@ const calculateBadgeProgress = (badge: Badge, player: Player, ranks: Rank[]) => 
             const targetRankName = criteria.value as string;
 
             // Find player's current tier name
-            const playerRank = ranks.find(rank => rank.tiers.some(sub => sub.id === player.rank.id));
+            const playerRank = ranks.find(rank => (rank.tiers || []).some(sub => sub.id === player.rank.id));
             const playerRankName = playerRank?.name;
 
             // Find the index of the player's tier and target tier
@@ -532,12 +536,13 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
     
     const startXp = current.minXp;
     const endXp = next ? next.minXp : 0;
+    const playerXP = player.stats?.xp ?? 0;
     const progressPercentage = next ? (
-        endXp > startXp ? Math.min(((player.stats.xp - startXp) / (endXp - startXp)) * 100, 100) : 0
+        endXp > startXp ? Math.min(((playerXP - startXp) / (endXp - startXp)) * 100, 100) : 0
       ) : 100;
 
     const percentile = players.length > 1
-        ? (players.filter(p => p.stats.xp < player.stats.xp).length / (players.length - 1)) * 100
+        ? (players.filter(p => (p.stats?.xp ?? 0) < playerXP).length / (players.length - 1)) * 100
         : 100;
         
     return (
@@ -583,7 +588,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                         <div className="space-y-1 mb-4">
                             <div className="flex justify-between items-baseline">
                                 <p className="text-sm font-semibold text-gray-300">Progression</p>
-                                <p className="text-sm font-mono text-amber-300">{player.stats.xp.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'} RP</p>
+                                <p className="text-sm font-mono text-amber-300">{playerXP.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'} RP</p>
                             </div>
                             <div className="w-full bg-zinc-900 rounded-full h-4 border border-zinc-800 shadow-inner">
                                 <motion.div 
@@ -594,7 +599,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                                 />
                             </div>
                              <p className="text-right text-xs text-gray-400">
-                                {next ? `${(next.minXp - player.stats.xp > 0 ? next.minXp - player.stats.xp : 0).toLocaleString()} RP to ${next.name}` : 'Maximum Rank Reached!'}
+                                {next ? `${(next.minXp - playerXP > 0 ? next.minXp - playerXP : 0).toLocaleString()} RP to ${next.name}` : 'Maximum Rank Reached!'}
                             </p>
                         </div>
 
@@ -647,19 +652,19 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                 <DashboardCard title="Lifetime Stats" icon={<ChartBarIcon className="w-6 h-6"/>}>
                      <div className="p-6 grid grid-cols-2 gap-y-4">
                         <div className="text-center">
-                            <p className="text-2xl font-bold">{player.stats.kills}</p>
+                            <p className="text-2xl font-bold">{player.stats?.kills ?? 0}</p>
                             <p className="text-xs text-gray-400">Kills</p>
                         </div>
                          <div className="text-center">
-                            <p className="text-2xl font-bold">{player.stats.deaths}</p>
+                            <p className="text-2xl font-bold">{player.stats?.deaths ?? 0}</p>
                             <p className="text-xs text-gray-400">Deaths</p>
                         </div>
                          <div className="text-center">
-                            <p className="text-2xl font-bold">{player.stats.headshots}</p>
+                            <p className="text-2xl font-bold">{player.stats?.headshots ?? 0}</p>
                             <p className="text-xs text-gray-400">Headshots</p>
                         </div>
                          <div className="text-center">
-                            <p className="text-2xl font-bold">{player.stats.gamesPlayed}</p>
+                            <p className="text-2xl font-bold">{player.stats?.gamesPlayed ?? 0}</p>
                             <p className="text-xs text-gray-400">Games</p>
                         </div>
                     </div>
@@ -773,7 +778,9 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
 // FIX: Added missing StatsTab component
 const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ player, events }) => {
     const { stats, matchHistory } = player;
-    const kdr = stats.deaths > 0 ? (stats.kills / stats.deaths).toFixed(2) : stats.kills.toFixed(2);
+    const kills = stats?.kills ?? 0;
+    const deaths = stats?.deaths ?? 0;
+    const kdr = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
 
     const bestMatch = useMemo(() => {
         if (!matchHistory || matchHistory.length === 0) return null;
@@ -787,11 +794,11 @@ const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ p
             <DashboardCard title="Lifetime Performance" icon={<ChartBarIcon className="w-6 h-6" />}>
                 <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-y-6">
                     <StatDisplay value={kdr} label="K/D Ratio" tooltip="Kill/Death Ratio" />
-                    <StatDisplay value={stats.kills.toLocaleString()} label="Total Kills" />
-                    <StatDisplay value={stats.deaths.toLocaleString()} label="Total Deaths" />
-                    <StatDisplay value={stats.headshots.toLocaleString()} label="Total Headshots" />
-                    <StatDisplay value={stats.gamesPlayed.toLocaleString()} label="Matches Played" />
-                    <StatDisplay value={stats.xp.toLocaleString()} label="Total RP" />
+                    <StatDisplay value={(stats?.kills ?? 0).toLocaleString()} label="Total Kills" />
+                    <StatDisplay value={(stats?.deaths ?? 0).toLocaleString()} label="Total Deaths" />
+                    <StatDisplay value={(stats?.headshots ?? 0).toLocaleString()} label="Total Headshots" />
+                    <StatDisplay value={(stats?.gamesPlayed ?? 0).toLocaleString()} label="Matches Played" />
+                    <StatDisplay value={(stats?.xp ?? 0).toLocaleString()} label="Total RP" />
                 </div>
             </DashboardCard>
             {bestMatch && bestEvent && (
@@ -808,7 +815,7 @@ const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ p
             )}
             <DashboardCard title="Match History" icon={<CalendarIcon className="w-6 h-6" />}>
                 <div className="p-4 space-y-4 max-h-[40rem] overflow-y-auto">
-                    {matchHistory.length > 0 ? (
+                    {matchHistory && matchHistory.length > 0 ? (
                         matchHistory
                             .map(record => ({ ...record, event: events.find(e => e.id === record.eventId) }))
                             .filter(record => record.event)

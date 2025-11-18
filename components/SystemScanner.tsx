@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { DataContext, IS_LIVE_DATA, DataContextType } from '../data/DataContext';
 import { Button } from './Button';
@@ -206,7 +203,7 @@ export const SystemScanner: React.FC = () => {
         const inventoryIds = new Set(inventory.map(i => i.id));
         const badgeIds = new Set(badges.map(b => b.id));
         const legendaryBadgeIds = new Set(legendaryBadges.map(b => b.id));
-        const allTiers = ranks.flatMap(r => r.tiers);
+        const allTiers = ranks.flatMap(r => r.tiers || []).filter(Boolean);
 
         const filteredPlayers = filterPlayerId ? players.filter(p => p.id === filterPlayerId) : players;
 
@@ -238,16 +235,32 @@ export const SystemScanner: React.FC = () => {
             { category: 'Data Integrity', name: 'Orphaned Data', description: 'Checks for references to deleted players or events.', checkFn: async () => { const targetSignups = filterPlayerId ? signups.filter(s => s.playerId === filterPlayerId) : signups; const targetTransactions = filterPlayerId ? transactions.filter(t => t.relatedPlayerId === filterPlayerId) : transactions; const orphans: string[] = []; targetSignups.forEach(s => { if(!playerIds.has(s.playerId)) orphans.push(`Signup ${s.id} -> player`); if(!eventIds.has(s.eventId)) orphans.push(`Signup ${s.id} -> event`); }); targetTransactions.forEach(t => { if(t.relatedPlayerId && !playerIds.has(t.relatedPlayerId)) orphans.push(`Txn ${t.id} -> player`); if(t.relatedEventId && !eventIds.has(t.relatedEventId)) orphans.push(`Txn ${t.id} -> event`); if(t.relatedInventoryId && !inventoryIds.has(t.relatedInventoryId)) orphans.push(`Txn ${t.id} -> inventory`); }); return orphans.length > 0 ? {status: 'warn', detail: `Found ${orphans.length} orphaned record(s).`} : {status: 'pass', detail: 'No orphaned data found.'}; }},
             ...filteredPlayers.map(p => ({
                 category: 'Data Integrity' as const, name: `Player Rank Object: ${p.name}`, description: 'Verifies the player\'s stored rank object matches their current XP.',
-                checkFn: async () => { const correctTier = getTierForXp(p.stats.xp, allTiers); return p.rank.id === correctTier.id ? { status: 'pass', detail: `Correctly assigned: ${correctTier.name}` } : { status: 'fail', detail: `Mismatch. Stored: ${p.rank.name}, should be: ${correctTier.name}.`, fixable: true }; },
-                fixFn: async (d) => { const correctTier = getTierForXp(p.stats.xp, d.ranks.flatMap(r => r.tiers)); await d.updateDoc('players', { ...p, rank: correctTier }); }
+                checkFn: async () => {
+                    if (!allTiers || allTiers.length === 0) return { status: 'warn', detail: 'No rank tiers configured to check against.' };
+                    const correctTier = getTierForXp(p.stats?.xp ?? 0, allTiers);
+                    if (!p.rank) {
+                        return { status: 'fail', detail: `Player has no rank object but should be: ${correctTier.name}.`, fixable: true };
+                    }
+                    return p.rank.id === correctTier.id ? { status: 'pass', detail: `Correctly assigned: ${correctTier.name}` } : { status: 'fail', detail: `Mismatch. Stored: ${p.rank.name}, should be: ${correctTier.name}.`, fixable: true };
+                },
+                fixFn: async (d) => { const correctTier = getTierForXp(p.stats?.xp ?? 0, d.ranks.flatMap(r => r.tiers || []).filter(Boolean)); await d.updateDoc('players', { ...p, rank: correctTier }); }
             })),
             ...filteredPlayers.map(p => ({
                 category: 'Data Integrity' as const, name: `Player Stat Consistency: ${p.name}`, description: 'Verifies lifetime stats match sum of match history.',
-                checkFn: async () => { if (p.matchHistory.length === 0) return { status: 'pass', detail: 'No match history to verify.'}; const calc = p.matchHistory.reduce((a,c) => ({ k: a.k+c.playerStats.kills, d: a.d+c.playerStats.deaths, h: a.h+c.playerStats.headshots }),{k:0,d:0,h:0}); const errors = []; if (p.stats.kills !== calc.k) errors.push('kills'); if (p.stats.deaths !== calc.d) errors.push('deaths'); if (p.stats.headshots !== calc.h) errors.push('headshots'); return errors.length === 0 ? {status: 'pass', detail: 'Stats are consistent.'} : {status: 'warn', detail: `Inconsistent stats for: ${errors.join(', ')}.`}; }
+                checkFn: async () => {
+                    if (!p.stats) return { status: 'fail', detail: 'Player is missing stats object.' };
+                    if (!p.matchHistory || p.matchHistory.length === 0) return { status: 'pass', detail: 'No match history to verify.'};
+                    const calc = p.matchHistory.reduce((a, c) => ({ k: a.k + c.playerStats.kills, d: a.d + c.playerStats.deaths, h: a.h + c.playerStats.headshots }), { k: 0, d: 0, h: 0 });
+                    const errors = [];
+                    if (p.stats.kills !== calc.k) errors.push('kills');
+                    if (p.stats.deaths !== calc.d) errors.push('deaths');
+                    if (p.stats.headshots !== calc.h) errors.push('headshots');
+                    return errors.length === 0 ? { status: 'pass', detail: 'Stats are consistent.' } : { status: 'warn', detail: `Inconsistent stats for: ${errors.join(', ')}.` };
+                }
             })),
             ...filteredPlayers.map(p => ({
                 category: 'Data Integrity' as const, name: `Orphaned Badges: ${p.name}`, description: 'Ensures all player badges exist in the main badge collections.',
-                checkFn: async () => { const orphans = [...p.badges.filter(b => !badgeIds.has(b.id)), ...p.legendaryBadges.filter(b => !legendaryBadgeIds.has(b.id))]; return orphans.length > 0 ? { status: 'warn', detail: `Found ${orphans.length} orphaned badge(s).` } : { status: 'pass', detail: 'No orphaned badges.' }; }
+                checkFn: async () => { const orphans = [...(p.badges || []).filter(b => !badgeIds.has(b.id)), ...(p.legendaryBadges || []).filter(b => !legendaryBadgeIds.has(b.id))]; return orphans.length > 0 ? { status: 'warn', detail: `Found ${orphans.length} orphaned badge(s).` } : { status: 'pass', detail: 'No orphaned badges.' }; }
             })),
             ...Object.entries(allData).filter(([key]) => key.endsWith('Details')).flatMap(([key, details]) => 
                 Object.entries(details as object).filter(([_, value]) => typeof value === 'string' && value.includes('https://')).map(([prop, url]) => ({
@@ -288,7 +301,7 @@ export const SystemScanner: React.FC = () => {
             const result = await check.checkFn(dataContext);
             const finalResult = { ...check, ...result };
             
-            setResults(prev => ({ ...prev, [finalResult.category]: prev[finalResult.category].map(c => c.name === finalResult.name ? { name: finalResult.name, description: finalResult.description, status: finalResult.status, detail: finalResult.detail, fixable: !!finalResult.fixFn } : c) }));
+            setResults(prev => ({ ...prev, [finalResult.category]: (prev[finalResult.category] || []).map(c => c.name === finalResult.name ? { name: finalResult.name, description: finalResult.description, status: finalResult.status, detail: finalResult.detail, fixable: !!finalResult.fixFn } : c) }));
             
             if (finalResult.status === 'fail' || finalResult.status === 'warn') {
                 newErrorLog.push({ timestamp: new Date(), checkName: finalResult.name, category: finalResult.category, detail: finalResult.detail, status: finalResult.status });

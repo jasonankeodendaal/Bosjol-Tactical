@@ -156,8 +156,8 @@ const PromotionModal: React.FC<{
     const { oldTier, newTier, xpGained, bonusXp, rewards, finalXp } = promotion;
     
     // Recalculate progression for display based on the final XP (current + bonus)
-    const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => a.minXp - b.minXp);
-    const finalTierAfterBonus = allTiers.slice().reverse().find(r => finalXp >= r.minXp);
+    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => a.minXp - b.minXp);
+    const finalTierAfterBonus = [...allTiers].reverse().find(r => finalXp >= r.minXp);
     const finalTierIndex = allTiers.findIndex(r => r.id === finalTierAfterBonus?.id);
     const nextTierAfterBonus = finalTierIndex !== -1 && finalTierIndex < allTiers.length - 1 ? allTiers[finalTierIndex + 1] : null;
 
@@ -305,7 +305,7 @@ const AppContent: React.FC = () => {
         const lastSeenBadges: string[] = JSON.parse(localStorage.getItem(`lastSeenBadges_${player.id}`) || '[]');
     
         if (player.stats.xp > lastSeenXp) {
-            const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => b.minXp - a.minXp);
+            const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - a.minXp);
             
             const getTierForXp = (xp: number): Tier | undefined => allTiers.find(r => xp >= r.minXp);
             
@@ -356,7 +356,7 @@ const AppContent: React.FC = () => {
                     date: new Date().toISOString()
                 }));
 
-                const allTiers = ranks.flatMap(rank => rank.tiers).sort((a, b) => b.minXp - a.minXp);
+                const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - a.minXp);
                 const finalTier = allTiers.find(r => finalXp >= r.minXp) || currentPlayer.rank;
 
                 const updatedPlayer = {
@@ -370,11 +370,15 @@ const AppContent: React.FC = () => {
                 
                 localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(finalXp));
                 localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify(updatedPlayer.badges.map(b => b.id)));
-                localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
+                if (finalTier) {
+                    localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
+                }
             } else {
                  localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(currentPlayer.stats.xp));
                  localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify(currentPlayer.badges.map(b => b.id)));
-                 localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, currentPlayer.rank.id);
+                 if (currentPlayer.rank) {
+                    localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, currentPlayer.rank.id);
+                 }
             }
         }
         setPromotion(null);

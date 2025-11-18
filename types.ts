@@ -393,6 +393,7 @@ export interface CompanyDetails {
     adminDashboardBackgroundUrl?: string;
     playerDashboardAudioUrl?: string;
     adminDashboardAudioUrl?: string;
+    sponsorsBackgroundUrl?: string;
     apkUrl?: string;
     apiServerUrl?: string;
     bankInfo: {

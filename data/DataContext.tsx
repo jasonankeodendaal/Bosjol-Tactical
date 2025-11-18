@@ -539,8 +539,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // Deconstruct company details for mock state
             const { name, address, phone, email, website, regNumber, vatNumber, apiServerUrl, bankInfo, minimumSignupAge } = backupData.companyDetails || {};
             updateCompanyCore({ name, address, phone, email, website, regNumber, vatNumber, apiServerUrl, bankInfo, minimumSignupAge });
-            const { logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl } = backupData.companyDetails || {};
-            updateBrandingDetails({ logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl });
+            const { logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl, sponsorsBackgroundUrl } = backupData.companyDetails || {};
+            updateBrandingDetails({ logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl, sponsorsBackgroundUrl });
             const { fixedEventRules, apkUrl } = backupData.companyDetails || {};
             updateContentDetails({ fixedEventRules, apkUrl });
 
@@ -591,10 +591,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             // Handle deconstructed settings
             const { apiSetupGuide, ...creatorCoreData } = backupData.creatorDetails || {};
-            const { name, address, phone, email, website, regNumber, vatNumber, apiServerUrl, bankInfo, minimumSignupAge, logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl, fixedEventRules, apkUrl } = backupData.companyDetails || {};
+            const { name, address, phone, email, website, regNumber, vatNumber, apiServerUrl, bankInfo, minimumSignupAge, logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl, sponsorsBackgroundUrl, fixedEventRules, apkUrl } = backupData.companyDetails || {};
             
             writeBatch.set(db.collection('settings').doc('companyDetails'), { name, address, phone, email, website, regNumber, vatNumber, apiServerUrl, bankInfo, minimumSignupAge });
-            writeBatch.set(db.collection('settings').doc('brandingDetails'), { logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl });
+            writeBatch.set(db.collection('settings').doc('brandingDetails'), { logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl, sponsorsBackgroundUrl });
             writeBatch.set(db.collection('settings').doc('contentDetails'), { fixedEventRules, apkUrl });
             writeBatch.set(db.collection('settings').doc('creatorDetails'), creatorCoreData);
 

@@ -521,6 +521,8 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
     const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
     const { current, next, rank } = getRankProgression(player, ranks);
+    const dataContext = useContext(DataContext);
+    const sponsorsBackgroundUrl = dataContext?.companyDetails?.sponsorsBackgroundUrl;
 
     const row1Sponsors = useMemo(() => sponsors.filter((_, i) => i < sponsors.length / 2), [sponsors]);
     const row2Sponsors = useMemo(() => sponsors.filter((_, i) => i >= sponsors.length / 2), [sponsors]);
@@ -540,6 +542,13 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
     const kills = player.stats?.kills ?? 0;
     const deaths = player.stats?.deaths ?? 0;
     const kdr = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
+
+    const sponsorContainerStyle: React.CSSProperties = sponsorsBackgroundUrl ? {
+        backgroundImage: `url('${sponsorsBackgroundUrl}')`,
+        backgroundColor: '#050505',
+        backgroundBlendMode: 'overlay',
+        backgroundSize: 'cover',
+    } : {};
 
     return (
         <div className="space-y-4 mobile-overview-grid">
@@ -631,7 +640,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
 
             <div className="bg-black/50 border-t-2 border-red-700 p-4 rounded-lg">
                 <h3 className="overview-section-title !border-red-700/50">Official Sponsors</h3>
-                <div className="sponsor-carousel-container">
+                <div className="sponsor-carousel-container" style={sponsorContainerStyle}>
                     <div className="marquee-row animate-marquee">
                         {row1Sponsors.concat(row1Sponsors).map((sponsor, index) => (
                             <div key={`${sponsor.id}-${index}-1`} onClick={() => setSelectedSponsor(sponsor)} className="sponsor-item">

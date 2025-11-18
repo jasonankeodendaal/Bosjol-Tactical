@@ -397,6 +397,20 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             />
                         </div>
                     </div>
+
+                    <div className="pt-6 border-t border-zinc-800">
+                        <h4 className="font-semibold text-gray-200 mb-4 text-lg">Other UI Backgrounds</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <UrlOrUploadField
+                                label="Sponsors Carousel Background"
+                                fileUrl={formData.sponsorsBackgroundUrl}
+                                onUrlSet={(url) => setFormData(f => ({ ...f, sponsorsBackgroundUrl: url }))}
+                                onRemove={() => setFormData(f => ({ ...f, sponsorsBackgroundUrl: '' }))}
+                                accept="image/*"
+                                apiServerUrl={formData.apiServerUrl}
+                            />
+                        </div>
+                    </div>
                 </div>
             </DashboardCard>
 

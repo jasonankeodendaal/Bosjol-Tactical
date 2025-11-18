@@ -340,7 +340,7 @@ export const MOCK_COMPANY_CORE: Pick<CompanyDetails, 'name' | 'address' | 'phone
     nextRankResetDate: '',
 };
 
-export const MOCK_BRANDING_DETAILS: Pick<CompanyDetails, 'logoUrl' | 'loginBackgroundUrl' | 'loginAudioUrl' | 'playerDashboardBackgroundUrl' | 'adminDashboardBackgroundUrl' | 'playerDashboardAudioUrl' | 'adminDashboardAudioUrl'> = {
+export const MOCK_BRANDING_DETAILS: Pick<CompanyDetails, 'logoUrl' | 'loginBackgroundUrl' | 'loginAudioUrl' | 'playerDashboardBackgroundUrl' | 'adminDashboardBackgroundUrl' | 'playerDashboardAudioUrl' | 'adminDashboardAudioUrl' | 'sponsorsBackgroundUrl'> = {
     logoUrl: 'https://i.ibb.co/7k1pWpY/Bosjol-Tactical-Logo-White-Red.png',
     loginBackgroundUrl: 'https://i.ibb.co/dsh2c2hp/unnamed.jpg',
     loginAudioUrl: '',
@@ -348,6 +348,7 @@ export const MOCK_BRANDING_DETAILS: Pick<CompanyDetails, 'logoUrl' | 'loginBackg
     playerDashboardAudioUrl: '',
     adminDashboardBackgroundUrl: 'https://i.ibb.co/bJxtzYw/image.png',
     adminDashboardAudioUrl: '',
+    sponsorsBackgroundUrl: 'https://i.ibb.co/VvVzVzV/image.png',
 };
 
 export const MOCK_CONTENT_DETAILS: Pick<CompanyDetails, 'fixedEventRules' | 'apkUrl'> = {

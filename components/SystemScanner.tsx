@@ -197,6 +197,88 @@ export const SystemScanner: React.FC = () => {
     const collectionNames = dataContext ? Object.keys(dataContext).filter(k => Array.isArray(dataContext[k as keyof DataContextType])) : [];
 
     useEffect(() => { setEditedData(collectionData); }, [collectionData]);
+
+    const handleSaveRawData = async () => {
+        if (!dataContext) {
+            alert("Data context is not available.");
+            return;
+        }
+
+        if (!confirm(`WARNING: You are about to completely replace all data in the '${selectedCollection}' collection. This is a high-risk action and cannot be undone. Are you sure you want to proceed?`)) {
+            return;
+        }
+
+        try {
+            const newData = JSON.parse(editedData);
+
+            if (!Array.isArray(newData)) {
+                throw new Error("Data must be a JSON array.");
+            }
+
+            const collectionSetterMap: { [key in keyof DataContextType]?: (data: any) => void } = {
+                players: dataContext.setPlayers,
+                events: dataContext.setEvents,
+                ranks: dataContext.setRanks,
+                badges: dataContext.setBadges,
+                legendaryBadges: dataContext.setLegendaryBadges,
+                gamificationSettings: dataContext.setGamificationSettings,
+                sponsors: dataContext.setSponsors,
+                socialLinks: dataContext.setSocialLinks,
+                carouselMedia: dataContext.setCarouselMedia,
+                vouchers: dataContext.setVouchers,
+                inventory: dataContext.setInventory,
+                suppliers: dataContext.setSuppliers,
+                transactions: dataContext.setTransactions,
+                locations: dataContext.setLocations,
+                raffles: dataContext.setRaffles,
+                signups: dataContext.setSignups,
+                apiSetupGuide: dataContext.setApiSetupGuide,
+            };
+            
+            const setter = collectionSetterMap[selectedCollection as keyof typeof collectionSetterMap];
+
+            if (setter) {
+                if (IS_LIVE_DATA && db) {
+                    const collectionName = selectedCollection as string;
+                    console.log(`Wiping collection: ${collectionName}`);
+                    const collectionRef = db.collection(collectionName);
+                    const snapshot = await collectionRef.get();
+                    const batch = db.batch();
+                    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                    await batch.commit();
+                    console.log(`Adding ${newData.length} new documents to ${collectionName}`);
+
+                    const addBatch = db.batch();
+                    newData.forEach((item: any) => {
+                         const { id, ...data } = item;
+                         const docRef = id ? collectionRef.doc(id) : collectionRef.doc();
+                         addBatch.set(docRef, data);
+                    });
+                    await addBatch.commit();
+
+                } else {
+                    setter(newData);
+                }
+                alert(`Collection '${selectedCollection}' has been successfully overwritten.`);
+            } else {
+                throw new Error(`No setter found for collection '${selectedCollection}'. This might be a settings document which cannot be edited this way.`);
+            }
+
+        } catch (error) {
+            const typedError = error as Error;
+            console.error("Failed to save raw data:", typedError);
+            alert(`Save failed: ${typedError.message}. Please ensure the data is a valid JSON array.`);
+        }
+    };
+    
+    const handleBeautifyJson = () => {
+        try {
+            const parsed = JSON.parse(editedData);
+            setEditedData(JSON.stringify(parsed, null, 2));
+        } catch (error) {
+            alert("Invalid JSON format. Cannot beautify.");
+        }
+    };
     
     const ALL_CHECKS = useCallback((): Check[] => {
         if (!dataContext) return [];
@@ -375,9 +457,9 @@ export const SystemScanner: React.FC = () => {
                                 <p className="text-sm text-amber-300 bg-amber-900/50 border border-amber-700 p-3 rounded-md mb-4"><ExclamationTriangleIcon className="inline w-5 h-5 mr-2" /><strong>High-Risk Area:</strong> Editing this data directly can break the application. This tool will completely replace the existing collection data.</p>
                                 <div className="flex gap-4 mb-4"><select value={selectedCollection} onChange={e => setSelectedCollection(e.target.value as keyof DataContextType)} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
                                     {collectionNames.map(collectionName => <option key={collectionName} value={collectionName}>{collectionName}</option>)}
-                                </select><Button onClick={() => {}} variant="secondary">Beautify JSON</Button></div>
+                                </select><Button onClick={handleBeautifyJson} variant="secondary">Beautify JSON</Button></div>
                                 <textarea value={editedData} onChange={e => setEditedData(e.target.value)} className="text-xs text-gray-200 w-full font-mono h-96 bg-zinc-950 p-4 rounded-lg border border-zinc-700 focus:ring-red-500 focus:border-red-500" spellCheck="false" />
-                                <Button onClick={() => {}} variant="danger" className="w-full mt-4">Save Raw Data for '{selectedCollection}'</Button>
+                                <Button onClick={handleSaveRawData} variant="danger" className="w-full mt-4">Save Raw Data for '{selectedCollection}'</Button>
                             </div>
                         )}
                         {activeTab === 'rules' && (

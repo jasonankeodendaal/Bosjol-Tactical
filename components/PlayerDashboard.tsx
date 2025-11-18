@@ -543,24 +543,24 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
 
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column */}
+            <div className="lg:grid lg:grid-cols-3 lg:gap-6 space-y-6 lg:space-y-0 mobile-overview-grid">
+                {/* Main Content */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="overview-card">
+                    <div className="overview-card rank-card">
                         <h3 className="overview-section-title">Current Rank & Progression</h3>
                         <div className="flex items-center gap-4 mb-4">
-                            {rank && <img src={rank.rankBadgeUrl} alt={rank.name} className="w-20 h-20"/>}
+                            {rank && <img src={rank.rankBadgeUrl} alt={rank.name} className="w-16 h-16 sm:w-20 sm:h-20"/>}
                             <div>
-                                <p className="text-lg text-gray-400 uppercase tracking-wider">{rank?.name || 'Unranked'}</p>
-                                <p className="text-3xl font-bold text-white">{current.name}</p>
+                                <p className="text-md sm:text-lg text-gray-400 uppercase tracking-wider">{rank?.name || 'Unranked'}</p>
+                                <p className="text-2xl sm:text-3xl font-bold text-white">{current.name}</p>
                             </div>
                              <div className="ml-auto text-right">
                                 <p className="text-sm font-semibold text-gray-400">Percentile</p>
-                                <p className="text-2xl font-bold text-white">Top {(100 - percentile).toFixed(1)}%</p>
+                                <p className="text-xl sm:text-2xl font-bold text-white">Top {(100 - percentile).toFixed(1)}%</p>
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <div className="flex justify-between items-baseline text-sm">
+                            <div className="flex justify-between items-baseline text-xs sm:text-sm">
                                 <p className="font-semibold text-gray-300">Progression</p>
                                 <p className="font-mono text-amber-300">{playerXP.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'} RP</p>
                             </div>
@@ -577,42 +577,63 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                             </p>
                         </div>
                     </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 lg:hidden">
+                        <div className="overview-card stats-summary-card">
+                            <h3 className="overview-section-title">Summary</h3>
+                            <ul className="text-gray-300 space-y-1"><li className="flex justify-between"><span>Kills:</span> <span className="font-bold text-white">{kills}</span></li><li className="flex justify-between"><span>Deaths:</span> <span className="font-bold text-white">{deaths}</span></li><li className="flex justify-between"><span>K/D:</span> <span className="font-bold text-white">{kdr}</span></li></ul>
+                        </div>
+                        <div className="overview-card next-event-card">
+                            <h3 className="overview-section-title">Next Up</h3>
+                             {nextEvent ? (<div><h4 className="font-bold text-white truncate">{nextEvent.title}</h4><p className="text-xs text-gray-400">{new Date(nextEvent.date).toLocaleDateString()}</p></div>) : (<p className="text-center text-gray-500 text-xs">No upcoming events.</p>)}
+                        </div>
+                    </div>
 
-                    <div className="overview-card">
+                    <div className="overview-card commendations-card">
                         <h3 className="overview-section-title">Commendations</h3>
                         {(player.badges.length === 0 && player.legendaryBadges.length === 0) ? (
                             <p className="text-center text-gray-500 py-4">No commendations earned yet.</p>
                         ) : (
-                            <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-4">
+                            <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-4 commendations-grid">
                                 {player.legendaryBadges.map(badge => (
                                     <div key={badge.id} className="relative group flex justify-center items-center aspect-square legendary-badge-item !border-0" title={`${badge.name}: ${badge.description}`}>
-                                        <img src={badge.iconUrl} alt={badge.name} className="w-14 h-14 object-contain" />
+                                        <img src={badge.iconUrl} alt={badge.name} className="w-12 h-12 object-contain" />
                                     </div>
                                 ))}
                                 {player.badges.map(badge => (
                                     <div key={badge.id} className="relative group flex justify-center items-center aspect-square" title={`${badge.name}: ${badge.description}`}>
-                                        <img src={badge.iconUrl} alt={badge.name} className="w-12 h-12 object-contain"/>
+                                        <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 object-contain"/>
                                     </div>
                                 ))}
                             </div>
                         )}
                     </div>
                     
-                    <div className="overview-card">
+                    <div className="overview-card lifetime-stats-card">
                         <h3 className="overview-section-title">Lifetime Performance</h3>
-                         <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-y-6">
+                         <div className="p-2 sm:p-6 grid grid-cols-2 md:grid-cols-3 gap-y-6 lifetime-stats-grid">
                             <StatDisplay value={kdr} label="K/D Ratio" tooltip="Kill/Death Ratio" />
                             <StatDisplay value={(player.stats?.kills ?? 0).toLocaleString()} label="Total Kills" />
                             <StatDisplay value={(player.stats?.deaths ?? 0).toLocaleString()} label="Total Deaths" />
                             <StatDisplay value={(player.stats?.headshots ?? 0).toLocaleString()} label="Total Headshots" />
-                            <StatDisplay value={(player.stats?.gamesPlayed ?? 0).toLocaleString()} label="Matches Played" />
-                            <StatDisplay value={(player.stats?.xp ?? 0).toLocaleString()} label="Total Rank Points" />
+                            <StatDisplay value={(player.stats?.gamesPlayed ?? 0).toLocaleString()} label="Matches" />
+                            <StatDisplay value={(player.stats?.xp ?? 0).toLocaleString()} label="Total RP" />
+                        </div>
+                    </div>
+                     <div className="overview-card p-0 leaderboard-card lg:hidden">
+                         <div className="p-4 sm:p-6"><h3 className="overview-section-title mb-0">Leaderboard - Top 3</h3></div>
+                         <div className="leaderboard-podium-bg !p-0">
+                            <motion.div className="podium-container !h-auto !max-w-full" initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.1 } } }}>
+                                {topThree.length > 1 && <PodiumPlayer player={topThree[1]} rank={2} delay={0.1} />}
+                                {topThree.length > 0 && <PodiumPlayer player={topThree[0]} rank={1} delay={0} />}
+                                {topThree.length > 2 && <PodiumPlayer player={topThree[2]} rank={3} delay={0.2} />}
+                            </motion.div>
                         </div>
                     </div>
                 </div>
 
-                {/* Right Column */}
-                <div className="lg:col-span-1 space-y-6">
+                {/* Right Column (Desktop only) */}
+                <div className="hidden lg:block lg:col-span-1 space-y-6">
                      <div className="overview-card">
                         <h3 className="overview-section-title">Stats Summary</h3>
                         <ul className="text-gray-300 space-y-2">

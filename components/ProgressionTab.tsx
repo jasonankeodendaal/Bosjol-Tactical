@@ -7,6 +7,8 @@ import { Modal } from './Modal';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { DashboardCard } from './DashboardCard';
 import { DataContext } from '../data/DataContext';
+import { motion, AnimatePresence } from 'framer-motion';
+
 
 interface ProgressionTabProps {
     ranks: Rank[];
@@ -238,7 +240,7 @@ const TierEditorModal: React.FC<{
         perks: tier?.perks?.join(', ') || '',
     });
 
-    const currentTierIndex = allTiers.findIndex(t => t.id === tier?.id);
+    const currentTierIndex = tier?.id ? allTiers.findIndex(t => t.id === tier.id) : -1;
     const nextTier = currentTierIndex > -1 && currentTierIndex < allTiers.length - 1 ? allTiers[currentTierIndex + 1] : null;
 
     const handleSave = () => {
@@ -277,6 +279,70 @@ const TierEditorModal: React.FC<{
             </div>
         </Modal>
     )
+};
+
+const RankCard: React.FC<{
+    rank: Rank;
+    onEditRank: () => void;
+    onDeleteRank: () => void;
+    onEditTier: (tier: Tier) => void;
+    onDeleteTier: (tier: Tier) => void;
+    onAddTier: () => void;
+}> = ({ rank, onEditRank, onDeleteRank, onEditTier, onDeleteTier, onAddTier }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="bg-zinc-900/50 rounded-lg border border-zinc-700/50">
+            <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center gap-3 p-3 text-left hover:bg-zinc-800/50 transition-colors">
+                <img src={rank.rankBadgeUrl} alt={rank.name} className="w-10 h-10 flex-shrink-0" />
+                <div className="flex-grow">
+                    <h3 className="text-lg font-bold text-red-400">{rank.name}</h3>
+                    <p className="text-xs text-gray-400 truncate">{rank.description}</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onEditRank(); }} className="!p-1.5"><PencilIcon className="w-4 h-4"/></Button>
+                    <Button size="sm" variant="danger" onClick={(e) => { e.stopPropagation(); onDeleteRank(); }} className="!p-1.5"><TrashIcon className="w-4 h-4"/></Button>
+                </div>
+                <motion.div animate={{ rotate: isOpen ? 180 : 0 }} className="flex-shrink-0 ml-2">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </motion.div>
+            </button>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div 
+                        key="content" 
+                        initial={{ height: 0, opacity: 0 }} 
+                        animate={{ height: 'auto', opacity: 1 }} 
+                        exit={{ height: 0, opacity: 0 }} 
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="border-t border-zinc-800"
+                    >
+                        <div className="p-3 space-y-2">
+                            {(rank.tiers || []).sort((a,b) => a.minXp - b.minXp).map(tier => (
+                                <div key={tier.id} className="flex items-center gap-2 bg-zinc-800/50 p-2 rounded-md">
+                                    <img src={tier.iconUrl} alt={tier.name} className="w-6 h-6"/>
+                                    <div className="flex-grow">
+                                        <p className="font-semibold text-white text-sm">{tier.name}</p>
+                                        <p className="text-xs text-gray-400">Starts at {tier.minXp.toLocaleString()} XP</p>
+                                    </div>
+                                    <div className="flex gap-1.5">
+                                        <Button size="sm" variant="secondary" onClick={() => onEditTier(tier)} className="!p-1.5"><PencilIcon className="w-4 h-4"/></Button>
+                                        <Button size="sm" variant="danger" onClick={() => onDeleteTier(tier)} className="!p-1.5"><TrashIcon className="w-4 h-4"/></Button>
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="pt-2">
+                                <Button size="sm" variant="secondary" className="w-full" onClick={onAddTier}>
+                                    <PlusIcon className="w-4 h-4 mr-2" />
+                                    Add Tier
+                                </Button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
 };
 
 
@@ -372,7 +438,7 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
         setDeletingTier(null);
     };
     
-    const allTiers = ranks.flatMap(r => r.tiers).sort((a,b) => a.minXp - b.minXp);
+    const allTiers = ranks.flatMap(r => r.tiers || []).sort((a,b) => a.minXp - b.minXp);
     const sortedRanks = [...ranks].sort((a, b) => {
         const tiersA = a.tiers || [];
         const tiersB = b.tiers || [];
@@ -400,43 +466,20 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
 
             {/* Rank Structure */}
             <DashboardCard title="Rank Structure" icon={<ShieldCheckIcon className="w-6 h-6"/>} titleAddon={<Button size="sm" onClick={() => setEditingRank({})}><PlusIcon className="w-5 h-5 mr-2" /> Add Rank</Button>}>
-                 <div className="p-4 space-y-4">
-                    {sortedRanks.map(rank => (
-                        <div key={rank.id} className="bg-zinc-900/50 rounded-lg border border-zinc-700/50">
-                            <div className="flex items-center gap-4 p-4 border-b border-zinc-800">
-                                <img src={rank.rankBadgeUrl} alt={rank.name} className="w-12 h-12 flex-shrink-0" />
-                                <div className="flex-grow">
-                                    <h3 className="text-xl font-bold text-red-400">{rank.name}</h3>
-                                    <p className="text-sm text-gray-400">{rank.description}</p>
-                                </div>
-                                <div className="flex gap-2">
-                                    <Button size="sm" variant="secondary" onClick={() => setEditingRank(rank)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
-                                    <Button size="sm" variant="danger" onClick={() => setDeletingRank(rank)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
-                                </div>
-                            </div>
-                            <div className="p-4 space-y-2">
-                                {(rank.tiers || []).sort((a,b) => a.minXp - b.minXp).map(tier => (
-                                    <div key={tier.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-md">
-                                        <img src={tier.iconUrl} alt={tier.name} className="w-8 h-8"/>
-                                        <div className="flex-grow">
-                                            <p className="font-semibold text-white">{tier.name}</p>
-                                            <p className="text-xs text-gray-400">Starts at {tier.minXp.toLocaleString()} XP</p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <Button size="sm" variant="secondary" onClick={() => setEditingTier({...tier, rankId: rank.id})} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
-                                            <Button size="sm" variant="danger" onClick={() => setDeletingTier({...tier, rankId: rank.id})} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
-                                        </div>
-                                    </div>
-                                ))}
-                                <div className="pt-2">
-                                    <Button size="sm" variant="secondary" className="w-full" onClick={() => setEditingTier({ rankId: rank.id })}>
-                                        <PlusIcon className="w-4 h-4 mr-2" />
-                                        Add Tier to {rank.name}
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                 <div className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {sortedRanks.map(rank => (
+                            <RankCard 
+                                key={rank.id}
+                                rank={rank}
+                                onEditRank={() => setEditingRank(rank)}
+                                onDeleteRank={() => setDeletingRank(rank)}
+                                onEditTier={(tier) => setEditingTier({ ...tier, rankId: rank.id })}
+                                onDeleteTier={(tier) => setDeletingTier({ ...tier, rankId: rank.id })}
+                                onAddTier={() => setEditingTier({ rankId: rank.id })}
+                            />
+                        ))}
+                    </div>
                  </div>
             </DashboardCard>
             

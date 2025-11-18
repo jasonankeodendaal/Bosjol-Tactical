@@ -326,7 +326,7 @@ export const MOCK_CAROUSEL_MEDIA: CarouselMedia[] = [
 ];
 
 // Split up CompanyDetails for easier management in DataContext
-export const MOCK_COMPANY_CORE: Pick<CompanyDetails, 'name' | 'address' | 'phone' | 'email' | 'website' | 'regNumber' | 'vatNumber' | 'apiServerUrl' | 'bankInfo' | 'minimumSignupAge'> = {
+export const MOCK_COMPANY_CORE: Pick<CompanyDetails, 'name' | 'address' | 'phone' | 'email' | 'website' | 'regNumber' | 'vatNumber' | 'apiServerUrl' | 'bankInfo' | 'minimumSignupAge' | 'nextRankResetDate'> = {
     name: 'Bosjol Tactical',
     address: 'Nelspruit, South Africa',
     phone: '+27821234567',
@@ -337,6 +337,7 @@ export const MOCK_COMPANY_CORE: Pick<CompanyDetails, 'name' | 'address' | 'phone
     apiServerUrl: '',
     bankInfo: { bankName: 'FNB', accountNumber: '62012345678', routingNumber: '250655' },
     minimumSignupAge: 16,
+    nextRankResetDate: '',
 };
 
 export const MOCK_BRANDING_DETAILS: Pick<CompanyDetails, 'logoUrl' | 'loginBackgroundUrl' | 'loginAudioUrl' | 'playerDashboardBackgroundUrl' | 'adminDashboardBackgroundUrl' | 'playerDashboardAudioUrl' | 'adminDashboardAudioUrl'> = {

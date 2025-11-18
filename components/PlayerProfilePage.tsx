@@ -6,24 +6,39 @@ import { Input } from './Input';
 import { BadgePill } from './BadgePill';
 import { EventCard } from './EventCard';
 import { MOCK_PLAYER_ROLES, UNRANKED_TIER } from '../constants';
-import { ArrowLeftIcon, UserIcon, ChartBarIcon, CalendarIcon, TrophyIcon, CrosshairsIcon, PlusCircleIcon, TrashIcon } from './icons/Icons';
+import { ArrowLeftIcon, UserIcon, ChartBarIcon, CalendarIcon, TrophyIcon, CrosshairsIcon, PlusCircleIcon, TrashIcon, ShieldCheckIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { SendCredentialsModal } from './SendCredentialsModal';
+import { motion } from 'framer-motion';
 
 const getTierForPlayer = (player: Player, ranks: Rank[]): Tier => {
     // Determines a player's tier based on their total XP.
     if (!ranks || ranks.length === 0) return UNRANKED_TIER;
     const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - a.minXp);
+    if (allTiers.length === 0) return UNRANKED_TIER;
     const tier = allTiers.find(r => (player.stats?.xp ?? 0) >= r.minXp);
     const lowestTier = [...allTiers].sort((a,b) => a.minXp - b.minXp)[0];
     return tier || lowestTier || UNRANKED_TIER;
 };
 
+const getRankProgression = (player: Player, ranks: Rank[]) => {
+    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => a.minXp - b.minXp);
+    
+    const currentTier = getTierForPlayer(player, ranks);
+    const currentTierIndex = allTiers.findIndex(r => r.id === currentTier.id);
+
+    const next = currentTierIndex < allTiers.length - 1 ? allTiers[currentTierIndex + 1] : null;
+    const rank = ranks.find(r => (r.tiers || []).some(t => t.id === currentTier.id)) || null;
+
+    return { current: currentTier, next, rank };
+}
+
 interface PlayerProfilePageProps {
     player: Player;
+    players: Player[];
     events: GameEvent[];
     legendaryBadges: LegendaryBadge[];
     onBack: () => void;
@@ -88,7 +103,7 @@ const AwardXpModal: React.FC<{ onClose: () => void, onSave: (amount: number, rea
     );
 };
 
-export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, events, legendaryBadges, onBack, onUpdatePlayer, ranks, companyDetails }) => {
+export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, players, events, legendaryBadges, onBack, onUpdatePlayer, ranks, companyDetails }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ ...player });
     const [isAwardingXp, setIsAwardingXp] = useState(false);
@@ -237,6 +252,18 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
             </Modal>
         );
     };
+
+    // Progression widget data
+    const { current, next, rank } = getRankProgression(player, ranks);
+    const playerXP = player.stats?.xp ?? 0;
+    const startXp = current.minXp;
+    const endXp = next ? next.minXp : 0;
+    const progressPercentage = next ? (
+        endXp > startXp ? Math.min(((playerXP - startXp) / (endXp - startXp)) * 100, 100) : 0
+      ) : 100;
+    const percentile = players.length > 1
+        ? (players.filter(p => (p.stats?.xp ?? 0) < playerXP).length / (players.length - 1)) * 100
+        : 100;
 
 
     return (
@@ -407,6 +434,53 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
                     </DashboardCard>
                 </div>
                 <div className="lg:col-span-2 space-y-6">
+                    <DashboardCard title="Rank & Progression" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
+                        <div className="p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                {rank && <img src={rank.rankBadgeUrl} alt={rank.name} className="w-16 h-16"/>}
+                                <div>
+                                    <p className="text-sm text-gray-400 uppercase tracking-wider">{rank?.name || 'Unranked'}</p>
+                                    <p className="text-2xl font-bold text-white">{current.name}</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1 mb-4">
+                                <div className="flex justify-between items-baseline">
+                                    <p className="text-sm font-semibold text-gray-300">Progression</p>
+                                    <p className="text-sm font-mono text-amber-300">{playerXP.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'} RP</p>
+                                </div>
+                                <div className="w-full bg-zinc-900 rounded-full h-4 border border-zinc-800 shadow-inner">
+                                    <motion.div 
+                                        className="bg-gradient-to-r from-red-600 to-red-800 h-full rounded-full"
+                                        initial={{ width: '0%' }}
+                                        animate={{ width: `${progressPercentage}%` }}
+                                        transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+                                    />
+                                </div>
+                                <p className="text-right text-xs text-gray-400">
+                                    {next ? `${(next.minXp - playerXP > 0 ? next.minXp - playerXP : 0).toLocaleString()} RP to ${next.name}` : 'Maximum Rank Reached!'}
+                                </p>
+                            </div>
+
+                            <div className="mt-6 pt-4 border-t border-zinc-700/50">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-gray-400 mb-1">Percentile</h4>
+                                        <p className="text-lg font-bold text-white">Top {(100 - percentile).toFixed(1)}%</p>
+                                        <p className="text-xs text-gray-500">of all operators</p>
+                                    </div>
+                                    {next && (
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-gray-400 mb-1">Next Tier Unlocks</h4>
+                                            <ul className="text-xs text-gray-300 list-disc list-inside space-y-0.5">
+                                                {next.perks.map((perk, i) => <li key={i}>{perk}</li>)}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </DashboardCard>
                     <DashboardCard title="Lifetime Performance" icon={<ChartBarIcon className="w-6 h-6"/>}>
                         <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-y-6">
                             <StatDisplay value={kdr} label="K/D Ratio" tooltip="Kill/Death Ratio. Calculated as Total Kills divided by Total Deaths."/>

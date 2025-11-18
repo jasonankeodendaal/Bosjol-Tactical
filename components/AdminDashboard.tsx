@@ -419,6 +419,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         return (
             <PlayerProfilePage 
                 player={selectedPlayer} 
+                players={players}
                 events={events} 
                 legendaryBadges={legendaryBadges}
                 onBack={() => setView('dashboard')}
@@ -474,6 +475,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         legendaryBadges={props.legendaryBadges} setLegendaryBadges={props.setLegendaryBadges}
                         gamificationSettings={props.gamificationSettings} setGamificationSettings={props.setGamificationSettings}
                         addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
+                        companyDetails={props.companyDetails}
+                        setCompanyDetails={props.setCompanyDetails}
                     />}
                     {activeTab === 'Inventory' && <InventoryTab 
                         inventory={props.inventory} setInventory={props.setInventory}

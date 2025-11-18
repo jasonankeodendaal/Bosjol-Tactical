@@ -293,9 +293,86 @@ const AppContent: React.FC = () => {
         creatorDetails,
         ranks,
         signups,
+        setCompanyDetails,
     } = data;
     
     const currentPlayer = players.find(p => p.id === user?.id);
+    const hasPerformedReset = useRef(false); // Prevent multiple runs in one session
+
+    useEffect(() => {
+        const performRankReset = async () => {
+            if (!companyDetails.nextRankResetDate || hasPerformedReset.current) {
+                return;
+            }
+
+            const resetDate = new Date(companyDetails.nextRankResetDate);
+            const today = new Date();
+            // Set hours to 0 to compare dates only, ensuring the reset happens at the start of the day
+            resetDate.setHours(0,0,0,0);
+            today.setHours(0,0,0,0);
+
+            if (today < resetDate) {
+                return;
+            }
+
+            hasPerformedReset.current = true; // Mark that we're attempting a reset in this session
+            console.log("Rank reset date reached. Performing seasonal rank reset...");
+
+            if (confirm('A seasonal rank reset is due. All player Ranks and RP will be reset. This cannot be undone. Proceed?')) {
+                // Find the lowest tier
+                const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean);
+                if (allTiers.length === 0) {
+                    console.error("Cannot perform rank reset: No ranks configured.");
+                    alert("Cannot perform rank reset: No ranks configured.");
+                    hasPerformedReset.current = false; // allow retry
+                    return;
+                }
+                const lowestTier = allTiers.sort((a, b) => a.minXp - b.minXp)[0];
+
+                const playersToReset = players.filter(p => p.stats.xp > 0);
+
+                if (playersToReset.length === 0) {
+                    console.log("No players needed a rank reset.");
+                    await setCompanyDetails(prev => ({ ...prev, nextRankResetDate: '' }));
+                    alert('No players required a rank reset. Reset date has been cleared.');
+                    return;
+                }
+
+                const updatedPlayers = playersToReset.map(player => ({
+                    ...player,
+                    stats: {
+                        ...player.stats,
+                        xp: 0,
+                    },
+                    rank: lowestTier,
+                }));
+                
+                try {
+                    const promises = updatedPlayers.map(p => updateDoc('players', p));
+                    await Promise.all(promises);
+
+                    // Update the company details to clear the reset date
+                    await setCompanyDetails(prev => ({ ...prev, nextRankResetDate: '' }));
+
+                    alert(`A seasonal rank reset has occurred! ${updatedPlayers.length} players have had their Rank and RP reset.`);
+                } catch (error) {
+                    console.error("Failed to perform rank reset:", error);
+                    alert("An error occurred during the rank reset process. Please check the console.");
+                    hasPerformedReset.current = false; // allow retry on error
+                }
+
+            } else {
+                 alert('Rank reset has been postponed. It will be prompted again on your next login.');
+                 hasPerformedReset.current = false; // allow prompt on next login
+            }
+        };
+
+        // Only run this logic for admins to prevent multiple users/clients from triggering the reset.
+        if (isAuthenticated && user?.role === 'admin' && ranks.length > 0 && players.length > 0) {
+            performRankReset();
+        }
+    }, [isAuthenticated, user?.role, companyDetails, setCompanyDetails, players, ranks, updateDoc]);
+
 
     const checkForPromotions = useCallback((player: Player) => {
         if (promotion || !ranks || ranks.length === 0) return;

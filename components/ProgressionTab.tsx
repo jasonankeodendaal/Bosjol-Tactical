@@ -1,8 +1,8 @@
-import React, { useState, useContext } from 'react';
-import type { Rank, Tier, Badge, LegendaryBadge, GamificationRule, GamificationSettings } from '../types';
+import React, { useState, useEffect } from 'react';
+import type { Rank, Tier, Badge, LegendaryBadge, GamificationRule, GamificationSettings, CompanyDetails } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
-import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, PlusIcon, InformationCircleIcon } from './icons/Icons';
+import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, PlusIcon, InformationCircleIcon, ArrowPathIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { DashboardCard } from './DashboardCard';
@@ -22,6 +22,8 @@ interface ProgressionTabProps {
     addDoc: <T extends {}>(collectionName: string, data: T) => Promise<string>;
     updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
     deleteDoc: (collectionName: string, docId: string) => Promise<void>;
+    companyDetails: CompanyDetails;
+    setCompanyDetails: (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => Promise<void>;
 }
 
 // ... (Gamification and Badge components remain the same as previous implementation)
@@ -351,7 +353,8 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     badges, setBadges,
     legendaryBadges, setLegendaryBadges,
     ranks, setRanks,
-    addDoc, updateDoc, deleteDoc 
+    addDoc, updateDoc, deleteDoc,
+    companyDetails, setCompanyDetails
 }) => {
     const [editingRule, setEditingRule] = useState<Partial<GamificationRule> | null>(null);
     const [deletingRule, setDeletingRule] = useState<GamificationRule | null>(null);
@@ -367,6 +370,23 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
 
     const [editingTier, setEditingTier] = useState<Partial<Tier & { rankId: string }> | null>(null);
     const [deletingTier, setDeletingTier] = useState<(Tier & { rankId: string }) | null>(null);
+    
+    const [resetDate, setResetDate] = useState(companyDetails.nextRankResetDate || '');
+    
+    useEffect(() => {
+        setResetDate(companyDetails.nextRankResetDate || '');
+    }, [companyDetails.nextRankResetDate]);
+
+    const handleSetDate = async () => {
+        if (resetDate && new Date(resetDate) <= new Date()) {
+            alert("Reset date must be in the future.");
+            return;
+        }
+        if (confirm(`Are you sure you want to set the rank reset to occur on ${resetDate || 'an unset date'}? This will clear the date if empty.`)) {
+            await setCompanyDetails(prev => ({ ...prev, nextRankResetDate: resetDate }));
+            alert("Reset date has been set.");
+        }
+    };
     
     // Handlers
     const handleSaveRule = async (rule: Omit<GamificationRule, 'id'> | GamificationRule) => { 
@@ -483,6 +503,24 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
                  </div>
             </DashboardCard>
             
+             <DashboardCard title="Seasonal Rank Reset" icon={<ArrowPathIcon className="w-6 h-6"/>}>
+                <div className="p-6 space-y-4">
+                    <p className="text-sm text-gray-400">
+                        Set a future date to automatically reset all players' Rank Points (XP) and Rank to zero. This action will trigger for an admin who logs in on or after the specified date. Legendary Badges and other lifetime stats will not be affected. Once the reset occurs, the date will be cleared.
+                    </p>
+                    <Input
+                        label="Next Reset Date"
+                        type="date"
+                        value={resetDate}
+                        onChange={e => setResetDate(e.target.value)}
+                        min={new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0]}
+                    />
+                    <Button onClick={handleSetDate} className="w-full" disabled={resetDate === (companyDetails.nextRankResetDate || '')}>
+                        {companyDetails.nextRankResetDate ? 'Update Reset Date' : 'Set Reset Date'}
+                    </Button>
+                </div>
+            </DashboardCard>
+
             {/* Other sections */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <DashboardCard title="Gamification Settings" icon={<PlusCircleIcon className="w-6 h-6" />}>

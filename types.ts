@@ -402,6 +402,7 @@ export interface CompanyDetails {
     };
     fixedEventRules?: string;
     minimumSignupAge: number;
+    nextRankResetDate?: string;
 }
 
 export interface ApiGuideStep {

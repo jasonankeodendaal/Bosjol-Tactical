@@ -115,13 +115,6 @@
         95% { clip-path: polygon(0 75%, 100% 75%, 100% 76%, 0 76%); }
         100% { clip-path: polygon(0 55%, 100% 55%, 100% 56%, 0 56%); }
       }
-      @keyframes marquee {
-        from { transform: translateX(0); }
-        to { transform: translateX(-50%); }
-      }
-      .animate-marquee {
-        animation: marquee 40s linear infinite;
-      }
       @keyframes prestige-glow {
         0% { box-shadow: 0 0 5px #ef4444, 0 0 10px #ef4444, 0 0 15px #b91c1c; }
         50% { box-shadow: 0 0 10px #ef4444, 0 0 20px #b91c1c, 0 0 30px #b91c1c; }
@@ -504,6 +497,47 @@
         font-weight: 700;
         color: #6ee7b7;
       }
+      
+      /* NEW SPONSOR CAROUSEL STYLES */
+      @keyframes marquee {
+        0% { transform: translateX(0%); }
+        100% { transform: translateX(-50%); } /* Loop halfway through the doubled list */
+      }
+      .animate-marquee {
+        display: flex;
+        animation: marquee 40s linear infinite;
+        will-change: transform;
+      }
+      .sponsor-carousel-container {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+        padding: 1rem 0;
+        -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+        mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+      }
+      .sponsor-item {
+        flex-shrink: 0;
+        width: 160px; /* Fixed width */
+        padding: 0 20px;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+      }
+      .sponsor-item img {
+        width: 100%;
+        height: 60px; /* Fixed height for logos */
+        object-fit: contain;
+        filter: grayscale(100%) brightness(0.8) contrast(1.2);
+        transition: filter 0.3s ease, transform 0.3s ease;
+      }
+      .sponsor-item:hover img {
+        filter: grayscale(0%) brightness(1) contrast(1);
+        transform: scale(1.1);
+      }
+      .sponsor-carousel-container:hover .animate-marquee {
+        animation-play-state: paused;
+      }
+
 
     </style>
     <style>

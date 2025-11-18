@@ -626,15 +626,17 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
 
                 {/* Sponsors */}
                 <DashboardCard title="Sponsors" icon={<SparklesIcon className="w-6 h-6" />} fullHeight>
-                    <div className="p-4">
-                        <div className="overflow-hidden relative h-32">
-                             <div className="flex animate-marquee">
-                                {[...sponsors, ...sponsors].map((sponsor, i) => (
-                                    <div key={`${sponsor.id}-${i}`} className="flex-shrink-0 w-64 h-32 flex items-center justify-center p-4" onClick={() => setSelectedSponsor(sponsor)}>
-                                        <img src={sponsor.logoUrl} alt={sponsor.name} className="max-h-full max-w-full object-contain cursor-pointer" />
-                                    </div>
-                                ))}
-                            </div>
+                    <div className="sponsor-carousel-container">
+                        <div className="animate-marquee">
+                            {[...sponsors, ...sponsors].map((sponsor, i) => (
+                                <div 
+                                    key={`${sponsor.id}-${i}`} 
+                                    className="sponsor-item"
+                                    onClick={() => setSelectedSponsor(sponsor)}
+                                >
+                                    <img src={sponsor.logoUrl} alt={sponsor.name} />
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </DashboardCard>

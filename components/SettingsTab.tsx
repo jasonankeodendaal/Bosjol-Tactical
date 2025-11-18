@@ -134,9 +134,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             // 4. Save Admin Profile if changed
             if (auth && adminUser && JSON.stringify(adminFormData) !== JSON.stringify(adminUser)) {
                 if (adminFormData) { // check if adminFormData is not null
-                    await updateDoc('admins', adminFormData);
+                    let adminDataToSave = { ...adminFormData };
+                    if (!adminDataToSave.avatarUrl) {
+                        adminDataToSave.avatarUrl = `https://api.dicebear.com/8.x/initials/svg?seed=${adminDataToSave.name}`;
+                    }
+                    await updateDoc('admins', adminDataToSave);
                     if (auth.updateUser) {
-                        auth.updateUser(adminFormData);
+                        auth.updateUser(adminDataToSave);
                     }
                 }
             }
@@ -260,7 +264,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             label="Admin Avatar"
                             fileUrl={adminFormData?.avatarUrl}
                             onUrlSet={(url) => setAdminFormData(f => f ? ({ ...f, avatarUrl: url }) : null)}
-                            onRemove={() => setAdminFormData(f => f ? ({ ...f, avatarUrl: `https://api.dicebear.com/8.x/initials/svg?seed=${f.name}` }) : null)}
+                            onRemove={() => setAdminFormData(f => f ? ({ ...f, avatarUrl: '' }) : null)}
                             accept="image/*"
                             apiServerUrl={formData.apiServerUrl}
                         />

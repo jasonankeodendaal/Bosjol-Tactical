@@ -109,40 +109,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Player login logic
         if (USE_FIREBASE && db && auth) {
             try {
+                // Step 1: Sign in anonymously FIRST to get an authenticated session.
+                const userCredential = await auth.signInAnonymously();
+                const authUID = userCredential.user?.uid;
+
+                if (!authUID) {
+                    throw new Error("Failed to get UID from anonymous session.");
+                }
+
+                // Step 2: Now that we are authenticated, query for the player.
                 const playersRef = db.collection("players");
                 const q = playersRef.where("playerCode", "==", cleanUsername.toUpperCase()).limit(1);
                 const querySnapshot = await q.get();
 
-                if (querySnapshot.empty) return false;
+                if (querySnapshot.empty) {
+                    await auth.signOut(); // Clean up anonymous session
+                    return false;
+                }
 
                 const playerDoc = querySnapshot.docs[0];
                 const playerData = { id: playerDoc.id, ...playerDoc.data() } as Player;
                 
+                // Step 3: Check PIN.
                 if (playerData.pin === cleanPassword) {
-                    // signInAnonymously will automatically sign out any existing user.
-                    const userCredential = await auth.signInAnonymously();
-                    const authUID = userCredential.user?.uid;
-
-                    if (authUID) {
-                        const updatedPlayerData = { ...playerData, activeAuthUID: authUID };
-                        await db.collection('players').doc(playerData.id).update({ activeAuthUID: authUID });
-                        setUser(updatedPlayerData);
-                    } else {
-                        throw new Error("Failed to get UID from anonymous session.");
-                    }
+                    // Step 4: Update the player doc with the new UID. This is now allowed by security rules.
+                    const updatedPlayerData = { ...playerData, activeAuthUID: authUID };
+                    await db.collection('players').doc(playerData.id).update({ activeAuthUID: authUID });
+                    setUser(updatedPlayerData);
                     return true;
-                }
-                return false;
-            } catch (error) {
-                const typedError = error as { code?: string; message: string };
-                let userMessage = `Login failed: ${typedError.message}.`; // Default message
-
-                if (typedError.code === 'auth/admin-restricted-operation') {
-                    userMessage = "Login failed due to a server configuration issue (auth/admin-restricted-operation). This can happen if Anonymous Sign-In is not enabled in your Firebase project's Authentication settings. Please ask the administrator to enable it.";
-                } else if (typedError.code === 'permission-denied') {
-                    userMessage = "Login failed due to a permission error. This usually means the app's Firestore Security Rules are not configured correctly. The rules must allow an authenticated user to update the 'activeAuthUID' field on their player document.";
                 } else {
-                    userMessage += "\n\nPlease check the console for more details.";
+                    await auth.signOut(); // Clean up anonymous session on wrong PIN
+                    return false;
+                }
+            } catch (error) {
+                if (auth.currentUser && auth.currentUser.isAnonymous) {
+                    await auth.signOut(); // Ensure cleanup on any error
+                }
+                
+                const typedError = error as { code?: string; message: string };
+                let userMessage = `Login failed: ${typedError.message}.`;
+
+                if (typedError.code === 'permission-denied') {
+                    userMessage = "Login failed due to a permission error. This usually means the app's Firestore Security Rules are not configured correctly. The rules must allow an authenticated user to update the 'activeAuthUID' field on their player document.";
                 }
                 
                 console.error("Player login failed:", typedError);

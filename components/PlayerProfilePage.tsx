@@ -63,7 +63,7 @@ const AwardXpModal: React.FC<{ onClose: () => void, onSave: (amount: number, rea
                     value={amount}
                     onChange={e => setAmount(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
                     placeholder="e.g., 100 for a bonus, -50 for a penalty"
-                    tooltip="Enter the amount of Rank Points (XP) to adjust. Use a positive number (e.g., 100) to award a bonus for good sportsmanship, or a negative number (e.g., -50) to issue a penalty for rule violations. This adjustment will be logged."
+                    tooltip="Enter the amount of Rank Points (XP) to adjust. Use a positive number (e.g., 100) to award a bonus, or a negative number (e.g., -50) to issue a penalty. Deducting XP can cause a player to rank down. This adjustment will be logged and visible to the player."
                 />
                 <div>
                      <div className="flex items-center mb-1.5">

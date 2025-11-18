@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CreatorDetails } from '../types';
@@ -7,6 +8,7 @@ import { DataContextType } from '../data/DataContext';
 import { SystemScanner } from './SystemScanner';
 import { AuthContext } from '../auth/AuthContext';
 import { CreatorProfileTab } from './CreatorProfileTab';
+import { ServerSetupTab } from './ServerSetupTab';
 
 // --- MAIN COMPONENT ---
 
@@ -25,7 +27,7 @@ const TabButton: React.FC<{ name: string, active: boolean, onClick: () => void, 
 );
 
 export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
-    const [activeTab, setActiveTab] = useState<'powerhouse' | 'profile'>('powerhouse');
+    const [activeTab, setActiveTab] = useState<'powerhouse' | 'profile' | 'server'>('powerhouse');
     const { setHelpTopic } = props;
     const auth = useContext(AuthContext);
     const creatorUser = auth?.user as (CreatorDetails & { role: 'creator' });
@@ -33,6 +35,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
     useEffect(() => {
         let topic = 'creator-dashboard-monitor';
         if (activeTab === 'profile') topic = 'creator-dashboard-profile';
+        if (activeTab === 'server') topic = 'creator-dashboard-server'; // Add help topic if needed
         setHelpTopic(topic);
     }, [activeTab, setHelpTopic]);
     
@@ -51,9 +54,10 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
             <main className="flex-grow overflow-y-auto">
                 <div className="p-4 sm:p-6 lg:p-8">
                     <div className="border-b border-zinc-800 mb-6">
-                        <nav className="flex space-x-6" aria-label="Tabs">
+                        <nav className="flex space-x-6 overflow-x-auto" aria-label="Tabs">
                             <TabButton name="Powerhouse Tools" active={activeTab === 'powerhouse'} onClick={() => setActiveTab('powerhouse')} icon={<CogIcon className="w-5 h-5"/>} />
                             <TabButton name="Profile & Guide Editor" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<UserCircleIcon className="w-5 h-5"/>} />
+                            <TabButton name="Full Server Guide" active={activeTab === 'server'} onClick={() => setActiveTab('server')} icon={<CodeBracketIcon className="w-5 h-5"/>} />
                         </nav>
                     </div>
 
@@ -67,6 +71,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
                         >
                             {activeTab === 'powerhouse' && <SystemScanner />}
                             {activeTab === 'profile' && <CreatorProfileTab creatorDetails={props.creatorDetails} setCreatorDetails={props.setCreatorDetails} />}
+                            {activeTab === 'server' && <ServerSetupTab />}
                         </motion.div>
                     </AnimatePresence>
                 </div>

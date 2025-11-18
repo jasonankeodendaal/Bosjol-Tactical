@@ -7,7 +7,7 @@ import { EventCard } from './EventCard';
 import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
 // FIX: Changed UNRANKED_SUB_RANK to UNRANKED_TIER.
-import { UNRANKED_TIER, MOCK_PLAYER_ROLES, MOCK_BADGES, MOCK_WEAPONS, MOCK_EQUIPMENT } from '../constants';
+import { UNRANKED_TIER, MOCK_PLAYER_ROLES, MOCK_BADGES } from '../constants';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
@@ -153,7 +153,7 @@ interface PlayerDashboardProps {
     signups: Signup[];
 }
 
-type Tab = 'Overview' | 'Events' | 'Raffles' | 'Ranks' | 'Stats' | 'Achievements' | 'Leaderboard' | 'Loadout' | 'Settings';
+type Tab = 'Overview' | 'Events' | 'Raffles' | 'Ranks' | 'Stats' | 'Achievements' | 'Leaderboard' | 'Settings';
 
 const ProgressBar: React.FC<{ value: number; max: number; isThin?: boolean }> = ({ value, max, isThin=false }) => {
     const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -389,7 +389,6 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Stats', icon: <ChartBarIcon className="w-5 h-5"/>},
         {name: 'Achievements', icon: <TrophyIcon className="w-5 h-5"/>},
         {name: 'Leaderboard', icon: <TrophyIcon className="w-5 h-5"/>},
-        {name: 'Loadout', icon: <CrosshairsIcon className="w-5 h-5"/>},
         {name: 'Settings', icon: <UserCircleIcon className="w-5 h-5"/>},
     ];
     const activeTabInfo = tabs.find(t => t.name === activeTab);
@@ -877,52 +876,6 @@ const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendary
     )
 };
 
-// FIX: Added missing LoadoutTab component
-const LoadoutTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate'>> = ({ player, onPlayerUpdate }) => {
-    const [loadout, setLoadout] = useState(player.loadout);
-
-    const handleSave = () => {
-        onPlayerUpdate({ ...player, loadout });
-        alert("Loadout saved!");
-    };
-
-    return (
-        <DashboardCard title="Loadout Customization" icon={<CrosshairsIcon className="w-6 h-6" />}>
-            <div className="p-6 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Primary Weapon</label>
-                        <select value={loadout.primaryWeapon} onChange={e => setLoadout(l => ({...l, primaryWeapon: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                            {MOCK_WEAPONS.primary.map((w: string) => <option key={w}>{w}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Secondary Weapon</label>
-                        <select value={loadout.secondaryWeapon} onChange={e => setLoadout(l => ({...l, secondaryWeapon: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                            {MOCK_WEAPONS.secondary.map((w: string) => <option key={w}>{w}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Lethal Equipment</label>
-                        <select value={loadout.lethal} onChange={e => setLoadout(l => ({...l, lethal: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                            {MOCK_EQUIPMENT.lethal.map((e: string) => <option key={e}>{e}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Tactical Equipment</label>
-                        <select value={loadout.tactical} onChange={e => setLoadout(l => ({...l, tactical: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                            {MOCK_EQUIPMENT.tactical.map((e: string) => <option key={e}>{e}</option>)}
-                        </select>
-                    </div>
-                </div>
-                <div className="pt-4">
-                    <Button onClick={handleSave} className="w-full">Save Loadout</Button>
-                </div>
-            </div>
-        </DashboardCard>
-    );
-};
-
 // FIX: Added missing SettingsTab component
 const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate'>> = ({ player, onPlayerUpdate }) => {
     const [formData, setFormData] = useState({ ...player });
@@ -1059,7 +1012,6 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                             {activeTab === 'Stats' && <StatsTab player={player} events={events} />}
                             {activeTab === 'Achievements' && <AchievementsTab player={player} legendaryBadges={legendaryBadges} ranks={ranks}/>}
                             {activeTab === 'Leaderboard' && <Leaderboard players={players} currentPlayerId={player.id} />}
-                            {activeTab === 'Loadout' && <LoadoutTab player={player} onPlayerUpdate={onPlayerUpdate} />}
                             {activeTab === 'Settings' && <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />}
                         </motion.div>
                     </AnimatePresence>

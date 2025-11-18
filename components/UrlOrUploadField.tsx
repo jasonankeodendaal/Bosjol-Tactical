@@ -19,7 +19,7 @@ type ValidationStatus = 'idle' | 'validating' | 'valid' | 'invalid_cors' | 'inva
 
 export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileUrl, onUrlSet, onRemove, accept, previewType, apiServerUrl }) => {
     const [validationStatus, setValidationStatus] = useState<ValidationStatus>('idle');
-    const [urlInputValue, setUrlInputValue] = useState('');
+    const [urlInputValue, setUrlInputValue] = useState(fileUrl || '');
 
     const validateUrl = useCallback(async (url: string) => {
         if (!url) {

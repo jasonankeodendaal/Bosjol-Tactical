@@ -110,7 +110,11 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
     const kdr = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
 
     const handleSave = () => {
-        onUpdatePlayer({...formData, age: Number(formData.age), rank: player.rank }); // Ensure rank object isn't overwritten by stale form data
+        let dataToSave = { ...formData, age: Number(formData.age), rank: player.rank };
+        if (!dataToSave.avatarUrl) {
+            dataToSave.avatarUrl = `https://api.dicebear.com/8.x/bottts/svg?seed=${dataToSave.name}${dataToSave.surname}`;
+        }
+        onUpdatePlayer(dataToSave);
         setIsEditing(false);
     };
 
@@ -126,8 +130,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, ev
     };
 
     const handleRemoveAvatar = () => {
-        const defaultAvatar = `https://api.dicebear.com/8.x/bottts/svg?seed=${formData.name}${formData.surname}`;
-        setFormData(f => ({ ...f, avatarUrl: defaultAvatar }));
+        setFormData(f => ({ ...f, avatarUrl: '' }));
     };
 
     const handleAwardXp = (amount: number, reason: string) => {

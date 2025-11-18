@@ -927,7 +927,11 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
     const companyDetails = dataContext?.companyDetails;
 
     const handleSave = () => {
-        onPlayerUpdate(formData);
+        let dataToSave = { ...formData };
+        if (!dataToSave.avatarUrl) {
+            dataToSave.avatarUrl = `https://api.dicebear.com/8.x/bottts/svg?seed=${dataToSave.name}${dataToSave.surname}`;
+        }
+        onPlayerUpdate(dataToSave);
         alert("Profile updated!");
     };
     
@@ -938,8 +942,7 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
     };
 
     const handleRemoveAvatar = () => {
-        const defaultAvatar = `https://api.dicebear.com/8.x/bottts/svg?seed=${formData.name}${formData.surname}`;
-        setFormData(f => ({ ...f, avatarUrl: defaultAvatar }));
+        setFormData(f => ({ ...f, avatarUrl: '' }));
     };
 
     return (
@@ -980,6 +983,25 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
                             <select value={formData.preferredRole} onChange={e => setFormData(p => ({...p, preferredRole: e.target.value as PlayerRole}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
                                 {MOCK_PLAYER_ROLES.map(role => <option key={role}>{role}</option>)}
                             </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="pt-4 border-t border-zinc-700/50">
+                    <h3 className="text-lg font-semibold text-gray-200 mb-2">Personal & Medical Information</h3>
+                    <div className="space-y-4">
+                        <Input label="Address" value={formData.address || ''} onChange={e => setFormData(f => ({ ...f, address: e.target.value }))} />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Bio</label>
+                            <textarea value={formData.bio || ''} onChange={e => setFormData(p => ({...p, bio: e.target.value}))} rows={3} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="A short bio about yourself." />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Allergies</label>
+                            <textarea value={formData.allergies || ''} onChange={e => setFormData(p => ({...p, allergies: e.target.value}))} rows={2} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="List any known allergies." />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Medical Notes</label>
+                            <textarea value={formData.medicalNotes || ''} onChange={e => setFormData(p => ({...p, medicalNotes: e.target.value}))} rows={2} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="Any medical conditions admins should be aware of." />
                         </div>
                     </div>
                 </div>

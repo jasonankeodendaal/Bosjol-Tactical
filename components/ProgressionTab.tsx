@@ -374,8 +374,10 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     
     const allTiers = ranks.flatMap(r => r.tiers).sort((a,b) => a.minXp - b.minXp);
     const sortedRanks = [...ranks].sort((a, b) => {
-        const minXpA = a.tiers.length > 0 ? Math.min(...a.tiers.map(t => t.minXp)) : Infinity;
-        const minXpB = b.tiers.length > 0 ? Math.min(...b.tiers.map(t => t.minXp)) : Infinity;
+        const tiersA = a.tiers || [];
+        const tiersB = b.tiers || [];
+        const minXpA = tiersA.length > 0 ? Math.min(...tiersA.map(t => t.minXp)) : Infinity;
+        const minXpB = tiersB.length > 0 ? Math.min(...tiersB.map(t => t.minXp)) : Infinity;
         return minXpA - minXpB;
     });
 

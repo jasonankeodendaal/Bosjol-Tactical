@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useContext } from 'react';
-import type { Player, GameEvent, Tier, XpAdjustment, LegendaryBadge, PlayerRole, Rank, CompanyDetails } from '../types';
+import type { Player, GameEvent, Tier, XpAdjustment, LegendaryBadge, PlayerRole, Rank, CompanyDetails, Badge } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -265,6 +265,26 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
         ? (players.filter(p => (p.stats?.xp ?? 0) < playerXP).length / (players.length - 1)) * 100
         : 100;
 
+    const allStandardBadges = dataContext?.badges || [];
+
+    const handleAwardStandardBadge = (badge: Badge) => {
+        const updatedPlayer: Player = {
+            ...player,
+            badges: [...player.badges, badge],
+        };
+        onUpdatePlayer(updatedPlayer);
+    };
+
+    const handleRevokeStandardBadge = (badgeId: string) => {
+        if (confirm("Are you sure you want to revoke this standard badge? The player may re-earn it automatically if they still meet the criteria.")) {
+            const updatedPlayer: Player = {
+                ...player,
+                badges: player.badges.filter(b => b.id !== badgeId),
+            };
+            onUpdatePlayer(updatedPlayer);
+        }
+    };
+
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
@@ -413,6 +433,26 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
                                     <Button onClick={handleAwardLegendaryBadge} disabled={!selectedLegendaryBadge}>Award</Button>
                                 </div>
                             </div>
+                        </div>
+                    </DashboardCard>
+                    <DashboardCard title="Standard Badges" icon={<TrophyIcon className="w-6 h-6" />}>
+                        <div className="p-6 space-y-3 max-h-60 overflow-y-auto">
+                            {allStandardBadges.length > 0 ? allStandardBadges.map(badge => {
+                                const hasBadge = player.badges.some(b => b.id === badge.id);
+                                return (
+                                    <div key={badge.id} className="flex items-center justify-between gap-3 bg-zinc-800/50 p-2 rounded-md">
+                                        <div className="flex items-center gap-3">
+                                            <img src={badge.iconUrl} alt={badge.name} className="w-8 h-8"/>
+                                            <p className="font-semibold text-white">{badge.name}</p>
+                                        </div>
+                                        {hasBadge ? (
+                                            <Button size="sm" variant="danger" onClick={() => handleRevokeStandardBadge(badge.id)}>Revoke</Button>
+                                        ) : (
+                                            <Button size="sm" variant="secondary" onClick={() => handleAwardStandardBadge(badge)}>Award</Button>
+                                        )}
+                                    </div>
+                                )
+                            }) : <p className="text-gray-500 text-center text-sm">No standard badges configured.</p>}
                         </div>
                     </DashboardCard>
                     <DashboardCard title="XP History" icon={<PlusCircleIcon className="w-6 h-6" />} titleAddon={<InfoTooltip text="This section displays a complete history of all manual Rank Point (XP) adjustments made to this player's account by an administrator. It does not include XP earned automatically from playing matches. Each entry shows the amount, the reason provided by the admin, and the date of the adjustment." />}>

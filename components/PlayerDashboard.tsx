@@ -533,6 +533,9 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 
     const { current, next, rank } = getRankProgression(player, ranks);
+
+    const row1Sponsors = useMemo(() => sponsors.filter((_, i) => i % 2 === 0), [sponsors]);
+    const row2Sponsors = useMemo(() => sponsors.filter((_, i) => i % 2 !== 0), [sponsors]);
     
     const startXp = current.minXp;
     const endXp = next ? next.minXp : 0;
@@ -626,10 +629,21 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                 {/* Sponsors */}
                 <DashboardCard title="Sponsors" icon={<SparklesIcon className="w-6 h-6" />} fullHeight>
                     <div className="sponsor-carousel-container">
-                        <div className="animate-marquee">
-                            {[...sponsors, ...sponsors].map((sponsor, i) => (
+                        <div className="marquee-row animate-marquee">
+                            {[...row1Sponsors, ...row1Sponsors].map((sponsor, i) => (
                                 <div 
-                                    key={`${sponsor.id}-${i}`} 
+                                    key={`${sponsor.id}-r1-${i}`} 
+                                    className="sponsor-item"
+                                    onClick={() => setSelectedSponsor(sponsor)}
+                                >
+                                    <img src={sponsor.logoUrl} alt={sponsor.name} />
+                                </div>
+                            ))}
+                        </div>
+                        <div className="marquee-row animate-marquee-reverse">
+                            {[...row2Sponsors, ...row2Sponsors].map((sponsor, i) => (
+                                <div 
+                                    key={`${sponsor.id}-r2-${i}`} 
                                     className="sponsor-item"
                                     onClick={() => setSelectedSponsor(sponsor)}
                                 >
@@ -642,6 +656,35 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
             </div>
             {/* Right Column */}
             <div className="lg:col-span-1 space-y-6">
+                <DashboardCard title="Commendations" icon={<TrophyIcon className="w-6 h-6" />}>
+                    <div className="p-4">
+                        {(player.badges.length === 0 && player.legendaryBadges.length === 0) ? (
+                            <p className="text-center text-gray-500 py-4">No commendations earned yet.</p>
+                        ) : (
+                            <div className="grid grid-cols-5 gap-4">
+                                {player.legendaryBadges.map(badge => (
+                                    <div key={badge.id} className="relative group flex justify-center items-center aspect-square" title={`${badge.name}: ${badge.description}`}>
+                                        <img
+                                            src={badge.iconUrl}
+                                            alt={badge.name}
+                                            className="w-12 h-12"
+                                            style={{ filter: 'drop-shadow(0 0 8px #facc15)' }}
+                                        />
+                                    </div>
+                                ))}
+                                {player.badges.map(badge => (
+                                    <div key={badge.id} className="relative group flex justify-center items-center aspect-square" title={`${badge.name}: ${badge.description}`}>
+                                        <img
+                                            src={badge.iconUrl}
+                                            alt={badge.name}
+                                            className="w-10 h-10"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </DashboardCard>
                 <DashboardCard title="Next Mission" icon={<CalendarIcon className="w-6 h-6"/>}>
                     <div className="p-2">
                          {nextEvent ? (

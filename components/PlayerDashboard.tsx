@@ -531,11 +531,10 @@ const BadgeProgressCard: React.FC<{badge: Badge, player: Player, ranks: Rank[]}>
 const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'events' | 'sponsors' | 'ranks'>> = ({ player, players, events, sponsors, ranks }) => {
     const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
-
     const { current, next, rank } = getRankProgression(player, ranks);
 
-    const row1Sponsors = useMemo(() => sponsors.filter((_, i) => i % 2 === 0), [sponsors]);
-    const row2Sponsors = useMemo(() => sponsors.filter((_, i) => i % 2 !== 0), [sponsors]);
+    const row1Sponsors = useMemo(() => sponsors.filter((_, i) => i < sponsors.length / 2), [sponsors]);
+    const row2Sponsors = useMemo(() => sponsors.filter((_, i) => i >= sponsors.length / 2), [sponsors]);
     
     const startXp = current.minXp;
     const endXp = next ? next.minXp : 0;
@@ -544,12 +543,133 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
         endXp > startXp ? Math.min(((playerXP - startXp) / (endXp - startXp)) * 100, 100) : 0
       ) : 100;
 
-    const percentile = players.length > 1
-        ? (players.filter(p => (p.stats?.xp ?? 0) < playerXP).length / (players.length - 1)) * 100
-        : 100;
+    const percentile = players.length > 1 ? (players.filter(p => (p.stats?.xp ?? 0) < playerXP).length / (players.length - 1)) * 100 : 100;
         
+    const sortedPlayers = useMemo(() => [...players].sort((a, b) => b.stats.xp - a.stats.xp), [players]);
+    const topThree = sortedPlayers.slice(0, 3);
+    
+    const kills = player.stats?.kills ?? 0;
+    const deaths = player.stats?.deaths ?? 0;
+    const kdr = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
+
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="overview-card">
+                        <h3 className="overview-section-title">Current Rank & Progression</h3>
+                        <div className="flex items-center gap-4 mb-4">
+                            {rank && <img src={rank.rankBadgeUrl} alt={rank.name} className="w-20 h-20"/>}
+                            <div>
+                                <p className="text-lg text-gray-400 uppercase tracking-wider">{rank?.name || 'Unranked'}</p>
+                                <p className="text-3xl font-bold text-white">{current.name}</p>
+                            </div>
+                             <div className="ml-auto text-right">
+                                <p className="text-sm font-semibold text-gray-400">Percentile</p>
+                                <p className="text-2xl font-bold text-white">Top {(100 - percentile).toFixed(1)}%</p>
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <div className="flex justify-between items-baseline text-sm">
+                                <p className="font-semibold text-gray-300">Progression</p>
+                                <p className="font-mono text-amber-300">{playerXP.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'} RP</p>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-4 border border-zinc-800 shadow-inner">
+                                <motion.div 
+                                    className="bg-gradient-to-r from-red-800 to-red-600 h-full rounded-full"
+                                    initial={{ width: '0%' }}
+                                    animate={{ width: `${progressPercentage}%` }}
+                                    transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+                                />
+                            </div>
+                             <p className="text-right text-xs text-gray-400">
+                                {next ? `${(next.minXp - playerXP > 0 ? next.minXp - playerXP : 0).toLocaleString()} RP to ${next.name}` : 'Maximum Rank Reached!'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="overview-card">
+                        <h3 className="overview-section-title">Badges & Achievements Showcase</h3>
+                        {(player.badges.length === 0 && player.legendaryBadges.length === 0) ? (
+                            <p className="text-center text-gray-500 py-4">No commendations earned yet.</p>
+                        ) : (
+                            <div className="grid grid-cols-6 gap-4">
+                                {player.legendaryBadges.map(badge => (
+                                    <div key={badge.id} className="relative group flex justify-center items-center aspect-square" title={`${badge.name}: ${badge.description}`}>
+                                        <img src={badge.iconUrl} alt={badge.name} className="w-16 h-16" style={{ filter: 'drop-shadow(0 0 8px #facc15)' }}/>
+                                    </div>
+                                ))}
+                                {player.badges.map(badge => (
+                                    <div key={badge.id} className="relative group flex justify-center items-center aspect-square" title={`${badge.name}: ${badge.description}`}>
+                                        <img src={badge.iconUrl} alt={badge.name} className="w-14 h-14"/>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div className="overview-card">
+                        <h3 className="overview-section-title">Lifetime Performance</h3>
+                         <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-y-6">
+                            <StatDisplay value={kdr} label="K/D Ratio" tooltip="Kill/Death Ratio" />
+                            <StatDisplay value={(player.stats?.kills ?? 0).toLocaleString()} label="Total Kills" />
+                            <StatDisplay value={(player.stats?.deaths ?? 0).toLocaleString()} label="Total Deaths" />
+                            <StatDisplay value={(player.stats?.headshots ?? 0).toLocaleString()} label="Total Headshots" />
+                            <StatDisplay value={(player.stats?.gamesPlayed ?? 0).toLocaleString()} label="Matches Played" />
+                            <StatDisplay value={(player.stats?.xp ?? 0).toLocaleString()} label="Total Rank Points" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Column */}
+                <div className="lg:col-span-1 space-y-6">
+                     <div className="overview-card">
+                        <h3 className="overview-section-title">Stats Summary</h3>
+                        <ul className="text-gray-300 space-y-2">
+                           <li className="flex justify-between"><span>Kills:</span> <span className="font-bold text-white">{kills}</span></li>
+                           <li className="flex justify-between"><span>Deaths:</span> <span className="font-bold text-white">{deaths}</span></li>
+                           <li className="flex justify-between"><span>K/D Ratio:</span> <span className="font-bold text-white">{kdr}</span></li>
+                           <li className="flex justify-between"><span>Games Played:</span> <span className="font-bold text-white">{player.stats?.gamesPlayed ?? 0}</span></li>
+                        </ul>
+                    </div>
+                     <div className="overview-card">
+                        <h3 className="overview-section-title">Next Event</h3>
+                        {nextEvent ? (
+                            <div>
+                                <h4 className="font-bold text-white">{nextEvent.title}</h4>
+                                <p className="text-sm text-gray-400">Date: {new Date(nextEvent.date).toLocaleDateString()}</p>
+                                <p className="text-sm text-gray-400">Location: {nextEvent.location}</p>
+                            </div>
+                         ) : (
+                            <p className="text-center text-gray-500 p-8">No upcoming events scheduled.</p>
+                         )}
+                    </div>
+                    <div className="overview-card p-0">
+                         <div className="p-6"><h3 className="overview-section-title mb-0">Leaderboard - Top 3</h3></div>
+                         <div className="leaderboard-podium-bg !p-0">
+                            <motion.div className="podium-container !h-auto !max-w-full" initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.1 } } }}>
+                                {topThree.length > 1 && <PodiumPlayer player={topThree[1]} rank={2} delay={0.1} />}
+                                {topThree.length > 0 && <PodiumPlayer player={topThree[0]} rank={1} delay={0} />}
+                                {topThree.length > 2 && <PodiumPlayer player={topThree[2]} rank={3} delay={0.2} />}
+                            </motion.div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div className="bg-black/50 border-t-2 border-red-700 mt-6 p-4 rounded-lg">
+                <h3 className="overview-section-title !border-red-700/50">Official Sponsors</h3>
+                <div className="flex flex-col gap-4 mt-4">
+                    <div className="flex justify-around items-center">
+                        {row1Sponsors.map(sponsor => <div key={sponsor.id} onClick={() => setSelectedSponsor(sponsor)} className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity"><img src={sponsor.logoUrl} alt={sponsor.name} className="h-12 object-contain"/></div>)}
+                    </div>
+                    {row2Sponsors.length > 0 && (
+                        <div className="flex justify-around items-center">
+                            {row2Sponsors.map(sponsor => <div key={sponsor.id} onClick={() => setSelectedSponsor(sponsor)} className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity"><img src={sponsor.logoUrl} alt={sponsor.name} className="h-12 object-contain"/></div>)}
+                        </div>
+                    )}
+                </div>
+            </div>
             {selectedSponsor && (
                 <Modal isOpen={true} onClose={() => setSelectedSponsor(null)} title={selectedSponsor.name}>
                      <div className="text-center">
@@ -561,163 +681,23 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                     </div>
                 </Modal>
             )}
-            {/* Left Column */}
-            <div className="lg:col-span-2 space-y-6">
-                {/* Profile Card */}
-                <DashboardCard title="Player Profile" icon={<UserIcon className="w-6 h-6"/>}>
-                    <div className="p-6 flex flex-col sm:flex-row items-center gap-6">
-                        <img src={player.avatarUrl} alt={player.callsign} className="w-24 h-24 rounded-full object-cover border-2 border-red-500 flex-shrink-0" />
-                        <div className="text-center sm:text-left">
-                             <div className="flex items-center justify-center sm:justify-start gap-2">
-                                <h2 className="text-2xl font-bold text-white">{player.name}</h2>
-                                <BadgePill color={player.status === 'Active' ? 'green' : 'red'}>{player.status}</BadgePill>
-                             </div>
-                            <p className="text-lg text-red-400 font-semibold">"{player.callsign}"</p>
-                            <p className="text-sm text-gray-400 mt-2">{player.bio || 'No bio available.'}</p>
-                        </div>
-                    </div>
-                </DashboardCard>
-                
-                <DashboardCard title="Rank & Progression" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
-                    <div className="p-6">
-                        <div className="flex items-center gap-4 mb-4">
-                            {rank && <img src={rank.rankBadgeUrl} alt={rank.name} className="w-16 h-16"/>}
-                            <div>
-                                <p className="text-sm text-gray-400 uppercase tracking-wider">{rank?.name || 'Unranked'}</p>
-                                <p className="text-2xl font-bold text-white">{current.name}</p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-1 mb-4">
-                            <div className="flex justify-between items-baseline">
-                                <p className="text-sm font-semibold text-gray-300">Progression</p>
-                                <p className="text-sm font-mono text-amber-300">{playerXP.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'} RP</p>
-                            </div>
-                            <div className="w-full bg-zinc-900 rounded-full h-4 border border-zinc-800 shadow-inner">
-                                <motion.div 
-                                    className="bg-gradient-to-r from-red-600 to-red-800 h-full rounded-full"
-                                    initial={{ width: '0%' }}
-                                    animate={{ width: `${progressPercentage}%` }}
-                                    transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-                                />
-                            </div>
-                             <p className="text-right text-xs text-gray-400">
-                                {next ? `${(next.minXp - playerXP > 0 ? next.minXp - playerXP : 0).toLocaleString()} RP to ${next.name}` : 'Maximum Rank Reached!'}
-                            </p>
-                        </div>
-
-                        <div className="mt-6 pt-4 border-t border-zinc-700/50">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <h4 className="text-sm font-semibold text-gray-400 mb-1">Percentile</h4>
-                                    <p className="text-lg font-bold text-white">Top {(100 - percentile).toFixed(1)}%</p>
-                                    <p className="text-xs text-gray-500">of all operators</p>
-                                </div>
-                                {next && (
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-gray-400 mb-1">Next Tier Unlocks</h4>
-                                        <ul className="text-xs text-gray-300 list-disc list-inside space-y-0.5">
-                                            {next.perks.map((perk, i) => <li key={i}>{perk}</li>)}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </DashboardCard>
-
-                {/* Sponsors */}
-                <DashboardCard title="Sponsors" icon={<SparklesIcon className="w-6 h-6" />} fullHeight>
-                    <div className="sponsor-carousel-container">
-                        <div className="marquee-row animate-marquee">
-                            {[...row1Sponsors, ...row1Sponsors].map((sponsor, i) => (
-                                <div 
-                                    key={`${sponsor.id}-r1-${i}`} 
-                                    className="sponsor-item"
-                                    onClick={() => setSelectedSponsor(sponsor)}
-                                >
-                                    <img src={sponsor.logoUrl} alt={sponsor.name} />
-                                </div>
-                            ))}
-                        </div>
-                        <div className="marquee-row animate-marquee-reverse">
-                            {[...row2Sponsors, ...row2Sponsors].map((sponsor, i) => (
-                                <div 
-                                    key={`${sponsor.id}-r2-${i}`} 
-                                    className="sponsor-item"
-                                    onClick={() => setSelectedSponsor(sponsor)}
-                                >
-                                    <img src={sponsor.logoUrl} alt={sponsor.name} />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </DashboardCard>
-            </div>
-            {/* Right Column */}
-            <div className="lg:col-span-1 space-y-6">
-                <DashboardCard title="Commendations" icon={<TrophyIcon className="w-6 h-6" />}>
-                    <div className="p-4">
-                        {(player.badges.length === 0 && player.legendaryBadges.length === 0) ? (
-                            <p className="text-center text-gray-500 py-4">No commendations earned yet.</p>
-                        ) : (
-                            <div className="grid grid-cols-5 gap-4">
-                                {player.legendaryBadges.map(badge => (
-                                    <div key={badge.id} className="relative group flex justify-center items-center aspect-square" title={`${badge.name}: ${badge.description}`}>
-                                        <img
-                                            src={badge.iconUrl}
-                                            alt={badge.name}
-                                            className="w-12 h-12"
-                                            style={{ filter: 'drop-shadow(0 0 8px #facc15)' }}
-                                        />
-                                    </div>
-                                ))}
-                                {player.badges.map(badge => (
-                                    <div key={badge.id} className="relative group flex justify-center items-center aspect-square" title={`${badge.name}: ${badge.description}`}>
-                                        <img
-                                            src={badge.iconUrl}
-                                            alt={badge.name}
-                                            className="w-10 h-10"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </DashboardCard>
-                <DashboardCard title="Next Mission" icon={<CalendarIcon className="w-6 h-6"/>}>
-                    <div className="p-2">
-                         {nextEvent ? (
-                            <EventCard event={nextEvent}/>
-                         ) : (
-                            <p className="text-center text-gray-500 p-8">No upcoming events scheduled.</p>
-                         )}
-                    </div>
-                </DashboardCard>
-                <DashboardCard title="Lifetime Stats" icon={<ChartBarIcon className="w-6 h-6"/>}>
-                     <div className="p-6 grid grid-cols-2 gap-y-4">
-                        <div className="text-center">
-                            <p className="text-2xl font-bold">{player.stats?.kills ?? 0}</p>
-                            <p className="text-xs text-gray-400">Kills</p>
-                        </div>
-                         <div className="text-center">
-                            <p className="text-2xl font-bold">{player.stats?.deaths ?? 0}</p>
-                            <p className="text-xs text-gray-400">Deaths</p>
-                        </div>
-                         <div className="text-center">
-                            <p className="text-2xl font-bold">{player.stats?.headshots ?? 0}</p>
-                            <p className="text-xs text-gray-400">Headshots</p>
-                        </div>
-                         <div className="text-center">
-                            <p className="text-2xl font-bold">{player.stats?.gamesPlayed ?? 0}</p>
-                            <p className="text-xs text-gray-400">Games</p>
-                        </div>
-                    </div>
-                </DashboardCard>
-            </div>
         </div>
     );
 };
+
+const PodiumPlayer: React.FC<{ player: Player, rank: 1 | 2 | 3, delay: number }> = ({ player, rank, delay }) => {
+    const podiumClass = `podium-${rank}`;
+    const animationVariants = { hidden: { opacity: 0, y: 50 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay } } };
+    return (
+        <motion.div className={`podium-item ${podiumClass}`} variants={animationVariants}>
+            <div className="podium-avatar-wrapper"><img src={player.avatarUrl} alt={player.name} className="podium-avatar" />
+                <p className={`font-bold text-base mt-2 truncate max-w-full px-1 ${rank === 1 ? 'text-amber-300' : 'text-white'}`}>{player.callsign}</p>
+                <p className="text-xs text-zinc-300">{player.stats.xp.toLocaleString()} RP</p>
+            </div><div className="podium-base">{rank}</div>
+        </motion.div>
+    );
+};
+
 
 const EventsTab: React.FC<Pick<PlayerDashboardProps, 'events' | 'player' | 'onEventSignUp' | 'locations' | 'signups'>> = ({ events, player, onEventSignUp, locations, signups }) => {
     const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');

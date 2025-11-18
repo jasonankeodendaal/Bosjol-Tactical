@@ -7,8 +7,8 @@ import { UrlOrUploadField } from './UrlOrUploadField';
 import { UserCircleIcon, CodeBracketIcon, PlusIcon, TrashIcon, PencilIcon } from './icons/Icons';
 
 interface CreatorProfileTabProps {
-    creatorDetails: CreatorDetails;
-    setCreatorDetails: (d: CreatorDetails | ((p: CreatorDetails) => CreatorDetails)) => Promise<void>;
+    creatorDetails: CreatorDetails & { apiSetupGuide: ApiGuideStep[] };
+    setCreatorDetails: (d: (CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) | ((p: CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) => CreatorDetails & { apiSetupGuide: ApiGuideStep[] })) => Promise<void>;
 }
 
 export const CreatorProfileTab: React.FC<CreatorProfileTabProps> = ({ creatorDetails, setCreatorDetails }) => {
@@ -77,10 +77,14 @@ export const CreatorProfileTab: React.FC<CreatorProfileTabProps> = ({ creatorDet
                             <Input label="Contact Email" type="email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
                             <Input label="WhatsApp Number" type="tel" value={formData.whatsapp} onChange={e => setFormData(f => ({ ...f, whatsapp: e.target.value }))} />
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Input label="GitHub Project URL" value={formData.githubUrl} onChange={e => setFormData(f => ({ ...f, githubUrl: e.target.value }))} />
-                             <Input label="API Server ZIP URL" value={formData.sourceCodeZipUrl || ''} onChange={e => setFormData(f => ({ ...f, sourceCodeZipUrl: e.target.value }))} />
-                        </div>
+                        <Input label="GitHub Project URL" value={formData.githubUrl} onChange={e => setFormData(f => ({ ...f, githubUrl: e.target.value }))} />
+                        <UrlOrUploadField
+                            label="API Server Source (.zip)"
+                            fileUrl={formData.sourceCodeZipUrl || ''}
+                            onUrlSet={(url) => setFormData(f => ({...f, sourceCodeZipUrl: url}))}
+                            onRemove={() => setFormData(f => ({...f, sourceCodeZipUrl: ''}))}
+                            accept=".zip,application/zip"
+                         />
                     </div>
                 </div>
             </DashboardCard>

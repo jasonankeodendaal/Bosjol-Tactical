@@ -375,37 +375,51 @@ export const MOCK_CREATOR_CORE: CreatorDetails = {
 
 export const MOCK_API_GUIDE: ApiGuideStep[] = [
     {
-      id: "step_1672531200000",
-      title: "Introduction",
+      id: "step_1",
+      title: "Introduction & Purpose",
       content: "This guide explains how to set up an optional, self-hosted file server. The default Firebase setup limits file sizes to ~500KB. This server bypasses that limit, allowing large files like videos or audio briefings. It also adds a layer of security by handling all database interactions, instead of the client connecting directly to Firebase."
     },
     {
-      id: "step_1672531200001",
+      id: "step_2",
       title: "Prerequisites",
       content: "You'll need `Node.js` and `npm` installed on the machine that will act as your server. You can download them from [the official Node.js website](https://nodejs.org/)."
     },
     {
-      id: "step_1672531200002",
-      title: "Server Setup",
-      content: "Create a new folder, `cd` into it, and run `npm init -y`. Then, install the required packages:"
+      id: "step_3",
+      title: "Download & Unzip Server Files",
+      content: "Download the pre-configured server files using the button in the 'API Setup' tab on the Admin Dashboard. Unzip the file into a new folder on your server machine."
     },
     {
-      id: "step_1672531200003",
-      title: "",
-      // FIX: Add missing 'content' property to satisfy ApiGuideStep type.
-      content: "",
-      codeBlock: "npm install express cors multer firebase-admin",
+      id: "step_4",
+      title: "Install Dependencies",
+      content: "Open a terminal or command prompt, navigate into the unzipped folder, and run the following command to install the required packages:",
+      // FIX: Corrected object property syntax.
+      codeBlock: "npm install",
       codeLanguage: "bash"
     },
     {
-      id: "step_1672531200004",
-      title: "Server Code",
-      content: "Create a file named `server.js` and paste the provided code. You will need to download your Firebase service account key (a JSON file) and place it in the same folder."
+        id: "step_5",
+        title: "Get Firebase Service Account Key",
+        content: "1. Go to your [Firebase Console](https://console.firebase.google.com/).\n2. Select your project, go to Project Settings (gear icon) -> Service accounts.\n3. Click 'Generate new private key' and save the downloaded JSON file.\n4. **Crucially, rename this file to `service-account-key.json` and place it inside your server folder.**"
     },
     {
-      id: "step_1672531200005",
-      title: "Running the Server",
-      content: "Start the server with `node server.js`. It will run on port 3001 by default."
+        id: "step_6",
+        title: "Configure Environment Variables",
+        content: "Create a new file named `.env` in your server folder and add the following line, replacing the value with your Firebase Project ID:",
+        // FIX: Corrected object property syntax.
+        codeBlock: "FIREBASE_PROJECT_ID=your-firebase-project-id",
+        codeLanguage: "bash",
+        fileName: ".env"
+    },
+    {
+      id: "step_7",
+      title: "Run the Server",
+      content: "Start the server with `node server.js`. It will run on port 3001 by default. You should see a message confirming it's running."
+    },
+    {
+        id: "step_8",
+        title: "Update Dashboard Settings",
+        content: "In the Admin Dashboard under Settings -> App & Content, set the 'API Server URL' to the address of your server (e.g., `http://localhost:3001` for local testing, or your public URL). The app will now use your server for file uploads."
     }
 ];
 

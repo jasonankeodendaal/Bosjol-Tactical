@@ -66,7 +66,7 @@ const StepCard: React.FC<{ number?: number, title: string, children: React.React
 };
 
 interface ApiSetupTabProps {
-    creatorDetails: CreatorDetails;
+    creatorDetails: CreatorDetails & { apiSetupGuide: any[] };
 }
 
 

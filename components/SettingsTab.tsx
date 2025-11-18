@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
-import type { CompanyDetails, SocialLink, CarouselMedia } from '../types';
+import type { CompanyDetails, SocialLink, CarouselMedia, Admin } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
-import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, KeyIcon, InformationCircleIcon, CloudArrowDownIcon, UploadCloudIcon } from './icons/Icons';
+import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, KeyIcon, InformationCircleIcon, CloudArrowDownIcon, UploadCloudIcon, UserCircleIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
+import { AuthContext } from '../auth/AuthContext';
 
 interface SettingsTabProps {
     companyDetails: CompanyDetails;
@@ -52,8 +53,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 }) => {
     const dataContext = useContext(DataContext);
     if (!dataContext) throw new Error("DataContext is not available");
+    
+    const auth = useContext(AuthContext);
+    const adminUser = auth?.user?.role === 'admin' ? (auth.user as Admin) : null;
 
     const [formData, setFormData] = useState(() => normalizeCompanyDetails(companyDetails));
+    const [adminFormData, setAdminFormData] = useState(adminUser);
     const [socialLinksData, setSocialLinksData] = useState(socialLinks);
     const [carouselMediaData, setCarouselMediaData] = useState(carouselMedia);
     const [isSaving, setIsSaving] = useState(false);
@@ -66,23 +71,25 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const [isDeletePlayersConfirmOpen, setIsDeletePlayersConfirmOpen] = useState(false);
     const [deletePlayersConfirmText, setDeletePlayersConfirmText] = useState('');
     
-    // This effect syncs local form state with context state, but ONLY if the form isn't dirty.
-    // This prevents external updates from overwriting local unsaved changes.
     useEffect(() => {
         if (!isDirty) {
             setFormData(normalizeCompanyDetails(companyDetails));
             setSocialLinksData(socialLinks);
             setCarouselMediaData(carouselMedia);
+            if (adminUser) {
+                setAdminFormData(adminUser);
+            }
         }
-    }, [companyDetails, socialLinks, carouselMedia, isDirty]);
+    }, [companyDetails, socialLinks, carouselMedia, adminUser, isDirty]);
 
-    // This effect calculates and sets the dirty state whenever local or context state changes.
     useEffect(() => {
-        const dirty = JSON.stringify(formData) !== JSON.stringify(normalizeCompanyDetails(companyDetails)) ||
-                        JSON.stringify(socialLinksData) !== JSON.stringify(socialLinks) ||
-                        JSON.stringify(carouselMediaData) !== JSON.stringify(carouselMedia);
-        setIsDirty(dirty);
-    }, [formData, companyDetails, socialLinksData, socialLinks, carouselMediaData, carouselMedia]);
+        const companyDirty = JSON.stringify(formData) !== JSON.stringify(normalizeCompanyDetails(companyDetails));
+        const socialDirty = JSON.stringify(socialLinksData) !== JSON.stringify(socialLinks);
+        const carouselDirty = JSON.stringify(carouselMediaData) !== JSON.stringify(carouselMedia);
+        const adminDirty = adminUser ? JSON.stringify(adminFormData) !== JSON.stringify(adminUser) : false;
+
+        setIsDirty(companyDirty || socialDirty || carouselDirty || adminDirty);
+    }, [formData, companyDetails, socialLinksData, socialLinks, carouselMediaData, carouselMedia, adminFormData, adminUser]);
 
 
     const handleSave = async () => {
@@ -121,6 +128,16 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             for (const original of carouselMedia) {
                 if (!newMedia.has(original.id)) { // It was deleted
                     await deleteDoc('carouselMedia', original.id);
+                }
+            }
+            
+            // 4. Save Admin Profile if changed
+            if (auth && adminUser && JSON.stringify(adminFormData) !== JSON.stringify(adminUser)) {
+                if (adminFormData) { // check if adminFormData is not null
+                    await updateDoc('admins', adminFormData);
+                    if (auth.updateUser) {
+                        auth.updateUser(adminFormData);
+                    }
                 }
             }
 
@@ -236,6 +253,33 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
     return (
         <div className="space-y-6">
+             <DashboardCard title="Administrator Profile" icon={<UserCircleIcon className="w-6 h-6" />}>
+                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-1">
+                        <UrlOrUploadField
+                            label="Admin Avatar"
+                            fileUrl={adminFormData?.avatarUrl}
+                            onUrlSet={(url) => setAdminFormData(f => f ? ({ ...f, avatarUrl: url }) : null)}
+                            onRemove={() => setAdminFormData(f => f ? ({ ...f, avatarUrl: `https://api.dicebear.com/8.x/initials/svg?seed=${f.name}` }) : null)}
+                            accept="image/*"
+                            apiServerUrl={formData.apiServerUrl}
+                        />
+                    </div>
+                    <div className="md:col-span-2 space-y-4">
+                        <Input
+                            label="Admin Name"
+                            value={adminFormData?.name || ''}
+                            onChange={e => setAdminFormData(f => f ? ({ ...f, name: e.target.value }) : null)}
+                        />
+                        <Input
+                            label="Email (cannot be changed)"
+                            value={adminFormData?.email || ''}
+                            disabled
+                        />
+                    </div>
+                </div>
+            </DashboardCard>
+
              <DashboardCard title="Core Company Details" icon={<BuildingOfficeIcon className="w-6 h-6" />}>
                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">

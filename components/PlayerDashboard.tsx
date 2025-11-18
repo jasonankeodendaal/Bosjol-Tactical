@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useMemo, useContext } from 'react';
+import React, { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GoogleGenAI, Chat } from '@google/genai';
+import { marked } from 'marked';
 // FIX: Changed RankTier and SubRank to Rank and Tier respectively.
-import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, Rank, Tier, PlayerRole } from '../types';
+import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, Rank, Tier, PlayerRole, ChatMessage } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
-import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon, InformationCircleIcon } from './icons/Icons';
+import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon, InformationCircleIcon, ChatBubbleLeftRightIcon, PaperAirplaneIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
 // FIX: Changed UNRANKED_SUB_RANK to UNRANKED_TIER.
 import { UNRANKED_TIER, MOCK_PLAYER_ROLES, MOCK_BADGES } from '../constants';
@@ -17,6 +19,8 @@ import { AuthContext } from '../auth/AuthContext';
 import { DataContext } from '../data/DataContext';
 import { Loader } from './Loader';
 import { UrlOrUploadField } from './UrlOrUploadField';
+
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const getRankForPlayer = (player: Player, ranks: Rank[]): Tier => {
     if (!ranks || ranks.length === 0) return UNRANKED_TIER;
@@ -143,7 +147,7 @@ interface PlayerDashboardProps {
     signups: Signup[];
 }
 
-type Tab = 'Overview' | 'Events' | 'Raffles' | 'Ranks' | 'Stats' | 'Achievements' | 'Settings';
+type Tab = 'Overview' | 'Events' | 'Raffles' | 'Ranks' | 'Stats' | 'Achievements' | 'AI Debrief' | 'Settings';
 
 const ProgressBar: React.FC<{ value: number; max: number; isThin?: boolean }> = ({ value, max, isThin=false }) => {
     const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -378,6 +382,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Ranks', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Stats', icon: <ChartBarIcon className="w-5 h-5"/>},
         {name: 'Achievements', icon: <TrophyIcon className="w-5 h-5"/>},
+        {name: 'AI Debrief', icon: <ChatBubbleLeftRightIcon className="w-5 h-5"/>},
         {name: 'Settings', icon: <UserCircleIcon className="w-5 h-5"/>},
     ];
     const activeTabInfo = tabs.find(t => t.name === activeTab);
@@ -879,6 +884,183 @@ const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendary
     )
 };
 
+const AIDebriefTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events' | 'ranks'>> = ({ player, events, ranks }) => {
+    const [selectedMatchId, setSelectedMatchId] = useState<string>('');
+    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [chat, setChat] = useState<Chat | null>(null);
+    const [currentMessage, setCurrentMessage] = useState('');
+    const messagesEndRef = useRef<null | HTMLDivElement>(null);
+
+    const pastMatches = useMemo(() => {
+        return player.matchHistory
+            .map(record => ({ ...record, event: events.find(e => e.id === record.eventId) }))
+            .filter(record => record.event)
+            .sort((a, b) => new Date(b.event!.date).getTime() - new Date(a.event!.date).getTime());
+    }, [player.matchHistory, events]);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(scrollToBottom, [chatHistory]);
+
+    const handleGenerateDebrief = async () => {
+        if (!selectedMatchId) {
+            alert("Please select a match first.");
+            return;
+        }
+
+        setIsLoading(true);
+        setChatHistory([]);
+        setChat(null);
+
+        const match = pastMatches.find(m => m.id === selectedMatchId);
+        if (!match || !match.event) {
+            setIsLoading(false);
+            return;
+        }
+
+        const kdr = player.stats.deaths > 0 ? (player.stats.kills / player.stats.deaths).toFixed(2) : player.stats.kills.toFixed(2);
+
+        const systemInstruction = `You are a tactical analyst AI for an airsoft player. Your name is 'Bosjol AI'. Your tone should be professional, encouraging, and tactical. You are analyzing a player's performance in a past match. Respond in markdown.`;
+
+        const initialPrompt = `
+        After Action Report Request:
+
+        **Player Profile:**
+        - Callsign: ${player.callsign}
+        - Lifetime K/D: ${kdr}
+        - Preferred Role: ${player.preferredRole || 'N/A'}
+
+        **Match Details:**
+        - Event: ${match.event.title}
+        - Theme: ${match.event.theme}
+
+        **Player's Performance in this match:**
+        - Kills: ${match.playerStats.kills}
+        - Deaths: ${match.playerStats.deaths}
+        - Headshots: ${match.playerStats.headshots}
+
+        **Task:** Generate a concise After Action Report (AAR) for this player. The report should:
+        1. Start with "### After Action Report for Operator ${player.callsign}".
+        2. Briefly praise their performance, mentioning a key stat (like kills or match K/D).
+        3. Provide one piece of constructive tactical advice based on their performance in this match (e.g., if deaths are high, suggest focusing on cover).
+        4. Keep the report to about 3-4 sentences.
+        5. End with "**Bosjol AI out.**"
+        `;
+
+        try {
+            const newChat = ai.chats.create({ model: 'gemini-2.5-flash', config: { systemInstruction } });
+            setChat(newChat);
+
+            const response = await newChat.sendMessage({ message: initialPrompt });
+
+            setChatHistory([{ role: 'model', content: response.text }]);
+        } catch (error) {
+            console.error("Gemini API error:", error);
+            setChatHistory([{ role: 'model', content: "Sorry, I'm having trouble connecting to the tactical network. Please try again later." }]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    const handleSendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!currentMessage.trim() || !chat || isLoading) return;
+
+        const userMessage: ChatMessage = { role: 'user', content: currentMessage };
+        setChatHistory(prev => [...prev, userMessage]);
+        setCurrentMessage('');
+        setIsLoading(true);
+
+        try {
+            const response = await chat.sendMessage({ message: currentMessage });
+            setChatHistory(prev => [...prev, { role: 'model', content: response.text }]);
+        } catch (error) {
+            console.error("Gemini API chat error:", error);
+            setChatHistory(prev => [...prev, { role: 'model', content: "My apologies, I encountered a transmission error. Could you repeat that?" }]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <DashboardCard title="AI Debrief" icon={<ChatBubbleLeftRightIcon className="w-6 h-6" />}>
+            <div className="p-4 space-y-4">
+                <div className="flex gap-2 items-center">
+                    <select
+                        value={selectedMatchId}
+                        onChange={e => setSelectedMatchId(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                        disabled={isLoading}
+                    >
+                        <option value="">-- Select a Past Match --</option>
+                        {pastMatches.map(match => (
+                            <option key={match.id} value={match.id}>
+                                {new Date(match.event!.date).toLocaleDateString()} - {match.event!.title}
+                            </option>
+                        ))}
+                    </select>
+                    <Button onClick={handleGenerateDebrief} disabled={isLoading || !selectedMatchId}>
+                        {isLoading && chatHistory.length === 0 ? 'Generating...' : 'Generate Debrief'}
+                    </Button>
+                </div>
+                
+                <div className="h-[60vh] bg-zinc-900/50 rounded-lg border border-zinc-800 flex flex-col chat-container">
+                    <div className="chat-messages">
+                        {chatHistory.length === 0 && !isLoading && (
+                            <div className="m-auto text-center text-gray-500">
+                                <ChatBubbleLeftRightIcon className="w-12 h-12 mx-auto mb-2" />
+                                <p>Select a past match and click "Generate Debrief" to get your personalized After Action Report.</p>
+                            </div>
+                        )}
+                        {isLoading && chatHistory.length === 0 && (
+                             <div className="m-auto text-center text-gray-400">
+                                <CogIcon className="w-12 h-12 mx-auto mb-2 animate-spin"/>
+                                <p>Analyzing mission data...</p>
+                            </div>
+                        )}
+
+                        {chatHistory.map((msg, index) => (
+                            <div key={index} className={`chat-bubble ${msg.role}`}>
+                                <div dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) as string }} />
+                            </div>
+                        ))}
+                        
+                        {isLoading && chatHistory.length > 0 && (
+                             <div className="chat-bubble model">
+                                <span className="animate-pulse">...</span>
+                            </div>
+                        )}
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    {chat && (
+                        <form onSubmit={handleSendMessage} className="p-4 border-t border-zinc-800">
+                            <div className="flex gap-2">
+                                <Input
+                                    type="text"
+                                    value={currentMessage}
+                                    onChange={e => setCurrentMessage(e.target.value)}
+                                    placeholder="Ask a follow-up question..."
+                                    className="flex-grow"
+                                    disabled={isLoading}
+                                    autoComplete="off"
+                                />
+                                <Button type="submit" disabled={isLoading || !currentMessage.trim()}>
+                                    <PaperAirplaneIcon className="w-5 h-5"/>
+                                </Button>
+                            </div>
+                        </form>
+                    )}
+                </div>
+            </div>
+        </DashboardCard>
+    );
+};
+
+
 // FIX: Added missing SettingsTab component
 const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate'>> = ({ player, onPlayerUpdate }) => {
     const [formData, setFormData] = useState({ ...player });
@@ -1014,6 +1196,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                             {activeTab === 'Ranks' && <RankAndLeaderboardTab ranks={ranks} player={player} players={players} />}
                             {activeTab === 'Stats' && <StatsTab player={player} events={events} />}
                             {activeTab === 'Achievements' && <AchievementsTab player={player} legendaryBadges={legendaryBadges} ranks={ranks}/>}
+                            {activeTab === 'AI Debrief' && <AIDebriefTab player={player} events={events} ranks={ranks} />}
                             {activeTab === 'Settings' && <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />}
                         </motion.div>
                     </AnimatePresence>

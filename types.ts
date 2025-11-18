@@ -425,3 +425,8 @@ export interface CreatorDetails {
     githubUrl: string;
     sourceCodeZipUrl?: string;
 }
+
+export interface ChatMessage {
+  role: 'user' | 'model';
+  content: string;
+}

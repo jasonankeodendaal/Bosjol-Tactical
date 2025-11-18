@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, Rank, Tier, PlayerRole } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
-import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon } from './icons/Icons';
+import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon, InformationCircleIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
 // FIX: Changed UNRANKED_SUB_RANK to UNRANKED_TIER.
 import { UNRANKED_TIER, MOCK_PLAYER_ROLES, MOCK_BADGES } from '../constants';
@@ -42,100 +42,90 @@ const getRankProgression = (player: Player, ranks: Rank[]) => {
     return { previous, current: currentTier, next, rank };
 }
 
-const RankProgressionDisplay: React.FC<{ ranks: Rank[], player: Player }> = ({ ranks, player }) => {
-    const [query, setQuery] = useState("");
+const RankAndLeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'ranks'>> = ({ player, players, ranks }) => {
+    const { previous, current, next } = getRankProgression(player, ranks);
 
-    if (!ranks || ranks.length === 0) {
+    const playerXP = player.stats?.xp ?? 0;
+    const startXp = current.minXp;
+    const endXp = next ? next.minXp : playerXP; // If no next rank, bar is full
+    const progressPercentage = next ? (
+        endXp > startXp ? Math.min(((playerXP - startXp) / (endXp - startXp)) * 100, 100) : 0
+      ) : 100;
+
+    const kills = player.stats?.kills ?? 0;
+    const deaths = player.stats?.deaths ?? 0;
+    const kdr = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
+    const avgKills = player.stats.gamesPlayed > 0 ? (kills / player.stats.gamesPlayed).toFixed(1) : '0.0';
+
+    const RankDisplayItem: React.FC<{ tier: Tier | null, type: 'side' | 'current', label: string }> = ({ tier, type, label }) => {
+        if (!tier) return <div className="w-1/3" />;
         return (
-            <DashboardCard title="Rank Progression & Rewards" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
-                <div className="p-6 text-center text-gray-500">
-                    <p>Rank progression data is currently unavailable.</p>
+            <div className={`rank-display-item ${type} w-1/3`}>
+                <p className="label">{label}</p>
+                <div className="rank-display-hex">
+                    <img src={tier.iconUrl} alt={tier.name} />
                 </div>
-            </DashboardCard>
+                <p className="name">{tier.name}</p>
+            </div>
         );
-    }
-    
-    const { current: playerTier } = getRankProgression(player, ranks);
-
-    const filteredRanks = ranks.map(rank => ({
-        ...rank,
-        tiers: (rank.tiers || []).filter(tier => tier.name.toLowerCase().includes(query.toLowerCase()))
-    })).filter(rank => rank.tiers.length > 0);
-    
-    const getRangeForTier = (tier: Tier, rank: Rank, rankIndex: number) => {
-        const sortedTiersInRank = [...(rank.tiers || [])].sort((a,b) => a.minXp - b.minXp);
-        const tierIndex = sortedTiersInRank.findIndex(r => r.id === tier.id);
-        const nextTierInRank = sortedTiersInRank[tierIndex + 1];
-
-        if (nextTierInRank) {
-            return `${tier.minXp.toLocaleString()} - ${(nextTierInRank.minXp - 1).toLocaleString()} RP`;
-        }
-        
-        const nextRank = ranks[rankIndex + 1];
-        if(nextRank && nextRank.tiers && nextRank.tiers.length > 0) {
-            const nextRankFirstTier = [...nextRank.tiers].sort((a,b) => a.minXp - b.minXp)[0];
-            return `${tier.minXp.toLocaleString()} - ${(nextRankFirstTier.minXp - 1).toLocaleString()} RP`;
-        }
-        return `${tier.minXp.toLocaleString()}+ RP`;
-    }
+    };
 
     return (
-        <DashboardCard title="Rank Progression & Rewards" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
-            <div className="p-6">
-                 <div className="mb-4">
-                    <Input
-                        type="search"
-                        placeholder="Filter ranks (e.g. 'Pro V', 'Master')"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                    />
-                </div>
-
-                <div className="space-y-12 max-h-[70vh] overflow-y-auto pr-2">
-                    {filteredRanks.map((rank, rankIndex) => (
-                        <section key={rank.id} className="tier-section">
-                            <div className="tier-header">
-                                <img src={rank.rankBadgeUrl} alt={rank.name} className="w-16 h-16 flex-shrink-0"/>
-                                <div>
-                                    <h2 className="text-3xl font-bold text-red-400 uppercase tracking-wider">{rank.name}</h2>
-                                    <p className="mt-1 text-sm text-gray-400">{rank.description}</p>
-                                </div>
+        <div className="space-y-8">
+            <DashboardCard title="Ranked Status" icon={<ShieldCheckIcon className="w-6 h-6" />}>
+                 <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-1">
+                        <div className="rank-stats-grid">
+                            <div className="rank-stats-item col-span-2">
+                                <span className="label">Season Ends</span>
+                                <span className="value">N/A</span>
                             </div>
-
-                            <div className="subrank-grid">
-                                {(rank.tiers || []).sort((a,b) => a.minXp - b.minXp).map((sub) => {
-                                    const isCurrent = playerTier?.id === sub.id;
-                                    const isUnlocked = (player.stats?.xp ?? 0) >= sub.minXp;
-                                    const cardClass = isCurrent ? 'subrank-card--current' : !isUnlocked ? 'subrank-card--locked' : '';
-                                    return (
-                                        <article key={sub.id} className={`subrank-card ${cardClass}`}>
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <img src={sub.iconUrl} alt={sub.name} className="w-10 h-10"/>
-                                                <div>
-                                                    <h3 className={`font-semibold ${isCurrent ? 'text-amber-300' : 'text-white'}`}>{sub.name}</h3>
-                                                    <p className="text-xs text-gray-400 font-mono">{getRangeForTier(sub, rank, rankIndex)}</p>
-                                                </div>
-                                            </div>
-                                            <ul className="list-none text-xs text-gray-300 space-y-1">
-                                                {sub.perks.map((p, i) => (
-                                                    <li key={i} className="flex items-start gap-1.5">
-                                                        <CheckCircleIcon className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
-                                                        <span>{p}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </article>
-                                    )
-                                })}
+                             <div className="rank-stats-item">
+                                <span className="label">Matches</span>
+                                <span className="value">{player.stats.gamesPlayed}</span>
                             </div>
-                        </section>
-                    ))}
-                    {filteredRanks.length === 0 && (
-                        <div className="text-center text-gray-500 py-8">No ranks matched your search.</div>
-                    )}
-                </div>
-            </div>
-        </DashboardCard>
+                            <div className="rank-stats-item">
+                                <span className="label">Avg. Kills</span>
+                                <span className="value">{avgKills}</span>
+                            </div>
+                             <div className="rank-stats-item">
+                                <span className="label">K/D Ratio</span>
+                                <span className="value">{kdr}</span>
+                            </div>
+                             <div className="rank-stats-item">
+                                <span className="label">Headshots</span>
+                                <span className="value">{player.stats.headshots}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="lg:col-span-2">
+                        <div className="rank-carousel-container">
+                            <RankDisplayItem tier={previous} type="side" label="Previous" />
+                            <RankDisplayItem tier={current} type="current" label="Current Rank" />
+                            <RankDisplayItem tier={next} type="side" label="Next" />
+                        </div>
+                         <div className="xp-bar-container max-w-full">
+                            <div className="xp-bar-info">
+                                <span className="xp-earned text-lg">Rank XP</span>
+                                <span className="xp-values text-lg">{playerXP.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'}</span>
+                            </div>
+                            <div className="xp-bar-track !h-3">
+                                <motion.div 
+                                    className="xp-bar-fill" 
+                                    initial={{ width: '0%'}}
+                                    animate={{ width: `${progressPercentage}%`}}
+                                    transition={{ duration: 1, delay: 0.2 }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                 </div>
+            </DashboardCard>
+
+             <DashboardCard title="Global Leaderboard" icon={<TrophyIcon className="w-6 h-6" />} fullHeight>
+                <Leaderboard players={players} currentPlayerId={player.id} />
+            </DashboardCard>
+        </div>
     );
 };
 
@@ -153,7 +143,7 @@ interface PlayerDashboardProps {
     signups: Signup[];
 }
 
-type Tab = 'Overview' | 'Events' | 'Raffles' | 'Ranks' | 'Stats' | 'Achievements' | 'Leaderboard' | 'Settings';
+type Tab = 'Overview' | 'Events' | 'Raffles' | 'Ranks' | 'Stats' | 'Achievements' | 'Settings';
 
 const ProgressBar: React.FC<{ value: number; max: number; isThin?: boolean }> = ({ value, max, isThin=false }) => {
     const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -388,7 +378,6 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Ranks', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Stats', icon: <ChartBarIcon className="w-5 h-5"/>},
         {name: 'Achievements', icon: <TrophyIcon className="w-5 h-5"/>},
-        {name: 'Leaderboard', icon: <TrophyIcon className="w-5 h-5"/>},
         {name: 'Settings', icon: <UserCircleIcon className="w-5 h-5"/>},
     ];
     const activeTabInfo = tabs.find(t => t.name === activeTab);
@@ -590,19 +579,19 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                     </div>
 
                     <div className="overview-card">
-                        <h3 className="overview-section-title">Badges & Achievements Showcase</h3>
+                        <h3 className="overview-section-title">Commendations</h3>
                         {(player.badges.length === 0 && player.legendaryBadges.length === 0) ? (
                             <p className="text-center text-gray-500 py-4">No commendations earned yet.</p>
                         ) : (
-                            <div className="grid grid-cols-6 gap-4">
+                            <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-4">
                                 {player.legendaryBadges.map(badge => (
-                                    <div key={badge.id} className="relative group flex justify-center items-center aspect-square" title={`${badge.name}: ${badge.description}`}>
-                                        <img src={badge.iconUrl} alt={badge.name} className="w-16 h-16" style={{ filter: 'drop-shadow(0 0 8px #facc15)' }}/>
+                                    <div key={badge.id} className="relative group flex justify-center items-center aspect-square legendary-badge-item !border-0" title={`${badge.name}: ${badge.description}`}>
+                                        <img src={badge.iconUrl} alt={badge.name} className="w-14 h-14 object-contain" />
                                     </div>
                                 ))}
                                 {player.badges.map(badge => (
                                     <div key={badge.id} className="relative group flex justify-center items-center aspect-square" title={`${badge.name}: ${badge.description}`}>
-                                        <img src={badge.iconUrl} alt={badge.name} className="w-14 h-14"/>
+                                        <img src={badge.iconUrl} alt={badge.name} className="w-12 h-12 object-contain"/>
                                     </div>
                                 ))}
                             </div>
@@ -657,15 +646,23 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                     </div>
                 </div>
             </div>
-             <div className="bg-black/50 border-t-2 border-red-700 mt-6 p-4 rounded-lg">
+            <div className="bg-black/50 border-t-2 border-red-700 mt-6 p-4 rounded-lg">
                 <h3 className="overview-section-title !border-red-700/50">Official Sponsors</h3>
-                <div className="flex flex-col gap-4 mt-4">
-                    <div className="flex justify-around items-center">
-                        {row1Sponsors.map(sponsor => <div key={sponsor.id} onClick={() => setSelectedSponsor(sponsor)} className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity"><img src={sponsor.logoUrl} alt={sponsor.name} className="h-12 object-contain"/></div>)}
+                <div className="sponsor-carousel-container">
+                    <div className="marquee-row animate-marquee">
+                        {row1Sponsors.concat(row1Sponsors).map((sponsor, index) => (
+                            <div key={`${sponsor.id}-${index}-1`} onClick={() => setSelectedSponsor(sponsor)} className="sponsor-item">
+                                <img src={sponsor.logoUrl} alt={sponsor.name} />
+                            </div>
+                        ))}
                     </div>
                     {row2Sponsors.length > 0 && (
-                        <div className="flex justify-around items-center">
-                            {row2Sponsors.map(sponsor => <div key={sponsor.id} onClick={() => setSelectedSponsor(sponsor)} className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity"><img src={sponsor.logoUrl} alt={sponsor.name} className="h-12 object-contain"/></div>)}
+                        <div className="marquee-row animate-marquee-reverse mt-4">
+                            {row2Sponsors.concat(row2Sponsors).map((sponsor, index) => (
+                                <div key={`${sponsor.id}-${index}-2`} onClick={() => setSelectedSponsor(sponsor)} className="sponsor-item">
+                                    <img src={sponsor.logoUrl} alt={sponsor.name} />
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
@@ -1031,10 +1028,9 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                             {activeTab === 'Overview' && <OverviewTab player={player} players={players} events={events} sponsors={sponsors} ranks={ranks} />}
                             {activeTab === 'Events' && <EventsTab events={events} player={player} onEventSignUp={onEventSignUp} locations={locations} signups={signups} />}
                             {activeTab === 'Raffles' && <RafflesTab raffles={raffles} player={player} players={players} />}
-                            {activeTab === 'Ranks' && <RankProgressionDisplay ranks={ranks} player={player} />}
+                            {activeTab === 'Ranks' && <RankAndLeaderboardTab ranks={ranks} player={player} players={players} />}
                             {activeTab === 'Stats' && <StatsTab player={player} events={events} />}
                             {activeTab === 'Achievements' && <AchievementsTab player={player} legendaryBadges={legendaryBadges} ranks={ranks}/>}
-                            {activeTab === 'Leaderboard' && <Leaderboard players={players} currentPlayerId={player.id} />}
                             {activeTab === 'Settings' && <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />}
                         </motion.div>
                     </AnimatePresence>

@@ -34,7 +34,7 @@ export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' 
 };
 
 
-type Tab = 'Events' | 'Players' | 'Progression' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'API Setup' | 'About';
+type Tab = 'Events' | 'Players' | 'Progression' | 'Ranks' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'API Setup' | 'About';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
 
 const NewPlayerModal: React.FC<{
@@ -194,6 +194,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Events', icon: <CalendarIcon className="w-5 h-5"/>},
         {name: 'Players', icon: <UsersIcon className="w-5 h-5"/>},
         {name: 'Progression', icon: <ShieldCheckIcon className="w-5 h-5"/>},
+        {name: 'Ranks', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Inventory', icon: <ArchiveBoxIcon className="w-5 h-5"/>},
         {name: 'Locations', icon: <MapPinIcon className="w-5 h-5"/>},
         {name: 'Suppliers', icon: <TruckIcon className="w-5 h-5"/>},
@@ -344,6 +345,79 @@ const LeaderboardTab: React.FC<{ players: Player[] }> = ({ players }) => {
     );
 };
 
+const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
+
+    const getRangeForTier = (tier: Tier, rank: Rank, rankIndex: number) => {
+        const sortedTiersInRank = [...(rank.tiers || [])].sort((a,b) => a.minXp - b.minXp);
+        const tierIndex = sortedTiersInRank.findIndex(r => r.id === tier.id);
+        const nextTierInRank = sortedTiersInRank[tierIndex + 1];
+
+        if (nextTierInRank) {
+            return `${tier.minXp.toLocaleString()} - ${(nextTierInRank.minXp - 1).toLocaleString()} RP`;
+        }
+        
+        const nextRank = ranks[rankIndex + 1];
+        if(nextRank && nextRank.tiers && nextRank.tiers.length > 0) {
+            const nextRankFirstTier = [...nextRank.tiers].sort((a,b) => a.minXp - b.minXp)[0];
+            return `${tier.minXp.toLocaleString()} - ${(nextRankFirstTier.minXp - 1).toLocaleString()} RP`;
+        }
+        return `${tier.minXp.toLocaleString()}+ RP`;
+    }
+
+    return (
+        <DashboardCard title="Rank Structure Overview" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
+            <div className="p-6">
+                 <div className="bg-blue-900/50 border border-blue-700 text-blue-200 p-4 rounded-lg mb-6 flex items-center gap-3">
+                    <InformationCircleIcon className="w-6 h-6 flex-shrink-0" />
+                    <div>
+                        <p className="font-semibold">This is a read-only view of the rank structure.</p>
+                        <p className="text-sm">To add, edit, or delete ranks and tiers, please go to the 'Progression' tab.</p>
+                    </div>
+                </div>
+
+                <div className="space-y-12 max-h-[70vh] overflow-y-auto pr-2">
+                    {ranks.map((rank, rankIndex) => (
+                        <section key={rank.id} className="tier-section">
+                            <div className="tier-header">
+                                <img src={rank.rankBadgeUrl} alt={rank.name} className="w-16 h-16 flex-shrink-0"/>
+                                <div>
+                                    <h2 className="text-3xl font-bold text-red-400 uppercase tracking-wider">{rank.name}</h2>
+                                    <p className="mt-1 text-sm text-gray-400">{rank.description}</p>
+                                </div>
+                            </div>
+
+                            <div className="subrank-grid">
+                                {(rank.tiers || []).sort((a,b) => a.minXp - b.minXp).map((sub) => (
+                                    <article key={sub.id} className="subrank-card">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <img src={sub.iconUrl} alt={sub.name} className="w-10 h-10"/>
+                                            <div>
+                                                <h3 className="font-semibold text-white">{sub.name}</h3>
+                                                <p className="text-xs text-gray-400 font-mono">{getRangeForTier(sub, rank, rankIndex)}</p>
+                                            </div>
+                                        </div>
+                                        <ul className="list-none text-xs text-gray-300 space-y-1">
+                                            {sub.perks.map((p, i) => (
+                                                <li key={i} className="flex items-start gap-1.5">
+                                                    <CheckCircleIcon className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
+                                                    <span>{p}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </article>
+                                ))}
+                            </div>
+                        </section>
+                    ))}
+                    {ranks.length === 0 && (
+                        <div className="text-center text-gray-500 py-8">No ranks have been configured. Go to the 'Progression' tab to set them up.</div>
+                    )}
+                </div>
+            </div>
+        </DashboardCard>
+    );
+};
+
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [activeTab, setActiveTab] = useState<Tab>('Events');
@@ -361,7 +435,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab') as Tab | null;
-        const validTabs: Tab[] = ['Events', 'Players', 'Progression', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'API Setup', 'About'];
+        const validTabs: Tab[] = ['Events', 'Players', 'Progression', 'Ranks', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'API Setup', 'About'];
         if (tab && validTabs.includes(tab)) {
             setActiveTab(tab);
         }
@@ -478,6 +552,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         companyDetails={props.companyDetails}
                         setCompanyDetails={props.setCompanyDetails}
                     />}
+                    {activeTab === 'Ranks' && <AdminRanksDisplayTab ranks={props.ranks} />}
                     {activeTab === 'Inventory' && <InventoryTab 
                         inventory={props.inventory} setInventory={props.setInventory}
                         suppliers={props.suppliers}

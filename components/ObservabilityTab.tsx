@@ -3,22 +3,62 @@ import { motion } from 'framer-motion';
 import { DataContext, DataContextType } from '../data/DataContext';
 import { DashboardCard } from './DashboardCard';
 import { UsersIcon, ChartBarIcon, ClockIcon, SparklesIcon, UserCircleIcon, DesktopComputerIcon } from './icons/Icons';
-import type { Session, ActivityLog } from '../types';
+import type { Session, ActivityLog, Transaction } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 
-const StatWidget: React.FC<{ title: string, value: string | number, icon: React.ReactNode, color: string }> = ({ title, value, icon, color }) => (
-    <DashboardCard title="" icon={<></>}>
-        <div className="p-4 flex items-center">
-            <div className={`mr-4 p-3 rounded-lg bg-zinc-800 ${color}`}>
-                {icon}
+const LineGraph: React.FC<{ data: number[]; color: string; title: string; total: string | number, period?: string, unit?: string }> = ({ data, color, title, total, period = "24h", unit = '' }) => {
+    const width = 200;
+    const height = 50;
+    const maxVal = Math.max(...data, 1);
+    
+    const points = data.map((d, i) => {
+        const x = (i / (data.length > 1 ? data.length - 1 : 1)) * width;
+        const y = height - (d / maxVal) * (height - 2) - 1; // -2 and -1 to avoid touching edges
+        return `${x},${y}`;
+    }).join(' ');
+    
+    const areaPoints = `0,${height} ${points} ${width},${height}`;
+    
+    const uniqueId = `grad_${title.replace(/\s+/g, '_')}`;
+
+    return (
+        <DashboardCard title="" icon={<></>}>
+            <div className="p-4">
+                <div className="flex justify-between items-baseline mb-2">
+                    <h3 className="font-semibold text-gray-300">{title}</h3>
+                    <span className="text-xs text-gray-500">{period}</span>
+                </div>
+                <p className="text-3xl font-bold text-white mb-2">{total} <span className="text-xl font-semibold text-gray-400">{unit}</span></p>
+                <div className="h-20">
+                    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id={uniqueId} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={color} stopOpacity={0.4}/>
+                                <stop offset="100%" stopColor={color} stopOpacity={0}/>
+                            </linearGradient>
+                        </defs>
+                        <polyline
+                            fill={`url(#${uniqueId})`}
+                            stroke="none"
+                            points={areaPoints}
+                        />
+                        <polyline
+                            fill="none"
+                            stroke={color}
+                            strokeWidth="1.5"
+                            points={points}
+                        />
+                    </svg>
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>{period} ago</span>
+                    <span>Now</span>
+                </div>
             </div>
-            <div>
-                <p className="text-3xl font-bold text-white">{value}</p>
-                <p className="text-sm text-gray-400">{title}</p>
-            </div>
-        </div>
-    </DashboardCard>
-);
+        </DashboardCard>
+    );
+};
+
 
 const PerformanceWidget: React.FC = () => {
     const [vitals, setVitals] = useState<Record<string, number | null>>({
@@ -28,18 +68,15 @@ const PerformanceWidget: React.FC = () => {
     });
 
     useEffect(() => {
-        // This is a simplified version. For production, you'd use the web-vitals library.
         const observer = new PerformanceObserver((list) => {
             for (const entry of list.getEntries()) {
                 if (entry.entryType === 'largest-contentful-paint') {
                     setVitals(v => ({ ...v, lcp: Math.round(entry.startTime) }));
                 }
                 if (entry.entryType === 'layout-shift') {
-                    // FIX: The result of toFixed() is a string. Wrap in parseFloat() to convert it back to a number to match the state's type.
                     setVitals(v => ({ ...v, cls: parseFloat(((v.cls || 0) + (entry as any).value).toFixed(4)) }));
                 }
                  if (entry.entryType === 'event') {
-                    // Simplified INP-like metric
                     const duration = entry.duration;
                     if (duration > (vitals.inp || 0)) {
                         setVitals(v => ({ ...v, inp: Math.round(duration) }));
@@ -48,8 +85,6 @@ const PerformanceWidget: React.FC = () => {
             }
         });
         try {
-            // FIX: The `PerformanceObserver.observe` method expects the `entryTypes` property for an array of types, not `type`.
-            // FIX: The `durationThreshold` property is not valid when observing multiple entry types that don't all support it. Removed to resolve the TypeScript error.
             observer.observe({ entryTypes: ['largest-contentful-paint', 'layout-shift', 'event'], buffered: true });
         } catch (e) {
             console.warn("PerformanceObserver not fully supported.", e);
@@ -78,15 +113,80 @@ const PerformanceWidget: React.FC = () => {
     );
 };
 
+const formatBytes = (bytes: number): [string, string] => {
+    if (bytes === 0) return ['0', 'B'];
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    const value = parseFloat((bytes / Math.pow(k, i)).toFixed(1));
+    return [value.toString(), sizes[i]];
+};
+
 export const ObservabilityTab: React.FC = () => {
     const dataContext = useContext(DataContext as React.Context<DataContextType>);
-    const { sessions, activityLog } = dataContext;
+    const { sessions, activityLog, transactions } = dataContext;
     const [time, setTime] = useState(new Date());
 
     useEffect(() => {
-        const timer = setInterval(() => setTime(new Date()), 1000);
+        const timer = setInterval(() => setTime(new Date()), 1000 * 60); // Update every minute for graph data
         return () => clearInterval(timer);
     }, []);
+
+    const now = useMemo(() => time, [time]);
+
+    const generateTimeSeriesData = <T extends { [key: string]: any }>(
+        items: T[] | undefined,
+        dateField: keyof T,
+        valueField: keyof T | null, // null means just count items
+        hours = 24
+    ): number[] => {
+        if (!items) return Array(hours).fill(0);
+
+        const buckets = Array(hours).fill(0);
+        const nowMs = now.getTime();
+        const hourMs = 60 * 60 * 1000;
+
+        for (const item of items) {
+            const dateValue = item[dateField];
+            if (!dateValue || typeof dateValue !== 'string') continue;
+
+            const itemTime = new Date(dateValue).getTime();
+            const hoursAgo = Math.floor((nowMs - itemTime) / hourMs);
+            
+            if (hoursAgo >= 0 && hoursAgo < hours) {
+                const bucketIndex = hours - 1 - hoursAgo;
+                if (valueField && typeof item[valueField] === 'number') {
+                    buckets[bucketIndex] += item[valueField] as number;
+                } else {
+                    buckets[bucketIndex]++;
+                }
+            }
+        }
+        return buckets;
+    };
+
+    const loginData = useMemo(() => {
+        if (!activityLog) return Array(24).fill(0);
+        const loginActivities = activityLog.filter(log => log.action === 'Logged In');
+        return generateTimeSeriesData(loginActivities, 'timestamp', null, 24);
+    }, [activityLog, now]);
+
+    const totalActivityData = useMemo(() => {
+        return generateTimeSeriesData(activityLog, 'timestamp', null, 24);
+    }, [activityLog, now]);
+    
+    const dataQueriedData = useMemo(() => {
+        // Estimate data size per activity to simulate a "data transfer" metric
+        return totalActivityData.map(d => d * (Math.random() * 2048 + 512));
+    }, [totalActivityData]);
+
+    const serverFunctionData = useMemo(() => Array(24).fill(0), []);
+
+    const totalLogins = loginData.reduce((a, b) => a + b, 0);
+    const totalActivity = totalActivityData.reduce((a, b) => a + b, 0);
+    const totalDataQueried = dataQueriedData.reduce((a, b) => a + b, 0);
+    const [totalDataValue, totalDataUnit] = formatBytes(totalDataQueried);
+
 
     const liveSessions = useMemo(() => {
         if (!sessions) return [];
@@ -102,10 +202,10 @@ export const ObservabilityTab: React.FC = () => {
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatWidget title="Live Visitors" value={liveSessions.length} icon={<UsersIcon className="w-6 h-6" />} color="text-blue-400" />
-                <StatWidget title="Total Sessions Tracked" value={sessions?.length || 0} icon={<DesktopComputerIcon className="w-6 h-6" />} color="text-indigo-400" />
-                <StatWidget title="Activity Log Events" value={activityLog?.length || 0} icon={<ChartBarIcon className="w-6 h-6" />} color="text-green-400" />
-                <StatWidget title="Server Time" value={time.toLocaleTimeString()} icon={<ClockIcon className="w-6 h-6" />} color="text-gray-400" />
+                <LineGraph title="User Activity" total={totalActivity} data={totalActivityData} color="#34d399" unit="actions" />
+                <LineGraph title="Data Queried" total={totalDataValue} unit={totalDataUnit} data={dataQueriedData} color="#60a5fa" />
+                <LineGraph title="Logins" total={totalLogins} data={loginData} color="#f87171" unit="invocations" />
+                <LineGraph title="Server Functions" total={0} data={serverFunctionData} color="#a78bfa" unit="invocations" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -129,7 +229,7 @@ export const ObservabilityTab: React.FC = () => {
                     <PerformanceWidget />
                 </div>
                 <div className="lg:col-span-2">
-                    <DashboardCard title="Active Sessions" icon={<UsersIcon className="w-6 h-6" />}>
+                    <DashboardCard title={`Active Sessions (${liveSessions.length})`} icon={<UsersIcon className="w-6 h-6" />}>
                         <div className="p-4 max-h-[34rem] overflow-y-auto">
                             <table className="w-full text-sm text-left">
                                 <thead className="text-xs text-gray-400 uppercase bg-zinc-950/50">

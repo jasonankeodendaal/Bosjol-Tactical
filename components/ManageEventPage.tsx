@@ -182,9 +182,10 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                     (attendeeInfo.rentedGearIds || []).forEach(gearId => {
                         const gear = inventory.find(i => i.id === gearId);
                         if (gear) {
+                            const rentalPrice = formData.rentalPriceOverrides?.[gearId] ?? gear.salePrice;
                             newTransactions.push({
                                 id: `txn-${event.id}-${player.id}-${gearId}`, date: formData.date,
-                                type: 'Rental Revenue', description: `Rental: ${gear.name}`, amount: gear.salePrice,
+                                type: 'Rental Revenue', description: `Rental: ${gear.name}`, amount: rentalPrice,
                                 relatedEventId: event.id, relatedPlayerId: player.id, relatedInventoryId: gearId,
                                 paymentStatus: attendeeInfo.paymentStatus
                             });
@@ -260,10 +261,38 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     const handleGearToggle = (itemId: string) => {
         setFormData(prev => {
             const gearForRent = prev.gearForRent || [];
-            const newGear = gearForRent.includes(itemId)
-                ? gearForRent.filter(id => id !== itemId)
-                : [...gearForRent, itemId];
-            return { ...prev, gearForRent: newGear };
+            const isCurrentlyChecked = gearForRent.includes(itemId);
+            let newGear;
+            let newOverrides = { ...(prev.rentalPriceOverrides || {}) };
+    
+            if (isCurrentlyChecked) {
+                newGear = gearForRent.filter(id => id !== itemId);
+                // Remove the price override when the item is deselected
+                delete newOverrides[itemId];
+            } else {
+                newGear = [...gearForRent, itemId];
+            }
+            
+            return { ...prev, gearForRent: newGear, rentalPriceOverrides: newOverrides };
+        });
+    };
+
+    const handlePriceOverrideChange = (itemId: string, priceStr: string) => {
+        const price = Number(priceStr);
+        if (isNaN(price) || price < 0) return;
+    
+        setFormData(prev => {
+            const overrides = { ...(prev.rentalPriceOverrides || {}) };
+            const item = inventory.find(i => i.id === itemId);
+    
+            // If the new price is the same as the default, we can remove the override to keep data clean
+            if (item && item.salePrice === price) {
+                delete overrides[itemId];
+            } else {
+                overrides[itemId] = price;
+            }
+    
+            return { ...prev, rentalPriceOverrides: overrides };
         });
     };
 
@@ -331,18 +360,38 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             </div>
                              <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Gear Available for Rent</label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto bg-zinc-900/50 p-2 rounded-md border border-zinc-700/50">
-                                    {inventory.filter(i => i.isRental).map(item => (
-                                        <label key={item.id} className="flex items-center gap-3 p-2 rounded-md bg-zinc-800 hover:bg-zinc-700 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={(formData.gearForRent || []).includes(item.id)}
-                                                onChange={() => handleGearToggle(item.id)}
-                                                className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"
-                                            />
-                                            <span className="text-sm text-gray-200">{item.name}</span>
-                                        </label>
-                                    ))}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto bg-zinc-900/50 p-2 rounded-md border border-zinc-700/50">
+                                    {inventory.filter(i => i.isRental).map(item => {
+                                        const isChecked = (formData.gearForRent || []).includes(item.id);
+                                        const overridePrice = formData.rentalPriceOverrides?.[item.id];
+                                        return (
+                                            <div key={item.id} className="bg-zinc-800 p-2 rounded-md">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="flex items-center gap-3 cursor-pointer flex-grow">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={() => handleGearToggle(item.id)}
+                                                            className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"
+                                                        />
+                                                        <span className="text-sm text-gray-200">{item.name}</span>
+                                                    </label>
+                                                    <span className="text-xs text-gray-500 mr-2">Default: R{item.salePrice.toFixed(2)}</span>
+                                                </div>
+                                                {isChecked && (
+                                                    <div className="mt-2 pl-7">
+                                                        <Input 
+                                                            label="Event Rental Price (R)"
+                                                            type="number"
+                                                            value={overridePrice ?? item.salePrice}
+                                                            onChange={(e) => handlePriceOverrideChange(item.id, e.target.value)}
+                                                            className="!py-1.5"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                             <div>

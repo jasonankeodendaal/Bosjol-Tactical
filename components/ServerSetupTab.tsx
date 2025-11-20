@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { DashboardCard } from './DashboardCard';
@@ -106,7 +107,7 @@ export const ServerSetupTab: React.FC = () => {
                         <ol className="list-decimal list-inside space-y-3 ml-2">
                             <li><strong>Sign Up:</strong> Go to <a href="https://www.oracle.com/cloud/free/" target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline">Oracle Cloud Free Tier</a>. You will need a credit card for identity verification, but you won't be charged.</li>
                             <li><strong>Create Instance:</strong> Once logged in, click <strong>"Create a VM instance"</strong>.</li>
-                            <li><strong>Image & Shape (Crucial):</strong>
+                            <li><strong>Image &amp; Shape (Crucial):</strong>
                                 <ul className="list-disc list-inside ml-6 mt-1 text-sm space-y-1 text-gray-400">
                                     <li>Click "Change Image" &rarr; Select <strong>Canonical Ubuntu 22.04</strong>.</li>
                                     <li>Click "Change Shape" &rarr; Select <strong>Ampere</strong> (VM.Standard.A1.Flex).</li>

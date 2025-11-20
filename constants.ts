@@ -186,7 +186,8 @@ export const MOCK_EVENTS_CORE: EventCore[] = [
         location: 'Abandoned Warehouse', description: 'Infiltrate and secure the objective under the cover of darkness.',
         theme: 'Night Ops', rules: 'Standard hit rules apply. NVGs recommended.', participationXp: 100,
         status: 'Upcoming', imageUrl: 'https://i.ibb.co/3k5fV82/image.png',
-        gameFee: 150, gearForRent: ['inv001', 'inv002', 'inv005']
+        gameFee: 150, gearForRent: ['inv001', 'inv002', 'inv005'],
+        rentalPriceOverrides: { 'inv001': 250, 'inv002': 220 }
     },
     {
         id: 'ev002', title: 'CQB Training', type: 'Training', date: '2025-08-22', startTime: '10:00',

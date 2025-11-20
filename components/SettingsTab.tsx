@@ -39,6 +39,45 @@ const formatBytes = (bytes: number, decimals = 2) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
+const StorageStatusGuide: React.FC = () => (
+    <DashboardCard title="Storage Status Guide" icon={<InformationCircleIcon className="w-6 h-6" />}>
+        <div className="p-6 space-y-4">
+            <p className="text-sm text-gray-400">The colored dot in the footer indicates the application's current data source and connection status.</p>
+            <ul className="space-y-3">
+                <li className="flex items-start gap-3">
+                    <div className="w-3 h-3 rounded-full bg-green-500 mt-1 flex-shrink-0 shadow-[0_0_8px_2px_rgba(34,197,94,0.7)]"></div>
+                    <div>
+                        <h4 className="font-semibold text-white">Live Firebase</h4>
+                        <p className="text-xs text-gray-400">The app is successfully connected to the live Firebase database. All data is real-time.</p>
+                    </div>
+                </li>
+                 <li className="flex items-start gap-3">
+                    <div className="w-3 h-3 rounded-full bg-blue-500 mt-1 flex-shrink-0 shadow-[0_0_8px_2px_rgba(59,130,246,0.7)]"></div>
+                    <div>
+                        <h4 className="font-semibold text-white">API Server</h4>
+                        <p className="text-xs text-gray-400">A self-hosted API server is configured and connected, enabling large file uploads (e.g., videos).</p>
+                    </div>
+                </li>
+                <li className="flex items-start gap-3">
+                    <div className="w-3 h-3 rounded-full bg-yellow-500 mt-1 flex-shrink-0 animate-pulse"></div>
+                    <div>
+                        <h4 className="font-semibold text-white">Mock Data</h4>
+                        <p className="text-xs text-gray-400">Firebase is not configured or has failed to connect. The app is running in an offline mode with sample data. No changes will be saved.</p>
+                    </div>
+                </li>
+                 <li className="flex items-start gap-3">
+                    <div className="w-3 h-3 rounded-full bg-red-500 mt-1 flex-shrink-0 animate-pulse"></div>
+                    <div>
+                        <h4 className="font-semibold text-white">API Error</h4>
+                        <p className="text-xs text-gray-400">An API Server URL is configured, but the app cannot connect to it. Check the URL and ensure the server is running.</p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </DashboardCard>
+);
+
+
 export const SettingsTab: React.FC<SettingsTabProps> = ({ 
     companyDetails, 
     setCompanyDetails, 
@@ -495,6 +534,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                      </div>
                 </div>
             </DashboardCard>
+
+            <StorageStatusGuide />
 
             <DashboardCard title="Backup & Restore" icon={<CogIcon className="w-6 h-6" />}>
                 <div className="p-6 space-y-6">

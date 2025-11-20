@@ -24,7 +24,7 @@ function useCollection<T extends {id: string}>(collectionName: string, mockData:
             }
 
             // Specifically block players from fetching admin-only collections to conserve read quotas
-            const collectionsToBlockForPlayer = ['transactions', 'sessions', 'activityLog', 'suppliers', 'vouchers', 'apiSetupGuide'];
+            const collectionsToBlockForPlayer = ['transactions', 'sessions', 'activityLog', 'suppliers', 'vouchers', 'apiSetupGuide', 'gamificationSettings'];
             if (userRole === 'player' && collectionsToBlockForPlayer.includes(collectionName)) {
                 setData([]);
                 setLoading(false);

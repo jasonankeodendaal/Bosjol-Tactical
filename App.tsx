@@ -1,5 +1,4 @@
 
-
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -301,6 +300,17 @@ const AppContent: React.FC = () => {
     const currentPlayer = players.find(p => p.id === user?.id);
     const hasPerformedReset = useRef(false); // Prevent multiple runs in one session
     const sessionRef = useRef<{ id: string | null }>({ id: null });
+
+    // FIX: Define playAudio function
+    const playAudio = useCallback(() => {
+        if (audioRef.current) {
+            audioRef.current.play().catch(e => {
+                // Autoplay was prevented. This is expected behavior in some browsers.
+                // We'll let the user interact to enable audio.
+                console.warn("Audio autoplay prevented:", e);
+            });
+        }
+    }, []);
 
     // --- SESSION MANAGEMENT FOR OBSERVABILITY ---
     useEffect(() => {
@@ -660,7 +670,7 @@ const AppContent: React.FC = () => {
         return () => {
             audio.removeEventListener('error', handleAudioError);
         };
-    }, [showFrontPage, isAuthenticated, user, companyDetails]);
+    }, [showFrontPage, isAuthenticated, user, companyDetails, playAudio]);
 
     const onPlayerUpdate = async (player: Player) => {
         await updateDoc('players', player);
@@ -671,7 +681,7 @@ const AppContent: React.FC = () => {
         if (!user || user.role !== 'player') return;
 
         const signupId = `${eventId}_${user.id}`;
-        const existingSignup = signups.find(s => s.id === signupId);
+        const existingSignup = signups.find(s => s.eventId === signupId); // FIX: Compare eventId with signup.eventId, not signupId
         const event = events.find(e => e.id === eventId);
 
         if (existingSignup) {
@@ -700,9 +710,7 @@ const AppContent: React.FC = () => {
             }
             // Attempt to play, but catch errors silently. The useEffect will also try to play.
             // This direct call on a user gesture is crucial for "unlocking" audio playback.
-            audioRef.current.play().catch(e => {
-                console.warn("Audio autoplay unlock attempt was blocked by browser. This is sometimes expected.", e);
-            });
+            playAudio();
         }
         setShowFrontPage(false);
         setHelpTopic('login-screen');

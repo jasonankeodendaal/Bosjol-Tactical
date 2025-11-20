@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect, useContext } from 'react';
 import type { CompanyDetails, SocialLink, CarouselMedia, Admin } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
-import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, KeyIcon, InformationCircleIcon, CloudArrowDownIcon, UploadCloudIcon, UserCircleIcon, CircleStackIcon } from './icons/Icons';
+import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, KeyIcon, InformationCircleIcon, CloudArrowDownIcon, UploadCloudIcon, UserCircleIcon, CircleStackIcon, ArrowPathIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
@@ -39,28 +40,81 @@ const formatBytes = (bytes: number, decimals = 2) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
-const QuotaStat: React.FC<{ limit: string, label: string, colorClass: string }> = ({ limit, label, colorClass }) => (
-    <div className="text-center">
-        <p className={`text-4xl font-bold ${colorClass}`}>{limit}</p>
-        <p className="text-sm text-gray-400">{label}</p>
-    </div>
-);
+const QuotaStat: React.FC<{ limit: string | number, label: string, colorClass: string, actual?: number }> = ({ limit, label, colorClass, actual }) => {
+    const isOverLimit = typeof limit === 'number' && typeof actual === 'number' && actual > limit;
+    const displayValue = typeof actual === 'number' ? actual.toLocaleString() : 'N/A';
+    const displayLimit = typeof limit === 'number' ? limit.toLocaleString() : limit;
 
-const FirestoreQuotaCard: React.FC = () => (
-    <DashboardCard title="Firestore Daily Quotas (Spark Plan)" icon={<CircleStackIcon className="w-6 h-6" />}>
-        <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                <QuotaStat limit="50,000" label="Document Reads" colorClass="text-blue-400" />
-                <QuotaStat limit="20,000" label="Document Writes" colorClass="text-amber-400" />
-                <QuotaStat limit="20,000" label="Document Deletes" colorClass="text-red-400" />
-            </div>
-            <p className="text-center text-xs text-amber-300 bg-amber-900/20 border border-amber-700/50 p-3 rounded-md mt-6">
-                <ExclamationTriangleIcon className="inline w-4 h-4 mr-1"/>
-                **Real-time quota tracking is not available client-side.** These are static daily free limits for the Firebase Spark plan. Exceeding these will result in a <code className="bg-zinc-800 px-1 rounded">'resource-exhausted'</code> error. For live usage, check the Firebase Console. Quotas reset daily around midnight Pacific Time.
-            </p>
+    return (
+        <div className="text-center">
+            <p className={`text-3xl font-bold ${isOverLimit ? 'text-red-500' : colorClass}`}>{displayValue}</p>
+            <p className="text-sm text-gray-400">{label}</p>
+            {typeof limit === 'number' && (
+                <p className="text-xs text-gray-500">Limit: {displayLimit}</p>
+            )}
         </div>
-    </DashboardCard>
-);
+    );
+};
+
+const FirestoreQuotaCard: React.FC = () => {
+    const dataContext = useContext(DataContext);
+    if (!dataContext) throw new Error("DataContext is not available.");
+
+    const { firestoreQuota, resetFirestoreQuotaCounters } = dataContext;
+
+    const READ_LIMIT = 50000;
+    const WRITE_LIMIT = 20000;
+    const DELETE_LIMIT = 20000;
+
+    const getProgressPercentage = (actual: number, limit: number) => {
+        if (limit === 0) return actual > 0 ? 100 : 0;
+        return Math.min((actual / limit) * 100, 100);
+    };
+
+    const getProgressBarColor = (actual: number, limit: number) => {
+        const percentage = getProgressPercentage(actual, limit);
+        if (percentage >= 100) return 'bg-red-500';
+        if (percentage >= 75) return 'bg-amber-500';
+        return 'bg-green-500';
+    };
+
+    return (
+        <DashboardCard title="Firestore Daily Quotas (Spark Plan)" icon={<CircleStackIcon className="w-6 h-6" />}>
+            <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                    <div>
+                        <QuotaStat limit={READ_LIMIT} actual={firestoreQuota.reads} label="Document Reads" colorClass="text-blue-400" />
+                        <div className="w-full bg-zinc-700 rounded-full h-2 mt-2">
+                            <div className={`${getProgressBarColor(firestoreQuota.reads, READ_LIMIT)} h-full rounded-full`} style={{ width: `${getProgressPercentage(firestoreQuota.reads, READ_LIMIT)}%` }} />
+                        </div>
+                    </div>
+                    <div>
+                        <QuotaStat limit={WRITE_LIMIT} actual={firestoreQuota.writes} label="Document Writes" colorClass="text-amber-400" />
+                        <div className="w-full bg-zinc-700 rounded-full h-2 mt-2">
+                            <div className={`${getProgressBarColor(firestoreQuota.writes, WRITE_LIMIT)} h-full rounded-full`} style={{ width: `${getProgressPercentage(firestoreQuota.writes, WRITE_LIMIT)}%` }} />
+                        </div>
+                    </div>
+                    <div>
+                        <QuotaStat limit={DELETE_LIMIT} actual={firestoreQuota.deletes} label="Document Deletes" colorClass="text-red-400" />
+                        <div className="w-full bg-zinc-700 rounded-full h-2 mt-2">
+                            <div className={`${getProgressBarColor(firestoreQuota.deletes, DELETE_LIMIT)} h-full rounded-full`} style={{ width: `${getProgressPercentage(firestoreQuota.deletes, DELETE_LIMIT)}%` }} />
+                        </div>
+                    </div>
+                </div>
+                <p className="text-center text-xs text-amber-300 bg-amber-900/20 border border-amber-700/50 p-3 rounded-md mt-6">
+                    <ExclamationTriangleIcon className="inline w-4 h-4 mr-1"/>
+                    **This is an estimate of operations from *this client/browser session only*.** It does not reflect global daily usage across all users or devices. Exceeding these static daily free limits for the Firebase Spark plan will result in a <code className="bg-zinc-800 px-1 rounded">'resource-exhausted'</code> error. For live, accurate usage, check the Firebase Console. Quotas reset daily around midnight Pacific Time.
+                </p>
+                <div className="mt-4 text-center">
+                    <Button onClick={resetFirestoreQuotaCounters} variant="secondary" size="sm">
+                        <ArrowPathIcon className="w-4 h-4 mr-1" />
+                        Reset Session Counters
+                    </Button>
+                </div>
+            </div>
+        </DashboardCard>
+    );
+};
 
 const StorageStatusGuide: React.FC = () => (
     <DashboardCard title="Storage Status Guide" icon={<InformationCircleIcon className="w-6 h-6" />}>

@@ -1,16 +1,70 @@
 import React, { createContext, useState, useEffect, ReactNode, useContext, useMemo, useCallback } from 'react';
 import { USE_FIREBASE, db, firebaseInitializationError, firebase } from '../firebase';
 import * as mock from '../constants';
-import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog } from '../types';
+import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters } from '../types';
 import { AuthContext } from '../auth/AuthContext';
 
 export const IS_LIVE_DATA = USE_FIREBASE && !!db && !firebaseInitializationError;
+
+const TODAY_KEY = new Date().toISOString().split('T')[0];
+const INITIAL_QUOTA_COUNTERS: FirestoreQuotaCounters = {
+    date: TODAY_KEY,
+    reads: 0,
+    writes: 0,
+    deletes: 0,
+};
+
+// Custom hook to manage Firestore quota counters
+function useFirestoreQuotaCounters() {
+    const [counters, setCounters] = useState<FirestoreQuotaCounters>(() => {
+        try {
+            const saved = localStorage.getItem('firestoreQuotaCounters');
+            if (saved) {
+                const parsed: FirestoreQuotaCounters = JSON.parse(saved);
+                // Reset if it's a new day
+                if (parsed.date === TODAY_KEY) {
+                    return parsed;
+                }
+            }
+        } catch (e) {
+            console.error("Failed to parse local storage for quota counters:", e);
+        }
+        return INITIAL_QUOTA_COUNTERS;
+    });
+
+    useEffect(() => {
+        // Update local storage whenever counters change
+        try {
+            localStorage.setItem('firestoreQuotaCounters', JSON.stringify(counters));
+        } catch (e) {
+            console.error("Failed to save quota counters to local storage:", e);
+        }
+    }, [counters]);
+
+    const increment = useCallback((type: 'reads' | 'writes' | 'deletes', amount: number = 1) => {
+        setCounters(prev => {
+            const currentDay = new Date().toISOString().split('T')[0];
+            if (prev.date !== currentDay) {
+                return { ...INITIAL_QUOTA_COUNTERS, date: currentDay, [type]: amount };
+            }
+            return { ...prev, [type]: prev[type] + amount };
+        });
+    }, []);
+
+    const resetCounters = useCallback(() => {
+        setCounters(INITIAL_QUOTA_COUNTERS);
+    }, []);
+
+    return { counters, increment, resetCounters };
+}
+
 
 // Helper to fetch collection data
 function useCollection<T extends {id: string}>(collectionName: string, mockData: T[], dependencies: any[] = [], options: { isProtected?: boolean } = {}) {
     const [data, setData] = useState<T[]>(IS_LIVE_DATA ? [] : mockData);
     const [loading, setLoading] = useState(true);
     const auth = useContext(AuthContext);
+    const { increment: incrementQuota } = useFirestoreQuotaCounters();
 
     useEffect(() => {
         if (IS_LIVE_DATA) {
@@ -35,9 +89,16 @@ function useCollection<T extends {id: string}>(collectionName: string, mockData:
             const q = db.collection(collectionName);
             const unsubscribe = q.onSnapshot((querySnapshot) => {
                 const newItems: T[] = [];
+                let readCount = 0;
                 querySnapshot.forEach((doc) => {
                     newItems.push({ id: doc.id, ...doc.data() } as unknown as T);
+                    readCount++;
                 });
+
+                // Increment reads based on documents returned in the snapshot
+                if (readCount > 0) {
+                    incrementQuota('reads', readCount);
+                }
 
                 setData(prevItems => {
                     // Sort by ID to ensure consistent order for stringify comparison
@@ -63,7 +124,7 @@ function useCollection<T extends {id: string}>(collectionName: string, mockData:
         }
     // Add auth?.isAuthenticated and user role to dependency array to refetch on login/logout or role change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [auth?.isAuthenticated, auth?.user?.role, ...dependencies]);
+    }, [auth?.isAuthenticated, auth?.user?.role, incrementQuota, ...dependencies]);
 
     return [data, setData, loading] as const;
 }
@@ -72,12 +133,14 @@ function useCollection<T extends {id: string}>(collectionName: string, mockData:
 function useDocument<T>(collectionName: string, docId: string, mockData: T) {
     const [data, setData] = useState<T>(mockData);
     const [loading, setLoading] = useState(true);
+    const { increment: incrementQuota } = useFirestoreQuotaCounters();
     
     useEffect(() => {
         if (IS_LIVE_DATA) {
             setLoading(true);
             const docRef = db.collection(collectionName).doc(docId);
             const unsubscribe = docRef.onSnapshot((docSnap) => {
+                incrementQuota('reads', 1); // Count one read for fetching a single document
                 if (docSnap.exists) {
                     const firestoreData = docSnap.data() || {};
                     const newData = { ...mockData, ...firestoreData };
@@ -104,7 +167,7 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
             setLoading(false);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [collectionName, docId]);
+    }, [collectionName, docId, incrementQuota]);
 
      const updateData = async (newData: Partial<T>) => {
         // Optimistically update the state for a responsive UI.
@@ -116,6 +179,7 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                 // Persist the change. The onSnapshot listener will also get this update,
                 // but our deep comparison check prevents a redundant re-render.
                 await docRef.set(newData, { merge: true });
+                incrementQuota('writes', 1); // Count one write for updating a single document
             } catch (error: any) {
                 console.error(`Failed to save document ${collectionName}/${docId}:`, error);
                 alert(`Failed to save settings: ${error.message}`);
@@ -189,6 +253,8 @@ export interface DataContextType {
     seedCollection: (collectionName: SeedableCollection) => Promise<void>;
     loading: boolean;
     isSeeding: boolean;
+    firestoreQuota: FirestoreQuotaCounters; // Expose counters
+    resetFirestoreQuotaCounters: () => void; // Expose reset function
 }
 // --- END OF TYPE DEFINITION ---
 
@@ -196,6 +262,9 @@ export interface DataContextType {
 export const DataContext = createContext<DataContextType | null>(null);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    // Firestore Quota Counters
+    const { counters: firestoreQuota, increment: incrementQuota, resetCounters: resetFirestoreQuotaCounters } = useFirestoreQuotaCounters();
+
     // Protected collections (require auth)
     const [players, setPlayers, loadingPlayers] = useCollection<Player>('players', MOCK_DATA_MAP.players, [], { isProtected: true });
     const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', MOCK_DATA_MAP.events, [], { isProtected: true });
@@ -329,6 +398,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const setDoc = async (collectionName: string, docId: string, data: object) => {
         if (IS_LIVE_DATA) {
             await db.collection(collectionName).doc(docId).set(data, { merge: true });
+            incrementQuota('writes', 1);
         } else {
             const setter = collectionSetters[collectionName as CollectionName];
             if (setter) {
@@ -348,6 +418,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addDoc = async <T extends {}>(collectionName: string, data: T): Promise<string> => {
         if (IS_LIVE_DATA) {
             const docRef = await db.collection(collectionName).add(data);
+            incrementQuota('writes', 1);
             return docRef.id;
         } else {
             const id = `mock_${collectionName}_${Date.now()}`;
@@ -364,6 +435,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (IS_LIVE_DATA) {
             const { id, ...data } = doc;
             await db.collection(collectionName).doc(id).set(data, { merge: true });
+            incrementQuota('writes', 1);
         } else {
             const setter = collectionSetters[collectionName as CollectionName];
             if (setter) {
@@ -376,6 +448,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const deleteDoc = async (collectionName: string, docId: string) => {
         if (IS_LIVE_DATA) {
             await db.collection(collectionName).doc(docId).delete();
+            incrementQuota('deletes', 1);
         } else {
             const setter = collectionSetters[collectionName as CollectionName];
             if (setter) {
@@ -401,6 +474,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 // Firestore will generate timestamp on server
                 // FIX: Access FieldValue via `firebase.firestore.FieldValue`
                 await db.collection('activityLog').add({ ...logEntryData, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                incrementQuota('writes', 1);
             } catch (error) {
                 console.error("Failed to log activity:", error);
             }
@@ -408,7 +482,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // Mock logging
             setActivityLog(prev => [...prev, { ...logEntryData, id: `log_${Date.now()}`, timestamp: new Date().toISOString() }]);
         }
-    }, [auth?.user, setActivityLog]);
+    }, [auth?.user, setActivityLog, incrementQuota]);
     
     // --- END GENERIC CRUD ---
     const seedCollection = async (collectionName: SeedableCollection) => {
@@ -426,6 +500,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
              dataToSeed.forEach((item: any) => {
                 const { id, ...data } = item;
                 batch.set(db.collection(collectionName).doc(id), data);
+                incrementQuota('writes', 1);
             });
         }
 
@@ -441,36 +516,36 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const batch = db.batch();
 
             // System Settings & Config
-            mock.MOCK_RANKS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('ranks').doc(id), data); });
-            mock.MOCK_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('badges').doc(id), data); });
-            mock.MOCK_LEGENDARY_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('legendaryBadges').doc(id), data); });
-            mock.MOCK_GAMIFICATION_SETTINGS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('gamificationSettings').doc(id), data); });
-            mock.MOCK_API_GUIDE.forEach(item => { const {id, ...data} = item; batch.set(db.collection('apiSetupGuide').doc(id), data); });
+            mock.MOCK_RANKS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('ranks').doc(id), data); incrementQuota('writes', 1); });
+            mock.MOCK_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('badges').doc(id), data); incrementQuota('writes', 1); });
+            mock.MOCK_LEGENDARY_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('legendaryBadges').doc(id), data); incrementQuota('writes', 1); });
+            mock.MOCK_GAMIFICATION_SETTINGS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('gamificationSettings').doc(id), data); incrementQuota('writes', 1); });
+            mock.MOCK_API_GUIDE.forEach(item => { const {id, ...data} = item; batch.set(db.collection('apiSetupGuide').doc(id), data); incrementQuota('writes', 1); });
             
             // Deconstructed Settings
-            batch.set(db.collection('settings').doc('companyDetails'), mock.MOCK_COMPANY_CORE);
-            batch.set(db.collection('settings').doc('brandingDetails'), mock.MOCK_BRANDING_DETAILS);
-            batch.set(db.collection('settings').doc('contentDetails'), mock.MOCK_CONTENT_DETAILS);
-            batch.set(db.collection('settings').doc('creatorDetails'), mock.MOCK_CREATOR_CORE);
+            batch.set(db.collection('settings').doc('companyDetails'), mock.MOCK_COMPANY_CORE); incrementQuota('writes', 1);
+            batch.set(db.collection('settings').doc('brandingDetails'), mock.MOCK_BRANDING_DETAILS); incrementQuota('writes', 1);
+            batch.set(db.collection('settings').doc('contentDetails'), mock.MOCK_CONTENT_DETAILS); incrementQuota('writes', 1);
+            batch.set(db.collection('settings').doc('creatorDetails'), mock.MOCK_CREATOR_CORE); incrementQuota('writes', 1);
             
             // Admin User
             // FIX: Correctly use MOCK_ADMIN
             const { id: adminId, ...adminData } = mock.MOCK_ADMIN;
-            batch.set(db.collection('admins').doc(adminId), adminData);
+            batch.set(db.collection('admins').doc(adminId), adminData); incrementQuota('writes', 1);
 
             // Transactional Data & Subcollections
-            MOCK_DATA_MAP.players.forEach(item => { const {id, ...data} = item; batch.set(db.collection('players').doc(id), data); });
-            MOCK_DATA_MAP.events.forEach(item => { const {id, ...data} = item; batch.set(db.collection('events').doc(id), data); });
-            MOCK_DATA_MAP.signups.forEach(item => { const {id, ...data} = item; batch.set(db.collection('signups').doc(id), data); });
-            MOCK_DATA_MAP.vouchers.forEach(item => { const {id, ...data} = item; batch.set(db.collection('vouchers').doc(id), data); });
-            MOCK_DATA_MAP.inventory.forEach(item => { const {id, ...data} = item; batch.set(db.collection('inventory').doc(id), data); });
-            MOCK_DATA_MAP.suppliers.forEach(item => { const {id, ...data} = item; batch.set(db.collection('suppliers').doc(id), data); });
-            MOCK_DATA_MAP.transactions.forEach(item => { const {id, ...data} = item; batch.set(db.collection('transactions').doc(id), data); });
-            MOCK_DATA_MAP.locations.forEach(item => { const {id, ...data} = item; batch.set(db.collection('locations').doc(id), data); });
-            MOCK_DATA_MAP.raffles.forEach(item => { const {id, ...data} = item; batch.set(db.collection('raffles').doc(id), data); });
-            MOCK_DATA_MAP.sponsors.forEach(item => { const {id, ...data} = item; batch.set(db.collection('sponsors').doc(id), data); });
-            MOCK_DATA_MAP.socialLinks.forEach(item => { const {id, ...data} = item; batch.set(db.collection('socialLinks').doc(id), data); });
-            MOCK_DATA_MAP.carouselMedia.forEach(item => { const {id, ...data} = item; batch.set(db.collection('carouselMedia').doc(id), data); });
+            MOCK_DATA_MAP.players.forEach(item => { const {id, ...data} = item; batch.set(db.collection('players').doc(id), data); incrementQuota('writes', 1); });
+            MOCK_DATA_MAP.events.forEach(item => { const {id, ...data} = item; batch.set(db.collection('events').doc(id), data); incrementQuota('writes', 1); });
+            MOCK_DATA_MAP.signups.forEach(item => { const {id, ...data} = item; batch.set(db.collection('signups').doc(id), data); incrementQuota('writes', 1); });
+            MOCK_DATA_MAP.vouchers.forEach(item => { const {id, ...data} = item; batch.set(db.collection('vouchers').doc(id), data); incrementQuota('writes', 1); });
+            MOCK_DATA_MAP.inventory.forEach(item => { const {id, ...data} = item; batch.set(db.collection('inventory').doc(id), data); incrementQuota('writes', 1); });
+            MOCK_DATA_MAP.suppliers.forEach(item => { const {id, ...data} = item; batch.set(db.collection('suppliers').doc(id), data); incrementQuota('writes', 1); });
+            MOCK_DATA_MAP.transactions.forEach(item => { const {id, ...data} = item; batch.set(db.collection('transactions').doc(id), data); incrementQuota('writes', 1); });
+            MOCK_DATA_MAP.locations.forEach(item => { const {id, ...data} = item; batch.set(db.collection('locations').doc(id), data); incrementQuota('writes', 1); });
+            MOCK_DATA_MAP.raffles.forEach(item => { const {id, ...data} = item; batch.set(db.collection('raffles').doc(id), data); incrementQuota('writes', 1); });
+            MOCK_DATA_MAP.sponsors.forEach(item => { const {id, ...data} = item; batch.set(db.collection('sponsors').doc(id), data); incrementQuota('writes', 1); });
+            MOCK_DATA_MAP.socialLinks.forEach(item => { const {id, ...data} = item; batch.set(db.collection('socialLinks').doc(id), data); incrementQuota('writes', 1); });
+            MOCK_DATA_MAP.carouselMedia.forEach(item => { const {id, ...data} = item; batch.set(db.collection('carouselMedia').doc(id), data); incrementQuota('writes', 1); });
             
             await batch.commit();
             console.log('All initial data seeded successfully. Refreshing the page to load new data...');
@@ -486,6 +561,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const checkAndSeed = async () => {
             if (IS_LIVE_DATA && !loading) {
                 const settingsCheck = await db.collection('settings').doc('companyDetails').get();
+                // Firestore read counter
+                incrementQuota('reads', 1);
                 if (!settingsCheck.exists) {
                     await seedInitialData();
                 }
@@ -520,9 +597,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             console.log("Deleting all transactional data...");
             for (const collectionName of collectionsToDelete) {
                 const snapshot = await db.collection(collectionName).get();
+                // Firestore read counter
+                incrementQuota('reads', 1);
                 const batch = db.batch();
                 snapshot.forEach(doc => {
                     batch.delete(doc.ref);
+                    incrementQuota('deletes', 1);
                 });
                 await batch.commit();
                 console.log(`Deleted collection: ${collectionName}`);
@@ -543,6 +623,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             console.log("Deleting all players...");
             const snapshot = await db.collection('players').get();
+            incrementQuota('reads', 1);
             if (snapshot.empty) {
                 console.log("No players to delete.");
                 return;
@@ -550,6 +631,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const batch = db.batch();
             snapshot.forEach(doc => {
                 batch.delete(doc.ref);
+                incrementQuota('deletes', 1);
             });
             await batch.commit();
             console.log(`All ${snapshot.size} players have been deleted.`);
@@ -602,9 +684,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             for (const collectionName of allCollections) {
                  if (collectionName.includes('Details')) continue; // Skip single docs here
                 const snapshot = await db.collection(collectionName).get();
+                incrementQuota('reads', 1);
                 if (snapshot.empty) continue;
                 const batch = db.batch();
-                snapshot.forEach(doc => batch.delete(doc.ref));
+                snapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                    incrementQuota('deletes', 1);
+                });
                 await batch.commit();
                 console.log(`- Wiped collection: ${collectionName}`);
             }
@@ -620,6 +706,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         const { id, ...itemData } = item;
                         const docRef = db.collection(collectionName).doc(id);
                         writeBatch.set(docRef, itemData);
+                        incrementQuota('writes', 1);
                     });
                 }
             }
@@ -628,10 +715,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const { apiSetupGuide, ...creatorCoreData } = backupData.creatorDetails || {};
             const { name, address, phone, email, website, regNumber, vatNumber, apiServerUrl, bankInfo, minimumSignupAge, logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl, sponsorsBackgroundUrl, fixedEventRules, apkUrl } = backupData.companyDetails || {};
             
-            writeBatch.set(db.collection('settings').doc('companyDetails'), { name, address, phone, email, website, regNumber, vatNumber, apiServerUrl, bankInfo, minimumSignupAge });
-            writeBatch.set(db.collection('settings').doc('brandingDetails'), { logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl, sponsorsBackgroundUrl });
-            writeBatch.set(db.collection('settings').doc('contentDetails'), { fixedEventRules, apkUrl });
-            writeBatch.set(db.collection('settings').doc('creatorDetails'), creatorCoreData);
+            writeBatch.set(db.collection('settings').doc('companyDetails'), { name, address, phone, email, website, regNumber, vatNumber, apiServerUrl, bankInfo, minimumSignupAge }); incrementQuota('writes', 1);
+            writeBatch.set(db.collection('settings').doc('brandingDetails'), { logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl, sponsorsBackgroundUrl }); incrementQuota('writes', 1);
+            writeBatch.set(db.collection('settings').doc('contentDetails'), { fixedEventRules, apkUrl }); incrementQuota('writes', 1);
+            writeBatch.set(db.collection('settings').doc('creatorDetails'), creatorCoreData); incrementQuota('writes', 1);
 
 
             await writeBatch.commit();
@@ -682,6 +769,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         seedCollection,
         loading,
         isSeeding,
+        firestoreQuota, // Expose counters
+        resetFirestoreQuotaCounters, // Expose reset function
     };
 
     return (

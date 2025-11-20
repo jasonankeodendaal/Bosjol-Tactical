@@ -446,3 +446,11 @@ export interface ActivityLog {
   action: string;
   details?: Record<string, any>;
 }
+
+// New type for Firestore daily usage counters (client-side estimate)
+export interface FirestoreQuotaCounters {
+    date: string; // YYYY-MM-DD
+    reads: number;
+    writes: number;
+    deletes: number;
+}

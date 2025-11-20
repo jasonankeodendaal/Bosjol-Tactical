@@ -678,7 +678,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                 {fullscreenImage && (
                     <FullscreenImageViewer imageUrl={fullscreenImage} onClose={() => setFullscreenImage(null)} />
                 )}
-            </Ananimatepresence>
+            </AnimatePresence>
             <AnimatePresence>
                 {selectedSponsor && (
                     <SponsorModal 
@@ -860,7 +860,7 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
     return (
         <div className="space-y-6">
             {myWins.length > 0 && (
-                // FIX: The RafflesTab component was truncated. It has been completed to correctly display raffle information.
+// FIX: The RafflesTab component was truncated. It has been completed to correctly display raffle information.
                 <DashboardCard title="Raffle Wins" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
                     <div className="p-4 space-y-2">
                         {myWins.map(win => (
@@ -896,11 +896,11 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                             <ul className="text-sm space-y-1">
                                 {raffle.winners.map(winner => {
                                     const prize = raffle.prizes.find(p => p.id === winner.prizeId);
-                                    const winnerPlayer = players.find(p => p.id === winner.playerId);
+                                    const player = players.find(p => p.id === w.playerId);
                                     return (
                                         <li key={winner.id} className="flex justify-between">
                                             <span className="text-gray-300">{prize?.place}. {prize?.name}</span>
-                                            <span className="font-semibold text-amber-300">{winnerPlayer?.name}</span>
+                                            <span className="font-semibold text-amber-300">{player?.name}</span>
                                         </li>
                                     )
                                 })}

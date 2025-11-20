@@ -343,7 +343,7 @@ const AppContent: React.FC = () => {
                         lastSeen: new Date().toISOString(),
                     });
                 }
-            }, 30000); // Update lastSeen every 30 seconds
+            }, 120000); // Update lastSeen every 2 minutes
 
             return () => {
                 clearInterval(interval);

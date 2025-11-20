@@ -399,6 +399,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (IS_LIVE_DATA && db) {
             try {
                 // Firestore will generate timestamp on server
+                // FIX: Access FieldValue via `firebase.firestore.FieldValue`
                 await db.collection('activityLog').add({ ...logEntryData, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
             } catch (error) {
                 console.error("Failed to log activity:", error);

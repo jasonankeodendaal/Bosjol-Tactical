@@ -29,7 +29,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // On initial mount, sign out any existing user to enforce re-login on every app load/refresh.
         auth.signOut();
 
-        const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: firebase.User | null) => {
+        // FIX: The type `firebase.User` is not directly available. Use `firebase.auth.User` instead.
+        const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: firebase.auth.User | null) => {
             // This listener now primarily handles logins that happen *during* the session,
             // like an admin using email/password.
             if (firebaseUser && !firebaseUser.isAnonymous) {

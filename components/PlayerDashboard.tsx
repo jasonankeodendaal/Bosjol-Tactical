@@ -670,6 +670,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
         backgroundColor: '#050505',
         backgroundBlendMode: 'overlay',
         backgroundSize: 'cover',
+        backgroundPosition: 'center',
     } : {};
 
     return (
@@ -896,11 +897,11 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                             <ul className="text-sm space-y-1">
                                 {raffle.winners.map(winner => {
                                     const prize = raffle.prizes.find(p => p.id === winner.prizeId);
-                                    const player = players.find(p => p.id === w.playerId);
+                                    const winnerPlayer = players.find(p => p.id === winner.playerId);
                                     return (
                                         <li key={winner.id} className="flex justify-between">
                                             <span className="text-gray-300">{prize?.place}. {prize?.name}</span>
-                                            <span className="font-semibold text-amber-300">{player?.name}</span>
+                                            <span className="font-semibold text-amber-300">{winnerPlayer?.name}</span>
                                         </li>
                                     )
                                 })}

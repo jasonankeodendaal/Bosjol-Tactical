@@ -96,12 +96,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
         return () => unsubscribe(); // Cleanup on unmount
 
-    } else {
-        // Not using Firebase, so treat as unauthenticated
-        setUser(null);
-        setLoading(false);
-    }
-}, [dataContext]); // dataContext is a dependency because it provides functions like 'updateDoc' potentially needed by login
+ }, [dataContext]); // dataContext is a dependency because it provides functions like 'updateDoc' potentially needed by login
 
     const login = async (identifier: string, password: string): Promise<boolean> => {
         setLoading(true);

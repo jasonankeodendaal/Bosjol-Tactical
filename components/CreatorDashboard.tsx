@@ -29,7 +29,7 @@ const TabButton: React.FC<{ name: string, active: boolean, onClick: () => void, 
 );
 
 export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
-    const [activeTab, setActiveTab] = useState<'observability' | 'powerhouse' | 'profile' | 'server'>('observability');
+    const [activeTab, setActiveTab] = useState<'observability' | 'scanner' | 'profile' | 'server'>('observability');
     const { setHelpTopic } = props;
     const auth = useContext(AuthContext);
     const creatorUser = auth?.user as (CreatorDetails & { role: 'creator' });
@@ -59,7 +59,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
                     <div className="border-b border-zinc-800 mb-6">
                         <nav className="flex space-x-6 overflow-x-auto" aria-label="Tabs">
                             <TabButton name="Observability" active={activeTab === 'observability'} onClick={() => setActiveTab('observability')} icon={<ChartBarIcon className="w-5 h-5"/>} />
-                            <TabButton name="Powerhouse Tools" active={activeTab === 'powerhouse'} onClick={() => setActiveTab('powerhouse')} icon={<CogIcon className="w-5 h-5"/>} />
+                            <TabButton name="System Scanner" active={activeTab === 'scanner'} onClick={() => setActiveTab('scanner')} icon={<CogIcon className="w-5 h-5"/>} />
                             <TabButton name="Profile & Guide Editor" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<UserCircleIcon className="w-5 h-5"/>} />
                             <TabButton name="Full Server Guide" active={activeTab === 'server'} onClick={() => setActiveTab('server')} icon={<CodeBracketIcon className="w-5 h-5"/>} />
                         </nav>
@@ -74,7 +74,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
                             transition={{ duration: 0.2 }}
                         >
                             {activeTab === 'observability' && <ObservabilityTab />}
-                            {activeTab === 'powerhouse' && <SystemScanner />}
+                            {activeTab === 'scanner' && <SystemScanner />}
                             {activeTab === 'profile' && <CreatorProfileTab creatorDetails={props.creatorDetails} setCreatorDetails={props.setCreatorDetails} />}
                             {activeTab === 'server' && <ServerSetupTab />}
                         </motion.div>

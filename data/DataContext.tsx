@@ -23,9 +23,9 @@ function useCollection<T extends {id: string}>(collectionName: string, mockData:
                 return; 
             }
 
-            // Specifically block players from fetching admin-only collections
-            const adminOnlyReadCollections = ['transactions', 'sessions', 'activityLog'];
-            if (userRole === 'player' && adminOnlyReadCollections.includes(collectionName)) {
+            // Specifically block players from fetching admin-only collections to conserve read quotas
+            const collectionsToBlockForPlayer = ['transactions', 'sessions', 'activityLog', 'suppliers', 'vouchers', 'apiSetupGuide'];
+            if (userRole === 'player' && collectionsToBlockForPlayer.includes(collectionName)) {
                 setData([]);
                 setLoading(false);
                 return;

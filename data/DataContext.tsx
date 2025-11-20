@@ -1,7 +1,7 @@
-import React, { createContext, useState, useEffect, ReactNode, useContext, useMemo } from 'react';
-import { USE_FIREBASE, db, firebaseInitializationError } from '../firebase';
+import React, { createContext, useState, useEffect, ReactNode, useContext, useMemo, useCallback } from 'react';
+import { USE_FIREBASE, db, firebaseInitializationError, firebase } from '../firebase';
 import * as mock from '../constants';
-import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier } from '../types';
+import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog } from '../types';
 import { AuthContext } from '../auth/AuthContext';
 
 export const IS_LIVE_DATA = USE_FIREBASE && !!db && !firebaseInitializationError;
@@ -171,6 +171,9 @@ export interface DataContextType {
     raffles: Raffle[]; setRaffles: (d: Raffle[] | ((p: Raffle[]) => Raffle[])) => void;
     signups: Signup[]; setSignups: (d: Signup[] | ((p: Signup[]) => Signup[])) => void;
     apiSetupGuide: ApiGuideStep[]; setApiSetupGuide: (d: ApiGuideStep[] | ((p: ApiGuideStep[]) => ApiGuideStep[])) => void;
+    sessions: Session[]; setSessions: React.Dispatch<React.SetStateAction<Session[]>>;
+    activityLog: ActivityLog[]; setActivityLog: React.Dispatch<React.SetStateAction<ActivityLog[]>>;
+    logActivity: (action: string, details?: Record<string, any>) => Promise<void>;
 
     // CRUD functions
     setDoc: (collectionName: string, docId: string, data: object) => Promise<void>;
@@ -207,6 +210,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [locations, setLocations, loadingLocations] = useCollection<Location>('locations', MOCK_DATA_MAP.locations, [], { isProtected: true });
     const [raffles, setRaffles, loadingRaffles] = useCollection<Raffle>('raffles', MOCK_DATA_MAP.raffles, [], { isProtected: true });
     const [signups, setSignups, loadingSignups] = useCollection<Signup>('signups', MOCK_DATA_MAP.signups, [], { isProtected: true });
+    const [sessions, setSessions, loadingSessions] = useCollection<Session>('sessions', [], [], { isProtected: true });
+    const [activityLog, setActivityLog, loadingActivityLog] = useCollection<ActivityLog>('activityLog', [], [], { isProtected: true });
 
     // --- Deconstructed Settings Documents ---
     // Company Details
@@ -223,8 +228,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [carouselMedia, setCarouselMedia, loadingCarouselMedia] = useCollection<CarouselMedia>('carouselMedia', MOCK_DATA_MAP.carouselMedia);
     
     const [isSeeding, setIsSeeding] = useState(false);
+    const auth = useContext(AuthContext);
 
-    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia || loadingSignups || loadingCompanyCore || loadingBranding || loadingContent || loadingCreatorCore || loadingApiGuide;
+    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia || loadingSignups || loadingCompanyCore || loadingBranding || loadingContent || loadingCreatorCore || loadingApiGuide || loadingSessions || loadingActivityLog;
     
     // --- Composite Objects for consumption by components ---
     const companyDetails = useMemo(() => ({
@@ -313,13 +319,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         raffles: setRaffles,
         signups: setSignups,
         apiSetupGuide: setApiSetupGuide,
+        sessions: setSessions,
+        activityLog: setActivityLog,
     };
     type CollectionName = keyof typeof collectionSetters;
 
     // --- GENERIC CRUD FUNCTIONS ---
     const setDoc = async (collectionName: string, docId: string, data: object) => {
         if (IS_LIVE_DATA) {
-            await db.collection(collectionName).doc(docId).set(data);
+            await db.collection(collectionName).doc(docId).set(data, { merge: true });
         } else {
             const setter = collectionSetters[collectionName as CollectionName];
             if (setter) {
@@ -375,6 +383,31 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         }
     };
+
+    const logActivity = useCallback(async (action: string, details?: Record<string, any>) => {
+        if (!auth?.user) return; // Don't log if no user
+
+        const logEntryData: Omit<ActivityLog, 'id' | 'timestamp'> & { timestamp?: any } = {
+            userId: auth.user.id,
+            userName: auth.user.name,
+            userRole: auth.user.role,
+            action,
+            details: details || {},
+        };
+        
+        if (IS_LIVE_DATA && db) {
+            try {
+                // Firestore will generate timestamp on server
+                await db.collection('activityLog').add({ ...logEntryData, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+            } catch (error) {
+                console.error("Failed to log activity:", error);
+            }
+        } else {
+            // Mock logging
+            setActivityLog(prev => [...prev, { ...logEntryData, id: `log_${Date.now()}`, timestamp: new Date().toISOString() }]);
+        }
+    }, [auth?.user, setActivityLog]);
+    
     // --- END GENERIC CRUD ---
     const seedCollection = async (collectionName: SeedableCollection) => {
         if (!IS_LIVE_DATA) return;
@@ -479,7 +512,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return;
         }
         
-        const collectionsToDelete = ['players', 'events', 'signups', 'vouchers', 'inventory', 'transactions', 'raffles', 'suppliers', 'sponsors', 'locations', 'socialLinks', 'carouselMedia'];
+        const collectionsToDelete = ['players', 'events', 'signups', 'vouchers', 'inventory', 'transactions', 'raffles', 'suppliers', 'sponsors', 'locations', 'socialLinks', 'carouselMedia', 'sessions', 'activityLog'];
         
         try {
             console.log("Deleting all transactional data...");
@@ -631,6 +664,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         raffles, setRaffles,
         signups, setSignups,
         apiSetupGuide, setApiSetupGuide,
+        sessions, setSessions,
+        activityLog, setActivityLog,
+        logActivity,
         
         setDoc,
         updateDoc,

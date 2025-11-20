@@ -62,7 +62,41 @@ export const AboutTab: React.FC = () => {
                         </div>
                     </StepCard>
 
-                    <StepCard number={2} title="Hosting Guide: External URLs vs. Direct Uploads">
+                    <StepCard number={2} title="Understanding the Storage Status Indicator">
+                        <p>The small colored dot in the footer of the dashboard provides immediate feedback on the status of your data connection. Here's what each color means:</p>
+                        <ul className="list-none space-y-3 pl-2 mt-4">
+                            <li className="flex items-start gap-3">
+                                <div className="w-4 h-4 rounded-full bg-green-500 mt-1 flex-shrink-0 shadow-[0_0_8px_2px_rgba(34,197,94,0.7)]"></div>
+                                <div>
+                                    <strong className="text-green-400">Green Dot: Live Firebase Connection</strong>
+                                    <p className="text-xs text-gray-400">Your data is being saved and read from the Google Firebase cloud in real-time. All changes are live.</p>
+                                </div>
+                            </li>
+                            <li className="flex items-start gap-3">
+                                <div className="w-4 h-4 rounded-full bg-blue-500 mt-1 flex-shrink-0 shadow-[0_0_8px_2px_rgba(59,130,246,0.7)]"></div>
+                                <div>
+                                    <strong className="text-blue-400">Blue Dot: Live API Server Connection</strong>
+                                    <p className="text-xs text-gray-400">Your application is successfully connected to your self-hosted API server for handling data and large file uploads.</p>
+                                </div>
+                            </li>
+                            <li className="flex items-start gap-3">
+                                <div className="w-4 h-4 rounded-full bg-yellow-500 mt-1 flex-shrink-0 animate-pulse"></div>
+                                <div>
+                                    <strong className="text-yellow-400">Yellow Dot: Mock Data Mode</strong>
+                                    <p className="text-xs text-gray-400">The application is running in an offline, local-only mode using sample data. No changes you make will be saved permanently. This mode is active if Firebase is not configured.</p>
+                                </div>
+                            </li>
+                            <li className="flex items-start gap-3">
+                                <div className="w-4 h-4 rounded-full bg-red-500 mt-1 flex-shrink-0 animate-pulse"></div>
+                                <div>
+                                    <strong className="text-red-400">Red Dot: Connection Error</strong>
+                                    <p className="text-xs text-gray-400">The app failed to connect to the configured API Server URL. Check that the server is running and the URL in the Settings tab is correct.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </StepCard>
+
+                    <StepCard number={3} title="Hosting Guide: External URLs vs. Direct Uploads">
                         <p>This dashboard offers two ways to handle images, audio, and video files:</p>
                         <ul className="list-disc list-inside space-y-2 pl-2 mt-2">
                             <li><strong>Direct Upload:</strong> You can upload files directly from your device. The file is converted into a 'data URL' and stored in the database. <strong>This has a 500KB file size limit.</strong></li>
@@ -73,7 +107,7 @@ export const AboutTab: React.FC = () => {
                         </div>
                     </StepCard>
 
-                    <StepCard number={3} title="How to Get a Direct URL (Free Image Hosting)">
+                    <StepCard number={4} title="How to Get a Direct URL (Free Image Hosting)">
                         <p>You need a <strong>direct link</strong> to the image file itself (usually ending in .jpg, .png, .gif), not a link to the webpage where the image is displayed.</p>
                         <h4 className="font-semibold text-gray-200 mt-4 mb-2">Recommended Service: ImgBB</h4>
                         <ol className="list-decimal list-inside space-y-2 pl-4">
@@ -86,7 +120,7 @@ export const AboutTab: React.FC = () => {
                         <p className="mt-4">Other services like <a href="https://imgur.com/upload" target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline">Imgur</a> work too, but make sure you right-click the uploaded image and select "Copy Image Address" to get the direct link.</p>
                     </StepCard>
 
-                    <StepCard number={4} title="Handling Video and Audio Files">
+                    <StepCard number={5} title="Handling Video and Audio Files">
                          <p>For video and audio, you cannot use image hosting sites. The best free options are platforms designed for media streaming. It's also recommended to use web-optimized formats like <strong>MP3</strong> over large formats like WAV for faster loading.</p>
                          <h4 className="font-semibold text-gray-200 mt-4 mb-2">Cloud Storage (Dropbox, Google Drive)</h4>
                          <p>You can use services like Dropbox or Google Drive, but you must modify the sharing link to create a direct download link. This process varies by service and can be unreliable for streaming due to security policies.</p>

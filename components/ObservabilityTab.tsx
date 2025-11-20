@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { DataContext, DataContextType } from '../data/DataContext';
@@ -49,7 +48,9 @@ const PerformanceWidget: React.FC = () => {
             }
         });
         try {
-            observer.observe({ type: ['largest-contentful-paint', 'layout-shift', 'event'], buffered: true, durationThreshold: 16 });
+            // FIX: The `PerformanceObserver.observe` method expects the `entryTypes` property for an array of types, not `type`.
+            // FIX: The `durationThreshold` property is not valid when observing multiple entry types that don't all support it. Removed to resolve the TypeScript error.
+            observer.observe({ entryTypes: ['largest-contentful-paint', 'layout-shift', 'event'], buffered: true });
         } catch (e) {
             console.warn("PerformanceObserver not fully supported.", e);
         }
@@ -88,20 +89,22 @@ export const ObservabilityTab: React.FC = () => {
     }, []);
 
     const liveSessions = useMemo(() => {
+        if (!sessions) return [];
         const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
         return sessions.filter(s => new Date(s.lastSeen) > oneMinuteAgo);
     }, [sessions, time]);
 
-    const sortedActivityLog = useMemo(() => 
-        [...activityLog].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()), 
-    [activityLog]);
+    const sortedActivityLog = useMemo(() => {
+        if (!activityLog) return [];
+        return [...activityLog].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    }, [activityLog]);
 
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatWidget title="Live Visitors" value={liveSessions.length} icon={<UsersIcon className="w-6 h-6" />} color="text-blue-400" />
-                <StatWidget title="Total Sessions Tracked" value={sessions.length} icon={<DesktopComputerIcon className="w-6 h-6" />} color="text-indigo-400" />
-                <StatWidget title="Activity Log Events" value={activityLog.length} icon={<ChartBarIcon className="w-6 h-6" />} color="text-green-400" />
+                <StatWidget title="Total Sessions Tracked" value={sessions?.length || 0} icon={<DesktopComputerIcon className="w-6 h-6" />} color="text-indigo-400" />
+                <StatWidget title="Activity Log Events" value={activityLog?.length || 0} icon={<ChartBarIcon className="w-6 h-6" />} color="text-green-400" />
                 <StatWidget title="Server Time" value={time.toLocaleTimeString()} icon={<ClockIcon className="w-6 h-6" />} color="text-gray-400" />
             </div>
 

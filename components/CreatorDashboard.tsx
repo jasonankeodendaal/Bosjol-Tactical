@@ -1,14 +1,16 @@
 
+
 import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CreatorDetails } from '../types';
 import { Button } from './Button';
-import { CogIcon, UserCircleIcon, CodeBracketIcon } from './icons/Icons';
+import { CogIcon, UserCircleIcon, CodeBracketIcon, ChartBarIcon } from './icons/Icons';
 import { DataContextType } from '../data/DataContext';
 import { SystemScanner } from './SystemScanner';
 import { AuthContext } from '../auth/AuthContext';
 import { CreatorProfileTab } from './CreatorProfileTab';
 import { ServerSetupTab } from './ServerSetupTab';
+import { ObservabilityTab } from './ObservabilityTab';
 
 // --- MAIN COMPONENT ---
 
@@ -27,7 +29,7 @@ const TabButton: React.FC<{ name: string, active: boolean, onClick: () => void, 
 );
 
 export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
-    const [activeTab, setActiveTab] = useState<'powerhouse' | 'profile' | 'server'>('powerhouse');
+    const [activeTab, setActiveTab] = useState<'observability' | 'powerhouse' | 'profile' | 'server'>('observability');
     const { setHelpTopic } = props;
     const auth = useContext(AuthContext);
     const creatorUser = auth?.user as (CreatorDetails & { role: 'creator' });
@@ -36,6 +38,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
         let topic = 'creator-dashboard-monitor';
         if (activeTab === 'profile') topic = 'creator-dashboard-profile';
         if (activeTab === 'server') topic = 'creator-dashboard-server'; // Add help topic if needed
+        if (activeTab === 'observability') topic = 'creator-dashboard-observability';
         setHelpTopic(topic);
     }, [activeTab, setHelpTopic]);
     
@@ -55,6 +58,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
                 <div className="p-4 sm:p-6 lg:p-8">
                     <div className="border-b border-zinc-800 mb-6">
                         <nav className="flex space-x-6 overflow-x-auto" aria-label="Tabs">
+                            <TabButton name="Observability" active={activeTab === 'observability'} onClick={() => setActiveTab('observability')} icon={<ChartBarIcon className="w-5 h-5"/>} />
                             <TabButton name="Powerhouse Tools" active={activeTab === 'powerhouse'} onClick={() => setActiveTab('powerhouse')} icon={<CogIcon className="w-5 h-5"/>} />
                             <TabButton name="Profile & Guide Editor" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<UserCircleIcon className="w-5 h-5"/>} />
                             <TabButton name="Full Server Guide" active={activeTab === 'server'} onClick={() => setActiveTab('server')} icon={<CodeBracketIcon className="w-5 h-5"/>} />
@@ -69,6 +73,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.2 }}
                         >
+                            {activeTab === 'observability' && <ObservabilityTab />}
                             {activeTab === 'powerhouse' && <SystemScanner />}
                             {activeTab === 'profile' && <CreatorProfileTab creatorDetails={props.creatorDetails} setCreatorDetails={props.setCreatorDetails} />}
                             {activeTab === 'server' && <ServerSetupTab />}

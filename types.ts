@@ -428,3 +428,22 @@ export interface CreatorDetails {
     githubUrl: string;
     sourceCodeZipUrl?: string;
 }
+
+export interface Session {
+  id: string; // Firebase auth UID
+  userId: string; // Player/Admin ID
+  userName: string;
+  userRole: Role;
+  currentView: string;
+  lastSeen: string; // ISO string
+}
+
+export interface ActivityLog {
+  id: string; // doc id
+  timestamp: string; // ISO string
+  userId: string;
+  userName: string;
+  userRole: Role;
+  action: string;
+  details?: Record<string, any>;
+}

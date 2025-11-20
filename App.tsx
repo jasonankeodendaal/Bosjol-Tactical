@@ -8,7 +8,7 @@ import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, Crea
 import { XIcon, KeyIcon, ShieldCheckIcon, TrophyIcon } from './components/icons/Icons';
 import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
 import { Loader } from './components/Loader';
-import { USE_FIREBASE, isFirebaseConfigured, firebaseInitializationError } from './firebase';
+import { USE_FIREBASE, isFirebaseConfigured, firebaseInitializationError, auth as firebaseAuth } from './firebase';
 import { Modal } from './components/Modal';
 import { HelpSystem } from './components/Help';
 import { StorageStatusIndicator } from './components/StorageStatusIndicator';
@@ -294,10 +294,72 @@ const AppContent: React.FC = () => {
         ranks,
         signups,
         setCompanyDetails,
+        logActivity,
     } = data;
     
     const currentPlayer = players.find(p => p.id === user?.id);
     const hasPerformedReset = useRef(false); // Prevent multiple runs in one session
+    const sessionRef = useRef<{ id: string | null }>({ id: null });
+
+    // --- SESSION MANAGEMENT FOR OBSERVABILITY ---
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (sessionRef.current.id) {
+                // This is a best-effort attempt. The browser might not wait for it.
+                data.deleteDoc('sessions', sessionRef.current.id);
+            }
+        };
+
+        const createOrUpdateSession = async () => {
+            if (user && firebaseAuth?.currentUser) {
+                const uid = firebaseAuth.currentUser.uid;
+                sessionRef.current.id = uid;
+                const sessionData = {
+                    userId: user.id,
+                    userName: user.name,
+                    userRole: user.role,
+                    currentView: helpTopic,
+                    lastSeen: new Date().toISOString(),
+                };
+                await data.setDoc('sessions', uid, sessionData);
+            }
+        };
+
+        const deleteSession = async () => {
+            if (sessionRef.current.id) {
+                await data.deleteDoc('sessions', sessionRef.current.id);
+                sessionRef.current.id = null;
+            }
+        };
+        
+        if (isAuthenticated && user) {
+            createOrUpdateSession();
+            window.addEventListener('beforeunload', handleBeforeUnload);
+            
+            const interval = setInterval(() => {
+                if (sessionRef.current.id) {
+                    data.updateDoc('sessions', {
+                        id: sessionRef.current.id,
+                        lastSeen: new Date().toISOString(),
+                    });
+                }
+            }, 30000); // Update lastSeen every 30 seconds
+
+            return () => {
+                clearInterval(interval);
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+                deleteSession();
+            };
+        }
+    }, [isAuthenticated, user, data]);
+
+    useEffect(() => {
+        // Update current view for session tracking
+        if (isAuthenticated && sessionRef.current.id) {
+            data.updateDoc('sessions', { id: sessionRef.current.id, currentView: helpTopic });
+        }
+    }, [helpTopic, isAuthenticated, data]);
+
 
     useEffect(() => {
         const performRankReset = async () => {
@@ -350,6 +412,7 @@ const AppContent: React.FC = () => {
                 try {
                     const promises = updatedPlayers.map(p => updateDoc('players', p));
                     await Promise.all(promises);
+                    logActivity('Performed Seasonal Rank Reset', { resetCount: updatedPlayers.length });
 
                     // Update the company details to clear the reset date
                     await setCompanyDetails(prev => ({ ...prev, nextRankResetDate: '' }));
@@ -371,7 +434,7 @@ const AppContent: React.FC = () => {
         if (isAuthenticated && user?.role === 'admin' && ranks.length > 0 && players.length > 0) {
             performRankReset();
         }
-    }, [isAuthenticated, user?.role, companyDetails, setCompanyDetails, players, ranks, updateDoc]);
+    }, [isAuthenticated, user?.role, companyDetails, setCompanyDetails, players, ranks, updateDoc, logActivity]);
 
 
     const checkForPromotions = useCallback((player: Player) => {
@@ -612,6 +675,7 @@ const AppContent: React.FC = () => {
 
     const onPlayerUpdate = async (player: Player) => {
         await updateDoc('players', player);
+        logActivity('Updated Own Profile');
     };
 
     const onEventSignUp = async (eventId: string, requestedGearIds: string[], note: string) => {
@@ -619,10 +683,12 @@ const AppContent: React.FC = () => {
 
         const signupId = `${eventId}_${user.id}`;
         const existingSignup = signups.find(s => s.id === signupId);
+        const event = events.find(e => e.id === eventId);
 
         if (existingSignup) {
             // Withdraw from event
             await deleteDoc('signups', signupId);
+            logActivity(`Withdrew from event: ${event?.title}`);
         } else {
             // Sign up for event
             const newSignupData = {
@@ -632,6 +698,7 @@ const AppContent: React.FC = () => {
                 note,
             };
             await setDoc('signups', signupId, newSignupData);
+            logActivity(`Signed up for event: ${event?.title}`);
         }
     };
 

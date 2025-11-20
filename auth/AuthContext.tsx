@@ -1,8 +1,9 @@
-import React, { createContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, ReactNode, useEffect, useContext } from 'react';
 import type { User, AuthContextType, Player, Admin, CreatorDetails } from '../types';
 // FIX: Updated imports to use MOCK_PLAYERS and MOCK_ADMIN.
 import { MOCK_PLAYERS, MOCK_ADMIN } from '../constants';
 import { auth, db, USE_FIREBASE, firebase } from '../firebase';
+import { DataContext } from '../data/DataContext';
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -17,6 +18,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | Player | Admin | null>(null);
     const [loading, setLoading] = useState(true);
     const [helpTopic, setHelpTopic] = useState('front-page');
+    const dataContext = useContext(DataContext);
 
     useEffect(() => {
         if (!USE_FIREBASE || !auth || !db) {
@@ -90,7 +92,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (USE_FIREBASE && auth) {
                 try {
                     await auth.signInWithEmailAndPassword(emailUsername, cleanPassword);
-                    // onAuthStateChanged will set user state
+                    // onAuthStateChanged will set user state, then logActivity will be called in useEffect
                     return true;
                 } catch (error) {
                     const typedError = error as { code?: string; message?: string };
@@ -100,6 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             } else { // Mock admin login (creator has no mock login)
                 if (emailUsername === ADMIN_EMAIL && cleanPassword === '1234') {
                     setUser(MOCK_ADMIN);
+                    dataContext?.logActivity('Logged In');
                     return true;
                 }
                 return false;
@@ -136,6 +139,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     const updatedPlayerData = { ...playerData, activeAuthUID: authUID };
                     await db.collection('players').doc(playerData.id).update({ activeAuthUID: authUID });
                     setUser(updatedPlayerData);
+                    dataContext?.logActivity('Logged In');
                     return true;
                 } else {
                     await auth.signOut(); // Clean up anonymous session on wrong PIN
@@ -163,11 +167,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             );
             if (player) {
                 setUser(player);
+                dataContext?.logActivity('Logged In');
                 return true;
             }
             return false;
         }
     };
+    
+    // Log activity on user state change (successful login)
+    useEffect(() => {
+        if (user && dataContext) {
+            dataContext.logActivity('Logged In');
+        }
+    }, [user, dataContext]);
+
 
     const logout = async () => {
         // For both anonymous player sessions and admin/creator sessions

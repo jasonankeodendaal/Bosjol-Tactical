@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useMemo, useEffect, useContext } from 'react';
 import type { Player, GameEvent, Tier, XpAdjustment, LegendaryBadge, PlayerRole, Rank, CompanyDetails, Badge } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -20,7 +21,7 @@ import { motion } from 'framer-motion';
 const getTierForPlayer = (player: Player, ranks: Rank[]): Tier => {
     // Determines a player's tier based on their total XP.
     if (!ranks || ranks.length === 0) return UNRANKED_TIER;
-    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - b.minXp);
+    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - a.minXp);
     if (allTiers.length === 0) return UNRANKED_TIER;
     const tier = allTiers.find(r => (player.stats?.xp ?? 0) >= r.minXp);
     const lowestTier = [...allTiers].sort((a,b) => a.minXp - b.minXp)[0];

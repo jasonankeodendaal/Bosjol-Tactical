@@ -198,3 +198,650 @@ const PromotionModal: React.FC<{
 
                 <div className="xp-bar-container">
                     <div className="xp-bar-info">
+                        <span className="xp-earned">Match RP +{xpGained}</span>
+                        {newTier && <span className="rank-up-tag">TIER UP</span>}
+                        <span className="xp-values">{finalXp.toLocaleString()} / {nextTierAfterBonus ? nextTierAfterBonus.minXp.toLocaleString() : 'MAX'}{!nextTierAfterBonus && '+'}</span>
+                    </div>
+                    <div className="xp-bar-track">
+                         <motion.div 
+                            className="xp-bar-fill" 
+                            initial={{ width: '0%'}}
+                            animate={{ width: `${progressPercentage}%`}}
+                            transition={{ duration: 1, delay: 0.5 }}
+                        />
+                    </div>
+                </div>
+                
+                {bonusXp > 0 && rewards.length > 0 && (
+                     <div className="promotion-rewards">
+                        <h3 className="promotion-rewards__title">Tier Up Rewards</h3>
+                        {rewards.map((reward, index) => (
+                             <div key={index} className="reward-item">
+                                <span>{reward}</span>
+                                <span className="reward-item__amount">+100 RP</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+
+                {promotion.newBadges.length > 0 && (
+                    <div className="mt-4 w-full max-w-md">
+                        <h3 className="font-semibold text-gray-300 mb-2">Achievements Unlocked</h3>
+                        <div className="space-y-2">
+                            {promotion.newBadges.map(badge => (
+                                <div key={badge.id} className="bg-zinc-800/50 p-2 rounded-lg flex items-center gap-3 border border-zinc-700">
+                                    <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10" />
+                                    <div className="text-left">
+                                        <p className="font-bold text-white text-sm">{badge.name}</p>
+                                        <p className="text-xs text-gray-400">{badge.description}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                 )}
+
+                <p className="tap-to-continue">Tap to continue</p>
+            </motion.div>
+        </div>
+    );
+};
+
+
+const Footer: React.FC<{ details: CompanyDetails, apiServerUrl?: string }> = ({ details, apiServerUrl }) => (
+    <footer className="bg-zinc-950/80 backdrop-blur-sm border-t border-zinc-800 py-3 px-4 text-xs text-gray-500 z-40">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+                <img src={details.logoUrl} alt={details.name} className="h-8 w-auto rounded"/>
+                <p className="hidden sm:block">© 2025 Bosjol Tactical Nelspruit Airsoft. All rights reserved.</p>
+            </div>
+            <StorageStatusIndicator apiServerUrl={apiServerUrl} />
+        </div>
+        <p className="sm:hidden text-center mt-2">© 2025 Bosjol Tactical Nelspruit Airsoft. All rights reserved.</p>
+    </footer>
+);
+
+
+const AppContent: React.FC = () => {
+    const auth = useContext(AuthContext);
+    const data = useContext(DataContext);
+    const [showFrontPage, setShowFrontPage] = useState(true);
+    const [showCreatorPopup, setShowCreatorPopup] = useState(false);
+    const [showHelp, setShowHelp] = useState(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [promotion, setPromotion] = useState<{ newTier?: Tier; oldTier?: Tier; newBadges: Badge[], xpGained: number, currentXp: number, bonusXp: number, rewards: string[], finalXp: number } | null>(null);
+
+
+    if (!auth) throw new Error("AuthContext not found.");
+    if (!data) throw new Error("DataContext not found.");
+    
+    const { isAuthenticated, user, logout, helpTopic, setHelpTopic } = auth;
+    
+    const { 
+        players,
+        events,
+        companyDetails,
+        socialLinks,
+        carouselMedia,
+        loading,
+        isSeeding,
+        updateDoc,
+        addDoc,
+        deleteDoc,
+        setDoc,
+        creatorDetails, // Deconstruct creatorDetails from dataContext
+        ranks, // Deconstruct ranks from dataContext
+        signups, // Deconstruct signups from dataContext
+        setCompanyDetails,
+        logActivity,
+    } = data;
+    
+    const currentPlayer = players.find(p => p.id === user?.id);
+    const hasPerformedReset = useRef(false); // Prevent multiple runs in one session
+    const sessionRef = useRef<{ id: string | null }>({ id: null });
+
+    // --- SESSION MANAGEMENT FOR OBSERVABILITY (Now API-driven or for mock data) ---
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (sessionRef.current.id && auth?.isAuthenticated && user) {
+                // Best-effort attempt to delete session on unload.
+                // In a real API-only scenario, this would hit an API endpoint.
+                data.deleteDoc('sessions', sessionRef.current.id).catch(error => {
+                    console.error("Failed to delete session on unload:", error);
+                });
+            }
+        };
+
+        const createOrUpdateSession = async () => {
+            if (auth?.isAuthenticated && user) {
+                const sessionId = user.id; // Use user ID as session ID for simplicity in API-only
+                sessionRef.current.id = sessionId;
+                const sessionData = {
+                    userId: user.id,
+                    userName: user.name,
+                    userRole: user.role,
+                    currentView: helpTopic,
+                    lastSeen: new Date().toISOString(),
+                };
+                // Assuming setDoc can handle creating or updating the session
+                await data.setDoc('sessions', sessionId, sessionData);
+            }
+        };
+
+        const deleteSession = async () => {
+            if (sessionRef.current.id && auth?.isAuthenticated && user) {
+                await data.deleteDoc('sessions', sessionRef.current.id);
+                sessionRef.current.id = null;
+            }
+        };
+        
+        if (isAuthenticated && user) {
+            createOrUpdateSession();
+            window.addEventListener('beforeunload', handleBeforeUnload);
+            
+            const interval = setInterval(() => {
+                if (sessionRef.current.id && auth?.isAuthenticated && user) {
+                    // Send heartbeat to keep session alive
+                    data.updateDoc('sessions', {
+                        id: sessionRef.current.id,
+                        lastSeen: new Date().toISOString(),
+                    });
+                }
+            }, 30000); // Update lastSeen every 30 seconds
+
+            return () => {
+                clearInterval(interval);
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+                // Ensure logout also triggers session deletion
+                if (!auth.isAuthenticated) { // Only delete if actually logging out, not just a cleanup from re-render
+                    deleteSession();
+                }
+            };
+        } else {
+             // If not authenticated, ensure session ID is cleared
+            sessionRef.current.id = null;
+        }
+    }, [isAuthenticated, user, data, helpTopic, auth?.isAuthenticated]); // Add auth.isAuthenticated to dependencies
+
+    useEffect(() => {
+        // Update current view for session tracking
+        if (isAuthenticated && sessionRef.current.id && user) {
+            data.updateDoc('sessions', { id: sessionRef.current.id, currentView: helpTopic });
+        }
+    }, [helpTopic, isAuthenticated, data, user]);
+
+
+    useEffect(() => {
+        const performRankReset = async () => {
+            if (!companyDetails.nextRankResetDate || hasPerformedReset.current) {
+                return;
+            }
+
+            const resetDate = new Date(companyDetails.nextRankResetDate);
+            const today = new Date();
+            // Set hours to 0 to compare dates only, ensuring the reset happens at the start of the day
+            resetDate.setHours(0,0,0,0);
+            today.setHours(0,0,0,0);
+
+            if (today < resetDate) {
+                return;
+            }
+
+            hasPerformedReset.current = true; // Mark that we're attempting a reset in this session
+            console.log("Rank reset date reached. Performing seasonal rank reset...");
+
+            if (confirm('A seasonal rank reset is due. All player Ranks and RP will be reset. This cannot be undone. Proceed?')) {
+                // Find the lowest tier
+                const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => a.minXp - b.minXp);
+                if (allTiers.length === 0) {
+                    console.error("Cannot perform rank reset: No ranks configured.");
+                    alert("Cannot perform rank reset: No ranks configured.");
+                    hasPerformedReset.current = false; // allow retry
+                    return;
+                }
+                const lowestTier = allTiers.sort((a, b) => a.minXp - b.minXp)[0];
+
+                const playersToReset = players.filter(p => p.stats.xp > 0);
+
+                if (playersToReset.length === 0) {
+                    console.log("No players needed a rank reset.");
+                    await setCompanyDetails(prev => ({ ...prev, nextRankResetDate: '' }));
+                    alert('No players required a rank reset. Reset date has been cleared.');
+                    return;
+                }
+
+                const updatedPlayers = playersToReset.map(player => ({
+                    ...player,
+                    stats: {
+                        ...player.stats,
+                        xp: 0,
+                    },
+                    rank: lowestTier,
+                }));
+                
+                try {
+                    const promises = updatedPlayers.map(p => updateDoc('players', p));
+                    await Promise.all(promises);
+                    logActivity('Performed Seasonal Rank Reset', { resetCount: updatedPlayers.length });
+
+                    // Update the company details to clear the reset date
+                    await setCompanyDetails(prev => ({ ...prev, nextRankResetDate: '' }));
+
+                    alert(`A seasonal rank reset has occurred! ${updatedPlayers.length} players have had their Rank and RP reset.`);
+                } catch (error) {
+                    console.error("Failed to perform rank reset:", error);
+                    alert("An error occurred during the rank reset process. Please check the console.");
+                    hasPerformedReset.current = false; // allow retry on error
+                }
+
+            } else {
+                 alert('Rank reset has been postponed. It will be prompted again on your next login.');
+                 hasPerformedReset.current = false; // allow prompt on next login
+            }
+        };
+
+        // Only run this logic for admins to prevent multiple users/clients from triggering the reset.
+        if (isAuthenticated && user?.role === 'admin' && ranks.length > 0 && players.length > 0) {
+            performRankReset();
+        }
+    }, [isAuthenticated, user?.role, companyDetails, setCompanyDetails, players, ranks, updateDoc, logActivity]);
+
+
+    const checkForPromotions = useCallback((player: Player) => {
+        if (promotion || !ranks || ranks.length === 0) return;
+    
+        const lastSeenXp = parseInt(localStorage.getItem(`lastSeenXp_${player.id}`) || '0', 10);
+        const lastSeenTierId = localStorage.getItem(`lastSeenTierId_${player.id}`);
+        const lastSeenBadges: string[] = JSON.parse(localStorage.getItem(`lastSeenBadges_${player.id}`) || '[]');
+    
+        if (player.stats.xp > lastSeenXp) {
+            const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - a.minXp);
+            
+            const getTierForXp = (xp: number): Tier | undefined => allTiers.find(r => xp >= r.minXp);
+            
+            const oldTier = lastSeenTierId ? allTiers.find(r => r.id === lastSeenTierId) : getTierForXp(lastSeenXp);
+            const newTier = getTierForXp(player.stats.xp);
+            
+            const newBadges = player.badges.filter(b => !lastSeenBadges.includes(b.id));
+    
+            const hasNewTier = newTier && oldTier && newTier.id !== oldTier.id;
+    
+            if (hasNewTier || newBadges.length > 0) {
+                 let bonusXp = 0;
+                const rewards: string[] = [];
+
+                if (hasNewTier && newTier) {
+                    newTier.perks.forEach(perk => {
+                        if (perk.includes('Weapon XP Card')) {
+                            bonusXp += 100; // Bonus XP amount
+                            rewards.push('Weapon XP Card');
+                        }
+                    });
+                }
+    
+                setPromotion({ 
+                    newTier: hasNewTier ? newTier : undefined, 
+                    oldTier,
+                    newBadges,
+                    xpGained: player.stats.xp - lastSeenXp,
+                    currentXp: player.stats.xp,
+                    bonusXp,
+                    rewards,
+                    finalXp: player.stats.xp + bonusXp,
+                });
+            }
+        }
+    }, [ranks, promotion]);
+
+    const dismissPromotion = () => {
+        if (promotion && user?.role === 'player' && currentPlayer) {
+            const { bonusXp, rewards } = promotion;
+            
+            if (bonusXp > 0 && rewards && rewards.length > 0) {
+                const finalXp = currentPlayer.stats.xp + bonusXp;
+
+                const newAdjustments: XpAdjustment[] = rewards.map(reward => ({
+                    amount: 100, // Hardcoded bonus for "Weapon XP Card"
+                    reason: `Rank Up Reward: ${reward}`,
+                    date: new Date().toISOString()
+                }));
+
+                const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - a.minXp);
+                const finalTier = allTiers.find(r => finalXp >= r.minXp) || currentPlayer.rank;
+
+                const updatedPlayer = {
+                    ...currentPlayer,
+                    stats: { ...currentPlayer.stats, xp: finalXp },
+                    xpAdjustments: [...currentPlayer.xpAdjustments, ...newAdjustments],
+                    rank: finalTier,
+                };
+                
+                updateDoc('players', updatedPlayer);
+                
+                localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(finalXp));
+                localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify(updatedPlayer.badges.map(b => b.id)));
+                if (finalTier) {
+                    localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
+                }
+            } else {
+                 localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(currentPlayer.stats.xp));
+                 localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify(currentPlayer.badges.map(b => b.id)));
+                 if (currentPlayer.rank) {
+                    localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, currentPlayer.rank.id);
+                 }
+            }
+        }
+        setPromotion(null);
+    };
+
+    useEffect(() => {
+        if (user?.role === 'player' && currentPlayer) {
+            checkForPromotions(currentPlayer);
+        }
+    }, [user, currentPlayer, checkForPromotions]);
+
+
+    useEffect(() => {
+        if (showFrontPage) {
+            setHelpTopic('front-page');
+        } else if (!isAuthenticated) {
+            setHelpTopic('login-screen');
+        }
+    }, [showFrontPage, isAuthenticated, setHelpTopic]);
+
+    // Check for Firebase configuration issues if USE_FIREBASE is true
+    const showFirebaseConfigWarning = USE_FIREBASE && (!isFirebaseConfigured() || firebaseInitializationError);
+
+    // Inactivity logout logic
+    const logoutTimer = useRef<number | null>(null);
+
+    const resetInactivityTimer = useCallback(() => {
+        if (logoutTimer.current) {
+            clearTimeout(logoutTimer.current);
+        }
+
+        logoutTimer.current = window.setTimeout(() => {
+            if (auth.isAuthenticated) {
+                console.log("User inactive for 5 minutes. Logging out.");
+                logout();
+            }
+        }, 5 * 60 * 1000); // 5 minutes
+    }, [logout, auth.isAuthenticated]);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+
+            activityEvents.forEach(event => {
+                window.addEventListener(event, resetInactivityTimer);
+            });
+
+            resetInactivityTimer();
+
+            return () => {
+                if (logoutTimer.current) {
+                    clearTimeout(logoutTimer.current);
+                }
+                activityEvents.forEach(event => {
+                    window.removeEventListener(event, resetInactivityTimer);
+                });
+            };
+        }
+    }, [isAuthenticated, resetInactivityTimer]);
+
+    
+    // Centralized background audio management
+    useEffect(() => {
+        // Ensure audio element exists
+        if (!audioRef.current) {
+            audioRef.current = new Audio();
+            audioRef.current.loop = true;
+            audioRef.current.volume = 0.3; // Set a default, non-intrusive volume
+        }
+        const audio = audioRef.current;
+
+        let targetAudioUrl: string | undefined;
+
+        if (showFrontPage) {
+            targetAudioUrl = undefined; // No audio on the front page
+        } else if (!isAuthenticated) {
+            targetAudioUrl = companyDetails.loginAudioUrl; // Login screen audio
+        } else if (user?.role === 'player') {
+            targetAudioUrl = companyDetails.playerDashboardAudioUrl; // Player dashboard audio
+        } else if (user?.role === 'admin' || user?.role === 'creator') {
+            targetAudioUrl = companyDetails.adminDashboardAudioUrl; // Admin/Creator dashboard audio
+        }
+
+        const handleAudioError = (e: Event) => {
+            console.error("Audio Element Error:", e);
+            if (audio.error) {
+                console.error(`Audio error code ${audio.error.code}: ${audio.error.message}`);
+            }
+        };
+
+        const playAudio = async () => {
+            try {
+                if (audio.src) { // Only play if there's a source
+                    await audio.play();
+                }
+            } catch (err) {
+                // This error is common if the user hasn't interacted with the page yet.
+                // It will be attempted again on user interaction in handleEnterFrontPage.
+                console.warn("Audio play was prevented by the browser:", err);
+            }
+        };
+
+        audio.addEventListener('error', handleAudioError);
+        
+        const currentSrc = audio.currentSrc;
+        const isPlayingSomething = !!currentSrc && !audio.paused;
+
+        if (targetAudioUrl) {
+            // If the target is different from what's currently playing, change it.
+            let absoluteTargetUrl: string;
+            if (targetAudioUrl.startsWith('data:')) {
+                absoluteTargetUrl = targetAudioUrl;
+            } else {
+                absoluteTargetUrl = new URL(targetAudioUrl, window.location.href).href;
+            }
+
+            if (currentSrc !== absoluteTargetUrl) {
+                audio.src = targetAudioUrl;
+                playAudio();
+            } 
+            // If the source is correct but playback is paused, try to play.
+            else if (audio.paused) {
+                playAudio();
+            }
+        } else {
+            // If there should be no audio but something is playing, stop it.
+            if (isPlayingSomething) {
+                audio.pause();
+                audio.src = ''; // Release resource
+            }
+        }
+        
+        return () => {
+            audio.removeEventListener('error', handleAudioError);
+        };
+    }, [showFrontPage, isAuthenticated, user, companyDetails]);
+
+    const onPlayerUpdate = async (player: Player) => {
+        await updateDoc('players', player);
+        logActivity('Updated Own Profile');
+    };
+
+    const onEventSignUp = async (eventId: string, requestedGearIds: string[], note: string) => {
+        if (!user || user.role !== 'player') return;
+
+        const signupId = `${eventId}_${user.id}`;
+        const existingSignup = signups.find(s => s.id === signupId);
+        const event = events.find(e => e.id === eventId);
+
+        if (existingSignup) {
+            // Withdraw from event
+            await deleteDoc('signups', signupId);
+            logActivity(`Withdrew from event: ${event?.title}`);
+        } else {
+            // Sign up for event
+            const newSignupData = {
+                eventId,
+                playerId: user.id,
+                requestedGearIds,
+                note,
+            };
+            await setDoc('signups', signupId, newSignupData);
+            logActivity(`Signed up for event: ${event?.title}`);
+        }
+    };
+
+
+    const handleEnterFrontPage = () => {
+        // Directly handle audio playback on user interaction to comply with autoplay policies
+        if (audioRef.current && companyDetails.loginAudioUrl) {
+            if (audioRef.current.src !== companyDetails.loginAudioUrl) {
+                audioRef.current.src = companyDetails.loginAudioUrl;
+            }
+            // Attempt to play, but catch errors silently. The useEffect will also try to play.
+            // This direct call on a user gesture is crucial for "unlocking" audio playback.
+            audioRef.current.play().catch(e => {
+                console.warn("Audio autoplay unlock attempt was blocked by browser. This is sometimes expected.", e);
+            });
+        }
+        setShowFrontPage(false);
+        setHelpTopic('login-screen');
+    };
+
+    if (loading) {
+        return <Loader />;
+    }
+    
+    return (
+        <div className="bg-zinc-950 text-gray-100 font-sans min-h-screen flex flex-col antialiased">
+            <AnimatePresence>
+                {isSeeding && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-[100]"
+                    >
+                        <Loader />
+                        <p className="text-lg font-semibold text-gray-300 tracking-wider">Seeding initial database configuration...</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {!IS_LIVE_DATA && <MockDataWatermark />}
+
+            {showFirebaseConfigWarning && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-[100]"
+                >
+                    <div className="bg-zinc-900 border border-red-700 text-red-100 p-8 rounded-lg shadow-2xl text-center max-w-lg mx-auto">
+                        <ExclamationTriangleIcon className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                        <h2 className="text-2xl font-bold mb-3">Firebase Not Configured!</h2>
+                        <p className="mb-4">
+                            The application is currently set to use Firebase, but the configuration details are missing or incorrect.
+                        </p>
+                        <p className="text-sm text-red-200 mb-6">
+                            Please ensure your Firebase project configuration is correctly set up in <code>firebase.ts</code>.
+                            {firebaseInitializationError && (
+                                <span className="block mt-2 text-red-300">{firebaseInitializationError.message}</span>
+                            )}
+                        </p>
+                        <Button onClick={() => window.location.reload()} variant="primary">Reload App</Button>
+                    </div>
+                </motion.div>
+            )}
+
+            <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
+            <AnimatePresence>
+                {showCreatorPopup && creatorDetails && <CreatorPopup creatorDetails={creatorDetails} onClose={() => setShowCreatorPopup(false)} />}
+            </AnimatePresence>
+            
+            <AnimatePresence mode="wait">
+              {promotion && <PromotionModal promotion={promotion} onDismiss={dismissPromotion} ranks={ranks} />}
+            </AnimatePresence>
+
+            <AnimatePresence mode="wait">
+                {showFrontPage ? (
+                    <motion.div key="frontpage" exit={{ opacity: 0 }}>
+                        <FrontPage 
+                            companyDetails={companyDetails}
+                            socialLinks={socialLinks}
+                            carouselMedia={carouselMedia}
+                            onEnter={handleEnterFrontPage}
+                        />
+                         <PublicPageFloatingIcons onHelpClick={() => setShowHelp(true)} onCreatorClick={() => setShowCreatorPopup(true)} />
+                    </motion.div>
+                ) : !isAuthenticated ? (
+                    <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />
+                        <PublicPageFloatingIcons onHelpClick={() => setShowHelp(true)} onCreatorClick={() => setShowCreatorPopup(true)} />
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="dashboard"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex-grow flex flex-col relative isolate"
+                    >
+                        <DashboardBackground url={user?.role === 'admin' ? companyDetails.adminDashboardBackgroundUrl : companyDetails.playerDashboardBackgroundUrl} />
+                        <div className="flex-grow bg-black/50 backdrop-blur-sm">
+                            {user?.role === 'player' && currentPlayer && (
+                                <PlayerDashboard
+                                    player={currentPlayer}
+                                    players={players}
+                                    sponsors={data.sponsors}
+                                    onPlayerUpdate={onPlayerUpdate}
+                                    events={events}
+                                    onEventSignUp={onEventSignUp}
+                                    legendaryBadges={data.legendaryBadges}
+                                    raffles={data.raffles}
+                                    ranks={ranks}
+                                    locations={data.locations}
+                                    signups={signups}
+                                />
+                            )}
+                            {user?.role === 'admin' && (
+                                <AdminDashboard
+                                    {...data}
+                                    onDeleteAllData={data.deleteAllData}
+                                    deleteAllPlayers={data.deleteAllPlayers}
+                                    addPlayerDoc={(playerData) => addDoc('players', playerData)}
+                                />
+                            )}
+                             {user?.role === 'creator' && (
+                                <CreatorDashboard
+                                    {...data}
+                                    setShowHelp={setShowHelp}
+                                    setHelpTopic={setHelpTopic}
+                                />
+                            )}
+                        </div>
+                        
+                        {!showFrontPage && isAuthenticated && <Footer details={companyDetails} apiServerUrl={companyDetails.apiServerUrl} />}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <DataProvider>
+          <AppContent />
+      </DataProvider>
+    </AuthProvider>
+  );
+};
+
+export default App;

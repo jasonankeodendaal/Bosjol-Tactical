@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // FIX: Changed RankTier and SubRank to Rank and Tier respectively.
@@ -291,7 +290,6 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
     const isSignedUp = useMemo(() => signups.some(s => s.eventId === event.id && s.playerId === player.id), [signups, event.id, player.id]);
     const [selectedGear, setSelectedGear] = useState<string[]>([]);
     const [note, setNote] = useState('');
-    // FIX: Use useContext to correctly access DataContext.
     const dataContext = useContext(DataContext);
 
     const availableGear = useMemo(() => {
@@ -808,10 +806,15 @@ const PodiumPlayer: React.FC<{ player: Player, rank: 1 | 2 | 3, delay: number }>
     const animationVariants = { hidden: { opacity: 0, y: 50 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay } } };
     return (
         <motion.div className={`podium-item ${podiumClass}`} variants={animationVariants}>
-            <div className="podium-avatar-wrapper"><img src={player.avatarUrl} alt={player.name} className="podium-avatar" />
-                <p className={`font-bold text-base mt-2 truncate max-w-full px-1 ${rank === 1 ? 'text-amber-300' : 'text-white'}`}>{player.callsign}</p>
+            <div className="podium-avatar-wrapper">
+                {rank === 1 && <CrownIcon className="w-10 h-10 crown-icon" />}
+                <img src={player.avatarUrl} alt={player.name} className="podium-avatar" />
+                <p className={`font-bold text-base mt-2 truncate max-w-full px-1 ${rank === 1 ? 'text-amber-300' : 'text-white'}`}>{player.name}</p>
                 <p className="text-xs text-zinc-300">{player.stats.xp.toLocaleString()} RP</p>
-            </div><div className="podium-base">{rank}</div>
+            </div>
+            <div className="podium-base">
+                {rank}
+            </div>
         </motion.div>
     );
 };
@@ -917,7 +920,6 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
     );
 };
 
-// FIX: Added missing StatsTab component
 const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ player, events }) => {
     const { stats, matchHistory } = player;
     const kills = stats?.kills ?? 0;
@@ -981,7 +983,6 @@ const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ p
     );
 };
 
-// FIX: Added missing AchievementsTab component
 const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendaryBadges' | 'ranks'>> = ({ player, legendaryBadges, ranks }) => {
     const dataContext = useContext(DataContext);
     const standardBadges = dataContext?.badges || MOCK_BADGES; // Fallback to mock if needed.
@@ -1016,7 +1017,6 @@ const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendary
     )
 };
 
-// FIX: Added missing SettingsTab component
 const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate'>> = ({ player, onPlayerUpdate }) => {
     const [formData, setFormData] = useState({ ...player });
     const dataContext = useContext(DataContext);

@@ -131,4 +131,37 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ locations, setLocati
                     </div>
                 </Modal>
             )}
-            <DashboardCard title="Manage Locations" icon="
+            <DashboardCard title="Manage Locations" icon={<MapPinIcon className="w-6 h-6" />}>
+                 <div className="p-4">
+                    <div className="flex justify-end mb-4">
+                        <Button onClick={() => setIsEditing({})} size="sm">
+                            <PlusIcon className="w-5 h-5 mr-2" />
+                            Add Location
+                        </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {locations.map(loc => (
+                             <div key={loc.id} className="bg-zinc-800/50 p-4 rounded-lg">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex-grow">
+                                        <h4 className="font-bold text-lg text-white">{loc.name}</h4>
+                                        <p className="text-sm text-gray-400">{loc.address}</p>
+                                    </div>
+                                    <div className="flex flex-col gap-2 flex-shrink-0">
+                                        <Button size="sm" variant="secondary" onClick={() => setIsEditing(loc)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
+                                        <Button size="sm" variant="danger" onClick={() => setDeletingLocation(loc)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
+                                    </div>
+                                </div>
+                                <div className="text-xs text-gray-300 space-y-1">
+                                    {loc.pinLocationUrl && <a href={loc.pinLocationUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-red-400 hover:underline"><MapPinIcon className="w-4 h-4"/>View Map</a>}
+                                    {loc.contactInfo.email && <p className="flex items-center gap-1.5"><AtSymbolIcon className="w-4 h-4"/>{loc.contactInfo.email}</p>}
+                                    {loc.contactInfo.phone && <p className="flex items-center gap-1.5"><PhoneIcon className="w-4 h-4"/>{loc.contactInfo.phone}</p>}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                 </div>
+            </DashboardCard>
+        </div>
+    );
+};

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import type { Rank, Tier, Badge, LegendaryBadge, GamificationRule, GamificationSettings, CompanyDetails } from '../types';
 import { Button } from './Button';
@@ -6,6 +7,7 @@ import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, Plu
 import { Modal } from './Modal';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { DashboardCard } from './DashboardCard';
+// FIX: Corrected import for DataContext.
 import { DataContext } from '../data/DataContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -372,6 +374,8 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     const [deletingTier, setDeletingTier] = useState<(Tier & { rankId: string }) | null>(null);
     
     const [resetDate, setResetDate] = useState(companyDetails.nextRankResetDate || '');
+    // FIX: Use useContext to correctly access DataContext.
+    const dataContext = useContext(DataContext); 
     
     useEffect(() => {
         setResetDate(companyDetails.nextRankResetDate || '');

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useContext } from 'react';
 import type { Player, GameEvent, Tier, XpAdjustment, LegendaryBadge, PlayerRole, Rank, CompanyDetails, Badge } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -9,6 +10,7 @@ import { MOCK_PLAYER_ROLES, UNRANKED_TIER } from '../constants';
 import { ArrowLeftIcon, UserIcon, ChartBarIcon, CalendarIcon, TrophyIcon, CrosshairsIcon, PlusCircleIcon, TrashIcon, ShieldCheckIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
+// FIX: Corrected import for DataContext.
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { SendCredentialsModal } from './SendCredentialsModal';
@@ -111,7 +113,8 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
     const [showPin, setShowPin] = useState(false);
     const [isResettingPin, setIsResettingPin] = useState(false);
     const [isSendingCredentials, setIsSendingCredentials] = useState(false);
-    const dataContext = useContext(DataContext);
+    // FIX: Use useContext to correctly access DataContext.
+    const dataContext = useContext(DataContext); 
     
     useEffect(() => {
         setFormData(player);

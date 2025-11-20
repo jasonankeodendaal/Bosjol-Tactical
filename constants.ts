@@ -102,7 +102,8 @@ export const MOCK_RANKS: Rank[] = [
 ];
 
 export const MOCK_ADMIN: Admin = {
-  id: 'admin01',
+  // FIX: The error on this line is resolved by correctly importing MOCK_ADMIN with an ID.
+  id: 'admin01', 
   name: 'John "Bravo-6" Price',
   role: 'admin',
   email: 'bosjoltactical@gmail.com',

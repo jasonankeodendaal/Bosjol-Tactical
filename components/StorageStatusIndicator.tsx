@@ -32,7 +32,8 @@ export const StorageStatusIndicator: React.FC<StorageStatusIndicatorProps> = ({ 
             return { mode: 'api_error', isLive: false, tooltip: 'Connecting to API Server...', label: 'API Checking' };
         }
         if (USE_FIREBASE && !firebaseInitializationError) {
-            return { mode: 'firebase', isLive: true, tooltip: 'Live Firebase Connection Active', label: firebaseConfig.projectId };
+            // FIX: Safely access firebaseConfig.projectId only if it exists
+            return { mode: 'firebase', isLive: true, tooltip: 'Live Firebase Connection Active', label: (firebaseConfig as any)?.projectId || 'Firebase' };
         }
         return { mode: 'mock', isLive: false, tooltip: 'Running on Local Mock Data', label: 'Mock Data' };
     };

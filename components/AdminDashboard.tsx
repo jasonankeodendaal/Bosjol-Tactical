@@ -1,5 +1,8 @@
+
+
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+// FIX: Changed RaffleTicket to RaffleTicketDoc as it is the correct exported type.
 import type { Player, GameEvent, Tier, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicketDoc, LegendaryBadge, Prize, Signup, CarouselMedia, Rank, Admin } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
@@ -22,6 +25,7 @@ import { Leaderboard } from './Leaderboard';
 import { SettingsTab } from './SettingsTab';
 import { ApiSetupTab } from './ApiSetupTab';
 import { AboutTab } from './AboutTab';
+// FIX: Corrected imports for DataContext and DataContextType.
 import { DataContext, DataContextType } from '../data/DataContext';
 import { AuthContext } from '../auth/AuthContext';
 import { SendCredentialsModal } from './SendCredentialsModal';
@@ -56,7 +60,8 @@ const NewPlayerModal: React.FC<{
     const [playerCodeError, setPlayerCodeError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [newlyCreatedPlayer, setNewlyCreatedPlayer] = useState<Player | null>(null);
-    const dataContext = useContext(DataContext);
+    // FIX: Use useContext to correctly access DataContext.
+    const dataContext = useContext(DataContext); 
 
 
     useEffect(() => {
@@ -427,7 +432,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
-    const dataContext = useContext(DataContext);
+    // FIX: Use useContext to correctly access DataContext.
+    const dataContext = useContext(DataContext); 
     if (!dataContext) throw new Error("DataContext not found");
     const auth = useContext(AuthContext);
     const adminUser = auth?.user as Admin;

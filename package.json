@@ -13,8 +13,8 @@
     "react-dom": "^19.2.0",
     "framer-motion": "^12.23.24",
     "@phosphor-icons/react": "^2.1.10",
-    "firebase": "^12.5.0",
-    "date-fns": "^4.1.0"
+    "date-fns": "^4.1.0",
+    "firebase": "^12.5.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

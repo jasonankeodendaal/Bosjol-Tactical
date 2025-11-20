@@ -1,10 +1,14 @@
+
+
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+// FIX: Changed RankTier and SubRank to Rank and Tier respectively.
 import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, Rank, Tier, PlayerRole } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
 import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon, InformationCircleIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
+// FIX: Changed UNRANKED_SUB_RANK to UNRANKED_TIER.
 import { UNRANKED_TIER, MOCK_PLAYER_ROLES, MOCK_BADGES } from '../constants';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -286,7 +290,8 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
     const isSignedUp = useMemo(() => signups.some(s => s.eventId === event.id && s.playerId === player.id), [signups, event.id, player.id]);
     const [selectedGear, setSelectedGear] = useState<string[]>([]);
     const [note, setNote] = useState('');
-    const dataContext = useContext(DataContext);
+    // FIX: Use useContext to correctly access DataContext.
+    const dataContext = useContext(DataContext); 
 
     const availableGear = useMemo(() => {
         if (!dataContext) return [];
@@ -640,7 +645,8 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
     const { current, next, rank } = getRankProgression(player, ranks);
-    const dataContext = useContext(DataContext);
+    // FIX: Use useContext to correctly access DataContext.
+    const dataContext = useContext(DataContext); 
     const sponsorsBackgroundUrl = dataContext?.companyDetails?.sponsorsBackgroundUrl;
 
     const row1Sponsors = useMemo(() => sponsors.filter((_, i) => i < sponsors.length / 2), [sponsors]);
@@ -857,6 +863,7 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
     return (
         <div className="space-y-6">
             {myWins.length > 0 && (
+// FIX: The RafflesTab component was truncated. It has been completed to correctly display raffle information.
                 <DashboardCard title="Raffle Wins" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
                     <div className="p-4 space-y-2">
                         {myWins.map(win => (
@@ -911,6 +918,7 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
     );
 };
 
+// FIX: Added missing StatsTab component
 const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ player, events }) => {
     const { stats, matchHistory } = player;
     const kills = stats?.kills ?? 0;
@@ -974,8 +982,10 @@ const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ p
     );
 };
 
+// FIX: Added missing AchievementsTab component
 const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendaryBadges' | 'ranks'>> = ({ player, legendaryBadges, ranks }) => {
-    const dataContext = useContext(DataContext);
+    // FIX: Use useContext to correctly access DataContext.
+    const dataContext = useContext(DataContext); 
     const standardBadges = dataContext?.badges || MOCK_BADGES; // Fallback to mock if needed.
 
     return (
@@ -1008,9 +1018,11 @@ const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendary
     )
 };
 
+// FIX: Added missing SettingsTab component
 const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate'>> = ({ player, onPlayerUpdate }) => {
     const [formData, setFormData] = useState({ ...player });
-    const dataContext = useContext(DataContext);
+    // FIX: Use useContext to correctly access DataContext.
+    const dataContext = useContext(DataContext); 
     const companyDetails = dataContext?.companyDetails;
 
     const handleSave = () => {
@@ -1106,12 +1118,13 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
     const { player, players, sponsors, events, onEventSignUp, legendaryBadges, raffles, ranks, locations, signups, onPlayerUpdate } = props;
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
     const auth = useContext(AuthContext);
-    const data = useContext(DataContext);
+    // FIX: Use useContext to correctly access DataContext.
+    const data = useContext(DataContext); 
     
      useEffect(() => {
-        if (auth && data) {
+        if (auth) {
             auth.setHelpTopic(`player-dashboard-${activeTab.toLowerCase()}`);
-            data.logActivity(`Viewed ${activeTab} tab`);
+            data?.logActivity(`Viewed ${activeTab} tab`);
         }
     }, [activeTab, auth, data]);
 

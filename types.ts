@@ -83,8 +83,8 @@ export interface PlayerCore extends User {
   status: 'Active' | 'On Leave' | 'Retired';
   avatarUrl: string;
   stats: PlayerStats;
-  badges: Badge[];
-  legendaryBadges: LegendaryBadge[];
+  badges: Badge[]; // Correctly defined
+  legendaryBadges: LegendaryBadge[]; // Correctly defined
   loadout: Loadout;
   // New detailed fields
   playerCode: string;

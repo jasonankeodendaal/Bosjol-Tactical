@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useContext } from 'react';
+import React, { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee, Signup, CompanyDetails, LegendaryBadge, XpAdjustment, Rank, Tier } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
@@ -67,6 +67,81 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     });
     
     const [liveStats, setLiveStats] = useState<Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>>>(event?.liveStats || {});
+    
+    // --- Audio Recording State & Handlers ---
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingSeconds, setRecordingSeconds] = useState(0);
+    const [permissionError, setPermissionError] = useState<string | null>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const recordingIntervalRef = useRef<number | null>(null);
+
+    const stopRecordingCleanup = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.stream) {
+            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        }
+        if (recordingIntervalRef.current) {
+            clearInterval(recordingIntervalRef.current);
+            recordingIntervalRef.current = null;
+        }
+        setIsRecording(false);
+        setRecordingSeconds(0);
+    }
+
+    const handleStartRecording = async () => {
+        setPermissionError(null);
+        setFormData(f => ({ ...f, audioBriefingUrl: undefined })); // Clear previous recording
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorderRef.current = new MediaRecorder(stream);
+            const audioChunks: Blob[] = [];
+
+            mediaRecorderRef.current.addEventListener("dataavailable", event => {
+                audioChunks.push(event.data);
+            });
+
+            mediaRecorderRef.current.addEventListener("stop", () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); // webm is well supported
+                const reader = new FileReader();
+                reader.readAsDataURL(audioBlob);
+                reader.onloadend = () => {
+                    const base64data = reader.result as string;
+                    setFormData(f => ({ ...f, audioBriefingUrl: base64data }));
+                };
+                stopRecordingCleanup();
+            });
+
+            mediaRecorderRef.current.start();
+            setIsRecording(true);
+            setRecordingSeconds(0);
+            recordingIntervalRef.current = window.setInterval(() => {
+                setRecordingSeconds(prev => prev + 1);
+            }, 1000);
+
+        } catch (err) {
+            console.error("Error accessing microphone:", err);
+            setPermissionError("Microphone access denied. Please allow microphone permissions in your browser settings and try again.");
+            stopRecordingCleanup();
+        }
+    };
+
+    const handleStopRecording = () => {
+        if (mediaRecorderRef.current) {
+            mediaRecorderRef.current.stop();
+        }
+    };
+
+    const handleRemoveAudio = () => {
+        setFormData(f => ({ ...f, audioBriefingUrl: undefined }));
+    };
+
+    const formatTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+    };
+    // --- End Audio Recording ---
+
 
     const signedUpPlayersDetails = useMemo(() => {
         const signedUpPlayerIds = signups.filter(s => s.eventId === event?.id).map(s => s.playerId);
@@ -430,15 +505,42 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                     accept="image/*"
                                     apiServerUrl={companyDetails.apiServerUrl}
                                 />
-                                <UrlOrUploadField
-                                    label="Audio Briefing"
-                                    fileUrl={formData.audioBriefingUrl}
-                                    onUrlSet={(url) => setFormData(f => ({...f, audioBriefingUrl: url}))}
-                                    onRemove={() => setFormData(f => ({...f, audioBriefingUrl: ''}))}
-                                    accept="audio/*"
-                                    previewType="audio"
-                                    apiServerUrl={companyDetails.apiServerUrl}
-                                />
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Audio Briefing</label>
+                                    <div className="bg-zinc-900/50 p-3 rounded-lg border border-zinc-700/50 min-h-[96px] flex flex-col justify-center">
+                                        {formData.audioBriefingUrl && !isRecording && (
+                                            <div className="flex items-center gap-4">
+                                                <audio src={formData.audioBriefingUrl} controls className="flex-grow w-full" />
+                                                <div className="flex flex-col gap-2">
+                                                    <Button variant="secondary" size="sm" onClick={handleStartRecording}>Record Again</Button>
+                                                    <Button variant="danger" size="sm" onClick={handleRemoveAudio}>Remove</Button>
+                                                </div>
+                                            </div>
+                                        )}
+                                
+                                        {isRecording && (
+                                            <div className="flex items-center justify-center gap-4 p-4">
+                                                <div className="relative w-6 h-6">
+                                                    <div className="absolute inset-0 bg-red-600 rounded-full animate-ping"></div>
+                                                    <div className="relative w-6 h-6 bg-red-600 rounded-full border-2 border-zinc-900"></div>
+                                                </div>
+                                                <p className="font-mono text-lg text-red-400">{formatTime(recordingSeconds)}</p>
+                                                <Button variant="danger" onClick={handleStopRecording}>Stop</Button>
+                                            </div>
+                                        )}
+                                
+                                        {!formData.audioBriefingUrl && !isRecording && (
+                                            <Button variant="secondary" className="w-full" onClick={handleStartRecording}>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-12 0H3a7.001 7.001 0 006 6.93V17H7a1 1 0 100 2h6a1 1 0 100-2h-2v-2.07z" clipRule="evenodd" /></svg>
+                                                Record Briefing
+                                            </Button>
+                                        )}
+                                
+                                        {permissionError && (
+                                             <p className="text-xs text-red-400 mt-2 text-center">{permissionError}</p>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </DashboardCard>

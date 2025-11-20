@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { DashboardCard } from './DashboardCard';
@@ -15,7 +16,7 @@ const CodeBlock: React.FC<{ children: React.ReactNode, title?: string, language?
             setTimeout(() => setCopyStatus('Copy'), 2000);
         }
     };
-
+    
     return (
         <div className="bg-zinc-950 rounded-lg border border-zinc-800 my-3 shadow-inner">
              {title && (
@@ -227,7 +228,7 @@ cd /opt/bosjol-tactical`}
 }`}
                         </CodeBlock>
                         <TipBox>
-                            <strong>To Save & Exit Nano:</strong><br/>
+                            <strong>To Save &amp; Exit Nano:</strong><br/>
                             1. Press <code>Ctrl + O</code> (Save)<br/>
                             2. Press <code>Enter</code> (Confirm)<br/>
                             3. Press <code>Ctrl + X</code> (Exit)

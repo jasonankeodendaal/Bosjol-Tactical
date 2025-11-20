@@ -327,6 +327,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             liveStats: liveStats,
         };
         onSave(finalEventData);
+        dataContext?.logActivity(`Finalized event: ${finalEventData.title}`, { eventId: finalEventData.id });
     
         // Clean up all signups for this finalized event
         const cleanupPromises = eventSignups.map(signup => deleteDoc('signups', signup.id));

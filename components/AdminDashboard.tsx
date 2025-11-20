@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-// FIX: Changed RaffleTicket to RaffleTicketDoc as it is the correct exported type.
 import type { Player, GameEvent, Tier, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicketDoc, LegendaryBadge, Prize, Signup, CarouselMedia, Rank, Admin } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
-import { UsersIcon, CogIcon, CalendarIcon, TrashIcon, ShieldCheckIcon, PlusIcon, TrophyIcon, BuildingOfficeIcon, SparklesIcon, PencilIcon, XIcon, TicketIcon, AtSymbolIcon, PhoneIcon, GlobeAltIcon, ArrowLeftIcon, ArchiveBoxIcon, CurrencyDollarIcon, TruckIcon, MapPinIcon, MinusIcon, KeyIcon, Bars3Icon, ExclamationTriangleIcon, InformationCircleIcon, CreditCardIcon, CheckCircleIcon, PrinterIcon, PlusCircleIcon, CodeBracketIcon } from './icons/Icons';
+import { UsersIcon, CogIcon, CalendarIcon, TrashIcon, ShieldCheckIcon, PlusIcon, TrophyIcon, BuildingOfficeIcon, SparklesIcon, PencilIcon, XIcon, TicketIcon, AtSymbolIcon, PhoneIcon, GlobeAltIcon, ArrowLeftIcon, ArchiveBoxIcon, CurrencyDollarIcon, TruckIcon, MapPinIcon, MinusIcon, KeyIcon, Bars3Icon, ExclamationTriangleIcon, InformationCircleIcon, CreditCardIcon, CheckCircleIcon, PrinterIcon, PlusCircleIcon, CodeBracketIcon, ChartBarIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
 import { Modal } from './Modal';
 import { UNRANKED_TIER } from '../constants';
@@ -57,6 +56,8 @@ const NewPlayerModal: React.FC<{
     const [playerCodeError, setPlayerCodeError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [newlyCreatedPlayer, setNewlyCreatedPlayer] = useState<Player | null>(null);
+    const dataContext = useContext(DataContext);
+
 
     useEffect(() => {
         const { name, surname } = formData;
@@ -149,6 +150,7 @@ const NewPlayerModal: React.FC<{
         try {
             const newPlayerId = await addPlayerDoc(newPlayerData);
             const completePlayer: Player = { ...newPlayerData, id: newPlayerId };
+            dataContext?.logActivity(`Created player: ${completePlayer.name}`);
             setNewlyCreatedPlayer(completePlayer);
         } catch (error) {
             console.error("Failed to create new player:", error);
@@ -430,7 +432,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const auth = useContext(AuthContext);
     const adminUser = auth?.user as Admin;
 
-    const { players, events, legendaryBadges, ranks, updateDoc, addDoc, deleteDoc, restoreFromBackup, setDoc, signups, companyDetails } = props;
+    const { players, events, legendaryBadges, ranks, updateDoc, addDoc, deleteDoc, restoreFromBackup, setDoc, signups, companyDetails, logActivity } = props;
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -451,16 +453,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
 
     useEffect(() => {
         if(auth) {
-            auth.setHelpTopic(getHelpTopic());
+            const topic = getHelpTopic();
+            auth.setHelpTopic(topic);
+            if (view === 'dashboard') {
+                logActivity(`Viewed ${activeTab} tab`);
+            }
         }
-    }, [activeTab, view, auth]);
+    }, [activeTab, view, auth, logActivity]);
 
     const handleViewPlayer = useCallback((id: string) => {
+        const player = players.find(p => p.id === id);
+        logActivity(`Viewed profile for ${player?.name || 'Unknown Player'}`);
         setSelectedPlayerId(id);
         setView('player_profile');
-    }, []);
+    }, [logActivity, players]);
 
     const handleManageEvent = (id: string | null) => {
+        const event = events.find(e => e.id === id);
+        logActivity(id ? `Opened event manager for ${event?.title}` : 'Opened event manager to create new event');
         setSelectedEventId(id);
         setView('manage_event');
     }
@@ -470,14 +480,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             await updateDoc('events', eventData);
         } else {
             const { id, ...newEventData } = eventData;
-            await addDoc('events', newEventData);
+            const newId = await addDoc('events', newEventData);
+            logActivity(`Created event: ${eventData.title}`, { eventId: newId });
         }
         setView('dashboard');
     }
 
     const handleDeleteEvent = async (eventId: string) => {
+        const event = events.find(e => e.id === eventId);
         if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
             await deleteDoc('events', eventId);
+            logActivity(`Deleted event: ${event?.title || 'Unknown'}`);
             setView('dashboard');
         }
     }
@@ -485,6 +498,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
 
     const handleUpdatePlayer = async (updatedPlayer: Player) => {
         await updateDoc('players', updatedPlayer);
+        logActivity(`Updated profile for ${updatedPlayer.name}`);
     };
     
     const selectedPlayer = players.find(p => p.id === selectedPlayerId);

@@ -1,10 +1,10 @@
 
+
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
 import { Button } from './components/Button';
 import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails, Tier, Badge, Signup, Rank, XpAdjustment } from './types';
-// FIX: Remove Firebase related imports
 import { XIcon, KeyIcon, ShieldCheckIcon, TrophyIcon, ExclamationTriangleIcon } from './components/icons/Icons';
 import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
 import { Loader } from './components/Loader';
@@ -14,6 +14,7 @@ import { StorageStatusIndicator } from './components/StorageStatusIndicator';
 import { MockDataWatermark } from './components/MockDataWatermark';
 import { Input } from './components/Input';
 import { DashboardBackground } from './components/DashboardBackground';
+import { USE_FIREBASE, isFirebaseConfigured, firebaseInitializationError } from './firebase';
 
 
 // --- Switched from lazy to direct imports to fix critical module loading error ---
@@ -289,9 +290,9 @@ const AppContent: React.FC = () => {
         addDoc,
         deleteDoc,
         setDoc,
-        creatorDetails,
-        ranks,
-        signups,
+        creatorDetails, // Deconstruct creatorDetails from dataContext
+        ranks, // Deconstruct ranks from dataContext
+        signups, // Deconstruct signups from dataContext
         setCompanyDetails,
         logActivity,
     } = data;
@@ -300,21 +301,25 @@ const AppContent: React.FC = () => {
     const hasPerformedReset = useRef(false); // Prevent multiple runs in one session
     const sessionRef = useRef<{ id: string | null }>({ id: null });
 
-    // --- SESSION MANAGEMENT FOR OBSERVABILITY (Now API-driven or for mock data) ---
+    // --- SESSION MANAGEMENT FOR OBSERVABILITY ---
     useEffect(() => {
         const handleBeforeUnload = () => {
-            if (sessionRef.current.id && auth?.isAuthenticated && user) {
-                // Best-effort attempt to delete session on unload.
-                // In a real API-only scenario, this would hit an API endpoint.
-                data.deleteDoc('sessions', sessionRef.current.id).catch(error => {
-                    console.error("Failed to delete session on unload:", error);
-                });
+            if (sessionRef.current.id && isAuthenticated && user) {
+                // If using Firebase, delete the session. If API-driven, this would hit an API endpoint.
+                if (USE_FIREBASE) {
+                    data.deleteDoc('sessions', sessionRef.current.id).catch(error => {
+                        console.error("Failed to delete Firebase session on unload:", error);
+                    });
+                } else {
+                    // Placeholder for API-driven session deletion
+                    console.log(`Mock: Deleting session ${sessionRef.current.id} for user ${user.name}`);
+                }
             }
         };
 
         const createOrUpdateSession = async () => {
-            if (auth?.isAuthenticated && user) {
-                const sessionId = user.id; // Use user ID as session ID for simplicity in API-only
+            if (isAuthenticated && user) {
+                const sessionId = user.id; // Use user ID as session ID for simplicity
                 sessionRef.current.id = sessionId;
                 const sessionData = {
                     userId: user.id,
@@ -323,13 +328,12 @@ const AppContent: React.FC = () => {
                     currentView: helpTopic,
                     lastSeen: new Date().toISOString(),
                 };
-                // Assuming setDoc can handle creating or updating the session
                 await data.setDoc('sessions', sessionId, sessionData);
             }
         };
 
         const deleteSession = async () => {
-            if (sessionRef.current.id && auth?.isAuthenticated && user) {
+            if (sessionRef.current.id && isAuthenticated && user) {
                 await data.deleteDoc('sessions', sessionRef.current.id);
                 sessionRef.current.id = null;
             }
@@ -340,7 +344,7 @@ const AppContent: React.FC = () => {
             window.addEventListener('beforeunload', handleBeforeUnload);
             
             const interval = setInterval(() => {
-                if (sessionRef.current.id && auth?.isAuthenticated && user) {
+                if (sessionRef.current.id && isAuthenticated && user) {
                     // Send heartbeat to keep session alive
                     data.updateDoc('sessions', {
                         id: sessionRef.current.id,
@@ -353,7 +357,7 @@ const AppContent: React.FC = () => {
                 clearInterval(interval);
                 window.removeEventListener('beforeunload', handleBeforeUnload);
                 // Ensure logout also triggers session deletion
-                if (!auth.isAuthenticated) { // Only delete if actually logging out, not just a cleanup from re-render
+                if (!isAuthenticated) { // Only delete if actually logging out, not just a cleanup from re-render
                     deleteSession();
                 }
             };
@@ -361,7 +365,7 @@ const AppContent: React.FC = () => {
              // If not authenticated, ensure session ID is cleared
             sessionRef.current.id = null;
         }
-    }, [isAuthenticated, user, data, helpTopic, auth?.isAuthenticated]); // Add auth.isAuthenticated to dependencies
+    }, [isAuthenticated, user, data, helpTopic]); // Dependencies updated.
 
     useEffect(() => {
         // Update current view for session tracking
@@ -549,8 +553,8 @@ const AppContent: React.FC = () => {
         }
     }, [showFrontPage, isAuthenticated, setHelpTopic]);
 
-    // FIX: Removed Firebase configuration check as it's no longer used.
-    const showFirebaseConfigWarning = false; 
+    // Check for Firebase configuration issues if USE_FIREBASE is true
+    const showFirebaseConfigWarning = USE_FIREBASE && (!isFirebaseConfigured() || firebaseInitializationError);
 
     // Inactivity logout logic
     const logoutTimer = useRef<number | null>(null);
@@ -749,6 +753,9 @@ const AppContent: React.FC = () => {
                         </p>
                         <p className="text-sm text-red-200 mb-6">
                             Please ensure your Firebase project configuration is correctly set up in <code>firebase.ts</code>.
+                            {firebaseInitializationError && (
+                                <span className="block mt-2 text-red-300">{firebaseInitializationError.message}</span>
+                            )}
                         </p>
                         <Button onClick={() => window.location.reload()} variant="primary">Reload App</Button>
                     </div>

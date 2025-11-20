@@ -109,6 +109,7 @@ export const MOCK_ADMIN: Admin = {
   email: 'bosjoltactical@gmail.com',
   clearanceLevel: 1,
   avatarUrl: 'https://i.ibb.co/LQr4T2K/image-removebg-preview-1.png',
+  firebaseAuthUID: 'admin-firebase-uid-01' // Example Firebase UID
 };
 
 export const MOCK_PLAYER_ROLES: PlayerRole[] = ['Assault', 'Recon', 'Support', 'Sniper'];

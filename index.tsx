@@ -14,6 +14,7 @@ import { StorageStatusIndicator } from './components/StorageStatusIndicator';
 import { MockDataWatermark } from './components/MockDataWatermark';
 import { Input } from './components/Input';
 import { DashboardBackground } from './components/DashboardBackground';
+import { USE_FIREBASE, isFirebaseConfigured, firebaseInitializationError } from './firebase';
 
 
 // --- Switched from lazy to direct imports to fix critical module loading error ---
@@ -298,13 +299,78 @@ const AppContent: React.FC = () => {
     
     const currentPlayer = players.find(p => p.id === user?.id);
     const hasPerformedReset = useRef(false); // Prevent multiple runs in one session
+    const sessionRef = useRef<{ id: string | null }>({ id: null });
 
+    // --- SESSION MANAGEMENT FOR OBSERVABILITY (Now API-driven or for mock data) ---
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (sessionRef.current.id && auth?.isAuthenticated && user) {
+                // Best-effort attempt to delete session on unload.
+                // In a real API-only scenario, this would hit an API endpoint.
+                data.deleteDoc('sessions', sessionRef.current.id).catch(error => {
+                    console.error("Failed to delete session on unload:", error);
+                });
+            }
+        };
 
-    // --- Session tracking (removed Firebase specific logic) ---
-    // If you need session tracking, it should be implemented via your API server,
-    // e.g., sending heartbeat pings to an API endpoint.
-    // The current inactivity logout logic should still be viable.
-    // --- End session tracking ---
+        const createOrUpdateSession = async () => {
+            if (auth?.isAuthenticated && user) {
+                const sessionId = user.id; // Use user ID as session ID for simplicity in API-only
+                sessionRef.current.id = sessionId;
+                const sessionData = {
+                    userId: user.id,
+                    userName: user.name,
+                    userRole: user.role,
+                    currentView: helpTopic,
+                    lastSeen: new Date().toISOString(),
+                };
+                // Assuming setDoc can handle creating or updating the session
+                await data.setDoc('sessions', sessionId, sessionData);
+            }
+        };
+
+        const deleteSession = async () => {
+            if (sessionRef.current.id && auth?.isAuthenticated && user) {
+                await data.deleteDoc('sessions', sessionRef.current.id);
+                sessionRef.current.id = null;
+            }
+        };
+        
+        if (isAuthenticated && user) {
+            createOrUpdateSession();
+            window.addEventListener('beforeunload', handleBeforeUnload);
+            
+            const interval = setInterval(() => {
+                if (sessionRef.current.id && auth?.isAuthenticated && user) {
+                    // Send heartbeat to keep session alive
+                    data.updateDoc('sessions', {
+                        id: sessionRef.current.id,
+                        lastSeen: new Date().toISOString(),
+                    });
+                }
+            }, 30000); // Update lastSeen every 30 seconds
+
+            return () => {
+                clearInterval(interval);
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+                // Ensure logout also triggers session deletion
+                if (!auth.isAuthenticated) { // Only delete if actually logging out, not just a cleanup from re-render
+                    deleteSession();
+                }
+            };
+        } else {
+             // If not authenticated, ensure session ID is cleared
+            sessionRef.current.id = null;
+        }
+    }, [isAuthenticated, user, data, helpTopic, auth?.isAuthenticated]); // Add auth.isAuthenticated to dependencies
+
+    useEffect(() => {
+        // Update current view for session tracking
+        if (isAuthenticated && sessionRef.current.id && user) {
+            data.updateDoc('sessions', { id: sessionRef.current.id, currentView: helpTopic });
+        }
+    }, [helpTopic, isAuthenticated, data, user]);
+
 
     useEffect(() => {
         const performRankReset = async () => {
@@ -484,9 +550,9 @@ const AppContent: React.FC = () => {
         }
     }, [showFrontPage, isAuthenticated, setHelpTopic]);
 
-    // No Firebase configuration check needed, as Firebase is entirely removed.
-    // The system now assumes an API server or mock data.
-    
+    // Check for Firebase configuration issues if USE_FIREBASE is true
+    const showFirebaseConfigWarning = USE_FIREBASE && (!isFirebaseConfigured() || firebaseInitializationError);
+
     // Inactivity logout logic
     const logoutTimer = useRef<number | null>(null);
 
@@ -668,6 +734,30 @@ const AppContent: React.FC = () => {
             </AnimatePresence>
 
             {!IS_LIVE_DATA && <MockDataWatermark />}
+
+            {showFirebaseConfigWarning && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-[100]"
+                >
+                    <div className="bg-zinc-900 border border-red-700 text-red-100 p-8 rounded-lg shadow-2xl text-center max-w-lg mx-auto">
+                        <ExclamationTriangleIcon className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                        <h2 className="text-2xl font-bold mb-3">Firebase Not Configured!</h2>
+                        <p className="mb-4">
+                            The application is currently set to use Firebase, but the configuration details are missing or incorrect.
+                        </p>
+                        <p className="text-sm text-red-200 mb-6">
+                            Please ensure your Firebase project configuration is correctly set up in <code>firebase.ts</code>.
+                            {firebaseInitializationError && (
+                                <span className="block mt-2 text-red-300">{firebaseInitializationError.message}</span>
+                            )}
+                        </p>
+                        <Button onClick={() => window.location.reload()} variant="primary">Reload App</Button>
+                    </div>
+                </motion.div>
+            )}
 
             <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
             <AnimatePresence>

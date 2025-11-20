@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // FIX: Changed RaffleTicket to RaffleTicketDoc as it is the correct exported type.
@@ -25,7 +24,7 @@ import { Leaderboard } from './Leaderboard';
 import { SettingsTab } from './SettingsTab';
 import { ApiSetupTab } from './ApiSetupTab';
 import { AboutTab } from './AboutTab';
-// FIX: Corrected imports for DataContext and DataContextType.
+// FIX: Corrected DataContext and DataContextType import paths.
 import { DataContext, DataContextType } from '../data/DataContext';
 import { AuthContext } from '../auth/AuthContext';
 import { SendCredentialsModal } from './SendCredentialsModal';
@@ -60,8 +59,7 @@ const NewPlayerModal: React.FC<{
     const [playerCodeError, setPlayerCodeError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [newlyCreatedPlayer, setNewlyCreatedPlayer] = useState<Player | null>(null);
-    // FIX: Use useContext to correctly access DataContext.
-    const dataContext = useContext(DataContext); 
+    const dataContext = useContext(DataContext);
 
 
     useEffect(() => {
@@ -432,8 +430,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
-    // FIX: Use useContext to correctly access DataContext.
-    const dataContext = useContext(DataContext); 
+    const dataContext = useContext(DataContext);
     if (!dataContext) throw new Error("DataContext not found");
     const auth = useContext(AuthContext);
     const adminUser = auth?.user as Admin;

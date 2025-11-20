@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // FIX: Changed RankTier and SubRank to Rank and Tier respectively.
@@ -16,6 +15,7 @@ import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
 import { Leaderboard } from './Leaderboard';
 import { AuthContext } from '../auth/AuthContext';
+// FIX: Corrected DataContext import path.
 import { DataContext } from '../data/DataContext';
 import { Loader } from './Loader';
 import { UrlOrUploadField } from './UrlOrUploadField';
@@ -290,8 +290,7 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
     const isSignedUp = useMemo(() => signups.some(s => s.eventId === event.id && s.playerId === player.id), [signups, event.id, player.id]);
     const [selectedGear, setSelectedGear] = useState<string[]>([]);
     const [note, setNote] = useState('');
-    // FIX: Use useContext to correctly access DataContext.
-    const dataContext = useContext(DataContext); 
+    const dataContext = useContext(DataContext);
 
     const availableGear = useMemo(() => {
         if (!dataContext) return [];
@@ -645,8 +644,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
     const { current, next, rank } = getRankProgression(player, ranks);
-    // FIX: Use useContext to correctly access DataContext.
-    const dataContext = useContext(DataContext); 
+    const dataContext = useContext(DataContext);
     const sponsorsBackgroundUrl = dataContext?.companyDetails?.sponsorsBackgroundUrl;
 
     const row1Sponsors = useMemo(() => sponsors.filter((_, i) => i < sponsors.length / 2), [sponsors]);
@@ -863,7 +861,6 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
     return (
         <div className="space-y-6">
             {myWins.length > 0 && (
-// FIX: The RafflesTab component was truncated. It has been completed to correctly display raffle information.
                 <DashboardCard title="Raffle Wins" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
                     <div className="p-4 space-y-2">
                         {myWins.map(win => (
@@ -984,8 +981,7 @@ const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ p
 
 // FIX: Added missing AchievementsTab component
 const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendaryBadges' | 'ranks'>> = ({ player, legendaryBadges, ranks }) => {
-    // FIX: Use useContext to correctly access DataContext.
-    const dataContext = useContext(DataContext); 
+    const dataContext = useContext(DataContext);
     const standardBadges = dataContext?.badges || MOCK_BADGES; // Fallback to mock if needed.
 
     return (
@@ -1021,8 +1017,7 @@ const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendary
 // FIX: Added missing SettingsTab component
 const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate'>> = ({ player, onPlayerUpdate }) => {
     const [formData, setFormData] = useState({ ...player });
-    // FIX: Use useContext to correctly access DataContext.
-    const dataContext = useContext(DataContext); 
+    const dataContext = useContext(DataContext);
     const companyDetails = dataContext?.companyDetails;
 
     const handleSave = () => {
@@ -1118,8 +1113,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
     const { player, players, sponsors, events, onEventSignUp, legendaryBadges, raffles, ranks, locations, signups, onPlayerUpdate } = props;
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
     const auth = useContext(AuthContext);
-    // FIX: Use useContext to correctly access DataContext.
-    const data = useContext(DataContext); 
+    const data = useContext(DataContext);
     
      useEffect(() => {
         if (auth) {

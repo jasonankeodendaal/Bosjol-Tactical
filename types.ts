@@ -1,5 +1,6 @@
 
 
+
 import { IconProps } from "@phosphor-icons/react";
 import type { Dispatch, SetStateAction } from 'react';
 
@@ -99,7 +100,7 @@ export interface PlayerCore extends User {
   medicalNotes?: string;
   bio?: string;
   preferredRole?: PlayerRole;
-  activeAuthUID?: string;
+  activeAuthUID?: string; // Firebase Authentication UID, if linked.
 }
 
 // This is the composed type used by components, with sub-collection data merged in.
@@ -113,6 +114,7 @@ export interface Admin extends User {
   email: string;
   clearanceLevel: number;
   avatarUrl: string;
+  firebaseAuthUID?: string; // Firebase Authentication UID
 }
 
 export interface AuthContextType {

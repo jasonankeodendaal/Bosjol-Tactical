@@ -68,7 +68,7 @@ const PerformanceWidget: React.FC = () => {
     });
 
     useEffect(() => {
-        const observer = new PerformanceObserver((list) => {
+        const handlePerformanceEntry = (list: PerformanceObserverEntryList) => {
             for (const entry of list.getEntries()) {
                 if (entry.entryType === 'largest-contentful-paint') {
                     setVitals(v => ({ ...v, lcp: Math.round(entry.startTime) }));
@@ -76,20 +76,31 @@ const PerformanceWidget: React.FC = () => {
                 if (entry.entryType === 'layout-shift') {
                     setVitals(v => ({ ...v, cls: parseFloat(((v.cls || 0) + (entry as any).value).toFixed(4)) }));
                 }
-                 if (entry.entryType === 'event') {
+                if (entry.entryType === 'event') {
                     const duration = entry.duration;
                     if (duration > (vitals.inp || 0)) {
                         setVitals(v => ({ ...v, inp: Math.round(duration) }));
                     }
                 }
             }
-        });
+        };
+
+        const bufferedObserver = new PerformanceObserver(handlePerformanceEntry);
+        const eventObserver = new PerformanceObserver(handlePerformanceEntry);
+
         try {
-            observer.observe({ entryTypes: ['largest-contentful-paint', 'layout-shift', 'event'], buffered: true });
+            // Observe buffered types with the buffered flag
+            bufferedObserver.observe({ entryTypes: ['largest-contentful-paint', 'layout-shift'], buffered: true });
+            // Observe 'event' type without the buffered flag, as it's not supported
+            eventObserver.observe({ entryTypes: ['event'] });
         } catch (e) {
             console.warn("PerformanceObserver not fully supported.", e);
         }
-        return () => observer.disconnect();
+
+        return () => {
+            bufferedObserver.disconnect();
+            eventObserver.disconnect();
+        };
     }, [vitals.inp]);
 
     return (

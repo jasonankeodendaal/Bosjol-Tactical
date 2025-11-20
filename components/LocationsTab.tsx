@@ -21,6 +21,8 @@ interface LocationsTabProps {
 }
 
 const LocationEditorModal: React.FC<{ location: Partial<Location>, onClose: () => void, onSave: (l: Location | Omit<Location, 'id'>) => void }> = ({ location, onClose, onSave }) => {
+    // FIX: Use useContext to correctly access DataContext.
+    const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
         name: location.name || '',
         description: location.description || '',
@@ -86,6 +88,7 @@ const LocationEditorModal: React.FC<{ location: Partial<Location>, onClose: () =
                             onUrlSet={handleAddImage}
                             onRemove={() => {}} // Not used in 'add' mode
                             accept="image/*"
+                            apiServerUrl={dataContext?.companyDetails?.apiServerUrl}
                         />
                     </div>
                 </div>
@@ -128,4 +131,4 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ locations, setLocati
                     </div>
                 </Modal>
             )}
-            <DashboardCard title="Manage Locations" icon
+            <DashboardCard title="Manage Locations" icon="

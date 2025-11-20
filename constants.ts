@@ -1,5 +1,4 @@
 
-
 // FIX: Import `PlayerStats` to resolve TypeScript error on line 516.
 import type { Player, PlayerCore, Admin, GameEvent, EventCore, Briefing, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, Tier, ApiGuideStep, MatchHistoryDoc, XpAdjustmentDoc, AttendeeDoc, RaffleCore, RaffleTicketDoc, RaffleWinnerDoc, VoucherCore, VoucherRedemption, PlayerStats, InventoryCategory, InventoryCondition } from './types';
 
@@ -94,7 +93,7 @@ export const MOCK_RANKS: Rank[] = [
     id: "rank_legend",
     name: "Legendary",
     description: "The pinnacle of tactical operators. Legendary status is the highest honor.",
-    rankBadgeUrl: "https://img.icons8.com/color/96/insignia-2.png",
+    rankBadgeUrl: "https://i.ibb.co/LQr4T2K/image-removebg-preview-1.png",
     tiers: [
       { id: "l_i", name: "Legendary", minXp: 5001, perks: ["Prestige Calling Card", "Credits Reward", "Legendary Skin"], iconUrl: "https://img.icons8.com/fluency/48/insignia-2.png" }
     ]

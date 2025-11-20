@@ -20,7 +20,7 @@ import { motion } from 'framer-motion';
 const getTierForPlayer = (player: Player, ranks: Rank[]): Tier => {
     // Determines a player's tier based on their total XP.
     if (!ranks || ranks.length === 0) return UNRANKED_TIER;
-    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - a.minXp);
+    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - b.minXp);
     if (allTiers.length === 0) return UNRANKED_TIER;
     const tier = allTiers.find(r => (player.stats?.xp ?? 0) >= r.minXp);
     const lowestTier = [...allTiers].sort((a,b) => a.minXp - b.minXp)[0];
@@ -299,18 +299,8 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
                 <Button onClick={onBack} variant="secondary" size="sm" className="mr-4">
                     <ArrowLeftIcon className="w-5 h-5" />
                 </Button>
-                <img src={player.avatarUrl} alt={player.name} className="w-12 h-12 rounded-full object-cover mr-4" />
-                <div>
-                    <h1 className="text-2xl font-bold text-white">{player.name} "{player.callsign}" {player.surname}</h1>
-                    <div className="flex items-center mt-1">
-                        <img src={playerTier.iconUrl} alt={playerTier.name} className="w-6 h-6 mr-2" />
-                        <span className="text-md font-semibold text-red-400">
-                            {playerRank ? `${playerRank.name} - ${playerTier.name}` : playerTier.name}
-                        </span>
-                        <span className="text-gray-400 mx-2">|</span>
-                        <BadgePill color={player.status === 'Active' ? 'green' : 'red'}>{player.status}</BadgePill>
-                    </div>
-                </div>
+                <h1 className="text-2xl font-bold text-white">{player.name} "{player.callsign}" {player.surname}</h1>
+                <img src={player.avatarUrl} alt={player.name} className="w-12 h-12 rounded-full object-cover ml-auto" />
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -8,6 +8,67 @@ import { AuthContext } from '../auth/AuthContext';
 
 export const IS_LIVE_DATA = USE_FIREBASE && !!db && !firebaseInitializationError;
 
+// FIX: Define and export DataContextType
+export interface DataContextType {
+    players: Player[];
+    setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
+    events: GameEvent[];
+    setEvents: React.Dispatch<React.SetStateAction<GameEvent[]>>;
+    ranks: Rank[];
+    setRanks: React.Dispatch<React.SetStateAction<Rank[]>>;
+    badges: Badge[];
+    setBadges: React.Dispatch<React.SetStateAction<Badge[]>>;
+    legendaryBadges: LegendaryBadge[];
+    setLegendaryBadges: React.Dispatch<React.SetStateAction<LegendaryBadge[]>>;
+    gamificationSettings: GamificationSettings;
+    setGamificationSettings: React.Dispatch<React.SetStateAction<GamificationSettings>>;
+    sponsors: Sponsor[];
+    setSponsors: React.Dispatch<React.SetStateAction<Sponsor[]>>;
+    companyDetails: CompanyDetails;
+    setCompanyDetails: (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => Promise<void>;
+    creatorDetails: CreatorDetails & { apiSetupGuide: ApiGuideStep[] };
+    setCreatorDetails: (d: (CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) | ((p: CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) => CreatorDetails & { apiSetupGuide: ApiGuideStep[] })) => Promise<void>;
+    socialLinks: SocialLink[];
+    setSocialLinks: React.Dispatch<React.SetStateAction<SocialLink[]>>;
+    carouselMedia: CarouselMedia[];
+    setCarouselMedia: React.Dispatch<React.SetStateAction<CarouselMedia[]>>;
+    vouchers: Voucher[];
+    setVouchers: React.Dispatch<React.SetStateAction<Voucher[]>>;
+    inventory: InventoryItem[];
+    setInventory: React.Dispatch<React.SetStateAction<InventoryItem[]>>;
+    suppliers: Supplier[];
+    setSuppliers: React.Dispatch<React.SetStateAction<Supplier[]>>;
+    transactions: Transaction[];
+    setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
+    locations: Location[];
+    setLocations: React.Dispatch<React.SetStateAction<Location[]>>;
+    raffles: Raffle[];
+    setRaffles: React.Dispatch<React.SetStateAction<Raffle[]>>;
+    signups: Signup[];
+    setSignups: React.Dispatch<React.SetStateAction<Signup[]>>;
+    sessions: Session[];
+    setSessions: React.Dispatch<React.SetStateAction<Session[]>>;
+    activityLog: ActivityLog[];
+    setActivityLog: React.Dispatch<React.SetStateAction<ActivityLog[]>>;
+    apiSetupGuide: ApiGuideStep[];
+    setApiSetupGuide: React.Dispatch<React.SetStateAction<ApiGuideStep[]>>;
+
+    loading: boolean;
+    isSeeding: boolean;
+    seedInitialData: () => Promise<void>;
+    deleteAllData: () => Promise<void>;
+    deleteAllPlayers: () => Promise<void>;
+    restoreFromBackup: (backupData: any) => Promise<void>;
+    logActivity: (action: string, details?: Record<string, any>) => Promise<void>;
+    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<string>;
+    updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
+    deleteDoc: (collectionName: string, docId: string) => Promise<void>;
+    setDoc: <T extends {}>(collectionName: string, docId: string, data: T) => Promise<void>;
+}
+
+// FIX: Export DataContext
+export const DataContext = createContext<DataContextType | null>(null);
+
 // Helper to fetch collection data
 function useCollection<T extends {id: string}>(collectionName: string, mockData: T[], dependencies: any[] = [], options: { isProtected?: boolean } = {}) {
     const [data, setData] = useState<T[]>(IS_LIVE_DATA ? [] : mockData);

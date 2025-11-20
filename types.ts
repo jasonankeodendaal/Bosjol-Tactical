@@ -1,6 +1,5 @@
 
 
-
 import { IconProps } from "@phosphor-icons/react";
 import type { Dispatch, SetStateAction } from 'react';
 
@@ -139,6 +138,8 @@ export interface EventAttendee {
     note?: string;
     discountAmount?: number;
     discountReason?: string;
+    // New optional field for attendee stats, stored as part of the event
+    stats?: Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>;
 }
 
 // Sub-collection document type
@@ -399,7 +400,7 @@ export interface CompanyDetails {
     adminDashboardAudioUrl?: string;
     sponsorsBackgroundUrl?: string;
     apkUrl?: string;
-    apiServerUrl?: string;
+    apiServerUrl?: string; // Optional URL for the self-hosted API server
     bankInfo: {
         bankName: string;
         accountNumber: string;

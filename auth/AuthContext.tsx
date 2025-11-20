@@ -1,11 +1,8 @@
-
-
 import React, { createContext, useState, ReactNode, useEffect, useContext } from 'react';
 import type { User, AuthContextType, Player, Admin, CreatorDetails } from '../types';
-import { MOCK_PLAYERS, MOCK_ADMIN, MOCK_CREATOR_CORE } from '../constants';
-// Removed 'app' import as Firebase is disabled
-import { USE_FIREBASE, firebaseInitializationError, auth as firebaseAuthInstance } from '../firebase'; // Import firebase auth instance
-// FIX: Corrected DataContext import path.
+// FIX: Updated imports to use MOCK_PLAYERS and MOCK_ADMIN.
+import { MOCK_PLAYERS, MOCK_ADMIN } from '../constants';
+import { auth, db, USE_FIREBASE, firebase } from '../firebase';
 import { DataContext } from '../data/DataContext';
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -24,110 +21,172 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const dataContext = useContext(DataContext);
 
     useEffect(() => {
-        if (USE_FIREBASE && firebaseAuthInstance) {
-            const unsubscribe = firebaseAuthInstance.onAuthStateChanged(async (firebaseUser) => {
-                if (firebaseUser) {
-                    // Check if it's the admin or creator
-                    if (firebaseUser.email === ADMIN_EMAIL) {
-                        setUser({ ...MOCK_ADMIN, id: firebaseUser.uid, email: firebaseUser.email, firebaseAuthUID: firebaseUser.uid });
-                    } else if (firebaseUser.email === CREATOR_EMAIL) {
-                        setUser({ ...MOCK_CREATOR_CORE, id: firebaseUser.uid, email: firebaseUser.email, role: 'creator' });
-                    } else {
-                        // Attempt to find player linked by Firebase UID
-                        const player = dataContext?.players.find(p => p.activeAuthUID === firebaseUser.uid);
-                        if (player) {
-                            setUser(player);
+        if (!USE_FIREBASE || !auth || !db) {
+            setLoading(false);
+            return;
+        }
+
+        // On initial mount, sign out any existing user to enforce re-login on every app load/refresh.
+        auth.signOut();
+
+        const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: firebase.User | null) => {
+            // This listener now primarily handles logins that happen *during* the session,
+            // like an admin using email/password.
+            if (firebaseUser && !firebaseUser.isAnonymous) {
+                 const email = firebaseUser.email?.toLowerCase();
+
+                if (email === ADMIN_EMAIL) {
+                    try {
+                        const adminSnapshot = await db.collection("admins").where("email", "==", email).limit(1).get();
+                        if (!adminSnapshot.empty) {
+                            const adminDoc = adminSnapshot.docs[0];
+                            setUser({ id: adminDoc.id, ...adminDoc.data() } as Admin);
                         } else {
-                            // If player not found by UID, maybe they logged in anonymously?
-                            // Or it's a player who hasn't linked their account yet, so log out.
-                            await firebaseAuthInstance.signOut();
-                            setUser(null);
+                            console.warn("Admin profile not found, creating default.");
+                            // FIX: The error on this line is resolved by correctly importing MOCK_ADMIN with an ID.
+                            const { id, ...newAdminData } = { ...MOCK_ADMIN, email };
+                            const docRef = await db.collection("admins").add(newAdminData);
+                            setUser({ ...newAdminData, id: docRef.id });
                         }
+                    } catch (error) {
+                        console.error("Error fetching admin profile:", error);
+                        await auth.signOut();
+                        setUser(null);
+                    }
+                } else if (email === CREATOR_EMAIL) {
+                    try {
+                        const creatorDoc = await db.collection("settings").doc("creatorDetails").get();
+                        if (creatorDoc.exists) {
+                            setUser({ id: 'creator', role: 'creator', ...creatorDoc.data() } as CreatorDetails & { role: 'creator', id: string });
+                        } else {
+                             setUser({ id: 'creator', name: 'Creator', role: 'creator' });
+                        }
+                    } catch (error) {
+                         console.error("Error fetching creator profile:", error);
+                         await auth.signOut();
+                         setUser(null);
                     }
                 } else {
+                    // A non-admin/creator user is logged in with email/pass, which shouldn't happen.
+                    await auth.signOut();
                     setUser(null);
                 }
-                setLoading(false);
-            });
-            return () => unsubscribe();
-        } else {
+            } else {
+                // This handles the initial load (after signOut) and any anonymous user sessions from previous player logins.
+                // It ensures we always start with a clean slate.
+                setUser(null);
+            }
             setLoading(false);
-            setUser(null); // No Firebase, no authenticated user.
-        }
-    }, [dataContext?.players, dataContext]); // Added dataContext to dependencies
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const login = async (username: string, password: string): Promise<boolean> => {
         const cleanUsername = username.trim();
         const cleanPassword = password.trim();
         
-        // Handle Admin or Creator Firebase login if Firebase is enabled
+        // Handle Admin or Creator Firebase login
         const emailUsername = cleanUsername.toLowerCase();
-        if (USE_FIREBASE && firebaseAuthInstance && (emailUsername === ADMIN_EMAIL || emailUsername === CREATOR_EMAIL)) {
-            try {
-                await firebaseAuthInstance.signInWithEmailAndPassword(emailUsername, cleanPassword);
-                dataContext?.logActivity('Logged In (Firebase)');
-                return true;
-            } catch (error) {
-                console.error("Firebase Admin/Creator Login Failed:", error);
+        if (emailUsername === ADMIN_EMAIL || emailUsername === CREATOR_EMAIL) {
+            if (USE_FIREBASE && auth) {
+                try {
+                    await auth.signInWithEmailAndPassword(emailUsername, cleanPassword);
+                    // onAuthStateChanged will set user state, then logActivity will be called in useEffect
+                    return true;
+                } catch (error) {
+                    const typedError = error as { code?: string; message?: string };
+                    console.error(`Firebase login failed with code: ${typedError.code || 'N/A'}. Message: ${typedError.message || 'Unknown error'}`);
+                    return false;
+                }
+            } else { // Mock admin login (creator has no mock login)
+                if (emailUsername === ADMIN_EMAIL && cleanPassword === '1234') {
+                    setUser(MOCK_ADMIN);
+                    dataContext?.logActivity('Logged In');
+                    return true;
+                }
                 return false;
             }
         }
         
-        // Player login logic (either mock or direct player with API backend)
-        const player = MOCK_PLAYERS.find(p => 
-            p.playerCode.toUpperCase() === cleanUsername.toUpperCase() && p.pin === cleanPassword
-        );
-        if (player) {
-            // In Firebase mode, if player exists, sign in anonymously to get a UID for session tracking
-            if (USE_FIREBASE && firebaseAuthInstance) {
-                try {
-                    const anonUserCredential = await firebaseAuthInstance.signInAnonymously();
-                    // Link the anonymous UID to the player profile
-                    const updatedPlayer = { ...player, activeAuthUID: anonUserCredential.user?.uid };
-                    await dataContext?.updateDoc('players', updatedPlayer);
-                    setUser(updatedPlayer);
-                    dataContext?.logActivity('Logged In (Player, Firebase Anonymous)');
-                    return true;
-                } catch (error) {
-                    console.error("Firebase Anonymous Login/Link Failed:", error);
+        // Player login logic
+        if (USE_FIREBASE && db && auth) {
+            try {
+                // Step 1: Sign in anonymously FIRST to get an authenticated session.
+                const userCredential = await auth.signInAnonymously();
+                const authUID = userCredential.user?.uid;
+
+                if (!authUID) {
+                    throw new Error("Failed to get UID from anonymous session.");
+                }
+
+                // Step 2: Now that we are authenticated, query for the player.
+                const playersRef = db.collection("players");
+                const q = playersRef.where("playerCode", "==", cleanUsername.toUpperCase()).limit(1);
+                const querySnapshot = await q.get();
+
+                if (querySnapshot.empty) {
+                    await auth.signOut(); // Clean up anonymous session
                     return false;
                 }
-            } else {
-                // Mock player login (when Firebase is not used)
+
+                const playerDoc = querySnapshot.docs[0];
+                const playerData = { id: playerDoc.id, ...playerDoc.data() } as Player;
+                
+                // Step 3: Check PIN.
+                if (playerData.pin === cleanPassword) {
+                    // Step 4: Update the player doc with the new UID. This is now allowed by security rules.
+                    const updatedPlayerData = { ...playerData, activeAuthUID: authUID };
+                    await db.collection('players').doc(playerData.id).update({ activeAuthUID: authUID });
+                    setUser(updatedPlayerData);
+                    dataContext?.logActivity('Logged In');
+                    return true;
+                } else {
+                    await auth.signOut(); // Clean up anonymous session on wrong PIN
+                    return false;
+                }
+            } catch (error) {
+                if (auth.currentUser && auth.currentUser.isAnonymous) {
+                    await auth.signOut(); // Ensure cleanup on any error
+                }
+                
+                const typedError = error as { code?: string; message: string };
+                let userMessage = `Login failed: ${typedError.message}.`;
+
+                if (typedError.code === 'permission-denied') {
+                    userMessage = "Login failed due to a permission error. This usually means the app's Firestore Security Rules are not configured correctly. The rules must allow an authenticated user to update the 'activeAuthUID' field on their player document.";
+                }
+                
+                console.error("Player login failed:", typedError);
+                alert(userMessage);
+                return false;
+            }
+        } else { // Mock player login
+            const player = MOCK_PLAYERS.find(p => 
+                p.playerCode.toUpperCase() === cleanUsername.toUpperCase() && p.pin === cleanPassword
+            );
+            if (player) {
                 setUser(player);
-                dataContext?.logActivity('Logged In (Mock)');
+                dataContext?.logActivity('Logged In');
                 return true;
             }
+            return false;
         }
-        
-        // Fallback for mock admin login if Firebase is not used
-        if (!USE_FIREBASE && emailUsername === ADMIN_EMAIL && cleanPassword === '1234') {
-            setUser(MOCK_ADMIN);
-            dataContext?.logActivity('Logged In (Mock Admin)');
-            return true;
-        }
-
-        return false;
     };
     
     // Log activity on user state change (successful login)
     useEffect(() => {
         if (user && dataContext) {
-            dataContext.logActivity(`Logged In as ${user.name} (${user.role})`);
+            dataContext.logActivity('Logged In');
         }
     }, [user, dataContext]);
 
 
     const logout = async () => {
-        if (USE_FIREBASE && firebaseAuthInstance) {
-            try {
-                await firebaseAuthInstance.signOut();
-                dataContext?.logActivity('Logged Out (Firebase)');
-            } catch (error) {
-                console.error("Firebase Logout Failed:", error);
-            }
-        } else {
-            dataContext?.logActivity('Logged Out (Mock)');
+        // For both anonymous player sessions and admin/creator sessions
+        if (USE_FIREBASE && auth && auth.currentUser) {
+            // This will sign out any logged-in Firebase user, regardless of whether they are anonymous or email/password.
+            await auth.signOut();
         }
         setUser(null);
     };
@@ -136,7 +195,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(updatedUser);
     }
 
-    if (loading) {
+    if (loading && USE_FIREBASE) {
         return null; // Or a loading spinner
     }
 

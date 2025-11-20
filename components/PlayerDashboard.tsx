@@ -1,13 +1,10 @@
-
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-// FIX: Changed RankTier and SubRank to Rank and Tier respectively.
 import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, Rank, Tier, PlayerRole } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
 import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon, InformationCircleIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
-// FIX: Changed UNRANKED_SUB_RANK to UNRANKED_TIER.
 import { UNRANKED_TIER, MOCK_PLAYER_ROLES, MOCK_BADGES } from '../constants';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -15,7 +12,6 @@ import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
 import { Leaderboard } from './Leaderboard';
 import { AuthContext } from '../auth/AuthContext';
-// FIX: Corrected DataContext import path.
 import { DataContext } from '../data/DataContext';
 import { Loader } from './Loader';
 import { UrlOrUploadField } from './UrlOrUploadField';
@@ -806,15 +802,10 @@ const PodiumPlayer: React.FC<{ player: Player, rank: 1 | 2 | 3, delay: number }>
     const animationVariants = { hidden: { opacity: 0, y: 50 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay } } };
     return (
         <motion.div className={`podium-item ${podiumClass}`} variants={animationVariants}>
-            <div className="podium-avatar-wrapper">
-                {rank === 1 && <CrownIcon className="w-10 h-10 crown-icon" />}
-                <img src={player.avatarUrl} alt={player.name} className="podium-avatar" />
-                <p className={`font-bold text-base mt-2 truncate max-w-full px-1 ${rank === 1 ? 'text-amber-300' : 'text-white'}`}>{player.name}</p>
+            <div className="podium-avatar-wrapper"><img src={player.avatarUrl} alt={player.name} className="podium-avatar" />
+                <p className={`font-bold text-base mt-2 truncate max-w-full px-1 ${rank === 1 ? 'text-amber-300' : 'text-white'}`}>{player.callsign}</p>
                 <p className="text-xs text-zinc-300">{player.stats.xp.toLocaleString()} RP</p>
-            </div>
-            <div className="podium-base">
-                {rank}
-            </div>
+            </div><div className="podium-base">{rank}</div>
         </motion.div>
     );
 };
@@ -1118,9 +1109,9 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
     const data = useContext(DataContext);
     
      useEffect(() => {
-        if (auth) {
+        if (auth && data) {
             auth.setHelpTopic(`player-dashboard-${activeTab.toLowerCase()}`);
-            data?.logActivity(`Viewed ${activeTab} tab`);
+            data.logActivity(`Viewed ${activeTab} tab`);
         }
     }, [activeTab, auth, data]);
 

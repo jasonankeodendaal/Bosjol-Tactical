@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CreatorDetails } from '../types';
@@ -7,7 +9,7 @@ import { DataContextType } from '../data/DataContext';
 import { SystemScanner } from './SystemScanner';
 import { AuthContext } from '../auth/AuthContext';
 import { CreatorProfileTab } from './CreatorProfileTab';
-import { ApiSetupTab } from './ApiSetupTab'; // This now contains both guides
+import { ServerSetupTab } from './ServerSetupTab';
 import { ObservabilityTab } from './ObservabilityTab';
 
 // --- MAIN COMPONENT ---
@@ -27,7 +29,7 @@ const TabButton: React.FC<{ name: string, active: boolean, onClick: () => void, 
 );
 
 export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
-    const [activeTab, setActiveTab] = useState<'observability' | 'scanner' | 'profile' | 'apiSetup'>('observability'); // Changed 'server' to 'apiSetup'
+    const [activeTab, setActiveTab] = useState<'observability' | 'scanner' | 'profile' | 'server'>('observability');
     const { setHelpTopic } = props;
     const auth = useContext(AuthContext);
     const creatorUser = auth?.user as (CreatorDetails & { role: 'creator' });
@@ -35,7 +37,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
     useEffect(() => {
         let topic = 'creator-dashboard-monitor';
         if (activeTab === 'profile') topic = 'creator-dashboard-profile';
-        if (activeTab === 'apiSetup') topic = 'admin-dashboard-api-setup'; // Now points to the single ApiSetupTab
+        if (activeTab === 'server') topic = 'creator-dashboard-server'; // Add help topic if needed
         if (activeTab === 'observability') topic = 'creator-dashboard-observability';
         setHelpTopic(topic);
     }, [activeTab, setHelpTopic]);
@@ -59,7 +61,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
                             <TabButton name="Observability" active={activeTab === 'observability'} onClick={() => setActiveTab('observability')} icon={<ChartBarIcon className="w-5 h-5"/>} />
                             <TabButton name="System Scanner" active={activeTab === 'scanner'} onClick={() => setActiveTab('scanner')} icon={<CogIcon className="w-5 h-5"/>} />
                             <TabButton name="Profile & Guide Editor" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<UserCircleIcon className="w-5 h-5"/>} />
-                            <TabButton name="API Server Guides" active={activeTab === 'apiSetup'} onClick={() => setActiveTab('apiSetup')} icon={<CodeBracketIcon className="w-5 h-5"/>} />
+                            <TabButton name="Full Server Guide" active={activeTab === 'server'} onClick={() => setActiveTab('server')} icon={<CodeBracketIcon className="w-5 h-5"/>} />
                         </nav>
                     </div>
 
@@ -74,7 +76,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = (props) => {
                             {activeTab === 'observability' && <ObservabilityTab />}
                             {activeTab === 'scanner' && <SystemScanner />}
                             {activeTab === 'profile' && <CreatorProfileTab creatorDetails={props.creatorDetails} setCreatorDetails={props.setCreatorDetails} />}
-                            {activeTab === 'apiSetup' && <ApiSetupTab creatorDetails={props.creatorDetails} />}
+                            {activeTab === 'server' && <ServerSetupTab />}
                         </motion.div>
                     </AnimatePresence>
                 </div>

@@ -8,7 +8,6 @@ import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
 import { MapPinIcon, PlusIcon, PencilIcon, TrashIcon, AtSymbolIcon, PhoneIcon, XIcon, GlobeAltIcon } from './icons/Icons';
-// FIX: Corrected import for DataContext.
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
 
@@ -21,8 +20,6 @@ interface LocationsTabProps {
 }
 
 const LocationEditorModal: React.FC<{ location: Partial<Location>, onClose: () => void, onSave: (l: Location | Omit<Location, 'id'>) => void }> = ({ location, onClose, onSave }) => {
-    // FIX: Use useContext to correctly access DataContext.
-    const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
         name: location.name || '',
         description: location.description || '',
@@ -88,7 +85,6 @@ const LocationEditorModal: React.FC<{ location: Partial<Location>, onClose: () =
                             onUrlSet={handleAddImage}
                             onRemove={() => {}} // Not used in 'add' mode
                             accept="image/*"
-                            apiServerUrl={dataContext?.companyDetails?.apiServerUrl}
                         />
                     </div>
                 </div>
@@ -132,7 +128,7 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ locations, setLocati
                 </Modal>
             )}
             <DashboardCard title="Manage Locations" icon={<MapPinIcon className="w-6 h-6" />}>
-                 <div className="p-4">
+                <div className="p-4">
                     <div className="flex justify-end mb-4">
                         <Button onClick={() => setIsEditing({})} size="sm">
                             <PlusIcon className="w-5 h-5 mr-2" />
@@ -141,26 +137,31 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ locations, setLocati
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {locations.map(loc => (
-                             <div key={loc.id} className="bg-zinc-800/50 p-4 rounded-lg">
-                                <div className="flex justify-between items-start mb-3">
+                            <div key={loc.id} className="bg-zinc-800/50 p-4 rounded-lg flex flex-col">
+                                <div className="flex justify-between items-start">
                                     <div className="flex-grow">
                                         <h4 className="font-bold text-lg text-white">{loc.name}</h4>
                                         <p className="text-sm text-gray-400">{loc.address}</p>
                                     </div>
-                                    <div className="flex flex-col gap-2 flex-shrink-0">
-                                        <Button size="sm" variant="secondary" onClick={() => setIsEditing(loc)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
-                                        <Button size="sm" variant="danger" onClick={() => setDeletingLocation(loc)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
+                                     <div className="flex gap-2 flex-shrink-0">
+                                        <Button size="sm" variant="secondary" onClick={() => setIsEditing(loc)}><PencilIcon className="w-4 h-4" /></Button>
+                                        <Button size="sm" variant="danger" onClick={() => setDeletingLocation(loc)}><TrashIcon className="w-4 h-4" /></Button>
                                     </div>
                                 </div>
-                                <div className="text-xs text-gray-300 space-y-1">
-                                    {loc.pinLocationUrl && <a href={loc.pinLocationUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-red-400 hover:underline"><MapPinIcon className="w-4 h-4"/>View Map</a>}
-                                    {loc.contactInfo.email && <p className="flex items-center gap-1.5"><AtSymbolIcon className="w-4 h-4"/>{loc.contactInfo.email}</p>}
-                                    {loc.contactInfo.phone && <p className="flex items-center gap-1.5"><PhoneIcon className="w-4 h-4"/>{loc.contactInfo.phone}</p>}
+                                 <div className="flex space-x-2 overflow-x-auto mt-3">
+                                    {loc.imageUrls.map((url, i) => (
+                                        <img key={i} src={url} alt={`${loc.name} ${i}`} className="w-24 h-16 object-cover rounded-md flex-shrink-0" />
+                                    ))}
+                                </div>
+                                <div className="mt-3 pt-3 border-t border-zinc-700 space-y-1 text-sm">
+                                    {loc.pinLocationUrl && <a href={loc.pinLocationUrl} target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline flex items-center gap-1.5"><GlobeAltIcon className="w-4 h-4"/> View on Map</a>}
+                                    {loc.contactInfo.email && <p className="text-gray-300 flex items-center gap-1.5"><AtSymbolIcon className="w-4 h-4" /> {loc.contactInfo.email}</p>}
+                                    {loc.contactInfo.phone && <p className="text-gray-300 flex items-center gap-1.5"><PhoneIcon className="w-4 h-4" /> {loc.contactInfo.phone}</p>}
                                 </div>
                             </div>
                         ))}
                     </div>
-                 </div>
+                </div>
             </DashboardCard>
         </div>
     );

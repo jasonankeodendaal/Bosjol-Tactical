@@ -83,8 +83,8 @@ export interface PlayerCore extends User {
   status: 'Active' | 'On Leave' | 'Retired';
   avatarUrl: string;
   stats: PlayerStats;
-  badges: Badge[]; // Correctly defined
-  legendaryBadges: LegendaryBadge[]; // Correctly defined
+  badges: Badge[];
+  legendaryBadges: LegendaryBadge[];
   loadout: Loadout;
   // New detailed fields
   playerCode: string;
@@ -99,7 +99,7 @@ export interface PlayerCore extends User {
   medicalNotes?: string;
   bio?: string;
   preferredRole?: PlayerRole;
-  activeAuthUID?: string; // Firebase Authentication UID, if linked.
+  activeAuthUID?: string;
 }
 
 // This is the composed type used by components, with sub-collection data merged in.
@@ -113,7 +113,6 @@ export interface Admin extends User {
   email: string;
   clearanceLevel: number;
   avatarUrl: string;
-  firebaseAuthUID?: string; // Firebase Authentication UID
 }
 
 export interface AuthContextType {
@@ -138,8 +137,6 @@ export interface EventAttendee {
     note?: string;
     discountAmount?: number;
     discountReason?: string;
-    // New optional field for attendee stats, stored as part of the event
-    stats?: Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>;
 }
 
 // Sub-collection document type
@@ -400,7 +397,7 @@ export interface CompanyDetails {
     adminDashboardAudioUrl?: string;
     sponsorsBackgroundUrl?: string;
     apkUrl?: string;
-    apiServerUrl?: string; // Optional URL for the self-hosted API server
+    apiServerUrl?: string;
     bankInfo: {
         bankName: string;
         accountNumber: string;

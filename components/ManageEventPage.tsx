@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentStatus, PlayerStats, EventStatus, EventType, Transaction, EventAttendee, Signup, CompanyDetails, LegendaryBadge, XpAdjustment, Rank, Tier } from '../types';
 import { DashboardCard } from './DashboardCard';

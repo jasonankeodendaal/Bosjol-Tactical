@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useMemo, useEffect, useContext } from 'react';
 import type { Player, GameEvent, Tier, XpAdjustment, LegendaryBadge, PlayerRole, Rank, CompanyDetails, Badge } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -12,7 +9,6 @@ import { MOCK_PLAYER_ROLES, UNRANKED_TIER } from '../constants';
 import { ArrowLeftIcon, UserIcon, ChartBarIcon, CalendarIcon, TrophyIcon, CrosshairsIcon, PlusCircleIcon, TrashIcon, ShieldCheckIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
-// FIX: Corrected import for DataContext.
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { SendCredentialsModal } from './SendCredentialsModal';
@@ -115,8 +111,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
     const [showPin, setShowPin] = useState(false);
     const [isResettingPin, setIsResettingPin] = useState(false);
     const [isSendingCredentials, setIsSendingCredentials] = useState(false);
-    // FIX: Use useContext to correctly access DataContext.
-    const dataContext = useContext(DataContext); 
+    const dataContext = useContext(DataContext);
     
     useEffect(() => {
         setFormData(player);
@@ -300,8 +295,18 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
                 <Button onClick={onBack} variant="secondary" size="sm" className="mr-4">
                     <ArrowLeftIcon className="w-5 h-5" />
                 </Button>
-                <h1 className="text-2xl font-bold text-white">{player.name} "{player.callsign}" {player.surname}</h1>
-                <img src={player.avatarUrl} alt={player.name} className="w-12 h-12 rounded-full object-cover ml-auto" />
+                <img src={player.avatarUrl} alt={player.name} className="w-12 h-12 rounded-full object-cover mr-4" />
+                <div>
+                    <h1 className="text-2xl font-bold text-white">{player.name} "{player.callsign}" {player.surname}</h1>
+                    <div className="flex items-center mt-1">
+                        <img src={playerTier.iconUrl} alt={playerTier.name} className="w-6 h-6 mr-2" />
+                        <span className="text-md font-semibold text-red-400">
+                            {playerRank ? `${playerRank.name} - ${playerTier.name}` : playerTier.name}
+                        </span>
+                        <span className="text-gray-400 mx-2">|</span>
+                        <BadgePill color={player.status === 'Active' ? 'green' : 'red'}>{player.status}</BadgePill>
+                    </div>
+                </div>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

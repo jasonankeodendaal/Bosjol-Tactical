@@ -6,67 +6,6 @@ import { AuthContext } from '../auth/AuthContext';
 
 export const IS_LIVE_DATA = USE_FIREBASE && !!db && !firebaseInitializationError;
 
-// FIX: Define and export DataContextType
-export interface DataContextType {
-    players: Player[];
-    setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
-    events: GameEvent[];
-    setEvents: React.Dispatch<React.SetStateAction<GameEvent[]>>;
-    ranks: Rank[];
-    setRanks: React.Dispatch<React.SetStateAction<Rank[]>>;
-    badges: Badge[];
-    setBadges: React.Dispatch<React.SetStateAction<Badge[]>>;
-    legendaryBadges: LegendaryBadge[];
-    setLegendaryBadges: React.Dispatch<React.SetStateAction<LegendaryBadge[]>>;
-    gamificationSettings: GamificationSettings;
-    setGamificationSettings: React.Dispatch<React.SetStateAction<GamificationSettings>>;
-    sponsors: Sponsor[];
-    setSponsors: React.Dispatch<React.SetStateAction<Sponsor[]>>;
-    companyDetails: CompanyDetails;
-    setCompanyDetails: (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => Promise<void>;
-    creatorDetails: CreatorDetails & { apiSetupGuide: ApiGuideStep[] };
-    setCreatorDetails: (d: (CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) | ((p: CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) => CreatorDetails & { apiSetupGuide: ApiGuideStep[] })) => Promise<void>;
-    socialLinks: SocialLink[];
-    setSocialLinks: React.Dispatch<React.SetStateAction<SocialLink[]>>;
-    carouselMedia: CarouselMedia[];
-    setCarouselMedia: React.Dispatch<React.SetStateAction<CarouselMedia[]>>;
-    vouchers: Voucher[];
-    setVouchers: React.Dispatch<React.SetStateAction<Voucher[]>>;
-    inventory: InventoryItem[];
-    setInventory: React.Dispatch<React.SetStateAction<InventoryItem[]>>;
-    suppliers: Supplier[];
-    setSuppliers: React.Dispatch<React.SetStateAction<Supplier[]>>;
-    transactions: Transaction[];
-    setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
-    locations: Location[];
-    setLocations: React.Dispatch<React.SetStateAction<Location[]>>;
-    raffles: Raffle[];
-    setRaffles: React.Dispatch<React.SetStateAction<Raffle[]>>;
-    signups: Signup[];
-    setSignups: React.Dispatch<React.SetStateAction<Signup[]>>;
-    sessions: Session[];
-    setSessions: React.Dispatch<React.SetStateAction<Session[]>>;
-    activityLog: ActivityLog[];
-    setActivityLog: React.Dispatch<React.SetStateAction<ActivityLog[]>>;
-    apiSetupGuide: ApiGuideStep[];
-    setApiSetupGuide: React.Dispatch<React.SetStateAction<ApiGuideStep[]>>;
-
-    loading: boolean;
-    isSeeding: boolean;
-    seedInitialData: () => Promise<void>;
-    deleteAllData: () => Promise<void>;
-    deleteAllPlayers: () => Promise<void>;
-    restoreFromBackup: (backupData: any) => Promise<void>;
-    logActivity: (action: string, details?: Record<string, any>) => Promise<void>;
-    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<string>;
-    updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
-    deleteDoc: (collectionName: string, docId: string) => Promise<void>;
-    setDoc: <T extends {}>(collectionName: string, docId: string, data: T) => Promise<void>;
-}
-
-// FIX: Export DataContext
-export const DataContext = createContext<DataContextType | null>(null);
-
 // Helper to fetch collection data
 function useCollection<T extends {id: string}>(collectionName: string, mockData: T[], dependencies: any[] = [], options: { isProtected?: boolean } = {}) {
     const [data, setData] = useState<T[]>(IS_LIVE_DATA ? [] : mockData);
@@ -85,7 +24,7 @@ function useCollection<T extends {id: string}>(collectionName: string, mockData:
             }
 
             // Specifically block players from fetching admin-only collections to conserve read quotas
-            const collectionsToBlockForPlayer = ['transactions', 'sessions', 'activityLog', 'suppliers', 'vouchers', 'apiSetupGuide', 'gamificationSettings'];
+            const collectionsToBlockForPlayer = ['transactions', 'sessions', 'activityLog', 'suppliers', 'vouchers', 'apiSetupGuide'];
             if (userRole === 'player' && collectionsToBlockForPlayer.includes(collectionName)) {
                 setData([]);
                 setLoading(false);
@@ -93,7 +32,7 @@ function useCollection<T extends {id: string}>(collectionName: string, mockData:
             }
 
             setLoading(true);
-            const q = db!.collection(collectionName);
+            const q = db.collection(collectionName);
             const unsubscribe = q.onSnapshot((querySnapshot) => {
                 const newItems: T[] = [];
                 querySnapshot.forEach((doc) => {
@@ -122,6 +61,7 @@ function useCollection<T extends {id: string}>(collectionName: string, mockData:
             setData(mockData);
             setLoading(false);
         }
+    // Add auth?.isAuthenticated and user role to dependency array to refetch on login/logout or role change
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [auth?.isAuthenticated, auth?.user?.role, ...dependencies]);
 
@@ -136,7 +76,7 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
     useEffect(() => {
         if (IS_LIVE_DATA) {
             setLoading(true);
-            const docRef = db!.collection(collectionName).doc(docId);
+            const docRef = db.collection(collectionName).doc(docId);
             const unsubscribe = docRef.onSnapshot((docSnap) => {
                 if (docSnap.exists) {
                     const firestoreData = docSnap.data() || {};
@@ -166,15 +106,16 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [collectionName, docId]);
 
-     const updateData = async (newData: T | ((p: T) => T)) => {
-        const dataToSet = typeof newData === 'function' ? (newData as (p: T) => T)(data) : newData;
-        // Optimistically update state
-        setData(dataToSet);
+     const updateData = async (newData: Partial<T>) => {
+        // Optimistically update the state for a responsive UI.
+        setData(prev => ({...prev, ...newData}));
 
         if (IS_LIVE_DATA) {
             try {
-                const docRef = db!.collection(collectionName).doc(docId);
-                await docRef.set(dataToSet, { merge: true });
+                const docRef = db.collection(collectionName).doc(docId);
+                // Persist the change. The onSnapshot listener will also get this update,
+                // but our deep comparison check prevents a redundant re-render.
+                await docRef.set(newData, { merge: true });
             } catch (error: any) {
                 console.error(`Failed to save document ${collectionName}/${docId}:`, error);
                 alert(`Failed to save settings: ${error.message}`);
@@ -182,138 +123,569 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
             }
         }
     };
-
+    
     return [data, updateData, loading] as const;
 }
 
-export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    // Hooks for collections
-    const [players, setPlayers, playersLoading] = useCollection<Player>('players', mock.MOCK_PLAYERS);
-    const [events, setEvents, eventsLoading] = useCollection<GameEvent>('events', mock.MOCK_EVENTS);
-    const [ranks, setRanks, ranksLoading] = useCollection<Rank>('ranks', mock.MOCK_RANKS);
-    const [badges, setBadges, badgesLoading] = useCollection<Badge>('badges', mock.MOCK_BADGES);
-    // FIX: Corrected typo 'MOCK_LEGENDary_BADGES' to 'MOCK_LEGENDARY_BADGES'.
-    const [legendaryBadges, setLegendaryBadges, legendaryBadgesLoading] = useCollection<LegendaryBadge>('legendaryBadges', mock.MOCK_LEGENDARY_BADGES);
-    const [gamificationSettings, setGamificationSettings, gamificationLoading] = useCollection<GamificationRule>('gamificationSettings', mock.MOCK_GAMIFICATION_SETTINGS, [], { isProtected: true });
-    const [sponsors, setSponsors, sponsorsLoading] = useCollection<Sponsor>('sponsors', mock.MOCK_SPONSORS);
-    const [socialLinks, setSocialLinks, socialLinksLoading] = useCollection<SocialLink>('socialLinks', mock.MOCK_SOCIAL_LINKS);
-    const [carouselMedia, setCarouselMedia, carouselMediaLoading] = useCollection<CarouselMedia>('carouselMedia', mock.MOCK_CAROUSEL_MEDIA);
-    const [vouchers, setVouchers, vouchersLoading] = useCollection<Voucher>('vouchers', mock.MOCK_VOUCHERS, [], { isProtected: true });
-    const [inventory, setInventory, inventoryLoading] = useCollection<InventoryItem>('inventory', mock.MOCK_INVENTORY);
-    const [suppliers, setSuppliers, suppliersLoading] = useCollection<Supplier>('suppliers', mock.MOCK_SUPPLIERS, [], { isProtected: true });
-    const [transactions, setTransactions, transactionsLoading] = useCollection<Transaction>('transactions', mock.MOCK_TRANSACTIONS, [], { isProtected: true });
-    const [locations, setLocations, locationsLoading] = useCollection<Location>('locations', mock.MOCK_LOCATIONS);
-    const [raffles, setRaffles, rafflesLoading] = useCollection<Raffle>('raffles', mock.MOCK_RAFFLES);
-    const [signups, setSignups, signupsLoading] = useCollection<Signup>('signups', mock.MOCK_SIGNUPS);
-    const [sessions, setSessions, sessionsLoading] = useCollection<Session>('sessions', [], [], { isProtected: true });
-    const [activityLog, setActivityLog, activityLogLoading] = useCollection<ActivityLog>('activityLog', [], [], { isProtected: true });
-    
-    // Hooks for single documents (settings)
-    const [companyDetails, updateCompanyDetails, companyDetailsLoading] = useDocument<CompanyDetails>('settings', 'companyDetails', mock.MOCK_COMPANY_DETAILS);
-    const [creatorDetails, updateCreatorDetails, creatorDetailsLoading] = useDocument<CreatorDetails & { apiSetupGuide: ApiGuideStep[] }>('settings', 'creatorDetails', mock.MOCK_CREATOR_DETAILS);
+// FIX: Correctly map all mock data exports from constants.ts
+const MOCK_DATA_MAP = {
+    ranks: mock.MOCK_RANKS,
+    badges: mock.MOCK_BADGES,
+    legendaryBadges: mock.MOCK_LEGENDARY_BADGES,
+    gamificationSettings: mock.MOCK_GAMIFICATION_SETTINGS,
+    players: mock.MOCK_PLAYERS,
+    events: mock.MOCK_EVENTS,
+    signups: mock.MOCK_SIGNUPS,
+    vouchers: mock.MOCK_VOUCHERS,
+    inventory: mock.MOCK_INVENTORY,
+    suppliers: mock.MOCK_SUPPLIERS,
+    transactions: mock.MOCK_TRANSACTIONS,
+    locations: mock.MOCK_LOCATIONS,
+    raffles: mock.MOCK_RAFFLES,
+    sponsors: mock.MOCK_SPONSORS,
+    socialLinks: mock.MOCK_SOCIAL_LINKS,
+    carouselMedia: mock.MOCK_CAROUSEL_MEDIA,
+    apiSetupGuide: mock.MOCK_API_GUIDE,
+};
+type SeedableCollection = keyof typeof MOCK_DATA_MAP;
 
+
+// --- START OF TYPE DEFINITION ---
+// The exported types will be composite types for ease of use in components
+export interface DataContextType {
+    players: Player[]; setPlayers: (d: Player[] | ((p: Player[]) => Player[])) => void;
+    events: GameEvent[]; setEvents: (d: GameEvent[] | ((p: GameEvent[]) => GameEvent[])) => void;
+    ranks: Rank[]; setRanks: (d: Rank[] | ((p: Rank[]) => Rank[])) => void;
+    badges: Badge[]; setBadges: (d: Badge[] | ((p: Badge[]) => Badge[])) => void;
+    legendaryBadges: LegendaryBadge[]; setLegendaryBadges: (d: LegendaryBadge[] | ((p: LegendaryBadge[]) => LegendaryBadge[])) => void;
+    gamificationSettings: GamificationSettings; setGamificationSettings: (d: GamificationSettings | ((p: GamificationSettings) => GamificationSettings)) => void;
+    sponsors: Sponsor[]; setSponsors: (d: Sponsor[] | ((p: Sponsor[]) => Sponsor[])) => void;
+    companyDetails: CompanyDetails; setCompanyDetails: (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => Promise<void>;
+    creatorDetails: CreatorDetails & { apiSetupGuide: ApiGuideStep[] }; setCreatorDetails: (d: (CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) | ((p: CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) => CreatorDetails & { apiSetupGuide: ApiGuideStep[] })) => Promise<void>;
+    socialLinks: SocialLink[]; setSocialLinks: (d: SocialLink[] | ((p: SocialLink[]) => SocialLink[])) => void;
+    carouselMedia: CarouselMedia[]; setCarouselMedia: (d: CarouselMedia[] | ((p: CarouselMedia[]) => CarouselMedia[])) => void;
+    vouchers: Voucher[]; setVouchers: (d: Voucher[] | ((p: Voucher[]) => Voucher[])) => void;
+    inventory: InventoryItem[]; setInventory: (d: InventoryItem[] | ((p: InventoryItem[]) => InventoryItem[])) => void;
+    suppliers: Supplier[]; setSuppliers: (d: Supplier[] | ((p: Supplier[]) => Supplier[])) => void;
+    transactions: Transaction[]; setTransactions: (d: Transaction[] | ((p: Transaction[]) => Transaction[])) => void;
+    locations: Location[]; setLocations: (d: Location[] | ((p: Location[]) => Location[])) => void;
+    raffles: Raffle[]; setRaffles: (d: Raffle[] | ((p: Raffle[]) => Raffle[])) => void;
+    signups: Signup[]; setSignups: (d: Signup[] | ((p: Signup[]) => Signup[])) => void;
+    apiSetupGuide: ApiGuideStep[]; setApiSetupGuide: (d: ApiGuideStep[] | ((p: ApiGuideStep[]) => ApiGuideStep[])) => void;
+    sessions: Session[]; setSessions: React.Dispatch<React.SetStateAction<Session[]>>;
+    activityLog: ActivityLog[]; setActivityLog: React.Dispatch<React.SetStateAction<ActivityLog[]>>;
+    logActivity: (action: string, details?: Record<string, any>) => Promise<void>;
+
+    // CRUD functions
+    setDoc: (collectionName: string, docId: string, data: object) => Promise<void>;
+    updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
+    addDoc: <T extends {}>(collectionName: string, data: T) => Promise<string>;
+    deleteDoc: (collectionName: string, docId: string) => Promise<void>;
+    
+    deleteAllData: () => Promise<void>;
+    deleteAllPlayers: () => Promise<void>;
+    restoreFromBackup: (backupData: any) => Promise<void>;
+    seedInitialData: () => Promise<void>;
+    seedCollection: (collectionName: SeedableCollection) => Promise<void>;
+    loading: boolean;
+    isSeeding: boolean;
+}
+// --- END OF TYPE DEFINITION ---
+
+
+export const DataContext = createContext<DataContextType | null>(null);
+
+export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    // Protected collections (require auth)
+    const [players, setPlayers, loadingPlayers] = useCollection<Player>('players', MOCK_DATA_MAP.players, [], { isProtected: true });
+    const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', MOCK_DATA_MAP.events, [], { isProtected: true });
+    const [ranks, setRanks, loadingRanks] = useCollection<Rank>('ranks', MOCK_DATA_MAP.ranks, [], { isProtected: true });
+    const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', MOCK_DATA_MAP.badges, [], { isProtected: true });
+    const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', MOCK_DATA_MAP.legendaryBadges, [], { isProtected: true });
+    const [gamificationSettings, setGamificationSettings, loadingGamification] = useCollection<GamificationRule>('gamificationSettings', MOCK_DATA_MAP.gamificationSettings, [], { isProtected: true });
+    const [sponsors, setSponsors, loadingSponsors] = useCollection<Sponsor>('sponsors', MOCK_DATA_MAP.sponsors, [], { isProtected: true });
+    const [vouchers, setVouchers, loadingVouchers] = useCollection<Voucher>('vouchers', MOCK_DATA_MAP.vouchers, [], { isProtected: true });
+    const [inventory, setInventory, loadingInventory] = useCollection<InventoryItem>('inventory', MOCK_DATA_MAP.inventory, [], { isProtected: true });
+    const [suppliers, setSuppliers, loadingSuppliers] = useCollection<Supplier>('suppliers', MOCK_DATA_MAP.suppliers, [], { isProtected: true });
+    const [transactions, setTransactions, loadingTransactions] = useCollection<Transaction>('transactions', MOCK_DATA_MAP.transactions, [], { isProtected: true });
+    const [locations, setLocations, loadingLocations] = useCollection<Location>('locations', MOCK_DATA_MAP.locations, [], { isProtected: true });
+    const [raffles, setRaffles, loadingRaffles] = useCollection<Raffle>('raffles', MOCK_DATA_MAP.raffles, [], { isProtected: true });
+    const [signups, setSignups, loadingSignups] = useCollection<Signup>('signups', MOCK_DATA_MAP.signups, [], { isProtected: true });
+    const [sessions, setSessions, loadingSessions] = useCollection<Session>('sessions', [], [], { isProtected: true });
+    const [activityLog, setActivityLog, loadingActivityLog] = useCollection<ActivityLog>('activityLog', [], [], { isProtected: true });
+
+    // --- Deconstructed Settings Documents ---
+    // Company Details
+    // FIX: Use correctly exported mock constants
+    const [companyCore, updateCompanyCore, loadingCompanyCore] = useDocument('settings', 'companyDetails', mock.MOCK_COMPANY_CORE);
+    const [brandingDetails, updateBrandingDetails, loadingBranding] = useDocument('settings', 'brandingDetails', mock.MOCK_BRANDING_DETAILS);
+    const [contentDetails, updateContentDetails, loadingContent] = useDocument('settings', 'contentDetails', mock.MOCK_CONTENT_DETAILS);
+    // Creator Details
+    const [creatorCore, updateCreatorCore, loadingCreatorCore] = useDocument<CreatorDetails>('settings', 'creatorDetails', mock.MOCK_CREATOR_CORE);
+    const [apiSetupGuide, setApiSetupGuide, loadingApiGuide] = useCollection<ApiGuideStep>('apiSetupGuide', MOCK_DATA_MAP.apiSetupGuide, [], { isProtected: true });
+
+    // --- Public collections ---
+    const [socialLinks, setSocialLinks, loadingSocialLinks] = useCollection<SocialLink>('socialLinks', MOCK_DATA_MAP.socialLinks);
+    const [carouselMedia, setCarouselMedia, loadingCarouselMedia] = useCollection<CarouselMedia>('carouselMedia', MOCK_DATA_MAP.carouselMedia);
+    
     const [isSeeding, setIsSeeding] = useState(false);
     const auth = useContext(AuthContext);
 
-    const setCompanyDetails = useCallback(async (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => {
-        await updateCompanyDetails(d);
-    }, [updateCompanyDetails]);
+    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia || loadingSignups || loadingCompanyCore || loadingBranding || loadingContent || loadingCreatorCore || loadingApiGuide || loadingSessions || loadingActivityLog;
     
-    const setCreatorDetails = useCallback(async (d: (CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) | ((p: CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) => CreatorDetails & { apiSetupGuide: ApiGuideStep[] })) => {
-        await updateCreatorDetails(d);
-    }, [updateCreatorDetails]);
+    // --- Composite Objects for consumption by components ---
+    const companyDetails = useMemo(() => ({
+        ...companyCore,
+        ...brandingDetails,
+        ...contentDetails
+    }), [companyCore, brandingDetails, contentDetails]) as CompanyDetails;
 
-    // Derived State
-    const apiSetupGuide = useMemo(() => creatorDetails.apiSetupGuide || [], [creatorDetails.apiSetupGuide]);
-    const setApiSetupGuide = useCallback((newGuide: ApiGuideStep[] | ((p: ApiGuideStep[]) => ApiGuideStep[])) => {
-        setCreatorDetails(prev => ({ ...prev, apiSetupGuide: typeof newGuide === 'function' ? newGuide(prev.apiSetupGuide) : newGuide }));
-    }, [setCreatorDetails]);
+    const creatorDetails = useMemo(() => ({
+        ...creatorCore,
+        id: 'creatorDetails', // ensure id is present
+        apiSetupGuide: [...apiSetupGuide].sort((a,b) => a.id.localeCompare(b.id))
+    }), [creatorCore, apiSetupGuide]) as CreatorDetails & { apiSetupGuide: ApiGuideStep[] };
 
-    const loading = [
-        playersLoading, eventsLoading, ranksLoading, badgesLoading, legendaryBadgesLoading,
-        gamificationLoading, sponsorsLoading, socialLinksLoading, carouselMediaLoading,
-        vouchersLoading, inventoryLoading, suppliersLoading, transactionsLoading,
-        locationsLoading, rafflesLoading, signupsLoading, companyDetailsLoading,
-        creatorDetailsLoading, sessionsLoading, activityLogLoading
-    ].some(Boolean);
+    // --- Composite Setters ---
+    const setCompanyDetails = async (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => {
+        const finalData = typeof d === 'function' ? d(companyDetails) : d;
+        
+        // FIX: Use correctly exported mock constants for keys
+        const coreData: Partial<typeof mock.MOCK_COMPANY_CORE> = {};
+        const brandingData: Partial<typeof mock.MOCK_BRANDING_DETAILS> = {};
+        const contentData: Partial<typeof mock.MOCK_CONTENT_DETAILS> = {};
 
-    // Generic CRUD functions
+        for (const key in finalData) {
+            if (key in mock.MOCK_COMPANY_CORE) (coreData as any)[key] = (finalData as any)[key];
+            else if (key in mock.MOCK_BRANDING_DETAILS) (brandingData as any)[key] = (finalData as any)[key];
+            else if (key in mock.MOCK_CONTENT_DETAILS) (contentData as any)[key] = (finalData as any)[key];
+        }
+
+        const updates: Promise<any>[] = [];
+        if (JSON.stringify(coreData) !== JSON.stringify(companyCore)) updates.push(updateCompanyCore(coreData));
+        if (JSON.stringify(brandingData) !== JSON.stringify(brandingDetails)) updates.push(updateBrandingDetails(brandingData));
+        if (JSON.stringify(contentData) !== JSON.stringify(contentDetails)) updates.push(updateContentDetails(contentData));
+        
+        await Promise.all(updates);
+    };
+
+    const setCreatorDetails = async (d: (CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) | ((p: CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) => CreatorDetails & { apiSetupGuide: ApiGuideStep[] })) => {
+        const finalData = typeof d === 'function' ? d(creatorDetails) : d;
+        const { apiSetupGuide: newGuide, ...coreData } = finalData;
+
+        const updates: Promise<any>[] = [];
+
+        // Update core document if changed
+        if (JSON.stringify(coreData) !== JSON.stringify(creatorCore)) {
+            updates.push(updateCreatorCore(coreData));
+        }
+
+        // Diff and update apiSetupGuide collection
+        const oldGuideMap = new Map(apiSetupGuide.map(step => [step.id, step]));
+        const newGuideMap = new Map(newGuide.map(step => [step.id, step]));
+
+        for (const step of newGuide) {
+            if (!oldGuideMap.has(step.id)) { // New step
+                const { id, ...data } = step;
+                updates.push(setDoc('apiSetupGuide', step.id, data));
+            } else if (JSON.stringify(step) !== JSON.stringify(oldGuideMap.get(step.id))) { // Updated step
+                updates.push(updateDoc('apiSetupGuide', step));
+            }
+        }
+        for (const oldStep of apiSetupGuide) {
+            if (!newGuideMap.has(oldStep.id)) { // Deleted step
+                updates.push(deleteDoc('apiSetupGuide', oldStep.id));
+            }
+        }
+        
+        await Promise.all(updates);
+    };
+
+
+    const collectionSetters = {
+        players: setPlayers,
+        events: setEvents,
+        ranks: setRanks,
+        badges: setBadges,
+        legendaryBadges: setLegendaryBadges,
+        gamificationSettings: setGamificationSettings,
+        sponsors: setSponsors,
+        socialLinks: setSocialLinks,
+        carouselMedia: setCarouselMedia,
+        vouchers: setVouchers,
+        inventory: setInventory,
+        suppliers: setSuppliers,
+        transactions: setTransactions,
+        locations: setLocations,
+        raffles: setRaffles,
+        signups: setSignups,
+        apiSetupGuide: setApiSetupGuide,
+        sessions: setSessions,
+        activityLog: setActivityLog,
+    };
+    type CollectionName = keyof typeof collectionSetters;
+
+    // --- GENERIC CRUD FUNCTIONS ---
+    const setDoc = async (collectionName: string, docId: string, data: object) => {
+        if (IS_LIVE_DATA) {
+            await db.collection(collectionName).doc(docId).set(data, { merge: true });
+        } else {
+            const setter = collectionSetters[collectionName as CollectionName];
+            if (setter) {
+                // @ts-ignore
+                setter(prev => {
+                    const existing = prev.find(item => item.id === docId);
+                    if (existing) {
+                        return prev.map(item => item.id === docId ? { ...item, ...data } : item);
+                    } else {
+                        return [...prev, { id: docId, ...data }];
+                    }
+                });
+            }
+        }
+    };
+
     const addDoc = async <T extends {}>(collectionName: string, data: T): Promise<string> => {
         if (IS_LIVE_DATA) {
-            const docRef = await db!.collection(collectionName).add(data);
+            const docRef = await db.collection(collectionName).add(data);
             return docRef.id;
         } else {
-            console.log(`(MOCK) ADDED to ${collectionName}:`, data);
-            const newId = `mock_${Date.now()}`;
-            return newId;
+            const id = `mock_${collectionName}_${Date.now()}`;
+            const setter = collectionSetters[collectionName as CollectionName];
+            if (setter) {
+                // @ts-ignore
+                setter(prev => [...prev, { ...data, id }]);
+            }
+            return id;
         }
     };
-    
-    const updateDoc = async <T extends { id: string; }>(collectionName: string, doc: T): Promise<void> => {
+
+    const updateDoc = async <T extends {id: string}>(collectionName: string, doc: T) => {
         if (IS_LIVE_DATA) {
             const { id, ...data } = doc;
-            await db!.collection(collectionName).doc(id).set(data, { merge: true });
+            await db.collection(collectionName).doc(id).set(data, { merge: true });
         } else {
-            console.log(`(MOCK) UPDATED in ${collectionName}:`, doc);
-        }
-    };
-    
-    const deleteDoc = async (collectionName: string, docId: string): Promise<void> => {
-        if (IS_LIVE_DATA) {
-            await db!.collection(collectionName).doc(docId).delete();
-        } else {
-            console.log(`(MOCK) DELETED from ${collectionName}:`, docId);
-        }
-    };
-    
-    const setDoc = async <T extends {}>(collectionName: string, docId: string, data: T): Promise<void> => {
-        if (IS_LIVE_DATA) {
-            await db!.collection(collectionName).doc(docId).set(data);
-        } else {
-            console.log(`(MOCK) SET in ${collectionName} with ID ${docId}:`, data);
+            const setter = collectionSetters[collectionName as CollectionName];
+            if (setter) {
+                // @ts-ignore
+                setter(prev => prev.map(item => item.id === doc.id ? doc : item));
+            }
         }
     };
 
-    const COLLECTIONS_TO_DELETE = [ 'players', 'events', 'signups', 'vouchers', 'inventory', 'suppliers', 'transactions', 'locations', 'raffles', 'sessions', 'activityLog' ];
-    const COLLECTIONS_TO_SEED = [ 'players', 'events', 'ranks', 'badges', 'legendaryBadges', 'gamificationSettings', 'sponsors', 'socialLinks', 'carouselMedia', 'vouchers', 'inventory', 'suppliers', 'transactions', 'locations', 'raffles', 'signups' ];
-    const SETTINGS_DOCS_TO_SEED = { 'settings': ['companyDetails', 'creatorDetails'] };
+    const deleteDoc = async (collectionName: string, docId: string) => {
+        if (IS_LIVE_DATA) {
+            await db.collection(collectionName).doc(docId).delete();
+        } else {
+            const setter = collectionSetters[collectionName as CollectionName];
+            if (setter) {
+                 // @ts-ignore
+                setter(prev => prev.filter(item => item.id !== docId));
+            }
+        }
+    };
 
-    const seedInitialData = useCallback(async () => { /* ... implementation ... */ }, []);
-    const deleteAllData = async () => { /* ... implementation ... */ };
-    const deleteAllPlayers = async () => { /* ... implementation ... */ };
-    const restoreFromBackup = async (backupData: any) => { /* ... implementation ... */ };
-    
     const logActivity = useCallback(async (action: string, details?: Record<string, any>) => {
         if (!auth?.user) return; // Don't log if no user
-        const logEntry: Omit<ActivityLog, 'id' | 'timestamp'> & { timestamp: any } = {
-            // FIX: Cast `firebase` object to `any` to resolve TypeScript error.
-            // The `firebase` object is an empty placeholder when Firebase is disabled, causing a type error.
-            // This change preserves the original logic for server-side timestamps if Firebase is re-enabled in the future.
-            timestamp: USE_FIREBASE && (firebase as any).firestore ? (firebase as any).firestore.FieldValue.serverTimestamp() : new Date().toISOString(),
+
+        const logEntryData: Omit<ActivityLog, 'id' | 'timestamp'> & { timestamp?: any } = {
             userId: auth.user.id,
             userName: auth.user.name,
             userRole: auth.user.role,
             action,
             details: details || {},
         };
-        if (IS_LIVE_DATA) {
-            await addDoc('activityLog', logEntry);
+        
+        if (IS_LIVE_DATA && db) {
+            try {
+                // Firestore will generate timestamp on server
+                await db.collection('activityLog').add({ ...logEntryData, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+            } catch (error) {
+                console.error("Failed to log activity:", error);
+            }
         } else {
-            console.log("Activity Logged:", logEntry);
-            setActivityLog(prev => [...prev, { ...logEntry, id: `log_${Date.now()}`, timestamp: new Date().toISOString() }]);
+            // Mock logging
+            setActivityLog(prev => [...prev, { ...logEntryData, id: `log_${Date.now()}`, timestamp: new Date().toISOString() }]);
         }
     }, [auth?.user, setActivityLog]);
+    
+    // --- END GENERIC CRUD ---
+    const seedCollection = async (collectionName: SeedableCollection) => {
+        if (!IS_LIVE_DATA) return;
+        const dataToSeed = MOCK_DATA_MAP[collectionName];
+        if (!dataToSeed) {
+            console.error(`No mock data found for collection: ${collectionName}`);
+            return;
+        }
 
-    const value: DataContextType = {
-        players, setPlayers, events, setEvents, ranks, setRanks, badges, setBadges, legendaryBadges, setLegendaryBadges,
-        gamificationSettings, setGamificationSettings, sponsors, setSponsors, companyDetails, setCompanyDetails,
-        creatorDetails, setCreatorDetails, socialLinks, setSocialLinks, carouselMedia, setCarouselMedia,
-        vouchers, setVouchers, inventory, setInventory, suppliers, setSuppliers, transactions, setTransactions,
-        locations, setLocations, raffles, setRaffles, signups, setSignups,
-        apiSetupGuide, setApiSetupGuide, sessions, setSessions, activityLog, setActivityLog,
-        loading, isSeeding, seedInitialData, deleteAllData, deleteAllPlayers, restoreFromBackup,
-        logActivity, addDoc, updateDoc, deleteDoc, setDoc,
+        console.log(`Seeding collection: ${collectionName}...`);
+        const batch = db.batch();
+        
+        if (Array.isArray(dataToSeed)) {
+             dataToSeed.forEach((item: any) => {
+                const { id, ...data } = item;
+                batch.set(db.collection(collectionName).doc(id), data);
+            });
+        }
+
+        await batch.commit();
+        console.log(`Successfully seeded ${collectionName}.`);
     };
 
-    return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+    const seedInitialData = async () => {
+        if (!IS_LIVE_DATA) return;
+        setIsSeeding(true);
+        console.log("FRESH DATABASE DETECTED: Seeding all initial data...");
+        try {
+            const batch = db.batch();
+
+            // System Settings & Config
+            mock.MOCK_RANKS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('ranks').doc(id), data); });
+            mock.MOCK_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('badges').doc(id), data); });
+            mock.MOCK_LEGENDARY_BADGES.forEach(item => { const {id, ...data} = item; batch.set(db.collection('legendaryBadges').doc(id), data); });
+            mock.MOCK_GAMIFICATION_SETTINGS.forEach(item => { const {id, ...data} = item; batch.set(db.collection('gamificationSettings').doc(id), data); });
+            mock.MOCK_API_GUIDE.forEach(item => { const {id, ...data} = item; batch.set(db.collection('apiSetupGuide').doc(id), data); });
+            
+            // Deconstructed Settings
+            batch.set(db.collection('settings').doc('companyDetails'), mock.MOCK_COMPANY_CORE);
+            batch.set(db.collection('settings').doc('brandingDetails'), mock.MOCK_BRANDING_DETAILS);
+            batch.set(db.collection('settings').doc('contentDetails'), mock.MOCK_CONTENT_DETAILS);
+            batch.set(db.collection('settings').doc('creatorDetails'), mock.MOCK_CREATOR_CORE);
+            
+            // Admin User
+            // FIX: Correctly use MOCK_ADMIN
+            const { id: adminId, ...adminData } = mock.MOCK_ADMIN;
+            batch.set(db.collection('admins').doc(adminId), adminData);
+
+            // Transactional Data & Subcollections
+            MOCK_DATA_MAP.players.forEach(item => { const {id, ...data} = item; batch.set(db.collection('players').doc(id), data); });
+            MOCK_DATA_MAP.events.forEach(item => { const {id, ...data} = item; batch.set(db.collection('events').doc(id), data); });
+            MOCK_DATA_MAP.signups.forEach(item => { const {id, ...data} = item; batch.set(db.collection('signups').doc(id), data); });
+            MOCK_DATA_MAP.vouchers.forEach(item => { const {id, ...data} = item; batch.set(db.collection('vouchers').doc(id), data); });
+            MOCK_DATA_MAP.inventory.forEach(item => { const {id, ...data} = item; batch.set(db.collection('inventory').doc(id), data); });
+            MOCK_DATA_MAP.suppliers.forEach(item => { const {id, ...data} = item; batch.set(db.collection('suppliers').doc(id), data); });
+            MOCK_DATA_MAP.transactions.forEach(item => { const {id, ...data} = item; batch.set(db.collection('transactions').doc(id), data); });
+            MOCK_DATA_MAP.locations.forEach(item => { const {id, ...data} = item; batch.set(db.collection('locations').doc(id), data); });
+            MOCK_DATA_MAP.raffles.forEach(item => { const {id, ...data} = item; batch.set(db.collection('raffles').doc(id), data); });
+            MOCK_DATA_MAP.sponsors.forEach(item => { const {id, ...data} = item; batch.set(db.collection('sponsors').doc(id), data); });
+            MOCK_DATA_MAP.socialLinks.forEach(item => { const {id, ...data} = item; batch.set(db.collection('socialLinks').doc(id), data); });
+            MOCK_DATA_MAP.carouselMedia.forEach(item => { const {id, ...data} = item; batch.set(db.collection('carouselMedia').doc(id), data); });
+            
+            await batch.commit();
+            console.log('All initial data seeded successfully. Refreshing the page to load new data...');
+            window.location.reload();
+
+        } catch (error) {
+            console.error("Error seeding initial data: ", error);
+            setIsSeeding(false);
+        }
+    };
+    
+     useEffect(() => {
+        const checkAndSeed = async () => {
+            if (IS_LIVE_DATA && !loading) {
+                const settingsCheck = await db.collection('settings').doc('companyDetails').get();
+                if (!settingsCheck.exists) {
+                    await seedInitialData();
+                }
+            }
+        };
+        checkAndSeed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [loading]);
+
+
+    const deleteAllData = async () => {
+        if (!IS_LIVE_DATA) {
+            console.log("Resetting all mock transactional data in memory...");
+            setPlayers(MOCK_DATA_MAP.players);
+            setEvents(MOCK_DATA_MAP.events);
+            setSignups(MOCK_DATA_MAP.signups);
+            setVouchers(MOCK_DATA_MAP.vouchers);
+            setInventory(MOCK_DATA_MAP.inventory);
+            setTransactions(MOCK_DATA_MAP.transactions);
+            setRaffles(MOCK_DATA_MAP.raffles);
+            setSuppliers(MOCK_DATA_MAP.suppliers);
+            setSponsors(MOCK_DATA_MAP.sponsors);
+            setLocations(MOCK_DATA_MAP.locations);
+            setSocialLinks(MOCK_DATA_MAP.socialLinks);
+            setCarouselMedia(MOCK_DATA_MAP.carouselMedia);
+            return;
+        }
+        
+        const collectionsToDelete = ['players', 'events', 'signups', 'vouchers', 'inventory', 'transactions', 'raffles', 'suppliers', 'sponsors', 'locations', 'socialLinks', 'carouselMedia', 'sessions', 'activityLog'];
+        
+        try {
+            console.log("Deleting all transactional data...");
+            for (const collectionName of collectionsToDelete) {
+                const snapshot = await db.collection(collectionName).get();
+                const batch = db.batch();
+                snapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
+                console.log(`Deleted collection: ${collectionName}`);
+            }
+            console.log('All transactional data deleted.');
+        } catch (error) {
+            console.error("Error deleting all data: ", error);
+        }
+    };
+    
+    const deleteAllPlayers = async () => {
+        if (!IS_LIVE_DATA) {
+            console.log("Resetting players mock data in memory...");
+            setPlayers([]);
+            return;
+        }
+        
+        try {
+            console.log("Deleting all players...");
+            const snapshot = await db.collection('players').get();
+            if (snapshot.empty) {
+                console.log("No players to delete.");
+                return;
+            }
+            const batch = db.batch();
+            snapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+            console.log(`All ${snapshot.size} players have been deleted.`);
+        } catch (error) {
+            console.error("Error deleting all players: ", error);
+            throw error;
+        }
+    };
+
+    const restoreFromBackup = async (backupData: any) => {
+        const allCollections = [...Object.keys(MOCK_DATA_MAP), 'companyDetails', 'brandingDetails', 'contentDetails', 'creatorDetails'];
+        
+        if (!IS_LIVE_DATA) {
+            console.log("Restoring from backup for mock data environment...");
+            setPlayers(backupData.players || []);
+            setEvents(backupData.events || []);
+            setRanks(backupData.ranks || []);
+            setBadges(backupData.badges || []);
+            setLegendaryBadges(backupData.legendaryBadges || []);
+            setGamificationSettings(backupData.gamificationSettings || []);
+            setSponsors(backupData.sponsors || []);
+            // Deconstruct company details for mock state
+            const { name, address, phone, email, website, regNumber, vatNumber, apiServerUrl, bankInfo, minimumSignupAge } = backupData.companyDetails || {};
+            updateCompanyCore({ name, address, phone, email, website, regNumber, vatNumber, apiServerUrl, bankInfo, minimumSignupAge });
+            const { logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl, sponsorsBackgroundUrl } = backupData.companyDetails || {};
+            updateBrandingDetails({ logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl, sponsorsBackgroundUrl });
+            const { fixedEventRules, apkUrl } = backupData.companyDetails || {};
+            updateContentDetails({ fixedEventRules, apkUrl });
+
+            const { apiSetupGuide, ...creatorCore } = backupData.creatorDetails || {};
+            updateCreatorCore(creatorCore);
+            setApiSetupGuide(apiSetupGuide || []);
+            
+            setSocialLinks(backupData.socialLinks || []);
+            setCarouselMedia(backupData.carouselMedia || []);
+            setVouchers(backupData.vouchers || []);
+            setInventory(backupData.inventory || []);
+            setSuppliers(backupData.suppliers || []);
+            setTransactions(backupData.transactions || []);
+            setLocations(backupData.locations || []);
+            setRaffles(backupData.raffles || []);
+            setSignups(backupData.signups || []);
+            return;
+        }
+
+        console.log("Starting Firebase restore from backup...");
+       
+        try {
+            console.log("Wiping existing data...");
+            for (const collectionName of allCollections) {
+                 if (collectionName.includes('Details')) continue; // Skip single docs here
+                const snapshot = await db.collection(collectionName).get();
+                if (snapshot.empty) continue;
+                const batch = db.batch();
+                snapshot.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+                console.log(`- Wiped collection: ${collectionName}`);
+            }
+
+            console.log("Writing new data from backup...");
+            const writeBatch = db.batch();
+            
+            for (const collectionName of allCollections) {
+                const data = backupData[collectionName];
+                if (data && Array.isArray(data)) {
+                    console.log(`- Restoring ${data.length} documents to ${collectionName}...`);
+                    data.forEach((item: any) => {
+                        const { id, ...itemData } = item;
+                        const docRef = db.collection(collectionName).doc(id);
+                        writeBatch.set(docRef, itemData);
+                    });
+                }
+            }
+
+            // Handle deconstructed settings
+            const { apiSetupGuide, ...creatorCoreData } = backupData.creatorDetails || {};
+            const { name, address, phone, email, website, regNumber, vatNumber, apiServerUrl, bankInfo, minimumSignupAge, logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl, sponsorsBackgroundUrl, fixedEventRules, apkUrl } = backupData.companyDetails || {};
+            
+            writeBatch.set(db.collection('settings').doc('companyDetails'), { name, address, phone, email, website, regNumber, vatNumber, apiServerUrl, bankInfo, minimumSignupAge });
+            writeBatch.set(db.collection('settings').doc('brandingDetails'), { logoUrl, loginBackgroundUrl, loginAudioUrl, playerDashboardBackgroundUrl, adminDashboardBackgroundUrl, playerDashboardAudioUrl, adminDashboardAudioUrl, sponsorsBackgroundUrl });
+            writeBatch.set(db.collection('settings').doc('contentDetails'), { fixedEventRules, apkUrl });
+            writeBatch.set(db.collection('settings').doc('creatorDetails'), creatorCoreData);
+
+
+            await writeBatch.commit();
+            console.log("Restore complete. The page will now reload.");
+            
+            window.location.reload();
+
+        } catch (error) {
+            console.error("A critical error occurred during the restore process:", error);
+            throw new Error("Restore failed. Please check the console for details.");
+        }
+    };
+
+
+    const value: DataContextType = {
+        players, setPlayers,
+        events, setEvents,
+        ranks, setRanks,
+        badges, setBadges,
+        legendaryBadges, setLegendaryBadges,
+        gamificationSettings, setGamificationSettings,
+        sponsors, setSponsors,
+        companyDetails, setCompanyDetails,
+        creatorDetails, setCreatorDetails,
+        socialLinks, setSocialLinks,
+        carouselMedia, setCarouselMedia,
+        vouchers, setVouchers,
+        inventory, setInventory,
+        suppliers, setSuppliers,
+        transactions, setTransactions,
+        locations, setLocations,
+        raffles, setRaffles,
+        signups, setSignups,
+        apiSetupGuide, setApiSetupGuide,
+        sessions, setSessions,
+        activityLog, setActivityLog,
+        logActivity,
+        
+        setDoc,
+        updateDoc,
+        addDoc,
+        deleteDoc,
+
+        deleteAllData,
+        deleteAllPlayers,
+        restoreFromBackup,
+        seedInitialData,
+        seedCollection,
+        loading,
+        isSeeding,
+    };
+
+    return (
+        <DataContext.Provider value={value}>
+            {children}
+        </DataContext.Provider>
+    );
 };

@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 import { InfoTooltip } from './InfoTooltip';
 
@@ -13,19 +11,11 @@ export const Input: React.FC<InputProps> = ({ label, className = '', tooltip, ic
   const baseClasses = "w-full bg-zinc-900 border border-zinc-700 rounded-lg py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-300";
   const withIconClasses = icon ? "pl-10 pr-4" : "px-4";
 
-  const { onChange, type, value } = props;
+  const { onChange, type } = props;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (type === 'tel') {
-      const numericValue = e.target.value.replace(/\D/g, ''); // Remove all non-digits
-      if (numericValue.length > 0 && numericValue.startsWith('0')) {
-        e.target.value = '+27' + numericValue.substring(1);
-      } else if (numericValue.length > 0 && !numericValue.startsWith('+27')) {
-        // If it's a numeric string but doesn't start with 0 or +27, assume it needs a prefix.
-        // This is a more aggressive auto-format, might need user feedback.
-        // For now, only apply if starts with 0.
-        // e.target.value = '+27' + numericValue;
-      }
+    if (type === 'tel' && e.target.value.startsWith('0')) {
+      e.target.value = '+27' + e.target.value.substring(1);
     }
     if (onChange) {
       onChange(e);

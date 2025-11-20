@@ -1,8 +1,5 @@
-
-
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-// FIX: Changed RaffleTicket to RaffleTicketDoc as it is the correct exported type.
 import type { Player, GameEvent, Tier, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicketDoc, LegendaryBadge, Prize, Signup, CarouselMedia, Rank, Admin } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
@@ -25,7 +22,6 @@ import { Leaderboard } from './Leaderboard';
 import { SettingsTab } from './SettingsTab';
 import { ApiSetupTab } from './ApiSetupTab';
 import { AboutTab } from './AboutTab';
-// FIX: Corrected DataContext and DataContextType import paths.
 import { DataContext, DataContextType } from '../data/DataContext';
 import { AuthContext } from '../auth/AuthContext';
 import { SendCredentialsModal } from './SendCredentialsModal';

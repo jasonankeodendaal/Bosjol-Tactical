@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useContext } from 'react';
 import type { Sponsor } from '../types';
 import { DashboardCard } from './DashboardCard';
@@ -20,7 +19,6 @@ interface SponsorsTabProps {
 }
 
 const SponsorEditorModal: React.FC<{ sponsor: Partial<Sponsor>, onClose: () => void, onSave: (s: Sponsor | Omit<Sponsor, 'id'>) => void }> = ({ sponsor, onClose, onSave }) => {
-    // FIX: Use useContext to correctly access DataContext.
     const dataContext = useContext(DataContext);
     const [formData, setFormData] = useState({
         name: sponsor.name || '',
@@ -62,7 +60,6 @@ const SponsorEditorModal: React.FC<{ sponsor: Partial<Sponsor>, onClose: () => v
                     onUrlSet={(url) => setFormData(f => ({ ...f, logoUrl: url }))}
                     onRemove={() => setFormData(f => ({ ...f, logoUrl: '' }))}
                     accept="image/*"
-                    apiServerUrl={dataContext?.companyDetails?.apiServerUrl}
                 />
                  <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1.5">Sponsor Bio</label>
@@ -92,7 +89,6 @@ const SponsorEditorModal: React.FC<{ sponsor: Partial<Sponsor>, onClose: () => v
                             onUrlSet={handleAddImage}
                             onRemove={() => {}} // Not used in 'add' mode
                             accept="image/*"
-                            apiServerUrl={dataContext?.companyDetails?.apiServerUrl}
                         />
                     </div>
                 </div>

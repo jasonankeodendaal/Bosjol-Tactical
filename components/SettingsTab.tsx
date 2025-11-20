@@ -3,7 +3,7 @@ import type { CompanyDetails, SocialLink, CarouselMedia, Admin } from '../types'
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
-import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, KeyIcon, InformationCircleIcon, CloudArrowDownIcon, UploadCloudIcon, UserCircleIcon } from './icons/Icons';
+import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, KeyIcon, InformationCircleIcon, CloudArrowDownIcon, UploadCloudIcon, UserCircleIcon, CircleStackIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
@@ -38,6 +38,29 @@ const formatBytes = (bytes: number, decimals = 2) => {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
+
+const QuotaStat: React.FC<{ limit: string, label: string, colorClass: string }> = ({ limit, label, colorClass }) => (
+    <div className="text-center">
+        <p className={`text-4xl font-bold ${colorClass}`}>{limit}</p>
+        <p className="text-sm text-gray-400">{label}</p>
+    </div>
+);
+
+const FirestoreQuotaCard: React.FC = () => (
+    <DashboardCard title="Firestore Daily Quotas (Spark Plan)" icon={<CircleStackIcon className="w-6 h-6" />}>
+        <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <QuotaStat limit="50,000" label="Document Reads" colorClass="text-blue-400" />
+                <QuotaStat limit="20,000" label="Document Writes" colorClass="text-amber-400" />
+                <QuotaStat limit="20,000" label="Document Deletes" colorClass="text-red-400" />
+            </div>
+            <p className="text-center text-xs text-amber-300 bg-amber-900/20 border border-amber-700/50 p-3 rounded-md mt-6">
+                <ExclamationTriangleIcon className="inline w-4 h-4 mr-1"/>
+                **Real-time quota tracking is not available client-side.** These are static daily free limits for the Firebase Spark plan. Exceeding these will result in a <code className="bg-zinc-800 px-1 rounded">'resource-exhausted'</code> error. For live usage, check the Firebase Console. Quotas reset daily around midnight Pacific Time.
+            </p>
+        </div>
+    </DashboardCard>
+);
 
 const StorageStatusGuide: React.FC = () => (
     <DashboardCard title="Storage Status Guide" icon={<InformationCircleIcon className="w-6 h-6" />}>
@@ -223,7 +246,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         const backupData = {
             players: dataContext.players,
             events: dataContext.events,
-            rankTiers: dataContext.rankTiers,
+            ranks: dataContext.ranks, // Changed from rankTiers
             badges: dataContext.badges,
             legendaryBadges: dataContext.legendaryBadges,
             gamificationSettings: dataContext.gamificationSettings,
@@ -536,6 +559,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </DashboardCard>
 
             <StorageStatusGuide />
+
+            <FirestoreQuotaCard /> {/* Added the Firestore Quota Card here */}
 
             <DashboardCard title="Backup & Restore" icon={<CogIcon className="w-6 h-6" />}>
                 <div className="p-6 space-y-6">

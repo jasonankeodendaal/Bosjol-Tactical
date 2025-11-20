@@ -140,6 +140,24 @@ const QuotaStat: React.FC<{ limit: string, label: string, colorClass: string }> 
     </div>
 );
 
+// New component for Firestore Quota Card
+const FirestoreQuotaCard: React.FC = () => (
+    <DashboardCard title="Firestore Daily Quotas (Spark Plan)" icon={<CircleStackIcon className="w-6 h-6" />}>
+        <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <QuotaStat limit="50,000" label="Document Reads" colorClass="text-blue-400" />
+                <QuotaStat limit="20,000" label="Document Writes" colorClass="text-amber-400" />
+                <QuotaStat limit="20,000" label="Document Deletes" colorClass="text-red-400" />
+            </div>
+            <p className="text-center text-xs text-amber-300 bg-amber-900/20 border border-amber-700/50 p-3 rounded-md mt-6">
+                <ExclamationTriangleIcon className="inline w-4 h-4 mr-1"/>
+                **Real-time quota tracking is not available client-side.** These are static daily free limits for the Firebase Spark plan. Exceeding these will result in a <code className="bg-zinc-800 px-1 rounded">'resource-exhausted'</code> error. For live usage, check the Firebase Console. Quotas reset daily around midnight Pacific Time.
+            </p>
+        </div>
+    </DashboardCard>
+);
+
+
 export const ObservabilityTab: React.FC = () => {
     const dataContext = useContext(DataContext as React.Context<DataContextType>);
     const { sessions, activityLog, transactions } = dataContext;
@@ -226,18 +244,7 @@ export const ObservabilityTab: React.FC = () => {
                 <LineGraph title="Server Functions" total={0} data={serverFunctionData} color="#a78bfa" unit="invocations" />
             </div>
 
-             <DashboardCard title="Firestore Daily Quotas (Spark Plan)" icon={<CircleStackIcon className="w-6 h-6" />}>
-                <div className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                        <QuotaStat limit="50,000" label="Document Reads" colorClass="text-blue-400" />
-                        <QuotaStat limit="20,000" label="Document Writes" colorClass="text-amber-400" />
-                        <QuotaStat limit="20,000" label="Document Deletes" colorClass="text-red-400" />
-                    </div>
-                    <p className="text-center text-xs text-gray-500 mt-6">
-                        These are the daily free limits for the Firebase Spark plan. Exceeding these will result in a <code className="bg-zinc-800 px-1 rounded">'resource-exhausted'</code> error, temporarily disabling database operations. Quotas reset daily around midnight Pacific Time.
-                    </p>
-                </div>
-            </DashboardCard>
+             <FirestoreQuotaCard />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1 space-y-6">

@@ -4,6 +4,7 @@ import React, { useContext, useState, useEffect, useRef, useCallback } from 'rea
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
 import { Button } from './components/Button';
+// FIX: Changed RankTier to Rank and SubRank to Tier to align with type definitions.
 import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails, Tier, Badge, Signup, Rank, XpAdjustment } from './types';
 import { XIcon, KeyIcon, ShieldCheckIcon, TrophyIcon } from './components/icons/Icons';
 import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
@@ -623,18 +624,6 @@ const AppContent: React.FC = () => {
             console.error("Audio Element Error:", e);
             if (audio.error) {
                 console.error(`Audio error code ${audio.error.code}: ${audio.error.message}`);
-            }
-        };
-
-        const playAudio = async () => {
-            try {
-                if (audio.src) { // Only play if there's a source
-                    await audio.play();
-                }
-            } catch (err) {
-                // This error is common if the user hasn't interacted with the page yet.
-                // It will be attempted again on user interaction in handleEnterFrontPage.
-                console.warn("Audio play was prevented by the browser:", err);
             }
         };
 

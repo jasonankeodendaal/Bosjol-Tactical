@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+// FIX: Changed RaffleTicket to RaffleTicketDoc as it is the correct exported type.
 import type { Player, GameEvent, Tier, GamificationSettings, Badge, Sponsor, CompanyDetails, PaymentStatus, EventAttendee, Voucher, MatchRecord, EventStatus, EventType, InventoryItem, Supplier, Transaction, Location, SocialLink, GamificationRule, PlayerStats, Raffle, RaffleTicketDoc, LegendaryBadge, Prize, Signup, CarouselMedia, Rank, Admin } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';

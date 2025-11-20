@@ -13,14 +13,14 @@ export const MOCK_BADGES: Badge[] = [
 export const MOCK_LEGENDARY_BADGES: LegendaryBadge[] = [
     { id: 'leg01', name: 'Medal of Valor', description: 'Awarded for exceptional bravery and selflessness in a critical situation.', iconUrl: 'https://img.icons8.com/color/96/laurel-wreath.png', howToObtain: 'Manually awarded by an admin for acts of exceptional bravery.' },
     { id: 'leg02', name: 'Tactical Genius', description: 'Recognizes an operator who devised and executed a game-changing strategy.', iconUrl: 'https://img.icons8.com/color/96/brain-3.png', howToObtain: 'Manually awarded by an admin for brilliant strategic plays.' },
-    { id: 'leg03', name: 'Last Man Standing', description: 'For an operator who single-handedly clutched a victory against overwhelming odds.', iconUrl: 'https://img.icons8.com/fluency/96/shield.png', howToObtain: 'Be the last surviving member of your team and win the round.' },
+    { id: 'leg03', name: 'Last Man Standing', description: 'For an operator who single-handedly clutched a victory against overwhelming odds.', iconUrl: 'https://i.ibb.co/fluency/96/shield.png', howToObtain: 'Be the last surviving member of your team and win the round.' },
 ];
 
 export const UNRANKED_TIER: Tier = { 
     id: 'subrank_unranked',
     name: 'Unranked',
     minXp: 0, 
-    iconUrl: 'https://img.icons8.com/ios-filled/100/737373/shield.png',
+    iconUrl: 'https://i.ibb.co/ios-filled/100/737373/shield.png',
     perks: ["Base operator status"],
 };
 
@@ -29,74 +29,74 @@ export const MOCK_RANKS: Rank[] = [
     id: "rank_rookie",
     name: "Rookie",
     description: "Introductory rank for new operators learning the ropes.",
-    rankBadgeUrl: "https://img.icons8.com/external-flatart-icons-outline-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-outline-flatarticons.png",
+    rankBadgeUrl: "https://i.ibb.co/external-flatart-icons-outline-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-outline-flatarticons.png",
     tiers: [
-      { id: "r_i", name: "Rookie I", minXp: 0, perks: ["Basic Calling Card"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
-      { id: "r_ii", name: "Rookie II", minXp: 201, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
-      { id: "r_iii", name: "Rookie III", minXp: 401, perks: ["Custom Banner"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
-      { id: "r_iv", name: "Rookie IV", minXp: 601, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" },
-      { id: "r_v", name: "Rookie V", minXp: 801, perks: ["Credits Reward"], iconUrl: "https://img.icons8.com/sf-regular-filled/48/military-insignia.png" }
+      { id: "r_i", name: "Rookie I", minXp: 0, perks: ["Basic Calling Card"], iconUrl: "https://i.ibb.co/sf-regular-filled/48/military-insignia.png" },
+      { id: "r_ii", name: "Rookie II", minXp: 201, perks: ["Weapon XP Card"], iconUrl: "https://i.ibb.co/sf-regular-filled/48/military-insignia.png" },
+      { id: "r_iii", name: "Rookie III", minXp: 401, perks: ["Custom Banner"], iconUrl: "https://i.ibb.co/sf-regular-filled/48/military-insignia.png" },
+      { id: "r_iv", name: "Rookie IV", minXp: 601, perks: ["Weapon XP Card"], iconUrl: "https://i.ibb.co/sf-regular-filled/48/military-insignia.png" },
+      { id: "r_v", name: "Rookie V", minXp: 801, perks: ["Credits Reward"], iconUrl: "https://i.ibb.co/sf-regular-filled/48/military-insignia.png" }
     ]
   },
   {
     id: "rank_vet",
     name: "Veteran",
     description: "For established players who have proven their skills in the field.",
-    rankBadgeUrl: "https://img.icons8.com/external-flatart-icons-flat-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-flat-flatarticons.png",
+    rankBadgeUrl: "https://i.ibb.co/external-flatart-icons-flat-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-flat-flatarticons.png",
     tiers: [
-      { id: "v_i", name: "Veteran I", minXp: 1001, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
-      { id: "v_ii", name: "Veteran II", minXp: 1201, perks: ["Custom Banner"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
-      { id: "v_iii", name: "Veteran III", minXp: 1401, perks: ["Credits Reward"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
-      { id: "v_iv", name: "Veteran IV", minXp: 1601, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
-      { id: "v_v", name: "Veteran V", minXp: 1801, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" }
+      { id: "v_i", name: "Veteran I", minXp: 1001, perks: ["Weapon XP Card"], iconUrl: "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
+      { id: "v_ii", name: "Veteran II", minXp: 1201, perks: ["Custom Banner"], iconUrl: "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
+      { id: "v_iii", name: "Veteran III", minXp: 1401, perks: ["Credits Reward"], iconUrl: "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
+      { id: "v_iv", name: "Veteran IV", minXp: 1601, perks: ["Weapon XP Card"], iconUrl: "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" },
+      { id: "v_v", name: "Veteran V", minXp: 1801, perks: ["Exclusive Skin"], iconUrl: "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png" }
     ]
   },
   {
     id: "rank_elite",
     name: "Elite",
     description: "Recognizing mid-tier competitive players with advanced tactical abilities.",
-    rankBadgeUrl: "https://img.icons8.com/external-flatart-icons-lineal-color-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-lineal-color-flatarticons.png",
+    rankBadgeUrl: "https://i.ibb.co/external-flatart-icons-lineal-color-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-lineal-color-flatarticons.png",
     tiers: [
-      { id: "e_i", name: "Elite I", minXp: 2001, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
-      { id: "e_ii", name: "Elite II", minXp: 2201, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
-      { id: "e_iii", name: "Elite III", minXp: 2401, perks: ["Custom Calling Card"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
-      { id: "e_iv", name: "Elite IV", minXp: 2601, perks: ["Credits Reward"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
-      { id: "e_v", name: "Elite V", minXp: 2801, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" }
+      { id: "e_i", name: "Elite I", minXp: 2001, perks: ["Weapon XP Card"], iconUrl: "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
+      { id: "e_ii", name: "Elite II", minXp: 2201, perks: ["Exclusive Skin"], iconUrl: "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
+      { id: "e_iii", name: "Elite III", minXp: 2401, perks: ["Custom Calling Card"], iconUrl: "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
+      { id: "e_iv", name: "Elite IV", minXp: 2601, perks: ["Credits Reward"], iconUrl: "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" },
+      { id: "e_v", name: "Elite V", minXp: 2801, perks: ["Exclusive Skin"], iconUrl: "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-Rank-military-smashingstocks-glyph-smashing-stocks-3.png" }
     ]
   },
   {
     id: "rank_pro",
     name: "Pro",
     description: "Top-tier players who demonstrate professional-level skill.",
-    rankBadgeUrl: "https://img.icons8.com/external-flatart-icons-solid-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-solid-flatarticons.png",
+    rankBadgeUrl: "https://i.ibb.co/external-flatart-icons-solid-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-solid-flatarticons.png",
     tiers: [
-      { id: "p_i", name: "Pro I", minXp: 3001, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/external-photo3ideastudio-solid-photo3ideastudio/64/external-rank-military-photo3ideastudio-solid-photo3ideastudio.png" },
-      { id: "p_ii", name: "Pro II", minXp: 3201, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/external-photo3ideastudio-solid-photo3ideastudio/64/external-rank-military-photo3ideastudio-solid-photo3ideastudio.png" },
-      { id: "p_iii", name: "Pro III", minXp: 3401, perks: ["Custom Calling Card"], iconUrl: "https://img.icons8.com/external-photo3ideastudio-solid-photo3ideastudio/64/external-rank-military-photo3ideastudio-solid-photo3ideastudio.png" },
-      { id: "p_iv", name: "Pro IV", minXp: 3601, perks: ["Credits Reward"], iconUrl: "https://img.icons8.com/external-photo3ideastudio-solid-photo3ideastudio/64/external-rank-military-photo3ideastudio-solid-photo3ideastudio.png" },
-      { id: "p_v", name: "Pro V", minXp: 3801, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/external-photo3ideastudio-solid-photo3ideastudio/64/external-rank-military-photo3ideastudio-solid-photo3ideastudio.png" }
+      { id: "p_i", name: "Pro I", minXp: 3001, perks: ["Weapon XP Card"], iconUrl: "https://i.ibb.co/external-photo3ideastudio-solid-photo3ideastudio/64/external-rank-military-photo3ideastudio-solid-photo3ideastudio.png" },
+      { id: "p_ii", name: "Pro II", minXp: 3201, perks: ["Exclusive Skin"], iconUrl: "https://i.ibb.co/external-photo3ideastudio-solid-photo3ideastudio/64/external-rank-military-photo3ideastudio-solid-photo3ideastudio.png" },
+      { id: "p_iii", name: "Pro III", minXp: 3401, perks: ["Custom Calling Card"], iconUrl: "https://i.ibb.co/external-photo3ideastudio-solid-photo3ideastudio/64/external-rank-military-photo3ideastudio-solid-photo3ideastudio.png" },
+      { id: "p_iv", name: "Pro IV", minXp: 3601, perks: ["Credits Reward"], iconUrl: "https://i.ibb.co/external-photo3ideastudio-solid-photo3ideastudio/64/external-rank-military-photo3ideastudio-solid-photo3ideastudio.png" },
+      { id: "p_v", name: "Pro V", minXp: 3801, perks: ["Exclusive Skin"], iconUrl: "https://i.ibb.co/external-photo3ideastudio-solid-photo3ideastudio/64/external-rank-military-photo3ideastudio-solid-photo3ideastudio.png" }
     ]
   },
   {
     id: "rank_master",
     name: "Master",
     description: "Among the best in the league, showing consistent high-level performance.",
-    rankBadgeUrl: "https://img.icons8.com/color/96/military-medal-1.png",
+    rankBadgeUrl: "https://i.ibb.co/color/96/military-medal-1.png",
     tiers: [
-      { id: "m_i", name: "Master I", minXp: 4001, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/fluency/48/insignia-1.png" },
-      { id: "m_ii", name: "Master II", minXp: 4201, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/fluency/48/insignia-1.png" },
-      { id: "m_iii", name: "Master III", minXp: 4401, perks: ["Custom Calling Card"], iconUrl: "https://img.icons8.com/fluency/48/insignia-1.png" },
-      { id: "m_iv", name: "Master IV", minXp: 4601, perks: ["Credits Reward"], iconUrl: "https://img.icons8.com/fluency/48/insignia-1.png" },
-      { id: "m_v", name: "Master V", minXp: 4801, perks: ["Exclusive Skin"], iconUrl: "https://img.icons8.com/fluency/48/insignia-1.png" }
+      { id: "m_i", name: "Master I", minXp: 4001, perks: ["Weapon XP Card"], iconUrl: "https://i.ibb.co/fluency/48/insignia-1.png" },
+      { id: "m_ii", name: "Master II", minXp: 4201, perks: ["Exclusive Skin"], iconUrl: "https://i.ibb.co/fluency/48/insignia-1.png" },
+      { id: "m_iii", name: "Master III", minXp: 4401, perks: ["Custom Calling Card"], iconUrl: "https://i.ibb.co/fluency/48/insignia-1.png" },
+      { id: "m_iv", name: "Master IV", minXp: 4601, perks: ["Credits Reward"], iconUrl: "https://i.ibb.co/fluency/48/insignia-1.png" },
+      { id: "m_v", name: "Master V", minXp: 4801, perks: ["Exclusive Skin"], iconUrl: "https://i.ibb.co/fluency/48/insignia-1.png" }
     ]
   },
   {
     id: "rank_legend",
     name: "Legendary",
     description: "The pinnacle of tactical operators. Legendary status is the highest honor.",
-    rankBadgeUrl: "https://img.icons8.com/color/96/insignia-2.png",
+    rankBadgeUrl: "https://i.ibb.co/color/96/insignia-2.png",
     tiers: [
-      { id: "l_i", name: "Legendary", minXp: 5001, perks: ["Prestige Calling Card", "Credits Reward", "Legendary Skin"], iconUrl: "https://img.icons8.com/fluency/48/insignia-2.png" }
+      { id: "l_i", name: "Legendary", minXp: 5001, perks: ["Prestige Calling Card", "Credits Reward", "Legendary Skin"], iconUrl: "https://i.ibb.co/fluency/48/insignia-2.png" }
     ]
   }
 ];
@@ -315,9 +315,9 @@ export const MOCK_SPONSORS: Sponsor[] = [
 ];
 
 export const MOCK_SOCIAL_LINKS: SocialLink[] = [
-    { id: 'soc01', name: 'Facebook', url: 'https://facebook.com', iconUrl: 'https://img.icons8.com/fluent/48/000000/facebook-new.png' },
-    { id: 'soc02', name: 'Instagram', url: 'https://instagram.com', iconUrl: 'https://img.icons8.com/fluent/48/000000/instagram-new.png' },
-    { id: 'soc03', name: 'WhatsApp', url: 'https://wa.me/27821234567', iconUrl: 'https://img.icons8.com/color/48/000000/whatsapp.png' },
+    { id: 'soc01', name: 'Facebook', url: 'https://facebook.com', iconUrl: 'https://i.ibb.co/fluent/48/000000/facebook-new.png' },
+    { id: 'soc02', name: 'Instagram', url: 'https://instagram.com', iconUrl: 'https://i.ibb.co/fluent/48/000000/instagram-new.png' },
+    { id: 'soc03', name: 'WhatsApp', url: 'https://wa.me/27821234567', iconUrl: 'https://i.ibb.co/color/48/000000/whatsapp.png' },
 ];
 
 export const MOCK_CAROUSEL_MEDIA: CarouselMedia[] = [

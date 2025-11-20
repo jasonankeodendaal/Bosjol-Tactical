@@ -1,6 +1,5 @@
 
 
-import { IconProps } from "@phosphor-icons/react";
 import type { Dispatch, SetStateAction } from 'react';
 
 export type Role = 'player' | 'admin' | 'creator';

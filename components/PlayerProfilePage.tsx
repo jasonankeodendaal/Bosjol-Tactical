@@ -129,7 +129,10 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
         if (!dataToSave.avatarUrl) {
             dataToSave.avatarUrl = `https://api.dicebear.com/8.x/bottts/svg?seed=${dataToSave.name}${dataToSave.surname}`;
         }
-        onUpdatePlayer(dataToSave);
+        // Strip composed data that doesn't exist on the main Firestore document
+        // to prevent security rule violations on update.
+        const { matchHistory, xpAdjustments, ...playerCoreData } = dataToSave;
+        onUpdatePlayer(playerCoreData as Player);
         setIsEditing(false);
     };
 

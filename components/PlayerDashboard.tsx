@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // FIX: Changed RankTier and SubRank to Rank and Tier respectively.
@@ -1021,12 +1020,19 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
     const dataContext = useContext(DataContext);
     const companyDetails = dataContext?.companyDetails;
 
+    useEffect(() => {
+        setFormData(player);
+    }, [player]);
+
     const handleSave = () => {
         let dataToSave = { ...formData };
         if (!dataToSave.avatarUrl) {
             dataToSave.avatarUrl = `https://api.dicebear.com/8.x/bottts/svg?seed=${dataToSave.name}${dataToSave.surname}`;
         }
-        onPlayerUpdate(dataToSave);
+        // Strip composed data that doesn't exist on the main Firestore document
+        // to prevent security rule violations on update.
+        const { matchHistory, xpAdjustments, ...playerCoreData } = dataToSave;
+        onPlayerUpdate(playerCoreData as Player);
         alert("Profile updated!");
     };
     

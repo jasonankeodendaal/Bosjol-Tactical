@@ -1,4 +1,3 @@
-
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, AuthProvider } from './auth/AuthContext';
@@ -277,6 +276,12 @@ const AppContent: React.FC = () => {
     if (!data) throw new Error("DataContext not found.");
     
     const { isAuthenticated, user, login, logout, helpTopic, setHelpTopic } = auth;
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            setShowFrontPage(false);
+        }
+    }, [isAuthenticated]);
     
     const { 
         players,
@@ -681,7 +686,7 @@ const AppContent: React.FC = () => {
         if (!user || user.role !== 'player') return;
 
         const signupId = `${eventId}_${user.id}`;
-        const existingSignup = signups.find(s => s.eventId === signupId); // FIX: Compare eventId with signup.eventId, not signupId
+        const existingSignup = signups.find(s => s.eventId === eventId && s.playerId === user.id);
         const event = events.find(e => e.id === eventId);
 
         if (existingSignup) {
@@ -770,7 +775,7 @@ const AppContent: React.FC = () => {
                         animate={{ opacity: 1 }}
                         className="flex-grow flex flex-col relative isolate"
                     >
-                        <DashboardBackground url={user?.role === 'admin' ? companyDetails.adminDashboardBackgroundUrl : companyDetails.playerDashboardBackgroundUrl} />
+                        <DashboardBackground url={user?.role === 'admin' || user?.role === 'creator' ? companyDetails.adminDashboardBackgroundUrl : companyDetails.playerDashboardBackgroundUrl} />
                         <div className="flex-grow bg-black/50 backdrop-blur-sm">
                             {user?.role === 'player' && currentPlayer && (
                                 <PlayerDashboard

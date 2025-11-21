@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, ReactNode, useEffect, useContext } from 'react';
 import type { User, AuthContextType, Player, Admin, CreatorDetails } from '../types';
 import { MOCK_PLAYERS, MOCK_ADMIN } from '../constants';
@@ -26,9 +25,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setLoading(false);
             return;
         }
-
-        // On initial mount, sign out any existing user to enforce re-login on every app load/refresh.
-        auth.signOut();
 
         const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: firebase.User | null) => {
             // This listener now primarily handles logins that happen *during* the session,

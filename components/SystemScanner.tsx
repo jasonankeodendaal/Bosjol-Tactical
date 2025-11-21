@@ -183,7 +183,7 @@ const getTierForXp = (xp: number, ranks: Rank[]): Tier => {
 export const SystemScanner: React.FC = () => {
     const dataContext = useContext(DataContext as React.Context<DataContextType>);
     const [activeTab, setActiveTab] = useState<PowerhouseTab>('status');
-    const [results, setResults] = useState<Record<string, CheckResult[]>>({});
+    
     const [errorLog, setErrorLog] = useState<ErrorLogEntry[]>([]);
     const [isScanning, setIsScanning] = useState(false);
     const [scanProgress, setScanProgress] = useState(0);
@@ -333,12 +333,32 @@ export const SystemScanner: React.FC = () => {
 
     }, [dataContext]);
 
+    const initializeResults = useCallback(() => {
+        const initial: Record<string, CheckResult[]> = {};
+        ALL_CHECKS().forEach(check => {
+            if (!initial[check.category]) {
+                initial[check.category] = [];
+            }
+            initial[check.category].push({
+                name: check.name,
+                description: check.description,
+                status: 'pending',
+                detail: 'Not yet run.',
+                fixable: !!check.fixFn,
+            });
+        });
+        return initial;
+    }, [ALL_CHECKS]);
+
+    const [results, setResults] = useState<Record<string, CheckResult[]>>(initializeResults);
+
     const runChecks = useCallback(async (categoryToRun?: string, checkNameToRun?: string) => {
         setIsScanning(true);
         setScanProgress(0);
         if (!categoryToRun && !checkNameToRun) {
             setErrorLog([]);
-            setResults({});
+            setResults(initializeResults());
+            await new Promise(resolve => setTimeout(resolve, 100)); // Allow state to update before proceeding
         }
         
         const allChecks = ALL_CHECKS();
@@ -382,7 +402,7 @@ export const SystemScanner: React.FC = () => {
         }
         setErrorLog([...newErrorLog].sort((a, b) => (a.status === 'fail' ? -1 : 1) - (b.status === 'fail' ? -1 : 1)));
         setIsScanning(false);
-    }, [ALL_CHECKS, dataContext, errorLog]);
+    }, [ALL_CHECKS, dataContext, errorLog, initializeResults]);
     
     const handleFix = useCallback(async (checkName: string) => {
         const check = ALL_CHECKS().find(c => c.name === checkName);
@@ -392,17 +412,17 @@ export const SystemScanner: React.FC = () => {
         }
     }, [ALL_CHECKS, dataContext, runChecks]);
 
-    useEffect(() => { runChecks(); }, []); // Run on mount
-
     const { healthScore, errorCount, warningCount, noticeCount } = useMemo(() => {
         const allResults = Object.values(results).flat() as CheckResult[];
         if (allResults.length === 0) return { healthScore: 100, errorCount: 0, warningCount: 0, noticeCount: 0 };
 
-        const counts = { fail: 0, warn: 0, info: 0, pass: 0 };
+        const counts = { fail: 0, warn: 0, info: 0, pass: 0, pending: 0, running: 0 };
         allResults.forEach(r => { if(counts.hasOwnProperty(r.status)) counts[r.status as keyof typeof counts]++; });
         
-        const totalChecks = allResults.length;
-        const score = totalChecks > 0 ? ((totalChecks - (counts.fail * 2) - counts.warn) / totalChecks) * 100 : 100;
+        const totalChecks = allResults.length - counts.pending - counts.running;
+        if (totalChecks === 0) return { healthScore: 100, errorCount: 0, warningCount: 0, noticeCount: 0 };
+        
+        const score = ((totalChecks - (counts.fail * 2) - counts.warn) / totalChecks) * 100;
 
         return { healthScore: Math.max(0, Math.round(score)), errorCount: counts.fail, warningCount: counts.warn, noticeCount: counts.info };
     }, [results]);
@@ -412,7 +432,11 @@ export const SystemScanner: React.FC = () => {
         if (categoryResults.length === 0) return { score: 100, hasFails: false, fails: 0, warns: 0 };
         const fails = categoryResults.filter(r => r.status === 'fail').length;
         const warns = categoryResults.filter(r => r.status === 'warn').length;
-        const score = categoryResults.length > 0 ? ((categoryResults.length - (fails * 2) - warns) / categoryResults.length) * 100 : 100;
+        const totalScanned = categoryResults.filter(r => r.status !== 'pending' && r.status !== 'running').length;
+
+        if (totalScanned === 0) return { score: 100, hasFails: false, fails: 0, warns: 0 };
+        
+        const score = ((totalScanned - (fails * 2) - warns) / totalScanned) * 100;
         return { score: Math.max(0, Math.round(score)), hasFails: fails > 0, fails, warns };
     };
 
@@ -436,7 +460,7 @@ export const SystemScanner: React.FC = () => {
                     <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
                         {activeTab === 'status' && (
                             <div className="space-y-6">
-                                <Button onClick={() => runChecks()} disabled={isScanning} className="w-full sm:w-auto"><ArrowPathIcon className={`w-5 h-5 mr-2 ${isScanning ? 'animate-spin' : ''}`}/>Scan All</Button>
+                                <Button onClick={() => runChecks()} disabled={isScanning} className="w-full sm:w-auto"><ArrowPathIcon className={`w-5 h-5 mr-2 ${isScanning ? 'animate-spin' : ''}`}/>Scan All Systems</Button>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
                                     <div className="lg:col-span-3 bg-zinc-900/50 p-4 rounded-lg flex flex-col items-center justify-center"><h3 className="font-semibold text-gray-300 mb-2 text-center">Site Health</h3><div className="relative"><CircularProgress percentage={healthScore} colorClass={healthScore > 90 ? 'text-green-500' : healthScore > 60 ? 'text-yellow-500' : 'text-red-500'} /><div className="absolute inset-0 flex flex-col items-center justify-center"><span className="text-4xl font-bold text-white">{healthScore}%</span></div></div></div>
                                     <div className="lg:col-span-9 grid grid-cols-1 sm:grid-cols-3 gap-6">

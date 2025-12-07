@@ -49,13 +49,6 @@ const TipBox: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     </div>
 );
 
-const WarningBox: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="bg-amber-900/20 border border-amber-800/50 p-3 rounded-md flex gap-3 text-sm text-amber-200 my-3">
-        <ExclamationTriangleIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
-        <div>{children}</div>
-    </div>
-);
-
 const StepCard: React.FC<{ number: number, title: string, children: React.ReactNode }> = ({ number, title, children }) => {
     return (
         <motion.div
@@ -88,8 +81,8 @@ export const ApiSetupTab: React.FC<ApiSetupTabProps> = ({ creatorDetails }) => {
                     <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 p-6 rounded-xl border border-zinc-800">
                         <h3 className="text-xl font-bold text-white mb-3">The Mission</h3>
                         <p className="text-gray-400 mb-4">
-                            You are about to take your local dashboard and launch it onto the live web. 
-                            We will use <strong>Supabase</strong> for our powerful backend database and <strong>Vercel</strong> to host the application worldwide.
+                            You are about to launch your dashboard to the live web. 
+                            We will use <strong>Supabase</strong> for our backend database and <strong>Vercel</strong> to host the application.
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                             <div className="bg-black/40 p-3 rounded border border-zinc-800">
@@ -156,7 +149,7 @@ git push -u origin main`}
                                 <ul className="list-disc list-inside ml-6 mt-1 text-sm space-y-1 text-gray-400">
                                     <li>Copy the <strong>Project URL</strong>.</li>
                                     <li>Copy the <strong>anon public</strong> Key.</li>
-                                    <li><span className="text-red-400 font-bold">Keep these tab open. You will need them for Step 4.</span></li>
+                                    <li><span className="text-red-400 font-bold">Keep this tab open. You will need them for Step 4.</span></li>
                                 </ul>
                             </li>
                         </ol>
@@ -273,12 +266,6 @@ grant all privileges on all tables in schema public to postgres, anon, authentic
                                         <span className="text-xs text-gray-500 font-mono">VALUE</span>
                                         <span className="text-xs text-green-400 font-mono break-all">Paste your Supabase 'anon public' Key here</span>
                                     </div>
-                                    <div className="bg-black/50 p-2 rounded border border-zinc-800 flex flex-col gap-1">
-                                        <span className="text-xs text-gray-500 font-mono">NAME</span>
-                                        <span className="text-sm font-bold text-white font-mono">VITE_USE_FIREBASE</span>
-                                        <span className="text-xs text-gray-500 font-mono">VALUE</span>
-                                        <span className="text-sm text-blue-400 font-mono">false</span>
-                                    </div>
                                 </div>
                             </li>
                             <li>Click <strong>Deploy</strong>.</li>
@@ -317,7 +304,8 @@ grant all privileges on all tables in schema public to postgres, anon, authentic
                             <div>
                                 <h4 className="font-bold text-white text-sm">How to Log In (Admin):</h4>
                                 <p className="text-gray-400 text-sm">
-                                    Use the default credentials (if using the mock data logic) or create a new user in the Supabase Authentication tab manually if you want a custom email/password immediately.
+                                    Use the default credentials: <code>bosjoltactical@gmail.com</code> / <code>admin123</code>.
+                                    <br/>Since this is a fresh database, the app will auto-seed this admin user on first load.
                                 </p>
                             </div>
                             <div>

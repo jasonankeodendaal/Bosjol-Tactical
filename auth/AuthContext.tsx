@@ -65,14 +65,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const handleSupabaseUser = async (sbUser: any) => {
         const email = sbUser.email?.toLowerCase();
-        if (email === ADMIN_EMAIL) {
-            const { data } = await supabase!.from('admins').select('*').eq('email', email).single();
-            if (data) setUser({ ...data, id: data.id } as Admin);
-            else setUser({ ...MOCK_ADMIN, id: 'admin_fallback', email }); // Fallback
-        } else if (email === CREATOR_EMAIL) {
+        
+        if (email === CREATOR_EMAIL) {
             const { data } = await supabase!.from('settings').select('*').eq('id', 'creatorDetails').single();
             if (data) setUser({ ...data, id: 'creator', role: 'creator' } as any);
             else setUser({ id: 'creator', name: 'Creator', role: 'creator' });
+            return;
+        }
+
+        // Check specific hardcoded admin (legacy/default logic)
+        if (email === ADMIN_EMAIL) {
+            const { data } = await supabase!.from('admins').select('*').eq('email', email).single();
+            if (data) {
+                setUser({ ...data, id: data.id } as Admin);
+            } else {
+                // Fallback: If auth matched but DB record missing (e.g. freshly seeded DB race condition), use Mock/Default
+                setUser({ ...MOCK_ADMIN, id: 'admin_fallback', email }); 
+                // Ensure it exists for next time
+                const { id: adminId, ...adminData } = MOCK_ADMIN;
+                await supabase!.from('admins').upsert({ id: adminId, ...adminData });
+            }
+            return;
+        }
+
+        // Generic Admin Check: Look for ANY record in the admins table with this email
+        const { data: adminDoc } = await supabase!.from('admins').select('*').eq('email', email).single();
+        if (adminDoc) {
+            setUser({ ...adminDoc, id: adminDoc.id } as Admin);
+        } else {
+            // User is authenticated in Supabase but has no role in our app tables.
+            // This prevents access.
+            console.warn(`User ${email} authenticated but found no matching Admin or Creator record.`);
+            // Optionally, sign them out if they aren't allowed
+            // await supabase!.auth.signOut();
         }
     };
 
@@ -124,6 +149,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.error("Login Error:", error);
             return false;
         } finally {
+            // Only stop loading if login failed immediately (sync return). 
+            // If async auth success, listener handles loading state.
             if (!user) setLoading(false);
         }
     };

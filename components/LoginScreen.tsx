@@ -132,8 +132,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
             </Button>
         </form>
 
+        <div className="mt-4 text-xs text-gray-500 space-y-1">
+            <p><span className="text-red-400 font-bold">PLAYERS:</span> Use your Player Code (e.g. JM01) & PIN</p>
+            <p><span className="text-red-400 font-bold">ADMINS:</span> Use your Email & Password</p>
+        </div>
+
         {companyDetails.apkUrl && (
-          <div className="mt-4">
+          <div className="mt-6 pt-4 border-t border-zinc-700/50">
             <a 
               href={companyDetails.apkUrl} 
               download="BosjolTactical.apk"
@@ -148,7 +153,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
         )}
 
          {socialLinks.length > 0 && (
-            <div className="mt-8 pt-6 border-t border-zinc-700/50">
+            <div className="mt-6 pt-6 border-t border-zinc-700/50">
                 <div className="flex items-center justify-center gap-6">
                     {socialLinks.map(link => (
                          <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:scale-110 transition-transform">

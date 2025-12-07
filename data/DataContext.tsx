@@ -528,8 +528,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             await seedCollection('socialLinks');
             await seedCollection('carouselMedia');
             
-            console.log('All initial data seeded successfully. Refreshing page...');
-            window.location.reload();
+            console.log('All initial data seeded successfully.');
+            // Removed reload to prevent login loop. Real-time subscriptions or simple re-fetch should handle data update.
+            setIsSeeding(false);
 
         } catch (error) {
             console.error("Error seeding initial data: ", error);

@@ -31,91 +31,6 @@ const normalizeCompanyDetails = (details: CompanyDetails): CompanyDetails => ({
     bankInfo: details?.bankInfo ?? { bankName: '', accountNumber: '', routingNumber: '' },
 });
 
-const formatBytes = (bytes: number, decimals = 2) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-};
-
-const QuotaStat: React.FC<{ limit: string | number, label: string, colorClass: string, actual?: number }> = ({ limit, label, colorClass, actual }) => {
-    const isOverLimit = typeof limit === 'number' && typeof actual === 'number' && actual > limit;
-    const displayValue = typeof actual === 'number' ? actual.toLocaleString() : 'N/A';
-    const displayLimit = typeof limit === 'number' ? limit.toLocaleString() : limit;
-
-    return (
-        <div className="text-center">
-            <p className={`text-3xl font-bold ${isOverLimit ? 'text-red-500' : colorClass}`}>{displayValue}</p>
-            <p className="text-sm text-gray-400">{label}</p>
-            {typeof limit === 'number' && (
-                <p className="text-xs text-gray-500">Limit: {displayLimit}</p>
-            )}
-        </div>
-    );
-};
-
-const FirestoreQuotaCard: React.FC = () => {
-    const dataContext = useContext(DataContext);
-    if (!dataContext) throw new Error("DataContext is not available.");
-
-    const { firestoreQuota, resetFirestoreQuotaCounters } = dataContext;
-
-    const READ_LIMIT = 50000;
-    const WRITE_LIMIT = 20000;
-    const DELETE_LIMIT = 20000;
-
-    const getProgressPercentage = (actual: number, limit: number) => {
-        if (limit === 0) return actual > 0 ? 100 : 0;
-        return Math.min((actual / limit) * 100, 100);
-    };
-
-    const getProgressBarColor = (actual: number, limit: number) => {
-        const percentage = getProgressPercentage(actual, limit);
-        if (percentage >= 100) return 'bg-red-500';
-        if (percentage >= 75) return 'bg-amber-500';
-        return 'bg-green-500';
-    };
-
-    return (
-        <DashboardCard title="Firestore Daily Quotas (Spark Plan)" icon={<CircleStackIcon className="w-6 h-6" />}>
-            <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                    <div>
-                        <QuotaStat limit={READ_LIMIT} actual={firestoreQuota.reads} label="Document Reads" colorClass="text-blue-400" />
-                        <div className="w-full bg-zinc-700 rounded-full h-2 mt-2">
-                            <div className={`${getProgressBarColor(firestoreQuota.reads, READ_LIMIT)} h-full rounded-full`} style={{ width: `${getProgressPercentage(firestoreQuota.reads, READ_LIMIT)}%` }} />
-                        </div>
-                    </div>
-                    <div>
-                        <QuotaStat limit={WRITE_LIMIT} actual={firestoreQuota.writes} label="Document Writes" colorClass="text-amber-400" />
-                        <div className="w-full bg-zinc-700 rounded-full h-2 mt-2">
-                            <div className={`${getProgressBarColor(firestoreQuota.writes, WRITE_LIMIT)} h-full rounded-full`} style={{ width: `${getProgressPercentage(firestoreQuota.writes, WRITE_LIMIT)}%` }} />
-                        </div>
-                    </div>
-                    <div>
-                        <QuotaStat limit={DELETE_LIMIT} actual={firestoreQuota.deletes} label="Document Deletes" colorClass="text-red-400" />
-                        <div className="w-full bg-zinc-700 rounded-full h-2 mt-2">
-                            <div className={`${getProgressBarColor(firestoreQuota.deletes, DELETE_LIMIT)} h-full rounded-full`} style={{ width: `${getProgressPercentage(firestoreQuota.deletes, DELETE_LIMIT)}%` }} />
-                        </div>
-                    </div>
-                </div>
-                <p className="text-center text-xs text-amber-300 bg-amber-900/20 border border-amber-700/50 p-3 rounded-md mt-6">
-                    <ExclamationTriangleIcon className="inline w-4 h-4 mr-1"/>
-                    **This is an estimate of operations from *this client/browser session only*.** It does not reflect global daily usage across all users or devices. Exceeding these static daily free limits for the Firebase Spark plan will result in a <code className="bg-zinc-800 px-1 rounded">'resource-exhausted'</code> error. For live, accurate usage, check the Firebase Console. Quotas reset daily around midnight Pacific Time.
-                </p>
-                <div className="mt-4 text-center">
-                    <Button onClick={resetFirestoreQuotaCounters} variant="secondary" size="sm">
-                        <ArrowPathIcon className="w-4 h-4 mr-1" />
-                        Reset Session Counters
-                    </Button>
-                </div>
-            </div>
-        </DashboardCard>
-    );
-};
-
 const StorageStatusGuide: React.FC = () => (
     <DashboardCard title="Storage Status Guide" icon={<InformationCircleIcon className="w-6 h-6" />}>
         <div className="p-6 space-y-4">
@@ -124,29 +39,15 @@ const StorageStatusGuide: React.FC = () => (
                 <li className="flex items-start gap-3">
                     <div className="w-3 h-3 rounded-full bg-green-500 mt-1 flex-shrink-0 shadow-[0_0_8px_2px_rgba(34,197,94,0.7)]"></div>
                     <div>
-                        <h4 className="font-semibold text-white">Live Firebase</h4>
-                        <p className="text-xs text-gray-400">The app is successfully connected to the live Firebase database. All data is real-time.</p>
-                    </div>
-                </li>
-                 <li className="flex items-start gap-3">
-                    <div className="w-3 h-3 rounded-full bg-blue-500 mt-1 flex-shrink-0 shadow-[0_0_8px_2px_rgba(59,130,246,0.7)]"></div>
-                    <div>
-                        <h4 className="font-semibold text-white">API Server</h4>
-                        <p className="text-xs text-gray-400">A self-hosted API server is configured and connected, enabling large file uploads (e.g., videos).</p>
+                        <h4 className="font-semibold text-white">Live Supabase</h4>
+                        <p className="text-xs text-gray-400">The app is successfully connected to the Supabase database. All data is real-time.</p>
                     </div>
                 </li>
                 <li className="flex items-start gap-3">
                     <div className="w-3 h-3 rounded-full bg-yellow-500 mt-1 flex-shrink-0 animate-pulse"></div>
                     <div>
                         <h4 className="font-semibold text-white">Mock Data</h4>
-                        <p className="text-xs text-gray-400">Firebase is not configured or has failed to connect. The app is running in an offline mode with sample data. No changes will be saved.</p>
-                    </div>
-                </li>
-                 <li className="flex items-start gap-3">
-                    <div className="w-3 h-3 rounded-full bg-red-500 mt-1 flex-shrink-0 animate-pulse"></div>
-                    <div>
-                        <h4 className="font-semibold text-white">API Error</h4>
-                        <p className="text-xs text-gray-400">An API Server URL is configured, but the app cannot connect to it. Check the URL and ensure the server is running.</p>
+                        <p className="text-xs text-gray-400">Supabase is not configured or has failed to connect. The app is running in an offline mode with sample data.</p>
                     </div>
                 </li>
             </ul>
@@ -532,15 +433,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
             <DashboardCard title="App & Content Settings" icon={<CogIcon className="w-6 h-6" />}>
                 <div className="p-6 space-y-6">
-                    <div className="md:col-span-2">
-                        <Input 
-                            label="API Server URL" 
-                            value={formData.apiServerUrl || ''} 
-                            onChange={e => setFormData(f => ({ ...f, apiServerUrl: e.target.value }))} 
-                            placeholder="http://localhost:3001" 
-                            tooltip="URL of your self-hosted file server. Leave blank to use database storage (500KB limit)." 
-                        />
-                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Input label="Minimum Signup Age" type="number" value={formData.minimumSignupAge} onChange={e => setFormData(f => ({...f, minimumSignupAge: Number(e.target.value)}))} />
                         <UrlOrUploadField
@@ -613,8 +505,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </DashboardCard>
 
             <StorageStatusGuide />
-
-            <FirestoreQuotaCard /> {/* Added the Firestore Quota Card here */}
 
             <DashboardCard title="Backup & Restore" icon={<CogIcon className="w-6 h-6" />}>
                 <div className="p-6 space-y-6">

@@ -352,17 +352,8 @@ const AppContent: React.FC = () => {
             createOrUpdateSession();
             window.addEventListener('beforeunload', handleBeforeUnload);
             
-            const interval = setInterval(() => {
-                if (sessionRef.current.id) {
-                    data.updateDoc('sessions', {
-                        id: sessionRef.current.id,
-                        lastSeen: new Date().toISOString(),
-                    });
-                }
-            }, 120000); // Update lastSeen every 2 minutes
-
+            // The 'beforeunload' listener and the deleteSession on unmount is enough
             return () => {
-                clearInterval(interval);
                 window.removeEventListener('beforeunload', handleBeforeUnload);
                 deleteSession();
             };
@@ -370,9 +361,13 @@ const AppContent: React.FC = () => {
     }, [isAuthenticated, user, data]);
 
     useEffect(() => {
-        // Update current view for session tracking
+        // Update current view AND lastSeen timestamp for session tracking
         if (isAuthenticated && sessionRef.current.id) {
-            data.updateDoc('sessions', { id: sessionRef.current.id, currentView: helpTopic });
+            data.updateDoc('sessions', { 
+                id: sessionRef.current.id, 
+                currentView: helpTopic,
+                lastSeen: new Date().toISOString()
+            });
         }
     }, [helpTopic, isAuthenticated, data]);
 

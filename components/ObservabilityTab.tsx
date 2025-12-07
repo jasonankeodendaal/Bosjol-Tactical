@@ -75,34 +75,41 @@ const PerformanceWidget: React.FC = () => {
                     setVitals(v => ({ ...v, lcp: Math.round(entry.startTime) }));
                 }
                 if (entry.entryType === 'layout-shift') {
-                    setVitals(v => ({ ...v, cls: parseFloat(((v.cls || 0) + (entry as any).value).toFixed(4)) }));
+                     if ('value' in entry) {
+                        setVitals(v => ({ ...v, cls: parseFloat(((v.cls || 0) + (entry as any).value).toFixed(4)) }));
+                    }
                 }
                 if (entry.entryType === 'event') {
                     const duration = entry.duration;
-                    if (duration > (vitals.inp || 0)) {
-                        setVitals(v => ({ ...v, inp: Math.round(duration) }));
-                    }
+                    setVitals(v => (duration > (v.inp || 0) ? { ...v, inp: Math.round(duration) } : v));
                 }
             }
         };
 
-        const bufferedObserver = new PerformanceObserver(handlePerformanceEntry);
-        const eventObserver = new PerformanceObserver(handlePerformanceEntry);
-
+        const observers: PerformanceObserver[] = [];
+        
         try {
-            // Observe buffered types with the buffered flag
-            bufferedObserver.observe({ entryTypes: ['largest-contentful-paint', 'layout-shift'], buffered: true });
-            // Observe 'event' type without the buffered flag, as it's not supported
-            eventObserver.observe({ entryTypes: ['event'] });
+            const lcpObserver = new PerformanceObserver(handlePerformanceEntry);
+            lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
+            observers.push(lcpObserver);
+
+            const clsObserver = new PerformanceObserver(handlePerformanceEntry);
+            clsObserver.observe({ type: 'layout-shift', buffered: true });
+            observers.push(clsObserver);
+            
+            const inpObserver = new PerformanceObserver(handlePerformanceEntry);
+            // FIX: Cast PerformanceObserver observe options to 'any' to resolve TypeScript error about unknown property 'durationThreshold'. This is a workaround for potentially outdated DOM typings in the project configuration.
+            inpObserver.observe({ type: 'event', durationThreshold: 16, buffered: true } as any);
+            observers.push(inpObserver);
+            
         } catch (e) {
-            console.warn("PerformanceObserver not fully supported.", e);
+            console.warn("PerformanceObserver is not fully supported in this browser.", e);
         }
 
         return () => {
-            bufferedObserver.disconnect();
-            eventObserver.disconnect();
+            observers.forEach(obs => obs.disconnect());
         };
-    }, [vitals.inp]);
+    }, []);
 
     return (
         <DashboardCard title="Performance Vitals" icon={<SparklesIcon className="w-6 h-6" />}>

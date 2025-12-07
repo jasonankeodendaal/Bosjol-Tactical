@@ -1,13 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { DashboardCard } from './DashboardCard';
-import { CodeBracketIcon, CloudArrowDownIcon, InformationCircleIcon, CheckCircleIcon, ExclamationTriangleIcon } from './icons/Icons';
+import { CodeBracketIcon, InformationCircleIcon, CheckCircleIcon, ExclamationTriangleIcon, CloudArrowDownIcon } from './icons/Icons';
 import type { CreatorDetails } from '../types';
 import { Button } from './Button';
 
-const CodeBlock: React.FC<{ children: React.ReactNode, language?: string, title?: string }> = ({ children, language = 'bash', title }) => {
-    const [copyStatus, setCopyStatus] = React.useState('Copy');
+const CodeBlock: React.FC<{ children: React.ReactNode, title?: string, language?: string }> = ({ children, title, language = 'bash' }) => {
+    const [copyStatus, setCopyStatus] = useState('Copy');
 
     const handleCopy = () => {
         if (typeof children === 'string') {
@@ -82,218 +82,418 @@ interface ApiSetupTabProps {
 
 export const ApiSetupTab: React.FC<ApiSetupTabProps> = ({ creatorDetails }) => {
     return (
-        <div className="space-y-8 max-w-4xl mx-auto">
-            <DashboardCard title="Hybrid Media Server: The Beginner's Guide" icon={<CodeBracketIcon className="w-6 h-6" />}>
-                <div className="p-6 space-y-8">
-                    <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
-                        <h3 className="text-xl font-bold text-white mb-3">What are we building?</h3>
+        <div className="space-y-6 max-w-4xl mx-auto">
+            <DashboardCard title="Ultimate Server Guide: Zero to Hero" icon={<CodeBracketIcon className="w-6 h-6" />}>
+                <div className="p-6 space-y-8 text-gray-300">
+                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 p-6 rounded-xl border border-zinc-800">
+                        <h3 className="text-xl font-bold text-white mb-3">The Mission</h3>
                         <p className="text-gray-400 mb-4">
-                            The default database has a file size limit of 500KB (about half a photo). 
-                            We are going to set up a "Storage Locker" on a separate server that can hold huge files like 4K images and videos. 
-                            Your main app will talk to this locker to save and retrieve files.
+                            We are going to build a completely private, self-hosted infrastructure for your app. 
+                            Instead of relying on Firebase or other paid services, you will host the Database, File Storage, API, and Frontend yourself on a powerful free server.
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                             <div className="bg-black/40 p-3 rounded border border-zinc-800">
                                 <span className="block font-bold text-green-400 mb-1">Cost</span>
-                                Free (Oracle) or ~$5/mo (DigitalOcean)
+                                $0.00 / Forever
                             </div>
                             <div className="bg-black/40 p-3 rounded border border-zinc-800">
-                                <span className="block font-bold text-blue-400 mb-1">Time</span>
-                                Approx. 15 Minutes
+                                <span className="block font-bold text-blue-400 mb-1">Specs</span>
+                                4 CPUs, 24GB RAM
                             </div>
                             <div className="bg-black/40 p-3 rounded border border-zinc-800">
                                 <span className="block font-bold text-amber-400 mb-1">Difficulty</span>
-                                Beginner (Copy & Paste)
+                                Advanced (Step-by-Step)
                             </div>
                         </div>
                     </div>
 
-                    <StepCard number={1} title="Get a Server & Connect">
-                        <p>1. Purchase a generic <strong>Ubuntu 22.04</strong> VPS (Virtual Private Server). You will receive an <strong>IP Address</strong> and a <strong>Root Password</strong>.</p>
-                        <p>2. Open the terminal program on your computer:</p>
-                        <ul className="list-disc list-inside ml-4 text-zinc-400">
-                            <li><strong>Windows:</strong> Search for "PowerShell" and open it.</li>
-                            <li><strong>Mac:</strong> Search for "Terminal" and open it.</li>
-                        </ul>
-                        <p>3. Type the following command, replacing <code>1.2.3.4</code> with your actual IP address, and press <strong>Enter</strong>:</p>
-                        <CodeBlock>ssh root@1.2.3.4</CodeBlock>
-                        <WarningBox>
-                            If it asks <em>"Are you sure you want to continue connecting?"</em>, type <code>yes</code> and press Enter.
-                        </WarningBox>
-                        <p>4. Enter your password when prompted. <span className="text-red-400 font-bold">Note: The cursor will NOT move while typing the password. This is normal security.</span> Just type it and press Enter.</p>
-                    </StepCard>
-
-                    <StepCard number={2} title="Prepare the Server Software">
-                        <p>We need to install "Node.js", the engine that runs our code. Copy and paste this entire block into your terminal and press Enter.</p>
-                        <TipBox>To paste in PowerShell or Terminal, usually just <strong>Right-Click</strong> anywhere in the window.</TipBox>
-                        <CodeBlock title="Update & Install">
-{`# Update the system list
-apt update && apt upgrade -y
-
-# Install Node.js (Version 18)
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-apt install -y nodejs
-
-# Verify it worked (should show version numbers)
-node -v
-npm -v`}
-                        </CodeBlock>
-                    </StepCard>
-
-                    <StepCard number={3} title="Create the Project Folder">
-                        <p>Now we make a folder to hold our files and install the necessary libraries.</p>
-                        <CodeBlock title="Setup Folder">
-{`# Make the folder and go inside it
-mkdir -p /opt/bosjol-media/uploads
-cd /opt/bosjol-media
-
-# Initialize a blank project
-npm init -y
-
-# Install web server tools
-npm install express cors multer`}
-                        </CodeBlock>
-                    </StepCard>
-
-                    <StepCard number={4} title="Write the Server Code">
-                        <p>We will use a text editor called <code>nano</code> built into the terminal.</p>
-                        <p>1. Type this command to open a new file:</p>
-                        <CodeBlock>nano server.js</CodeBlock>
-                        <p>2. Copy the code block below.</p>
-                        <p>3. <strong>Right-Click</strong> in your terminal to paste it.</p>
-                        
-                        <CodeBlock title="server.js code" language="javascript">
-{`const express = require('express');
-const cors = require('cors');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-
-const app = express();
-const PORT = 3001;
-
-// Allow anyone to access this (modify if you have a specific domain)
-app.use(cors());
-
-// Configure where files are saved
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dir = './uploads';
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir);
-        cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-        // Rename file to avoid spaces and weird characters
-        const cleanName = file.originalname.replace(/\\s+/g, '_').replace(/[^a-zA-Z0-9.\\-_]/g, '');
-        cb(null, \`\${Date.now()}-\${cleanName}\`);
-    }
-});
-
-const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 100 * 1024 * 1024 } // Limit: 100MB per file
-});
-
-// Serve the files back to the internet
-app.use('/files', express.static('uploads'));
-
-// The Upload Endpoint
-app.post('/upload', upload.single('file'), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-    const host = req.get('host');
-    const fileUrl = \`\${protocol}://\${host}/files/\${req.file.filename}\`;
-
-    console.log(\`Uploaded: \${fileUrl}\`);
-    res.json({ url: fileUrl });
-});
-
-app.get('/health', (req, res) => res.send('Media Server Online'));
-
-app.listen(PORT, () => console.log(\`🚀 Running on port \${PORT}\`));`}
-                        </CodeBlock>
-
-                        <WarningBox>
-                            <strong>How to Save & Exit Nano:</strong><br/>
-                            1. Press <code>Ctrl + O</code> (Letter O)<br/>
-                            2. Press <code>Enter</code> (To confirm filename)<br/>
-                            3. Press <code>Ctrl + X</code> (To exit)
-                        </WarningBox>
-                    </StepCard>
-
-                    <StepCard number={5} title="Start the Server Forever">
-                        <p>If we just run the server now, it will stop when you close the terminal. We use a tool called <code>PM2</code> to keep it running forever.</p>
-                        <CodeBlock title="Start PM2">
-{`# Install PM2
-npm install -g pm2
-
-# Start our server
-pm2 start server.js --name "bosjol-media"
-
-# Save the list so it starts on reboot
-pm2 startup
-pm2 save`}
-                        </CodeBlock>
-                        <p className="text-green-400 text-sm mt-2"><CheckCircleIcon className="inline w-4 h-4 mr-1"/> You should see a table with green text saying "online".</p>
-                    </StepCard>
-
-                    <StepCard number={6} title="Connect to the Internet (Securely)">
-                        <p>We will use <strong>Cloudflare Tunnels</strong>. This gives you a secure HTTPS link (like <code>https://media.yourdomain.com</code>) without messing with router ports.</p>
-                        <p className="text-xs text-gray-400 mb-4">Prerequisite: You need a free Cloudflare account and a domain name added to it.</p>
-
-                        <ol className="space-y-4 list-decimal list-inside text-gray-300">
-                            <li>Go to your Cloudflare Dashboard {'>'} <strong>Zero Trust</strong> (on the left sidebar).</li>
-                            <li>Go to <strong>Networks</strong> {'>'} <strong>Tunnels</strong>.</li>
-                            <li>Click <strong>Create a Tunnel</strong>.
-                                <ul className="ml-6 mt-2 space-y-1 text-sm text-gray-400 list-disc">
-                                    <li>Select <strong>Cloudflared</strong>. Click Next.</li>
-                                    <li>Name it <code>media-server</code>. Click Save.</li>
+                    <StepCard number={1} title="Acquire the Hardware (Oracle Cloud)">
+                        <p>We will use Oracle Cloud's "Always Free" tier. It is the only provider generous enough for this stack.</p>
+                        <ol className="list-decimal list-inside space-y-3 ml-2">
+                            <li><strong>Sign Up:</strong> Go to <a href="https://www.oracle.com/cloud/free/" target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline">Oracle Cloud Free Tier</a>. You will need a credit card for identity verification, but you won't be charged.</li>
+                            <li><strong>Create Instance:</strong> Once logged in, click <strong>"Create a VM instance"</strong>.</li>
+                            <li><strong>Image &amp; Shape (Crucial):</strong>
+                                <ul className="list-disc list-inside ml-6 mt-1 text-sm space-y-1 text-gray-400">
+                                    <li>Click "Change Image" &rarr; Select <strong>Canonical Ubuntu 22.04</strong>.</li>
+                                    <li>Click "Change Shape" &rarr; Select <strong>Ampere</strong> (VM.Standard.A1.Flex).</li>
+                                    <li>Set <strong>OCPUs</strong> to <strong>4</strong> and <strong>Memory</strong> to <strong>24 GB</strong>.</li>
                                 </ul>
                             </li>
-                            <li>Under "Install and run a connector":
-                                <ul className="ml-6 mt-2 space-y-1 text-sm text-gray-400 list-disc">
-                                    <li>Choose <strong>Debian</strong> (works for Ubuntu) and <strong>64-bit</strong>.</li>
-                                    <li><strong>Copy</strong> the command block shown in the box.</li>
-                                    <li><strong>Paste</strong> it into your VPS terminal and press Enter.</li>
+                            <li><strong>Networking:</strong> Ensure "Assign a public IPv4 address" is checked.</li>
+                            <li><strong>SSH Keys (DO NOT SKIP):</strong>
+                                <ul className="list-disc list-inside ml-6 mt-1 text-sm space-y-1 text-gray-400">
+                                    <li>Select "Generate a key pair for me".</li>
+                                    <li>Click <strong>SAVE PRIVATE KEY</strong>. This downloads a <code>.key</code> file.</li>
+                                    <li><strong>Keep this file safe.</strong> Without it, you cannot access your server.</li>
                                 </ul>
                             </li>
-                            <li>Wait a moment. The "Connectors" status at the bottom of the Cloudflare page should turn <span className="text-green-400 font-bold">Connected</span>. Click Next.</li>
-                            <li><strong>Route Traffic (The important part):</strong>
-                                <ul className="ml-6 mt-2 space-y-1 text-sm text-gray-400 list-disc">
-                                    <li><strong>Subdomain:</strong> Type <code>media</code> (or whatever you want).</li>
-                                    <li><strong>Domain:</strong> Select your domain.</li>
-                                    <li><strong>Service Type:</strong> <code>HTTP</code></li>
-                                    <li><strong>URL:</strong> <code>localhost:3001</code></li>
-                                </ul>
-                            </li>
-                            <li>Click <strong>Save Tunnel</strong>.</li>
+                            <li>Click <strong>Create</strong>. Wait for the instance to turn Green (Running). copy your <strong>Public IP Address</strong>.</li>
                         </ol>
                     </StepCard>
 
-                    <StepCard number={7} title="Link to Dashboard">
-                        <p>1. Copy your new URL (e.g., <code>https://media.yourdomain.com</code>).</p>
-                        <p>2. Go to the <strong>Settings</strong> tab in this Admin Dashboard.</p>
-                        <p>3. Paste it into the <strong>API Server URL</strong> field.</p>
-                        <p>4. Click <strong>Save All Settings</strong>.</p>
-                        <div className="bg-green-900/20 p-3 rounded border border-green-800 mt-4 flex items-center gap-2 text-green-300 text-sm">
-                            <CheckCircleIcon className="w-5 h-5" />
-                            <span>Success! The status indicator in the footer should now turn blue.</span>
-                        </div>
+                    <StepCard number={2} title="Open the Cloud Firewall">
+                        <p>Oracle has a firewall outside the server that blocks traffic by default. We need to open ports for our app.</p>
+                        <ol className="list-decimal list-inside space-y-2 ml-2">
+                            <li>On your Instance details page, click the link under <strong>"Subnet"</strong>.</li>
+                            <li>Click the link under <strong>"Security Lists"</strong> (usually starts with <code>Default Security List...</code>).</li>
+                            <li>Click <strong>"Add Ingress Rules"</strong>.</li>
+                            <li>Fill in the following:
+                                <ul className="list-disc list-inside ml-6 mt-1 text-sm space-y-1 text-gray-400">
+                                    <li><strong>Source CIDR:</strong> <code>0.0.0.0/0</code></li>
+                                    <li><strong>Destination Port Range:</strong> <code>80, 443, 3001, 9000, 9001</code></li>
+                                </ul>
+                            </li>
+                            <li>Click <strong>"Add Ingress Rules"</strong>.</li>
+                        </ol>
                     </StepCard>
 
-                    <div className="mt-8 pt-8 border-t border-zinc-800">
-                        <h3 className="text-xl font-bold text-red-400 mb-3">Shortcut</h3>
-                        <p className="text-gray-400 mb-4">
-                            Prefer to download the code files instead of creating them manually?
-                        </p>
-                        <a href={creatorDetails.sourceCodeZipUrl} target="_blank" rel="noopener noreferrer">
-                            <Button>
-                                <CloudArrowDownIcon className="w-5 h-5 mr-2" />
-                                Download Server Files (.zip)
-                            </Button>
-                        </a>
+                    <StepCard number={3} title="Connect via Terminal">
+                        <p>Now we log into the server to control it.</p>
+                        
+                        <h4 className="font-bold text-white mt-4">Windows Users:</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2 text-sm text-gray-400">
+                            <li>Find the <code>.key</code> file you downloaded. Move it to a simple folder like <code>C:\Users\YourName\</code>.</li>
+                            <li>Search for "PowerShell" and open it.</li>
+                            <li>Type <code>cd C:\Users\YourName\</code> to go to that folder.</li>
+                            <li>Run the command below (Replace <code>1.2.3.4</code> with your Oracle IP):</li>
+                        </ol>
+
+                        <h4 className="font-bold text-white mt-4">Mac/Linux Users:</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2 text-sm text-gray-400">
+                            <li>Open Terminal.</li>
+                            <li>Navigate to your key folder (e.g., <code>cd ~/Downloads</code>).</li>
+                            <li>Run <code>chmod 400 your-key-name.key</code> to secure the key.</li>
+                            <li>Run the command below:</li>
+                        </ol>
+
+                        <CodeBlock title="SSH Connection Command">
+                            ssh -i your-key-name.key ubuntu@1.2.3.4
+                        </CodeBlock>
+                        <WarningBox>Type <code>yes</code> if asked "Are you sure you want to continue connecting?".</WarningBox>
+                    </StepCard>
+
+                    <StepCard number={4} title="Prepare the Server Environment">
+                        <p>You are now inside the server! We need to switch to the administrator user (root), fix the internal firewall, and install Docker.</p>
+                        <p><strong>Copy and paste this entire block</strong> into your terminal and press Enter:</p>
+                        <CodeBlock title="Setup Script">
+{`# Switch to root user
+sudo -i
+
+# Open internal ports (iptables)
+iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
+iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+iptables -I INPUT 6 -m state --state NEW -p tcp --dport 3001 -j ACCEPT
+iptables -I INPUT 6 -m state --state NEW -p tcp --dport 9000 -j ACCEPT
+iptables -I INPUT 6 -m state --state NEW -p tcp --dport 9001 -j ACCEPT
+netfilter-persistent save
+
+# Update Linux
+apt update && apt upgrade -y
+
+# Install Utilities & Docker
+apt install curl git unzip -y
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh`}
+                        </CodeBlock>
+                    </StepCard>
+
+                    <StepCard number={5} title="Create Project Folders">
+                        <p>We need a place to store our app files. Run this command block:</p>
+                        <CodeBlock title="Create Directories">
+{`mkdir -p /opt/bosjol-tactical/api
+mkdir -p /opt/bosjol-tactical/frontend
+mkdir -p /opt/bosjol-tactical/mongo-data
+mkdir -p /opt/bosjol-tactical/minio-data
+cd /opt/bosjol-tactical`}
+                        </CodeBlock>
+                    </StepCard>
+
+                    <StepCard number={6} title="Setup API: Configuration">
+                        <p>Now we create the files. We will use the <code>nano</code> text editor.</p>
+                        <p>1. Create the package file:</p>
+                        <CodeBlock>nano api/package.json</CodeBlock>
+                        <p>2. Paste this content:</p>
+                        <CodeBlock title="api/package.json" language="json">
+{`{
+  "name": "bosjol-api",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.0.3",
+    "multer": "^1.4.5-lts.1",
+    "minio": "^7.0.32",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3"
+  }
+}`}
+                        </CodeBlock>
+                        <TipBox>
+                            <strong>To Save &amp; Exit Nano:</strong><br/>
+                            1. Press <code>Ctrl + O</code> (Save)<br/>
+                            2. Press <code>Enter</code> (Confirm)<br/>
+                            3. Press <code>Ctrl + X</code> (Exit)
+                        </TipBox>
+                    </StepCard>
+
+                    <StepCard number={7} title="Setup API: The Code">
+                        <p>1. Create the server script:</p>
+                        <CodeBlock>nano api/server.js</CodeBlock>
+                        <p>2. Paste this code:</p>
+                        <CodeBlock title="api/server.js" language="javascript">
+{`const express = require('express');
+const mongoose = require('mongoose');
+const multer = require('multer');
+const Minio = require('minio');
+const cors = require('cors');
+const app = express();
+
+const PORT = 3001;
+const MINIO_BUCKET = 'bosjol-media';
+
+app.use(cors());
+app.use(express.json({ limit: '50mb' }));
+
+// --- DATABASE ---
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ MongoDB Connected'))
+  .catch(err => console.error('❌ MongoDB Connection Error:', err));
+
+const AnySchema = new mongoose.Schema({}, { strict: false });
+const getModel = (collectionName) => mongoose.model(collectionName, AnySchema, collectionName);
+
+// --- STORAGE ---
+const minioClient = new Minio.Client({
+    endPoint: 'minio',
+    port: 9000,
+    useSSL: false,
+    accessKey: process.env.MINIO_ROOT_USER,
+    secretKey: process.env.MINIO_ROOT_PASSWORD
+});
+
+const initMinio = async () => {
+    try {
+        const exists = await minioClient.bucketExists(MINIO_BUCKET);
+        if (!exists) {
+            await minioClient.makeBucket(MINIO_BUCKET, 'us-east-1');
+            const policy = {
+                Version: "2012-10-17",
+                Statement: [{
+                    Effect: "Allow",
+                    Principal: { AWS: ["*"] },
+                    Action: ["s3:GetObject"],
+                    Resource: [\`arn:aws:s3:::\${MINIO_BUCKET}/*\`]
+                }]
+            };
+            await minioClient.setBucketPolicy(MINIO_BUCKET, JSON.stringify(policy));
+            console.log(\`✅ Bucket '\${MINIO_BUCKET}' created.\`);
+        }
+    } catch (err) {
+        console.error('❌ MinIO Init Error:', err);
+    }
+};
+setTimeout(initMinio, 10000);
+
+// --- ROUTES ---
+const upload = multer({ storage: multer.memoryStorage() });
+
+app.post('/upload', upload.single('file'), async (req, res) => {
+    if (!req.file) return res.status(400).send('No file uploaded.');
+    try {
+        const fileName = \`\${Date.now()}-\${req.file.originalname.replace(/\\s/g, '_')}\`;
+        await minioClient.putObject(MINIO_BUCKET, fileName, req.file.buffer, req.file.size, { 
+            'Content-Type': req.file.mimetype 
+        });
+        const fileUrl = \`\${process.env.PUBLIC_MINIO_URL}/\${MINIO_BUCKET}/\${fileName}\`;
+        res.json({ url: fileUrl });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Upload failed' });
+    }
+});
+
+app.get('/health', (req, res) => res.send('Tactical Systems Online'));
+app.listen(PORT, () => console.log(\`🚀 API running on port \${PORT}\`));`}
+                        </CodeBlock>
+                        <p>3. Save and exit (<code>Ctrl+O, Enter, Ctrl+X</code>).</p>
+                    </StepCard>
+
+                    <StepCard number={8} title="Setup API: Dockerfile">
+                        <p>1. Create the Docker instruction file:</p>
+                        <CodeBlock>nano api/Dockerfile</CodeBlock>
+                        <p>2. Paste this:</p>
+                        <CodeBlock title="api/Dockerfile" language="dockerfile">
+{`FROM node:18-alpine
+WORKDIR /app
+COPY package.json .
+RUN npm install
+COPY . .
+EXPOSE 3001
+CMD ["node", "server.js"]`}
+                        </CodeBlock>
+                        <p>3. Save and exit.</p>
+                    </StepCard>
+
+                    <StepCard number={9} title="Setup Web Server (Nginx)">
+                        <p>1. Create the web server config:</p>
+                        <CodeBlock>nano nginx.conf</CodeBlock>
+                        <p>2. Paste this:</p>
+                        <CodeBlock title="nginx.conf" language="nginx">
+{`server {
+    listen 80;
+    client_max_body_size 100M;
+    
+    location / {
+        root /usr/share/nginx/html;
+        index index.html index.htm;
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://api:3001/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}`}
+                        </CodeBlock>
+                        <p>3. Save and exit.</p>
+                    </StepCard>
+
+                    <StepCard number={10} title="Orchestrate Everything (Docker Compose)">
+                        <p>This file tells Docker how to run the Database, Storage, API, and Frontend together.</p>
+                        <p>1. Create the compose file:</p>
+                        <CodeBlock>nano docker-compose.yml</CodeBlock>
+                        <p>2. Paste the code below.</p>
+                        <WarningBox>
+                            <strong>IMPORTANT:</strong> You MUST replace <code>YOUR_ORACLE_IP</code> (e.g., <code>129.154.x.x</code>) in the code below with your actual server IP address.
+                        </WarningBox>
+                        <CodeBlock title="docker-compose.yml" language="yaml">
+{`version: '3.8'
+
+services:
+  mongo:
+    image: mongo:6.0
+    restart: always
+    volumes:
+      - ./mongo-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: FreeSecurePassword123
+
+  minio:
+    image: quay.io/minio/minio
+    command: server /data --console-address ":9001"
+    restart: always
+    volumes:
+      - ./minio-data:/data
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: FreeSecurePassword123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  api:
+    build: ./api
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      MONGO_URI: mongodb://admin:FreeSecurePassword123@mongo:27017/bosjol?authSource=admin
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: FreeSecurePassword123
+      # REPLACE THIS WITH YOUR REAL IP
+      PUBLIC_MINIO_URL: http://YOUR_ORACLE_IP:9000
+    depends_on:
+      - mongo
+      - minio
+
+  frontend:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf`}
+                        </CodeBlock>
+                        <p>3. Save and exit.</p>
+                    </StepCard>
+
+                    <StepCard number={11} title="Upload Your App">
+                        <p><strong>Switch back to your Local Computer (VS Code).</strong></p>
+                        <p>1. Open your local terminal in the project folder.</p>
+                        <p>2. Build the project to create the <code>dist</code> folder:</p>
+                        <CodeBlock>npm run build</CodeBlock>
+                        <p>3. Upload the files to your server. Replace fields as needed:</p>
+                        <CodeBlock title="Upload Command">
+                            scp -i path/to/ssh-key.key -r dist/* ubuntu@YOUR_ORACLE_IP:/opt/bosjol-tactical/frontend
+                        </CodeBlock>
+                        <TipBox>
+                            If you get a "Permission denied" error, it's because the `ubuntu` user doesn't own `/opt`.<br/>
+                            <strong>Workaround:</strong><br/>
+                            1. Upload to home folder: <code>scp -i ... -r dist/* ubuntu@IP:~/frontend_temp</code><br/>
+                            2. SSH into server: <code>ssh -i ... ubuntu@IP</code><br/>
+                            3. Move files as root: <code>sudo cp -r ~/frontend_temp/* /opt/bosjol-tactical/frontend/</code>
+                        </TipBox>
+                    </StepCard>
+
+                    <StepCard number={12} title="Launch the System">
+                        <p><strong>Back on your Server Terminal:</strong></p>
+                        <p>1. Go to the folder:</p>
+                        <CodeBlock>cd /opt/bosjol-tactical</CodeBlock>
+                        <p>2. Start the engine:</p>
+                        <CodeBlock>docker compose up -d --build</CodeBlock>
+                        <p>Docker will download everything and start your services. This might take a few minutes.</p>
+                    </StepCard>
+
+                    <div className="bg-green-900/30 border border-green-700/50 p-6 rounded-xl">
+                        <h3 className="text-xl font-bold text-green-400 mb-4 flex items-center gap-2">
+                            <CheckCircleIcon className="w-6 h-6"/> System Verification
+                        </h3>
+                        <ul className="space-y-3 text-sm text-gray-300">
+                            <li>
+                                <strong>Web App:</strong> Open <code>http://YOUR_ORACLE_IP</code> in your browser. You should see the dashboard!
+                            </li>
+                            <li>
+                                <strong>Storage Console:</strong> Open <code>http://YOUR_ORACLE_IP:9001</code>.<br/>
+                                <span className="text-xs text-gray-500">Login: <code>admin</code> / <code>FreeSecurePassword123</code></span>
+                            </li>
+                            <li>
+                                <strong>API Health:</strong> Open <code>http://YOUR_ORACLE_IP:3001/health</code>. It should say "Tactical Systems Online".
+                            </li>
+                        </ul>
+                        
+                        <div className="mt-6 pt-4 border-t border-green-800/50">
+                            <p className="font-bold text-white">Final Configuration Step:</p>
+                            <p className="text-sm mt-1">
+                                Log in to your new Dashboard as Admin. Go to <strong>Settings</strong>. 
+                                Set <strong>API Server URL</strong> to <code>http://YOUR_ORACLE_IP:3001</code>.
+                                Save.
+                            </p>
+                        </div>
                     </div>
+
+                    {creatorDetails.sourceCodeZipUrl && (
+                        <div className="mt-8 pt-8 border-t border-zinc-800">
+                            <h3 className="text-xl font-bold text-red-400 mb-3">Shortcut</h3>
+                            <p className="text-gray-400 mb-4">
+                                Prefer to download the code files instead of creating them manually?
+                            </p>
+                            <a href={creatorDetails.sourceCodeZipUrl} target="_blank" rel="noopener noreferrer">
+                                <Button>
+                                    <CloudArrowDownIcon className="w-5 h-5 mr-2" />
+                                    Download Server Files (.zip)
+                                </Button>
+                            </a>
+                        </div>
+                    )}
                 </div>
             </DashboardCard>
         </div>

@@ -1,38 +1,31 @@
 
-
 import React, { useState, useEffect } from 'react';
-import { USE_FIREBASE, firebaseInitializationError, firebaseConfig } from '../firebase';
+import { supabase, isSupabaseConfigured } from '../supabaseClient';
 
 interface StorageStatusIndicatorProps {
-    apiServerUrl?: string;
+    apiServerUrl?: string; // Kept for backwards compatibility but not primary
 }
 
 export const StorageStatusIndicator: React.FC<StorageStatusIndicatorProps> = ({ apiServerUrl }) => {
-    const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'error'>('checking');
+    const [supabaseStatus, setSupabaseStatus] = useState<'checking' | 'ok' | 'error'>('checking');
 
     useEffect(() => {
         let isMounted = true;
-        if (apiServerUrl) {
-            setApiStatus('checking');
-            fetch(`${apiServerUrl}/health`)
-                .then(res => {
-                    if (isMounted) setApiStatus(res.ok ? 'ok' : 'error');
-                })
-                .catch(() => {
-                    if (isMounted) setApiStatus('error');
+        if (isSupabaseConfigured() && supabase) {
+            setSupabaseStatus('checking');
+            supabase.from('ranks').select('count', { count: 'exact', head: true })
+                .then(({ error }) => {
+                    if (isMounted) setSupabaseStatus(error ? 'error' : 'ok');
                 });
         }
         return () => { isMounted = false; };
-    }, [apiServerUrl]);
+    }, []);
 
-    const getStatus = (): { mode: 'firebase' | 'mock' | 'api_ok' | 'api_error', isLive: boolean, tooltip: string, label: string | null } => {
-        if (apiServerUrl) {
-            if (apiStatus === 'ok') return { mode: 'api_ok', isLive: true, tooltip: `Live API Server: ${apiServerUrl}`, label: 'API Server' };
-            if (apiStatus === 'error') return { mode: 'api_error', isLive: false, tooltip: `API Server connection failed`, label: 'API Error' };
-            return { mode: 'api_error', isLive: false, tooltip: 'Connecting to API Server...', label: 'API Checking' };
-        }
-        if (USE_FIREBASE && !firebaseInitializationError) {
-            return { mode: 'firebase', isLive: true, tooltip: 'Live Firebase Connection Active', label: firebaseConfig.projectId };
+    const getStatus = (): { mode: 'supabase' | 'mock' | 'error', isLive: boolean, tooltip: string, label: string | null } => {
+        if (isSupabaseConfigured()) {
+            if (supabaseStatus === 'ok') return { mode: 'supabase', isLive: true, tooltip: 'Live Supabase Connection Active', label: 'Supabase' };
+            if (supabaseStatus === 'error') return { mode: 'error', isLive: false, tooltip: 'Supabase connection failed', label: 'Error' };
+            return { mode: 'supabase', isLive: false, tooltip: 'Connecting...', label: 'Checking' };
         }
         return { mode: 'mock', isLive: false, tooltip: 'Running on Local Mock Data', label: 'Mock Data' };
     };
@@ -40,17 +33,15 @@ export const StorageStatusIndicator: React.FC<StorageStatusIndicatorProps> = ({ 
     const { mode, isLive, tooltip, label } = getStatus();
 
     const colorClasses = {
-        firebase: 'bg-green-500',
+        supabase: 'bg-green-500',
         mock: 'bg-yellow-500',
-        api_ok: 'bg-blue-500',
-        api_error: 'bg-red-500',
+        error: 'bg-red-500',
     };
     
     const shadowClasses = {
-        firebase: 'shadow-[0_0_8px_2px_rgba(34,197,94,0.7)]',
+        supabase: 'shadow-[0_0_8px_2px_rgba(34,197,94,0.7)]',
         mock: '',
-        api_ok: 'shadow-[0_0_8px_2px_rgba(59,130,246,0.7)]',
-        api_error: '',
+        error: '',
     };
 
     const animationClass = !isLive ? 'animate-pulse' : '';

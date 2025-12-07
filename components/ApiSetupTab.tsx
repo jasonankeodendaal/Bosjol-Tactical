@@ -113,7 +113,7 @@ export const ApiSetupTab: React.FC<ApiSetupTabProps> = ({ creatorDetails }) => {
                             <li><strong>Create an Account:</strong> If you don't have one, sign up at <a href="https://github.com/" target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline">github.com</a>.</li>
                             <li><strong>Create a Repository:</strong>
                                 <ul className="list-disc list-inside ml-6 mt-1 text-sm space-y-1 text-gray-400">
-                                    <li>Click the <strong>+</strong> icon in the top right -> <strong>New repository</strong>.</li>
+                                    <li>Click the <strong>+</strong> icon in the top right &rarr; <strong>New repository</strong>.</li>
                                     <li>Name it <code>bosjol-tactical</code>.</li>
                                     <li>Choose <strong>Private</strong> (recommended) or Public.</li>
                                     <li>Click <strong>Create repository</strong>.</li>
@@ -152,7 +152,7 @@ git push -u origin main`}
                             </li>
                             <li><strong>Wait for Provisioning:</strong> This usually takes about 2 minutes.</li>
                             <li><strong>Get API Credentials (IMPORTANT):</strong>
-                                <p className="mt-1 text-sm text-gray-400">Once the project is ready, go to <strong>Project Settings</strong> (Cog icon) -> <strong>API</strong>.</p>
+                                <p className="mt-1 text-sm text-gray-400">Once the project is ready, go to <strong>Project Settings</strong> (Cog icon) &rarr; <strong>API</strong>.</p>
                                 <ul className="list-disc list-inside ml-6 mt-1 text-sm space-y-1 text-gray-400">
                                     <li>Copy the <strong>Project URL</strong>.</li>
                                     <li>Copy the <strong>anon public</strong> Key.</li>
@@ -171,7 +171,7 @@ git push -u origin main`}
                             <li><strong>Sign Up:</strong> Go to <a href="https://vercel.com/" target="_blank" rel="noopener noreferrer" className="text-white hover:underline">vercel.com</a> and sign up using <strong>GitHub</strong>.</li>
                             <li><strong>Import Project:</strong>
                                 <ul className="list-disc list-inside ml-6 mt-1 text-sm space-y-1 text-gray-400">
-                                    <li>Click <strong>"Add New..."</strong> -> <strong>"Project"</strong>.</li>
+                                    <li>Click <strong>"Add New..."</strong> &rarr; <strong>"Project"</strong>.</li>
                                     <li>You should see your <code>bosjol-tactical</code> repo listed. Click <strong>Import</strong>.</li>
                                 </ul>
                             </li>
@@ -216,7 +216,7 @@ git push -u origin main`}
                         <ol className="list-decimal list-inside space-y-3 ml-2">
                             <li>Copy your new website URL from the browser address bar (e.g., <code>https://bosjol-tactical.vercel.app</code>).</li>
                             <li>Go back to your <strong>Supabase Dashboard</strong>.</li>
-                            <li>Navigate to <strong>Authentication</strong> (icon on the left) -> <strong>URL Configuration</strong>.</li>
+                            <li>Navigate to <strong>Authentication</strong> (icon on the left) &rarr; <strong>URL Configuration</strong>.</li>
                             <li><strong>Site URL:</strong> Paste your Vercel website link here.</li>
                             <li><strong>Redirect URLs:</strong>
                                 <ul className="list-disc list-inside ml-6 mt-1 text-sm space-y-1 text-gray-400">

@@ -156,16 +156,93 @@ git push -u origin main`}
                                 <ul className="list-disc list-inside ml-6 mt-1 text-sm space-y-1 text-gray-400">
                                     <li>Copy the <strong>Project URL</strong>.</li>
                                     <li>Copy the <strong>anon public</strong> Key.</li>
-                                    <li><span className="text-red-400 font-bold">Keep these tab open. You will need them for Step 3.</span></li>
+                                    <li><span className="text-red-400 font-bold">Keep these tab open. You will need them for Step 4.</span></li>
                                 </ul>
                             </li>
                         </ol>
-                        <WarningBox>
-                            <strong>Auto-Magic Seeding:</strong> You do NOT need to create tables manually. This app has a built-in "Seeder". The first time it connects to your empty Supabase project, it will automatically create all the necessary tables (Players, Events, Ranks, etc.) and populate them with initial data.
-                        </WarningBox>
                     </StepCard>
 
-                    <StepCard number={3} title="The Frontend: Vercel Deployment">
+                    <StepCard number={3} title="Database & Storage Schema (SQL Editor)">
+                        <p>We need to create the tables to store data and the storage bucket for large media files (images/videos). Supabase makes this easy with SQL.</p>
+                        <ol className="list-decimal list-inside space-y-3 ml-2">
+                            <li>In your Supabase Dashboard, click on the <strong>SQL Editor</strong> icon (looks like a terminal `&gt;_`) in the left sidebar.</li>
+                            <li>Click <strong>"New Query"</strong>.</li>
+                            <li><strong>Copy and Paste</strong> the entire script below into the editor.</li>
+                            <li>Click <strong>Run</strong> (bottom right of the editor).</li>
+                        </ol>
+                        <CodeBlock title="SQL Initialization Script" language="sql">
+{`-- 1. Create the 'media' Storage Bucket for large files (Images/Videos)
+insert into storage.buckets (id, name, public) 
+values ('media', 'media', true)
+on conflict (id) do nothing;
+
+-- 2. Create Storage Policies (Allows public read, broad write access for app simplicity)
+create policy "Public Media Access" on storage.objects for select using ( bucket_id = 'media' );
+create policy "Authenticated Media Upload" on storage.objects for insert with check ( bucket_id = 'media' );
+
+-- 3. Create Core Tables
+-- We use text for IDs and JSONB for complex objects to match the app's flexible data structure.
+
+create table if not exists public.admins ( id text primary key, name text, email text, role text, "clearanceLevel" int, "avatarUrl" text );
+
+create table if not exists public.players ( 
+    id text primary key, "playerCode" text, name text, surname text, email text, phone text, pin text, role text, callsign text, 
+    rank jsonb, status text, "avatarUrl" text, stats jsonb, badges jsonb, "legendaryBadges" jsonb, loadout jsonb, bio text, 
+    "preferredRole" text, "idNumber" text, age int, "activeAuthUID" text, "matchHistory" jsonb, "xpAdjustments" jsonb, 
+    address text, allergies text, "medicalNotes" text 
+);
+
+create table if not exists public.events ( 
+    id text primary key, title text, type text, date text, "startTime" text, location text, description text, theme text, 
+    rules text, "participationXp" int, status text, "imageUrl" text, "audioBriefingUrl" text, "gameFee" numeric, 
+    "gearForRent" jsonb, "rentalPriceOverrides" jsonb, "eventBadges" jsonb, attendees jsonb, "liveStats" jsonb 
+);
+
+create table if not exists public.inventory ( 
+    id text primary key, name text, description text, "salePrice" numeric, stock int, type text, "isRental" boolean, 
+    category text, condition text, "purchasePrice" numeric, "reorderLevel" int, "supplierId" text, sku text 
+);
+
+create table if not exists public.transactions ( 
+    id text primary key, date text, type text, description text, amount numeric, "relatedEventId" text, "relatedPlayerId" text, 
+    "paymentStatus" text, "relatedInventoryId" text 
+);
+
+create table if not exists public.settings ( 
+    id text primary key, name text, address text, phone text, email text, website text, "regNumber" text, "vatNumber" text, 
+    "logoUrl" text, "loginBackgroundUrl" text, "loginAudioUrl" text, "playerDashboardBackgroundUrl" text, 
+    "adminDashboardBackgroundUrl" text, "playerDashboardAudioUrl" text, "adminDashboardAudioUrl" text, 
+    "sponsorsBackgroundUrl" text, "apkUrl" text, "apiServerUrl" text, "bankInfo" jsonb, "fixedEventRules" text, 
+    "minimumSignupAge" int, "nextRankResetDate" text, tagLine text, bio text, whatsapp text, "githubUrl" text, 
+    "sourceCodeZipUrl" text 
+);
+
+create table if not exists public.ranks ( id text primary key, name text, description text, "rankBadgeUrl" text, tiers jsonb );
+create table if not exists public.badges ( id text primary key, name text, description text, "iconUrl" text, criteria jsonb );
+create table if not exists public."legendaryBadges" ( id text primary key, name text, description text, "iconUrl" text, "howToObtain" text );
+create table if not exists public."gamificationSettings" ( id text primary key, name text, description text, xp int );
+create table if not exists public."apiSetupGuide" ( id text primary key, title text, content text, "codeBlock" text, "codeLanguage" text, "fileName" text );
+create table if not exists public.sponsors ( id text primary key, name text, "logoUrl" text, email text, phone text, website text, bio text, "imageUrls" text[] );
+create table if not exists public.locations ( id text primary key, name text, description text, address text, "imageUrls" text[], "pinLocationUrl" text, "contactInfo" jsonb );
+create table if not exists public."socialLinks" ( id text primary key, name text, url text, "iconUrl" text );
+create table if not exists public."carouselMedia" ( id text primary key, type text, url text );
+create table if not exists public.suppliers ( id text primary key, name text, "contactPerson" text, email text, phone text, address text, website text );
+create table if not exists public.vouchers ( id text primary key, code text, discount numeric, type text, description text, status text, "assignedToPlayerId" text, "usageLimit" int, "perUserLimit" int, redemptions jsonb );
+create table if not exists public.raffles ( id text primary key, name text, location text, "contactPhone" text, prizes jsonb, "drawDate" text, status text, "createdAt" text, tickets jsonb, winners jsonb );
+create table if not exists public.signups ( id text primary key, "eventId" text, "playerId" text, "requestedGearIds" text[], note text );
+create table if not exists public."activityLog" ( id text primary key, timestamp text, "userId" text, "userName" text, "userRole" text, action text, details jsonb );
+create table if not exists public.sessions ( id text primary key, "userId" text, "userName" text, "userRole" text, "currentView" text, "lastSeen" text );
+
+-- 4. Grant Access (Simplifies connection for the web app)
+grant usage on schema public to postgres, anon, authenticated, service_role;
+grant all privileges on all tables in schema public to postgres, anon, authenticated, service_role;`}
+                        </CodeBlock>
+                        <TipBox>
+                            If you see a "Success" message in the results pane, your database structure is ready! The app will populate these tables with initial data automatically when you first log in.
+                        </TipBox>
+                    </StepCard>
+
+                    <StepCard number={4} title="The Frontend: Vercel Deployment">
                         <p>Vercel will build your React code and serve it to the world.</p>
                         <ol className="list-decimal list-inside space-y-3 ml-2">
                             <li><strong>Sign Up:</strong> Go to <a href="https://vercel.com/" target="_blank" rel="noopener noreferrer" className="text-white hover:underline">vercel.com</a> and sign up using <strong>GitHub</strong>.</li>
@@ -207,11 +284,11 @@ git push -u origin main`}
                             <li>Click <strong>Deploy</strong>.</li>
                         </ol>
                         <TipBox>
-                            Deployment takes about 1-2 minutes. Once finished, you will see a "Congratulations!" screen with a screenshot of your app. Click the screenshot or the domain link (e.g., <code>bosjol-tactical.vercel.app</code>) to open your live site!
+                            Deployment takes about 1-2 minutes. Once finished, you will see a big "Congratulations!" screen with a screenshot of your app. Click the screenshot to visit your live site!
                         </TipBox>
                     </StepCard>
 
-                    <StepCard number={4} title="Final Connection: Supabase Auth">
+                    <StepCard number={5} title="Final Connection: Supabase Auth">
                         <p>Authentication requires one final handshake. We need to tell Supabase that your new Vercel website is allowed to log users in.</p>
                         <ol className="list-decimal list-inside space-y-3 ml-2">
                             <li>Copy your new website URL from the browser address bar (e.g., <code>https://bosjol-tactical.vercel.app</code>).</li>
@@ -246,7 +323,7 @@ git push -u origin main`}
                             <div>
                                 <h4 className="font-bold text-white text-sm">First Load:</h4>
                                 <p className="text-gray-400 text-sm">
-                                    When you first visit your live site, the app will detect the empty database and automatically run the seeding process. This might take 5-10 seconds. Refresh the page if it seems stuck.
+                                    When you first visit your live site, the app will detect the empty database and automatically run the seeding process (populating ranks, badges, etc). This might take 5-10 seconds. Refresh the page if it seems stuck.
                                 </p>
                             </div>
                         </div>

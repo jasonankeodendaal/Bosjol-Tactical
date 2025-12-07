@@ -140,7 +140,7 @@ export const ServerSetupTab: React.FC = () => {
                         <p>Vercel builds your site and puts it online.</p>
                         <ol className="list-decimal list-inside space-y-3 ml-2">
                             <li>Go to <a href="https://vercel.com/" target="_blank" rel="noopener noreferrer" className="text-white hover:underline">vercel.com</a> and sign up (login with GitHub is easiest).</li>
-                            <li>Click <strong>"Add New..."</strong> -> <strong>"Project"</strong>.</li>
+                            <li>Click <strong>"Add New..."</strong> &rarr; <strong>"Project"</strong>.</li>
                             <li>Select your <code>bosjol-tactical</code> repository from the list and click <strong>Import</strong>.</li>
                             <li><strong>Configure Environment Variables (Crucial Step):</strong>
                                 <ul className="list-disc list-inside ml-6 mt-2 text-gray-400 text-xs space-y-2">
@@ -169,7 +169,7 @@ export const ServerSetupTab: React.FC = () => {
                         <ol className="list-decimal list-inside space-y-2 ml-2">
                             <li>Copy your new website URL (e.g., <code>https://bosjol-tactical.vercel.app</code>).</li>
                             <li>Go back to your <strong>Supabase Dashboard</strong>.</li>
-                            <li>Go to <strong>Authentication</strong> -> <strong>URL Configuration</strong>.</li>
+                            <li>Go to <strong>Authentication</strong> &rarr; <strong>URL Configuration</strong>.</li>
                             <li>In <strong>Site URL</strong>, paste your Vercel website link.</li>
                             <li>In <strong>Redirect URLs</strong>, add your Vercel link as well (and ensure <code>http://localhost:5173</code> is there for local testing).</li>
                             <li>Click <strong>Save</strong>.</li>

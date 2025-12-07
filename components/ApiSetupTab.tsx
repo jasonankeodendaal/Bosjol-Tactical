@@ -170,7 +170,11 @@ values ('media', 'media', true)
 on conflict (id) do nothing;
 
 -- 2. Create Storage Policies (Allows public read, broad write access for app simplicity)
+-- We drop existing policies to avoid name conflicts if re-running this script.
+drop policy if exists "Public Media Access" on storage.objects;
 create policy "Public Media Access" on storage.objects for select using ( bucket_id = 'media' );
+
+drop policy if exists "Authenticated Media Upload" on storage.objects;
 create policy "Authenticated Media Upload" on storage.objects for insert with check ( bucket_id = 'media' );
 
 -- 3. Create Core Tables

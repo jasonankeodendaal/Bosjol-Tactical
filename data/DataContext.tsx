@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, ReactNode, useContext, useMemo, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import * as mock from '../constants';
@@ -8,6 +7,7 @@ import { AuthContext } from '../auth/AuthContext';
 export const IS_LIVE_DATA = isSupabaseConfigured();
 
 const TODAY_KEY = new Date().toISOString().split('T')[0];
+// Rename quota counters to be generic for Database usage
 const INITIAL_QUOTA_COUNTERS: FirestoreQuotaCounters = {
     date: TODAY_KEY,
     reads: 0,
@@ -15,8 +15,8 @@ const INITIAL_QUOTA_COUNTERS: FirestoreQuotaCounters = {
     deletes: 0,
 };
 
-// Custom hook to manage Quota counters (now for Supabase usage tracking simulation)
-function useFirestoreQuotaCounters() {
+// Custom hook to manage Database Activity counters
+function useDatabaseQuotaCounters() {
     const [counters, setCounters] = useState<FirestoreQuotaCounters>(() => {
         try {
             const saved = localStorage.getItem('supabaseQuotaCounters');
@@ -63,7 +63,7 @@ function useCollection<T extends {id: string}>(collectionName: string, mockData:
     const [data, setData] = useState<T[]>(IS_LIVE_DATA ? [] : mockData);
     const [loading, setLoading] = useState(true);
     const auth = useContext(AuthContext);
-    const { increment: incrementQuota } = useFirestoreQuotaCounters();
+    const { increment: incrementQuota } = useDatabaseQuotaCounters();
 
     useEffect(() => {
         if (IS_LIVE_DATA && supabase) {
@@ -123,7 +123,7 @@ function useCollection<T extends {id: string}>(collectionName: string, mockData:
 function useDocument<T>(collectionName: string, docId: string, mockData: T) {
     const [data, setData] = useState<T>(mockData);
     const [loading, setLoading] = useState(true);
-    const { increment: incrementQuota } = useFirestoreQuotaCounters();
+    const { increment: incrementQuota } = useDatabaseQuotaCounters();
     
     useEffect(() => {
         if (IS_LIVE_DATA && supabase) {
@@ -250,7 +250,7 @@ export interface DataContextType {
     seedCollection: (collectionName: SeedableCollection) => Promise<void>;
     loading: boolean;
     isSeeding: boolean;
-    firestoreQuota: FirestoreQuotaCounters; // Expose counters
+    firestoreQuota: FirestoreQuotaCounters; // Expose counters (generic name kept for type compatibility)
     resetFirestoreQuotaCounters: () => void; // Expose reset function
 }
 // --- END OF TYPE DEFINITION ---
@@ -260,7 +260,7 @@ export const DataContext = createContext<DataContextType | null>(null);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     // Quota Counters
-    const { counters: firestoreQuota, increment: incrementQuota, resetCounters: resetFirestoreQuotaCounters } = useFirestoreQuotaCounters();
+    const { counters: databaseQuota, increment: incrementQuota, resetCounters: resetFirestoreQuotaCounters } = useDatabaseQuotaCounters();
 
     // Protected collections (require auth)
     const [players, setPlayers, loadingPlayers] = useCollection<Player>('players', MOCK_DATA_MAP.players, [], { isProtected: true });
@@ -648,7 +648,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         seedCollection,
         loading,
         isSeeding,
-        firestoreQuota,
+        firestoreQuota: databaseQuota,
         resetFirestoreQuotaCounters,
     };
 

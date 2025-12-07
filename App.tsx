@@ -7,13 +7,13 @@ import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, Crea
 import { XIcon, KeyIcon, ShieldCheckIcon, TrophyIcon } from './components/icons/Icons';
 import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
 import { Loader } from './components/Loader';
-import { USE_FIREBASE, isFirebaseConfigured, firebaseInitializationError, auth as firebaseAuth } from './firebase';
 import { Modal } from './components/Modal';
 import { HelpSystem } from './components/Help';
 import { StorageStatusIndicator } from './components/StorageStatusIndicator';
 import { MockDataWatermark } from './components/MockDataWatermark';
 import { Input } from './components/Input';
 import { DashboardBackground } from './components/DashboardBackground';
+import { auth as firebaseAuth } from './firebase'; // Deprecated import kept to prevent build crash, value is null.
 
 
 // --- Switched from lazy to direct imports to fix critical module loading error ---
@@ -327,10 +327,15 @@ const AppContent: React.FC = () => {
         };
 
         const createOrUpdateSession = async () => {
-            if (user && firebaseAuth?.currentUser) {
-                const uid = firebaseAuth.currentUser.uid;
-                sessionRef.current.id = uid;
-                const sessionData = {
+            if (user && firebaseAuth) { // Only if firebase auth is available (it's null now)
+                // Fallback for Supabase or Mock: session management logic is simplified here
+                // as Firebase was removed.
+                // In a real Supabase app, we'd use supabase.auth.user().id
+            } else if (user) {
+                 // Simplified session tracking for mock/supabase without direct firebase dependency
+                 const uid = user.id; // Use user ID as session ID for simplicity in this context
+                 sessionRef.current.id = uid;
+                 const sessionData = {
                     userId: user.id,
                     userName: user.name,
                     userRole: user.role,
@@ -550,25 +555,6 @@ const AppContent: React.FC = () => {
         }
     }, [showFrontPage, isAuthenticated, setHelpTopic]);
 
-    if (USE_FIREBASE && !isFirebaseConfigured()) {
-        return (
-             <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center p-8 text-center">
-                <div className="bg-red-900/50 border border-red-700 text-red-200 p-8 rounded-lg max-w-2xl">
-                    <XIcon className="w-12 h-12 mx-auto mb-4 text-red-400" />
-                    <h1 className="text-2xl font-bold mb-2 text-white">Firebase Not Configured</h1>
-                    <p className="text-base">
-                        The application is set to use Firebase (<code className="bg-black/20 px-1 rounded">VITE_USE_FIREBASE=true</code>), but the necessary Firebase configuration variables are missing. Please set them up in your environment.
-                    </p>
-                </div>
-            </div>
-        )
-    }
-
-
-    if (firebaseInitializationError) {
-        // Fallback to mock data is handled by DataContext, just show the UI
-        console.error("Firebase Initialization Error:", firebaseInitializationError.message);
-    }
     
     // Inactivity logout logic
     const logoutTimer = useRef<number | null>(null);

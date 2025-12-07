@@ -1,6 +1,6 @@
-// This file is deprecated. Please use supabaseClient.ts for all backend interactions.
+// This file is deprecated. Firebase has been removed.
+// Use supabaseClient.ts for all backend interactions.
 export const USE_FIREBASE = false;
-export const firebaseConfig = {};
 export const isFirebaseConfigured = () => false;
 export const firebaseInitializationError = null;
 export const auth = null;

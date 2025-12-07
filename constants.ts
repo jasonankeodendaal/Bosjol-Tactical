@@ -379,7 +379,7 @@ export const MOCK_API_GUIDE: ApiGuideStep[] = [
     {
       id: "step_1",
       title: "Introduction & Purpose",
-      content: "This guide explains how to set up an optional, self-hosted file server. The default Firebase setup limits file sizes to ~500KB. This server bypasses that limit, allowing large files like videos or audio briefings. It also adds a layer of security by handling all database interactions, instead of the client connecting directly to Firebase."
+      content: "This guide explains how to set up an optional, self-hosted file server. The default Supabase setup stores large files, but a dedicated server can bypass specific limits or add custom processing. It also adds a layer of security by handling all database interactions, instead of the client connecting directly."
     },
     {
       id: "step_2",
@@ -401,15 +401,15 @@ export const MOCK_API_GUIDE: ApiGuideStep[] = [
     },
     {
         id: "step_5",
-        title: "Get Firebase Service Account Key",
-        content: "1. Go to your [Firebase Console](https://console.firebase.google.com/).\n2. Select your project, go to Project Settings (gear icon) -> Service accounts.\n3. Click 'Generate new private key' and save the downloaded JSON file.\n4. **Crucially, rename this file to `service-account-key.json` and place it inside your server folder.**"
+        title: "Get Service Account Key",
+        content: "If using Supabase, you will use your `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in the environment variables instead of a JSON file."
     },
     {
         id: "step_6",
         title: "Configure Environment Variables",
-        content: "Create a new file named `.env` in your server folder and add the following line, replacing the value with your Firebase Project ID:",
+        content: "Create a new file named `.env` in your server folder and add your credentials:",
         // FIX: Corrected object property syntax.
-        codeBlock: "FIREBASE_PROJECT_ID=your-firebase-project-id",
+        codeBlock: "SUPABASE_URL=your-supabase-url\nSUPABASE_SERVICE_ROLE_KEY=your-service-role-key",
         codeLanguage: "bash",
         fileName: ".env"
     },

@@ -157,13 +157,15 @@ const QuotaStat: React.FC<{ limit: string | number, label: string, colorClass: s
     );
 };
 
-// New component for Firestore Quota Card
-const FirestoreQuotaCard: React.FC = () => {
+// New component for Database Quota Card
+const DatabaseQuotaCard: React.FC = () => {
     const dataContext = useContext(DataContext);
     if (!dataContext) throw new Error("DataContext is not available.");
 
     const { firestoreQuota, resetFirestoreQuotaCounters } = dataContext;
 
+    // Supabase generic approximate limits for free tier monitoring
+    // These are soft limits for monitoring activity volume
     const READ_LIMIT = 50000;
     const WRITE_LIMIT = 20000;
     const DELETE_LIMIT = 20000;
@@ -181,23 +183,23 @@ const FirestoreQuotaCard: React.FC = () => {
     };
 
     return (
-        <DashboardCard title="Firestore Daily Quotas (Spark Plan)" icon={<CircleStackIcon className="w-6 h-6" />}>
+        <DashboardCard title="Database Activity Monitor" icon={<CircleStackIcon className="w-6 h-6" />}>
             <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
                     <div>
-                        <QuotaStat limit={READ_LIMIT} actual={firestoreQuota.reads} label="Document Reads" colorClass="text-blue-400" />
+                        <QuotaStat limit={READ_LIMIT} actual={firestoreQuota.reads} label="Reads" colorClass="text-blue-400" />
                         <div className="w-full bg-zinc-700 rounded-full h-2 mt-2">
                             <div className={`${getProgressBarColor(firestoreQuota.reads, READ_LIMIT)} h-full rounded-full`} style={{ width: `${getProgressPercentage(firestoreQuota.reads, READ_LIMIT)}%` }} />
                         </div>
                     </div>
                     <div>
-                        <QuotaStat limit={WRITE_LIMIT} actual={firestoreQuota.writes} label="Document Writes" colorClass="text-amber-400" />
+                        <QuotaStat limit={WRITE_LIMIT} actual={firestoreQuota.writes} label="Writes" colorClass="text-amber-400" />
                         <div className="w-full bg-zinc-700 rounded-full h-2 mt-2">
                             <div className={`${getProgressBarColor(firestoreQuota.writes, WRITE_LIMIT)} h-full rounded-full`} style={{ width: `${getProgressPercentage(firestoreQuota.writes, WRITE_LIMIT)}%` }} />
                         </div>
                     </div>
                     <div>
-                        <QuotaStat limit={DELETE_LIMIT} actual={firestoreQuota.deletes} label="Document Deletes" colorClass="text-red-400" />
+                        <QuotaStat limit={DELETE_LIMIT} actual={firestoreQuota.deletes} label="Deletes" colorClass="text-red-400" />
                         <div className="w-full bg-zinc-700 rounded-full h-2 mt-2">
                             <div className={`${getProgressBarColor(firestoreQuota.deletes, DELETE_LIMIT)} h-full rounded-full`} style={{ width: `${getProgressPercentage(firestoreQuota.deletes, DELETE_LIMIT)}%` }} />
                         </div>
@@ -205,7 +207,7 @@ const FirestoreQuotaCard: React.FC = () => {
                 </div>
                 <p className="text-center text-xs text-amber-300 bg-amber-900/20 border border-amber-700/50 p-3 rounded-md mt-6">
                     <ExclamationTriangleIcon className="inline w-4 h-4 mr-1"/>
-                    **This is an estimate of operations from *this client/browser session only*.** It does not reflect global daily usage across all users or devices. Exceeding these static daily free limits for the Firebase Spark plan will result in a <code className="bg-zinc-800 px-1 rounded">'resource-exhausted'</code> error. For live, accurate usage, check the Firebase Console. Quotas reset daily around midnight Pacific Time.
+                    **This is an estimate of operations from *this client/browser session only*.** It does not reflect global usage across all users or devices. Exceeding database quotas may result in service interruption. Check your Supabase project dashboard for definitive usage stats.
                 </p>
                 <div className="mt-4 text-center">
                     <Button onClick={resetFirestoreQuotaCounters} variant="secondary" size="sm">
@@ -305,7 +307,7 @@ export const ObservabilityTab: React.FC = () => {
                 <LineGraph title="Server Functions" total={0} data={serverFunctionData} color="#a78bfa" unit="invocations" />
             </div>
 
-             <FirestoreQuotaCard />
+             <DatabaseQuotaCard />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1 space-y-6">

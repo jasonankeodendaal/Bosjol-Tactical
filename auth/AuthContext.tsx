@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, ReactNode, useEffect, useContext } from 'react';
 import type { User, AuthContextType, Player, Admin, CreatorDetails } from '../types';
 import { MOCK_PLAYERS, MOCK_ADMIN } from '../constants';

@@ -156,7 +156,7 @@ git push -u origin main`}
                     </StepCard>
 
                     <StepCard number={3} title="Database & Storage Schema (SQL Editor)">
-                        <p>We need to create the tables to store data and the storage bucket for large media files (images/videos). Supabase makes this easy with SQL.</p>
+                        <p>We need to create the tables to store data and the storage bucket for large media files. Supabase makes this easy with SQL.</p>
                         <ol className="list-decimal list-inside space-y-3 ml-2">
                             <li>In your Supabase Dashboard, click on the <strong>SQL Editor</strong> icon (looks like a terminal `&gt;_`) in the left sidebar.</li>
                             <li>Click <strong>"New Query"</strong>.</li>
@@ -169,8 +169,7 @@ insert into storage.buckets (id, name, public)
 values ('media', 'media', true)
 on conflict (id) do nothing;
 
--- 2. Create Storage Policies (Allows public read, broad write access for app simplicity)
--- We drop existing policies to avoid name conflicts if re-running this script.
+-- 2. Create Storage Policies
 drop policy if exists "Public Media Access" on storage.objects;
 create policy "Public Media Access" on storage.objects for select using ( bucket_id = 'media' );
 
@@ -230,9 +229,25 @@ create table if not exists public.signups ( id text primary key, "eventId" text,
 create table if not exists public."activityLog" ( id text primary key, timestamp text, "userId" text, "userName" text, "userRole" text, action text, details jsonb );
 create table if not exists public.sessions ( id text primary key, "userId" text, "userName" text, "userRole" text, "currentView" text, "lastSeen" text );
 
--- 4. Grant Access (Simplifies connection for the web app)
+-- 4. Grant Access & Enable Security
 grant usage on schema public to postgres, anon, authenticated, service_role;
-grant all privileges on all tables in schema public to postgres, anon, authenticated, service_role;`}
+grant all privileges on all tables in schema public to postgres, anon, authenticated, service_role;
+
+-- 5. Enable Row Level Security (RLS)
+-- This eliminates dashboard warnings and prepares the DB for security policies.
+do $$
+declare
+  tables text[] := array['admins', 'players', 'events', 'inventory', 'transactions', 'settings', 'ranks', 'badges', 'legendaryBadges', 'gamificationSettings', 'apiSetupGuide', 'sponsors', 'locations', 'socialLinks', 'carouselMedia', 'suppliers', 'vouchers', 'raffles', 'signups', 'activityLog', 'sessions'];
+  t text;
+begin
+  foreach t in array tables loop
+    execute format('alter table public.%I enable row level security;', t);
+    execute format('drop policy if exists "Public Access" on public.%I;', t);
+    -- We allow public access here because the app handles its own player authentication (PINs)
+    -- and requires write access to signups/sessions from the client.
+    execute format('create policy "Public Access" on public.%I for all using (true) with check (true);', t);
+  end loop;
+end $$;`}
                         </CodeBlock>
                         <TipBox>
                             If you see a "Success" message in the results pane, your database structure is ready! The app will populate these tables with initial data automatically when you first log in.

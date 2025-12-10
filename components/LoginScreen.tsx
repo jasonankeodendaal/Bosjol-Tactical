@@ -1,3 +1,4 @@
+
 import React, { useContext, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../auth/AuthContext';
@@ -27,12 +28,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
     setIsLoading(true);
     setError(null);
 
-    const success = await login(identifier.trim(), password.trim());
-    if (!success) {
-        setError("Invalid credentials. Please check your details and try again.");
+    try {
+        const success = await login(identifier.trim(), password.trim());
+        if (!success) {
+            setError("Invalid credentials. Please check your details and try again.");
+            setIsLoading(false);
+        } else {
+            // Login successful. 
+            // Keep isLoading true to prevent UI flash/reset while AuthContext updates state and App re-renders.
+            // The component will unmount shortly.
+        }
+    } catch (err) {
+        console.error("Login exception:", err);
+        setError("An unexpected error occurred. Please try again.");
         setIsLoading(false);
     }
-    // On success, component will unmount
   };
 
   const handleLogin = async (e: React.FormEvent) => {

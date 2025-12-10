@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, ReactNode, useEffect, useContext } from 'react';
 import type { User, AuthContextType, Player, Admin, CreatorDetails } from '../types';
 import { MOCK_PLAYERS, MOCK_ADMIN } from '../constants';
@@ -28,9 +29,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         // Check active Supabase session for Admins/Creators
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
             if (session?.user) {
-                handleSupabaseUser(session.user);
+                await handleSupabaseUser(session.user);
             } else {
                 // Check if we have a locally stored player session
                 const storedPlayerId = localStorage.getItem('activePlayerId');
@@ -42,8 +43,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         } else {
                             localStorage.removeItem('activePlayerId');
                         }
-                        setLoading(false);
-                    });
+                    })
+                    .finally(() => setLoading(false));
                 } else {
                     setLoading(false);
                 }
@@ -51,12 +52,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            if (session?.user) {
-                handleSupabaseUser(session.user);
-            } else if (!localStorage.getItem('activePlayerId')) {
-                setUser(null);
+            try {
+                if (session?.user) {
+                    await handleSupabaseUser(session.user);
+                } else if (!localStorage.getItem('activePlayerId')) {
+                    setUser(null);
+                }
+            } catch (err) {
+                console.error("Auth state change error:", err);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         });
 
         return () => subscription.unsubscribe();
@@ -64,40 +70,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, [dataContext]);
 
     const handleSupabaseUser = async (sbUser: any) => {
-        const email = sbUser.email?.toLowerCase();
-        
-        if (email === CREATOR_EMAIL) {
-            const { data } = await supabase!.from('settings').select('*').eq('id', 'creatorDetails').single();
-            if (data) setUser({ ...data, id: 'creator', role: 'creator' } as any);
-            else setUser({ id: 'creator', name: 'Creator', role: 'creator' });
-            return;
-        }
-
-        // Check specific hardcoded admin (legacy/default logic)
-        if (email === ADMIN_EMAIL) {
-            const { data } = await supabase!.from('admins').select('*').eq('email', email).single();
-            if (data) {
-                setUser({ ...data, id: data.id } as Admin);
-            } else {
-                // Fallback: If auth matched but DB record missing (e.g. freshly seeded DB race condition), use Mock/Default
-                setUser({ ...MOCK_ADMIN, id: 'admin_fallback', email }); 
-                // Ensure it exists for next time
-                const { id: adminId, ...adminData } = MOCK_ADMIN;
-                await supabase!.from('admins').upsert({ id: adminId, ...adminData });
+        try {
+            const email = sbUser.email?.toLowerCase();
+            
+            if (email === CREATOR_EMAIL) {
+                const { data } = await supabase!.from('settings').select('*').eq('id', 'creatorDetails').single();
+                if (data) setUser({ ...data, id: 'creator', role: 'creator' } as any);
+                else setUser({ id: 'creator', name: 'Creator', role: 'creator' });
+                return;
             }
-            return;
-        }
 
-        // Generic Admin Check: Look for ANY record in the admins table with this email
-        const { data: adminDoc } = await supabase!.from('admins').select('*').eq('email', email).single();
-        if (adminDoc) {
-            setUser({ ...adminDoc, id: adminDoc.id } as Admin);
-        } else {
-            // User is authenticated in Supabase but has no role in our app tables.
-            // This prevents access.
-            console.warn(`User ${email} authenticated but found no matching Admin or Creator record.`);
-            // Optionally, sign them out if they aren't allowed
-            // await supabase!.auth.signOut();
+            // Check specific hardcoded admin (legacy/default logic)
+            if (email === ADMIN_EMAIL) {
+                const { data, error } = await supabase!.from('admins').select('*').eq('email', email).single();
+                
+                if (data) {
+                    setUser({ ...data, id: data.id } as Admin);
+                } else {
+                    // Fallback: If auth matched but DB record missing (e.g. freshly seeded DB race condition), use Mock/Default
+                    // This ensures the admin can still log in even if the table isn't perfectly populated yet.
+                    console.warn("Admin record not found in DB, using fallback.");
+                    const fallbackAdmin = { ...MOCK_ADMIN, id: 'admin_fallback', email };
+                    setUser(fallbackAdmin as Admin); 
+                    
+                    // Attempt to self-repair by upserting the default admin record
+                    const { id: adminId, ...adminData } = MOCK_ADMIN;
+                    await supabase!.from('admins').upsert({ id: adminId, ...adminData }).then(({ error }) => {
+                        if (error) console.error("Failed to auto-repair admin record:", error);
+                    });
+                }
+                return;
+            }
+
+            // Generic Admin Check: Look for ANY record in the admins table with this email
+            const { data: adminDoc } = await supabase!.from('admins').select('*').eq('email', email).single();
+            if (adminDoc) {
+                setUser({ ...adminDoc, id: adminDoc.id } as Admin);
+            } else {
+                console.warn(`User ${email} authenticated but found no matching Admin or Creator record.`);
+            }
+        } catch (error) {
+            console.error("Error handling Supabase user:", error);
         }
     };
 
@@ -126,8 +139,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     email: identifier,
                     password: password,
                 });
-                if (error) throw error;
-                // Listener handles state update
+                
+                if (error) {
+                    console.error("Supabase Auth Error:", error.message);
+                    return false;
+                }
+                
+                // Successful Auth will trigger onAuthStateChange, which sets the user.
                 return true;
             } else {
                 // Player Login via Table Query (App-Level Auth)

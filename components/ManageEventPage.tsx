@@ -278,6 +278,13 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                 };
     
                 const currentStats = mutablePlayer.stats || { kills: 0, deaths: 0, headshots: 0, gamesPlayed: 0, xp: 0 };
+                
+                // Check and award event badges to attendee
+                const eventBadgeIds = formData.eventBadges || [];
+                const availableBadges = dataContext?.badges || [];
+                const badgesToAward = availableBadges.filter(b => eventBadgeIds.includes(b.id));
+                const newBadgesForPlayer = badgesToAward.filter(b => !(mutablePlayer.badges || []).some(pb => pb.id === b.id));
+
                 mutablePlayer = {
                     ...mutablePlayer,
                     stats: {
@@ -288,8 +295,29 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                         headshots: currentStats.headshots + (playerLiveStats.headshots || 0),
                         gamesPlayed: currentStats.gamesPlayed + 1,
                     },
+                    badges: newBadgesForPlayer.length > 0 
+                        ? [...(mutablePlayer.badges || []), ...newBadgesForPlayer] 
+                        : (mutablePlayer.badges || []),
                     matchHistory: [...(mutablePlayer.matchHistory || []), newMatchRecord]
                 };
+
+                // Trigger badge earned notifications
+                newBadgesForPlayer.forEach(badge => {
+                    dataContext?.createNotification?.({
+                        title: `Badge Earned: ${mutablePlayer.name}`,
+                        message: `${mutablePlayer.name} (${mutablePlayer.playerCode}) earned the "${badge.name}" badge in ${formData.title}!`,
+                        type: 'badge_earned',
+                        playerId: mutablePlayer.id,
+                        playerName: `${mutablePlayer.name} ${mutablePlayer.surname || ''}`.trim(),
+                        playerCallsign: mutablePlayer.callsign,
+                        playerCode: mutablePlayer.playerCode,
+                        playerAvatarUrl: mutablePlayer.avatarUrl,
+                        badgeName: badge.name,
+                        badgeIconUrl: badge.iconUrl,
+                        eventId: event?.id,
+                        eventTitle: formData.title,
+                    });
+                });
             }
             // Case 2: Player was a no-show
             else if (noShowPlayerIds.has(player.id) && noShowPenaltyXp < 0) {
@@ -311,6 +339,23 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             if (mutablePlayer.stats && mutablePlayer.stats.xp !== (player.stats?.xp ?? 0)) {
                 const newRank = getRankForPlayer(mutablePlayer, dataContext!.ranks);
                 if (newRank) {
+                    // Check if player ranked up
+                    if (player.rank && newRank.id !== player.rank.id && newRank.minXp > player.rank.minXp) {
+                        dataContext?.createNotification?.({
+                            title: `Rank Promoted: ${mutablePlayer.name}`,
+                            message: `${mutablePlayer.name} (${mutablePlayer.playerCode}) achieved the rank of ${newRank.name}!`,
+                            type: 'rank_up',
+                            playerId: mutablePlayer.id,
+                            playerName: `${mutablePlayer.name} ${mutablePlayer.surname || ''}`.trim(),
+                            playerCallsign: mutablePlayer.callsign,
+                            playerCode: mutablePlayer.playerCode,
+                            playerAvatarUrl: mutablePlayer.avatarUrl,
+                            rankTierName: newRank.name,
+                            rankIconUrl: newRank.iconUrl,
+                            eventId: event?.id,
+                            eventTitle: formData.title,
+                        });
+                    }
                     mutablePlayer.rank = newRank;
                 }
             }

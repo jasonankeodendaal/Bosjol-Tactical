@@ -43,6 +43,7 @@ interface PlayerProfilePageProps {
     legendaryBadges: LegendaryBadge[];
     onBack: () => void;
     onUpdatePlayer: (player: Player) => void;
+    onDeletePlayer?: (playerId: string) => void;
     ranks: Rank[];
     companyDetails: CompanyDetails;
 }
@@ -174,6 +175,23 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
             rank: newTier,
         };
         onUpdatePlayer(updatedPlayer);
+
+        // Notify admin if player ranked up
+        if (newTier.id !== (player.rank?.id || playerTier.id) && newTier.minXp > (player.rank?.minXp || 0)) {
+            dataContext?.createNotification?.({
+                title: `Rank Promoted: ${player.name}`,
+                message: `${player.name} (${player.playerCode}) advanced to ${newTier.name}!`,
+                type: 'rank_up',
+                playerId: player.id,
+                playerName: `${player.name} ${player.surname || ''}`.trim(),
+                playerCallsign: player.callsign,
+                playerCode: player.playerCode,
+                playerAvatarUrl: player.avatarUrl,
+                rankTierName: newTier.name,
+                rankIconUrl: newTier.iconUrl,
+            });
+        }
+
         setIsAwardingXp(false);
     };
     
@@ -195,6 +213,21 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
             legendaryBadges: [...player.legendaryBadges, badgeToAward],
         };
         onUpdatePlayer(updatedPlayer);
+
+        // Auto-notify admin of legendary badge award
+        dataContext?.createNotification?.({
+            title: `Legendary Badge Awarded`,
+            message: `${player.name} (${player.playerCode}) was awarded the "${badgeToAward.name}" Legendary Badge!`,
+            type: 'legendary_badge_earned',
+            playerId: player.id,
+            playerName: `${player.name} ${player.surname || ''}`.trim(),
+            playerCallsign: player.callsign,
+            playerCode: player.playerCode,
+            playerAvatarUrl: player.avatarUrl,
+            badgeName: badgeToAward.name,
+            badgeIconUrl: badgeToAward.iconUrl,
+        });
+
         setSelectedLegendaryBadge(''); // Reset dropdown
     };
 
@@ -330,7 +363,12 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
                                     </div>
                                     <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))}/>
                                     <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({...f, surname: e.target.value}))}/>
-                                    <Input label="Callsign" value={formData.callsign} onChange={e => setFormData(f => ({...f, callsign: e.target.value}))}/>
+                                    <Input 
+                                        label="Callsign (Admin Assigned)" 
+                                        value={formData.callsign} 
+                                        onChange={e => setFormData(f => ({...f, callsign: e.target.value}))}
+                                        tooltip="As an Administrator, you have exclusive authority to assign and change player callsigns. Regular players cannot edit their callsigns."
+                                    />
                                      <div className="grid grid-cols-2 gap-4">
                                         <Input label="Age" type="number" value={formData.age} onChange={e => setFormData(f => ({...f, age: Number(e.target.value)}))} />
                                         <Input label="ID Number" value={formData.idNumber} onChange={e => setFormData(f => ({...f, idNumber: e.target.value}))} />
@@ -407,6 +445,22 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
                                             Send Credentials
                                         </Button>
                                     </div>
+                                    {onDeletePlayer && (
+                                        <div className="pt-2 border-t border-zinc-800/80 mt-2">
+                                            <Button 
+                                                variant="danger" 
+                                                onClick={() => {
+                                                    if (confirm(`Are you sure you want to permanently delete operator "${player.name} ${player.surname || ''}" (${player.playerCode})? This action cannot be undone.`)) {
+                                                        onDeletePlayer(player.id);
+                                                    }
+                                                }} 
+                                                className="w-full flex items-center justify-center gap-2"
+                                            >
+                                                <TrashIcon className="w-4 h-4" />
+                                                Delete Operator
+                                            </Button>
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>

@@ -1025,7 +1025,11 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
     }, [player]);
 
     const handleSave = () => {
-        let dataToSave = { ...formData };
+        let dataToSave = { 
+            ...formData,
+            // Security: Callsigns can only be assigned by administrators
+            callsign: player.callsign || ''
+        };
         if (!dataToSave.avatarUrl) {
             dataToSave.avatarUrl = `https://api.dicebear.com/8.x/bottts/svg?seed=${dataToSave.name}${dataToSave.surname}`;
         }
@@ -1065,7 +1069,19 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
                             <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                             <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({ ...f, surname: e.target.value }))} />
                         </div>
-                        <Input label="Callsign" value={formData.callsign} onChange={e => setFormData(f => ({ ...f, callsign: e.target.value }))} />
+                        <div>
+                            <Input 
+                                label="Callsign" 
+                                value={formData.callsign || 'Unassigned'} 
+                                disabled
+                                className="opacity-75 cursor-not-allowed bg-zinc-950/80 border-zinc-800 text-zinc-300 font-bold" 
+                                tooltip="Callsign can only be assigned by an administrator."
+                            />
+                            <p className="text-xs text-amber-400/90 mt-1.5 flex items-center gap-1.5">
+                                <span className="font-semibold">🔒 Official Callsign:</span>
+                                <span>Can only be assigned or altered by an Administrator.</span>
+                            </p>
+                        </div>
                     </div>
                 </div>
                 

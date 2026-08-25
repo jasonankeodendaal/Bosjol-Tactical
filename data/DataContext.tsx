@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode, useContext, useMemo, useCallback, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import * as mock from '../constants';
-import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters } from '../types';
+import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters, AdminNotification } from '../types';
 import { AuthContext } from '../auth/AuthContext';
 
 export const IS_LIVE_DATA = isSupabaseConfigured();
@@ -185,6 +185,7 @@ const MOCK_DATA_MAP = {
     socialLinks: mock.MOCK_SOCIAL_LINKS,
     carouselMedia: mock.MOCK_CAROUSEL_MEDIA,
     apiSetupGuide: mock.MOCK_API_GUIDE,
+    notifications: mock.MOCK_NOTIFICATIONS,
 };
 type SeedableCollection = keyof typeof MOCK_DATA_MAP;
 
@@ -211,6 +212,10 @@ export interface DataContextType {
     sessions: Session[]; setSessions: React.Dispatch<React.SetStateAction<Session[]>>;
     activityLog: ActivityLog[]; setActivityLog: React.Dispatch<React.SetStateAction<ActivityLog[]>>;
     logActivity: (action: string, details?: Record<string, any>) => Promise<void>;
+    notifications: AdminNotification[]; setNotifications: React.Dispatch<React.SetStateAction<AdminNotification[]>>;
+    createNotification: (notif: Omit<AdminNotification, 'id' | 'timestamp' | 'read'> & Partial<AdminNotification>) => Promise<string>;
+    markAllNotificationsAsRead: () => Promise<void>;
+    clearAllNotifications: () => Promise<void>;
 
     // CRUD functions
     setDoc: (collectionName: string, docId: string, data: object) => Promise<void>;
@@ -230,6 +235,14 @@ export interface DataContextType {
 }
 
 export const DataContext = createContext<DataContextType | null>(null);
+
+export const useData = (): DataContextType => {
+    const context = useContext(DataContext);
+    if (!context) {
+        throw new Error('useData must be used within a DataProvider');
+    }
+    return context;
+};
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const auth = useContext(AuthContext);
@@ -251,6 +264,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [signups, setSignups, loadingSignups] = useCollection<Signup>('signups', MOCK_DATA_MAP.signups, { isProtected: true });
     const [sessions, setSessions, loadingSessions] = useCollection<Session>('sessions', [], { isProtected: true });
     const [activityLog, setActivityLog, loadingActivityLog] = useCollection<ActivityLog>('activityLog', [], { isProtected: true });
+    const [notifications, setNotifications, loadingNotifications] = useCollection<AdminNotification>('notifications', MOCK_DATA_MAP.notifications, { isProtected: true });
 
     // Settings Documents
     const [companyCore, updateCompanyCore, loadingCompanyCore] = useDocument('settings', 'companyDetails', mock.MOCK_COMPANY_CORE);
@@ -266,7 +280,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [isSeeding, setIsSeeding] = useState(false);
     const hasCheckedSeedRef = useRef(false);
 
-    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia || loadingSignups || loadingCompanyCore || loadingBranding || loadingContent || loadingCreatorCore || loadingApiGuide || loadingSessions || loadingActivityLog;
+    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia || loadingSignups || loadingCompanyCore || loadingBranding || loadingContent || loadingCreatorCore || loadingApiGuide || loadingSessions || loadingActivityLog || loadingNotifications;
     
     // Composite Objects
     const companyDetails = useMemo(() => ({
@@ -312,18 +326,53 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }, [creatorDetails, creatorCore, updateCreatorCore]);
 
-    // Generic CRUD Functions
+    // Generic CRUD Functions with Instant Optimistic State Updates
+    const collectionSetters: Record<string, React.Dispatch<React.SetStateAction<any[]>>> = {
+        players: setPlayers,
+        events: setEvents,
+        ranks: setRanks,
+        badges: setBadges,
+        legendaryBadges: setLegendaryBadges,
+        gamificationSettings: setGamificationSettings,
+        sponsors: setSponsors,
+        vouchers: setVouchers,
+        inventory: setInventory,
+        suppliers: setSuppliers,
+        transactions: setTransactions,
+        locations: setLocations,
+        raffles: setRaffles,
+        signups: setSignups,
+        sessions: setSessions,
+        activityLog: setActivityLog,
+        socialLinks: setSocialLinks,
+        carouselMedia: setCarouselMedia,
+        apiSetupGuide: setApiSetupGuide,
+        notifications: setNotifications,
+    };
+
     const setDoc = useCallback(async (collectionName: string, docId: string, data: object) => {
+        const fullDoc = { id: docId, ...data };
+        const setter = collectionSetters[collectionName];
+        if (setter) {
+            setter(prev => [...prev.filter(item => item.id !== docId), fullDoc]);
+        }
+
         if (IS_LIVE_DATA && supabase) {
-            const { error } = await supabase.from(collectionName).upsert({ id: docId, ...data });
+            const { error } = await supabase.from(collectionName).upsert(fullDoc);
             if (error) console.error("Error in setDoc:", error);
             else recordDatabaseActivity('writes', 1);
         }
-    }, []);
+    }, [collectionSetters]);
 
     const addDoc = useCallback(async <T extends {}>(collectionName: string, data: T): Promise<string> => {
-        const generatedId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        const generatedId = (data as any).id || `doc_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
         const payload = { id: generatedId, ...data };
+
+        // Instant optimistic update
+        const setter = collectionSetters[collectionName];
+        if (setter) {
+            setter(prev => [...prev.filter(item => item.id !== generatedId), payload]);
+        }
 
         if (IS_LIVE_DATA && supabase) {
             const { data: insertedData, error } = await supabase.from(collectionName).insert(payload).select().single();
@@ -332,28 +381,40 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 throw error;
             }
             recordDatabaseActivity('writes', 1);
-            return insertedData?.id || (payload as any).id;
+            return insertedData?.id || payload.id;
         } else {
-            return `mock_${collectionName}_${Date.now()}`;
+            return payload.id;
         }
-    }, []);
+    }, [collectionSetters]);
 
     const updateDoc = useCallback(async <T extends {id: string}>(collectionName: string, doc: T) => {
+        // Instant optimistic update
+        const setter = collectionSetters[collectionName];
+        if (setter) {
+            setter(prev => prev.map(item => item.id === doc.id ? { ...item, ...doc } : item));
+        }
+
         if (IS_LIVE_DATA && supabase) {
             const { id, ...data } = doc;
             const { error } = await supabase.from(collectionName).update(data).eq('id', id);
             if (error) console.error("Error in updateDoc:", error);
             else recordDatabaseActivity('writes', 1);
         }
-    }, []);
+    }, [collectionSetters]);
 
     const deleteDoc = useCallback(async (collectionName: string, docId: string) => {
+        // Instant optimistic update
+        const setter = collectionSetters[collectionName];
+        if (setter) {
+            setter(prev => prev.filter(item => item.id !== docId));
+        }
+
         if (IS_LIVE_DATA && supabase) {
             const { error } = await supabase.from(collectionName).delete().eq('id', docId);
             if (error) console.error("Error in deleteDoc:", error);
             else recordDatabaseActivity('deletes', 1);
         }
-    }, []);
+    }, [collectionSetters]);
 
     const logActivity = useCallback(async (action: string, details?: Record<string, any>) => {
         if (!auth?.user) return;
@@ -378,6 +439,72 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         }
     }, [auth?.user]);
+
+    const createNotification = useCallback(async (notif: Omit<AdminNotification, 'id' | 'timestamp' | 'read'> & Partial<AdminNotification>): Promise<string> => {
+        const notifId = notif.id || `notif_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        const newNotif: AdminNotification = {
+            id: notifId,
+            title: notif.title,
+            message: notif.message,
+            type: notif.type,
+            timestamp: notif.timestamp || new Date().toISOString(),
+            read: notif.read || false,
+            playerId: notif.playerId,
+            playerName: notif.playerName,
+            playerCallsign: notif.playerCallsign,
+            playerCode: notif.playerCode,
+            playerAvatarUrl: notif.playerAvatarUrl,
+            badgeId: notif.badgeId,
+            badgeName: notif.badgeName,
+            badgeIconUrl: notif.badgeIconUrl,
+            badgeDescription: notif.badgeDescription,
+            badgeCriteria: notif.badgeCriteria,
+            rankName: notif.rankName,
+            rankIconUrl: notif.rankIconUrl,
+            eventId: notif.eventId,
+            eventTitle: notif.eventTitle,
+            details: notif.details,
+        };
+
+        // Optimistic update
+        setNotifications(prev => [newNotif, ...prev.filter(n => n.id !== notifId)]);
+
+        if (IS_LIVE_DATA && supabase) {
+            try {
+                await supabase.from('notifications').insert(newNotif);
+                recordDatabaseActivity('writes', 1);
+            } catch (error) {
+                console.error("Failed to create notification:", error);
+            }
+        }
+        return notifId;
+    }, [setNotifications]);
+
+    const markAllNotificationsAsRead = useCallback(async () => {
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+
+        if (IS_LIVE_DATA && supabase) {
+            try {
+                await supabase.from('notifications').update({ read: true }).eq('read', false);
+                recordDatabaseActivity('writes', 1);
+            } catch (error) {
+                console.error("Failed to mark all notifications as read:", error);
+            }
+        }
+    }, [setNotifications]);
+
+    const clearAllNotifications = useCallback(async () => {
+        setNotifications([]);
+
+        if (IS_LIVE_DATA && supabase) {
+            try {
+                await supabase.from('notifications').delete().gte('id', '');
+                recordDatabaseActivity('deletes', 1);
+            } catch (error) {
+                console.error("Failed to clear all notifications:", error);
+            }
+        }
+    }, [setNotifications]);
 
     const seedCollection = useCallback(async (collectionName: SeedableCollection) => {
         if (!IS_LIVE_DATA || !supabase) return;
@@ -407,6 +534,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             await seedCollection('legendaryBadges');
             await seedCollection('gamificationSettings');
             await seedCollection('apiSetupGuide');
+            await seedCollection('notifications');
             
             // Deconstructed Settings
             await supabase.from('settings').upsert([
@@ -471,7 +599,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return;
         }
         
-        const collectionsToDelete = ['players', 'events', 'signups', 'vouchers', 'inventory', 'transactions', 'raffles', 'suppliers', 'sponsors', 'locations', 'socialLinks', 'carouselMedia', 'sessions', 'activityLog'];
+        const collectionsToDelete = ['players', 'events', 'signups', 'vouchers', 'inventory', 'transactions', 'raffles', 'suppliers', 'sponsors', 'locations', 'socialLinks', 'carouselMedia', 'sessions', 'activityLog', 'notifications'];
         
         try {
             console.log("Deleting all transactional data...");
@@ -544,6 +672,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         sessions, setSessions,
         activityLog, setActivityLog,
         logActivity,
+        notifications, setNotifications,
+        createNotification,
+        markAllNotificationsAsRead,
+        clearAllNotifications,
         
         setDoc,
         updateDoc,
@@ -582,6 +714,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         sessions, setSessions,
         activityLog, setActivityLog,
         logActivity,
+        notifications, setNotifications,
+        createNotification,
+        markAllNotificationsAsRead,
+        clearAllNotifications,
         setDoc, updateDoc, addDoc, deleteDoc,
         deleteAllData, deleteAllPlayers, restoreFromBackup,
         seedInitialData, seedCollection,

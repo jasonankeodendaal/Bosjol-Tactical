@@ -370,10 +370,66 @@ export const MOCK_CREATOR_CORE: CreatorDetails = {
     whatsapp: '+27645199692',
     tagline: "If you can think it, I can build it.",
     bio: "Full-stack developer specializing in bespoke web applications and system integrations. Turning complex problems into elegant, efficient solutions.",
-    logoUrl: 'https://i.ibb.co/2SL25hV/Black-and-White-Bold-Minimalist-Interlocking-Monogram-Logo-1-removebg-preview.png',
+    logoUrl: 'https://i.ibb.co/ZR8bZRSp/JSTYP-me-Logo.png',
     githubUrl: 'https://github.com/JSTYP/bosjol-tactical-dashboard',
     sourceCodeZipUrl: 'https://github.com/JSTYP/bosjol-tactical-dashboard/raw/main/api-server-template.zip',
 };
+
+export const MOCK_NOTIFICATIONS: AdminNotification[] = [
+    {
+        id: 'notif_1',
+        title: 'New Badge Unlocked!',
+        message: 'Ghost (John Doe - JD01) unlocked the Sharpshooter badge for reaching 25 headshots.',
+        type: 'badge_earned',
+        timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+        read: false,
+        playerId: 'p1',
+        playerName: 'John Doe',
+        playerCallsign: 'Ghost',
+        playerCode: 'JD01',
+        playerAvatarUrl: 'https://api.dicebear.com/8.x/bottts/svg?seed=JohnDoe',
+        badgeId: 'b2',
+        badgeName: 'Sharpshooter',
+        badgeIconUrl: 'https://cdn-icons-png.flaticon.com/512/1037/1037780.png',
+        badgeDescription: 'Achieve 25 headshots in tactical combat.',
+        badgeCriteria: '25 Headshots',
+        details: { headshots: 25, kills: 45 }
+    },
+    {
+        id: 'notif_2',
+        title: 'Legendary Badge Awarded',
+        message: 'Valkyrie (Jane Smith - JS01) was awarded the Tactician of the Year legendary badge.',
+        type: 'legendary_badge_earned',
+        timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+        read: false,
+        playerId: 'p2',
+        playerName: 'Jane Smith',
+        playerCallsign: 'Valkyrie',
+        playerCode: 'JS01',
+        playerAvatarUrl: 'https://api.dicebear.com/8.x/bottts/svg?seed=JaneSmith',
+        badgeId: 'lb1',
+        badgeName: 'Tactician of the Year',
+        badgeIconUrl: 'https://cdn-icons-png.flaticon.com/512/3176/3176298.png',
+        badgeDescription: 'Awarded for unmatched tactical command across seasonal campaigns.',
+        badgeCriteria: 'Admin Honor',
+    },
+    {
+        id: 'notif_3',
+        title: 'Player Rank Up',
+        message: 'Shadow (Alex Vance - AV01) achieved the rank of Specialist (Bronze II).',
+        type: 'rank_up',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+        read: true,
+        playerId: 'p3',
+        playerName: 'Alex Vance',
+        playerCallsign: 'Shadow',
+        playerCode: 'AV01',
+        playerAvatarUrl: 'https://api.dicebear.com/8.x/bottts/svg?seed=AlexVance',
+        rankName: 'Bronze II - Specialist',
+        rankIconUrl: 'https://cdn-icons-png.flaticon.com/512/610/610333.png',
+    }
+];
+
 
 export const MOCK_API_GUIDE: ApiGuideStep[] = [
     {

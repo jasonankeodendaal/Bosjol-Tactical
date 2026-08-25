@@ -24,6 +24,8 @@ import { Leaderboard } from './Leaderboard';
 import { SettingsTab } from './SettingsTab';
 import { ApiSetupTab } from './ApiSetupTab';
 import { AboutTab } from './AboutTab';
+import { AdminNotificationsTab } from './AdminNotificationsTab';
+import { BellIcon } from './icons/Icons';
 import { DataContext, DataContextType } from '../data/DataContext';
 import { AuthContext } from '../auth/AuthContext';
 import { SendCredentialsModal } from './SendCredentialsModal';
@@ -35,7 +37,7 @@ export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' 
 };
 
 
-type Tab = 'Events' | 'Players' | 'Progression' | 'Ranks' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'API Setup' | 'About';
+type Tab = 'Events' | 'Players' | 'Notifications' | 'Progression' | 'Ranks' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'API Setup' | 'About';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
 
 const NewPlayerModal: React.FC<{
@@ -48,6 +50,7 @@ const NewPlayerModal: React.FC<{
     const [formData, setFormData] = useState({
         name: '',
         surname: '',
+        callsign: '',
         email: '',
         phone: '',
         pin: '',
@@ -117,6 +120,8 @@ const NewPlayerModal: React.FC<{
         const allTiers = ranks.flatMap(r => r.tiers || []).filter(Boolean).sort((a,b) => a.minXp - b.minXp);
         const firstTier = allTiers.length > 0 ? allTiers[0] : UNRANKED_TIER;
        
+        const assignedCallsign = formData.callsign.trim() || formData.name.trim();
+
         const newPlayerData: Omit<Player, 'id'> = {
             name: formData.name,
             surname: formData.surname,
@@ -127,7 +132,7 @@ const NewPlayerModal: React.FC<{
             age: ageNum,
             idNumber: formData.idNumber,
             role: 'player',
-            callsign: formData.name, // Default callsign to first name
+            callsign: assignedCallsign,
             rank: firstTier,
             status: 'Active',
             avatarUrl: `https://api.dicebear.com/8.x/bottts/svg?seed=${formData.name}${formData.surname}`, // Default avatar
@@ -153,6 +158,19 @@ const NewPlayerModal: React.FC<{
             const newPlayerId = await addPlayerDoc(newPlayerData);
             const completePlayer: Player = { ...newPlayerData, id: newPlayerId };
             dataContext?.logActivity(`Created player: ${completePlayer.name}`);
+            
+            // Auto-trigger admin notification for new player
+            dataContext?.createNotification?.({
+                title: 'New Player Registered',
+                message: `${completePlayer.name} ${completePlayer.surname || ''} (${completePlayer.playerCode}) was successfully registered.`,
+                type: 'new_player',
+                playerId: newPlayerId,
+                playerName: `${completePlayer.name} ${completePlayer.surname || ''}`.trim(),
+                playerCallsign: completePlayer.callsign,
+                playerCode: completePlayer.playerCode,
+                playerAvatarUrl: completePlayer.avatarUrl,
+            });
+
             setNewlyCreatedPlayer(completePlayer);
         } catch (error) {
             console.error("Failed to create new player:", error);
@@ -170,6 +188,13 @@ const NewPlayerModal: React.FC<{
                         <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                         <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({ ...f, surname: e.target.value }))} />
                     </div>
+                    <Input 
+                        label="Callsign (Admin Assigned)" 
+                        value={formData.callsign} 
+                        onChange={e => setFormData(f => ({ ...f, callsign: e.target.value }))} 
+                        placeholder="e.g., Ghost, Viper (Defaults to First Name)"
+                        tooltip="Only Administrators can assign or change player callsigns. Regular players cannot create or edit their own callsigns."
+                    />
                     <div>
                         <Input label="Player Code" value={playerCode} onChange={handlePlayerCodeChange} />
                         {playerCodeError && <p className="text-red-500 text-xs mt-1">{playerCodeError}</p>}
@@ -194,9 +219,15 @@ const NewPlayerModal: React.FC<{
 
 const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({ activeTab, setActiveTab }) => {
     const [menuOpen, setMenuOpen] = useState(false);
-    const tabs: {name: Tab, icon: React.ReactNode}[] = [
+    const dataContext = useContext(DataContext);
+    const unreadNotificationsCount = useMemo(() => {
+        return (dataContext?.notifications || []).filter(n => !n.read).length;
+    }, [dataContext?.notifications]);
+
+    const tabs: {name: Tab, icon: React.ReactNode, badgeCount?: number}[] = [
         {name: 'Events', icon: <CalendarIcon className="w-5 h-5"/>},
         {name: 'Players', icon: <UsersIcon className="w-5 h-5"/>},
+        {name: 'Notifications', icon: <BellIcon className="w-5 h-5"/>, badgeCount: unreadNotificationsCount},
         {name: 'Progression', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Ranks', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Inventory', icon: <ArchiveBoxIcon className="w-5 h-5"/>},
@@ -224,6 +255,11 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
                     <div className="flex items-center gap-3">
                         {activeTabInfo?.icon}
                         <span className="font-semibold">{activeTab}</span>
+                        {activeTabInfo?.badgeCount !== undefined && activeTabInfo.badgeCount > 0 && (
+                            <span className="bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                                {activeTabInfo.badgeCount}
+                            </span>
+                        )}
                     </div>
                     <Bars3Icon className="w-6 h-6"/>
                 </button>
@@ -233,7 +269,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 mt-2 w-full bg-zinc-900 border border-zinc-700 rounded-md shadow-lg z-50 p-2"
+                        className="absolute top-full left-0 mt-2 w-full bg-zinc-900 border border-zinc-700 rounded-md shadow-lg z-50 p-2 max-h-80 overflow-y-auto"
                     >
                         {tabs.map(tab => (
                             <button
@@ -242,9 +278,16 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
                                     setActiveTab(tab.name);
                                     setMenuOpen(false);
                                 }}
-                                className={`w-full text-left flex items-center gap-3 p-3 rounded-md text-sm font-medium ${activeTab === tab.name ? 'bg-red-600/20 text-red-400' : 'text-gray-300 hover:bg-zinc-800'}`}
+                                className={`w-full text-left flex items-center justify-between p-3 rounded-md text-sm font-medium ${activeTab === tab.name ? 'bg-red-600/20 text-red-400' : 'text-gray-300 hover:bg-zinc-800'}`}
                             >
-                                {tab.icon} {tab.name}
+                                <div className="flex items-center gap-3">
+                                    {tab.icon} {tab.name}
+                                </div>
+                                {tab.badgeCount !== undefined && tab.badgeCount > 0 && (
+                                    <span className="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {tab.badgeCount}
+                                    </span>
+                                )}
                             </button>
                         ))}
                     </motion.div>
@@ -261,44 +304,60 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
                             activeTab === tab.name
                                 ? 'border-red-500 text-red-400'
                                 : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'
-                        } flex items-center gap-2 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors uppercase tracking-wider`}
+                        } flex items-center gap-2 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors uppercase tracking-wider relative`}
                     >
                         {tab.icon}
-                        {tab.name}
+                        <span>{tab.name}</span>
+                        {tab.badgeCount !== undefined && tab.badgeCount > 0 && (
+                            <span className="ml-1 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                                {tab.badgeCount}
+                            </span>
+                        )}
                     </button>
                 ))}
             </nav>
         </div>
     );
-}
+};
 
-const PlayerListItem = React.memo(({ player, rank, onViewPlayer }: { player: Player; rank: Tier; onViewPlayer: (id: string) => void }) => {
+const PlayerListItem = React.memo(({ player, rank, onViewPlayer, onDeletePlayer }: { player: Player; rank: Tier; onViewPlayer: (id: string) => void; onDeletePlayer: (id: string) => void }) => {
     const kills = player.stats?.kills || 0;
     const deaths = player.stats?.deaths || 0;
     const xp = player.stats?.xp || 0;
     const kdr = deaths > 0 ? kills / deaths : kills;
 
     return (
-        <li onClick={() => onViewPlayer(player.id)} className="flex items-center p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer border border-transparent hover:border-red-600/50">
-            <img src={player.avatarUrl} alt={player.name} className="w-12 h-12 rounded-full object-cover mr-4" />
-            <div className="flex-grow">
-                <p className="font-bold text-white">{(player.name || 'Unnamed')} "{(player.callsign || 'N/A')}" {(player.surname || '')}</p>
+        <li onClick={() => onViewPlayer(player.id)} className="flex items-center p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer border border-transparent hover:border-red-600/50 group">
+            <img src={player.avatarUrl} alt={player.name} className="w-12 h-12 rounded-full object-cover mr-4 flex-shrink-0" />
+            <div className="flex-grow min-w-0 pr-2">
+                <p className="font-bold text-white truncate">{(player.name || 'Unnamed')} "{(player.callsign || 'N/A')}" {(player.surname || '')}</p>
                 <div className="flex items-center text-sm text-gray-400">
-                    <img src={rank.iconUrl} alt={rank.name} className="w-5 h-5 mr-1.5"/>
-                    <span>{rank.name}</span>
+                    <img src={rank.iconUrl} alt={rank.name} className="w-5 h-5 mr-1.5 flex-shrink-0"/>
+                    <span className="truncate">{rank.name}</span>
                     <span className="mx-2">|</span>
                     <span className="font-mono">{(player.playerCode || 'NO-CODE')}</span>
                 </div>
             </div>
-            <div className="text-right">
+            <div className="text-right mr-3 flex-shrink-0">
                 <p className="font-bold text-red-400 text-lg">{xp.toLocaleString()} RP</p>
                 <p className="text-xs text-gray-500">K/D: {kdr.toFixed(2)}</p>
             </div>
+            <button
+                type="button"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onDeletePlayer(player.id);
+                }}
+                className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition-colors border border-transparent hover:border-red-800/40 flex-shrink-0"
+                title={`Delete ${player.name}`}
+            >
+                <TrashIcon className="w-5 h-5" />
+            </button>
         </li>
     );
 });
 
-const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' | 'ranks' | 'companyDetails'> & { onViewPlayer: (id: string) => void }> = ({ players, addPlayerDoc, ranks, companyDetails, onViewPlayer }) => {
+const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' | 'ranks' | 'companyDetails'> & { onViewPlayer: (id: string) => void; onDeletePlayer: (id: string) => void }> = ({ players, addPlayerDoc, ranks, companyDetails, onViewPlayer, onDeletePlayer }) => {
     const [showNewPlayerModal, setShowNewPlayerModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -330,7 +389,7 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
                             {filteredPlayers.map(p => {
                                 const rank = p.rank || UNRANKED_TIER;
                                 return (
-                                    <PlayerListItem key={p.id} player={p} rank={rank} onViewPlayer={onViewPlayer} />
+                                    <PlayerListItem key={p.id} player={p} rank={rank} onViewPlayer={onViewPlayer} onDeletePlayer={onDeletePlayer} />
                                 );
                             })}
                         </ul>
@@ -439,7 +498,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab') as Tab | null;
-        const validTabs: Tab[] = ['Events', 'Players', 'Progression', 'Ranks', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'API Setup', 'About'];
+        const validTabs: Tab[] = ['Events', 'Players', 'Notifications', 'Progression', 'Ranks', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'API Setup', 'About'];
         if (tab && validTabs.includes(tab)) {
             setActiveTab(tab);
         }
@@ -504,6 +563,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         await updateDoc('players', updatedPlayer);
         logActivity(`Updated profile for ${updatedPlayer.name}`);
     };
+
+    const handleDeletePlayer = async (playerId: string) => {
+        const playerToDelete = players.find(p => p.id === playerId);
+        if (!playerToDelete) return;
+        if (confirm(`Are you sure you want to permanently delete player "${playerToDelete.name} ${playerToDelete.surname || ''}" (${playerToDelete.playerCode})? This action cannot be undone.`)) {
+            await deleteDoc('players', playerId);
+            logActivity(`Deleted player: ${playerToDelete.name} (${playerToDelete.playerCode})`);
+            if (view === 'player_profile') {
+                setView('dashboard');
+            }
+        }
+    };
     
     const selectedPlayer = players.find(p => p.id === selectedPlayerId);
 
@@ -516,6 +587,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 legendaryBadges={legendaryBadges}
                 onBack={() => setView('dashboard')}
                 onUpdatePlayer={handleUpdatePlayer}
+                onDeletePlayer={handleDeletePlayer}
                 ranks={ranks}
                 companyDetails={companyDetails}
             />
@@ -560,7 +632,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 <div className="p-4 sm:p-6 lg:p-8">
                     <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
                     {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
-                    {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}
+                    {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer} onDeletePlayer={handleDeletePlayer}/>}
+                    {activeTab === 'Notifications' && <AdminNotificationsTab 
+                        notifications={dataContext.notifications || []}
+                        onUpdateNotification={async (n) => { await dataContext.updateDoc('notifications', n); }}
+                        onDeleteNotification={async (id) => { await dataContext.deleteDoc('notifications', id); }}
+                        onClearAllNotifications={dataContext.clearAllNotifications}
+                        onMarkAllAsRead={dataContext.markAllNotificationsAsRead}
+                        onViewPlayer={handleViewPlayer}
+                        players={props.players}
+                    />}
                     {activeTab === 'Progression' && <ProgressionTab 
                         ranks={props.ranks} setRanks={props.setRanks}
                         badges={props.badges} setBadges={props.setBadges}

@@ -454,3 +454,30 @@ export interface FirestoreQuotaCounters {
     writes: number;
     deletes: number;
 }
+
+export type NotificationType = 'badge_earned' | 'legendary_badge_earned' | 'rank_up' | 'new_player' | 'event_signup' | 'system';
+
+export interface AdminNotification {
+    id: string;
+    title: string;
+    message: string;
+    type: NotificationType;
+    timestamp: string; // ISO string
+    read: boolean;
+    playerId?: string;
+    playerName?: string;
+    playerCallsign?: string;
+    playerCode?: string;
+    playerAvatarUrl?: string;
+    badgeId?: string;
+    badgeName?: string;
+    badgeIconUrl?: string;
+    badgeDescription?: string;
+    badgeCriteria?: string;
+    rankName?: string;
+    rankIconUrl?: string;
+    eventId?: string;
+    eventTitle?: string;
+    details?: Record<string, any>;
+}
+

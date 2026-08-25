@@ -114,15 +114,15 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
             setLoading(true);
             let isMounted = true;
             
-            supabase.from(collectionName).select('*').eq('id', docId).maybeSingle()
-                .then(({ data: fetchedData, error }) => {
+            supabase.from(collectionName).select('*').eq('id', docId)
+                .then(({ data: fetchedRows, error }) => {
                     if (!isMounted) return;
                     recordDatabaseActivity('reads', 1);
-                    if (fetchedData) {
-                        const { id, ...rest } = fetchedData;
+                    if (fetchedRows && fetchedRows.length > 0) {
+                        const { id, ...rest } = fetchedRows[0];
                         setData({ ...mockData, ...rest });
                     } else if (error) {
-                        console.error(`Error fetching document ${collectionName}/${docId}:`, error);
+                        console.warn(`Could not fetch document ${collectionName}/${docId}:`, error.message);
                     }
                     setLoading(false);
                 });
@@ -322,14 +322,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     const addDoc = useCallback(async <T extends {}>(collectionName: string, data: T): Promise<string> => {
+        const generatedId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        const payload = { id: generatedId, ...data };
+
         if (IS_LIVE_DATA && supabase) {
-            const { data: insertedData, error } = await supabase.from(collectionName).insert(data).select().single();
+            const { data: insertedData, error } = await supabase.from(collectionName).insert(payload).select().single();
             if (error) {
                 console.error("Error in addDoc:", error);
                 throw error;
             }
             recordDatabaseActivity('writes', 1);
-            return insertedData.id;
+            return insertedData?.id || (payload as any).id;
         } else {
             return `mock_${collectionName}_${Date.now()}`;
         }
@@ -355,17 +358,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const logActivity = useCallback(async (action: string, details?: Record<string, any>) => {
         if (!auth?.user) return;
 
-        const logEntryData: Omit<ActivityLog, 'id' | 'timestamp'> = {
+        const logId = `act_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        const logEntryData: ActivityLog = {
+            id: logId,
             userId: auth.user.id,
             userName: auth.user.name,
             userRole: auth.user.role,
             action,
             details: details || {},
+            timestamp: new Date().toISOString()
         };
         
         if (IS_LIVE_DATA && supabase) {
             try {
-                await supabase.from('activityLog').insert({ ...logEntryData, timestamp: new Date().toISOString() });
+                await supabase.from('activityLog').insert(logEntryData);
                 recordDatabaseActivity('writes', 1);
             } catch (error) {
                 console.error("Failed to log activity:", error);

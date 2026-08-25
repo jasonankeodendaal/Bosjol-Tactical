@@ -31,11 +31,11 @@ export const MOCK_RANKS: Rank[] = [
     description: "Introductory rank for new operators learning the ropes.",
     rankBadgeUrl: "https://i.ibb.co/external-flatart-icons-outline-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-outline-flatarticons.png",
     tiers: [
-      { id: "r_i", name: "Rookie I", minXp: 0, perks: ["Basic Calling Card"], iconUrl: "https://i.ibb.co/sf-regular-filled/48/military-insignia.png" },
-      { id: "r_ii", name: "Rookie II", minXp: 201, perks: ["Weapon XP Card"], iconUrl: "https://i.ibb.co/sf-regular-filled/48/military-insignia.png" },
-      { id: "r_iii", name: "Rookie III", minXp: 401, perks: ["Custom Banner"], iconUrl: "https://i.ibb.co/sf-regular-filled/48/military-insignia.png" },
-      { id: "r_iv", name: "Rookie IV", minXp: 601, perks: ["Weapon XP Card"], iconUrl: "https://i.ibb.co/sf-regular-filled/48/military-insignia.png" },
-      { id: "r_v", name: "Rookie V", minXp: 801, perks: ["Credits Reward"], iconUrl: "https://i.ibb.co/sf-regular-filled/48/military-insignia.png" }
+      { id: "r_i", name: "Rookie I", minXp: 0, perks: ["Basic Calling Card"], iconUrl: "https://img.icons8.com/color/48/insignia.png" },
+      { id: "r_ii", name: "Rookie II", minXp: 201, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/color/48/insignia.png" },
+      { id: "r_iii", name: "Rookie III", minXp: 401, perks: ["Custom Banner"], iconUrl: "https://img.icons8.com/color/48/insignia.png" },
+      { id: "r_iv", name: "Rookie IV", minXp: 601, perks: ["Weapon XP Card"], iconUrl: "https://img.icons8.com/color/48/insignia.png" },
+      { id: "r_v", name: "Rookie V", minXp: 801, perks: ["Credits Reward"], iconUrl: "https://img.icons8.com/color/48/insignia.png" }
     ]
   },
   {
@@ -308,22 +308,22 @@ export const MOCK_GAMIFICATION_SETTINGS: GamificationSettings = [
 ];
 
 export const MOCK_SPONSORS: Sponsor[] = [
-    { id: 'sp001', name: 'Valken', logoUrl: 'https://i.ibb.co/L6TySzL/image.png', website: 'https://valken.com', bio: 'Valken offers a full range of airsoft products, from guns and gear to BBs and accessories, designed for every level of player.', imageUrls: ['https://i.ibb.co/3k5fV82/image.png', 'https://i.ibb.co/B285bKq/image.png'] },
-    { id: 'sp002', name: 'Lancer Tactical', logoUrl: 'https://i.ibb.co/hLkTb1d/image.png', website: 'https://lancertactical.com', bio: 'Known for affordable and reliable airsoft AEGs, Lancer Tactical provides a great entry point for new players.', imageUrls: ['https://i.ibb.co/YyVqL0r/image.png'] },
-    { id: 'sp003', name: 'Evike.com', logoUrl: 'https://i.ibb.co/9hM2FzK/image.png', website: 'https://evike.com', bio: 'The world\'s largest airsoft retailer, offering an unparalleled selection of guns, gear, and parts from top brands.', imageUrls: ['https://i.ibb.co/f4n7xfr/image.png', 'https://i.ibb.co/3k5fV82/image.png'] },
+    { id: 'sp001', name: 'Valken', logoUrl: 'https://i.ibb.co/L6TySzL/image.png', website: 'https://valken.com', bio: 'Valken offers a full range of airsoft products, from guns and gear to BBs and accessories, designed for every level of player.', imageUrls: [] },
+    { id: 'sp002', name: 'Lancer Tactical', logoUrl: 'https://i.ibb.co/hLkTb1d/image.png', website: 'https://lancertactical.com', bio: 'Known for affordable and reliable airsoft AEGs, Lancer Tactical provides a great entry point for new players.', imageUrls: [] },
+    { id: 'sp003', name: 'Evike.com', logoUrl: 'https://i.ibb.co/9hM2FzK/image.png', website: 'https://evike.com', bio: 'The world\'s largest airsoft retailer, offering an unparalleled selection of guns, gear, and parts from top brands.', imageUrls: [] },
     { id: 'sp004', name: 'G&G Armament', logoUrl: 'https://i.ibb.co/bF9gqGH/image.png', website: 'https://guay2.com', bio: 'A leading manufacturer of high-quality airsoft replicas, known for their innovative designs and performance.', imageUrls: [] },
 ];
 
 export const MOCK_SOCIAL_LINKS: SocialLink[] = [
-    { id: 'soc01', name: 'Facebook', url: 'https://facebook.com', iconUrl: 'https://i.ibb.co/fluent/48/000000/facebook-new.png' },
-    { id: 'soc02', name: 'Instagram', url: 'https://instagram.com', iconUrl: 'https://i.ibb.co/fluent/48/000000/instagram-new.png' },
-    { id: 'soc03', name: 'WhatsApp', url: 'https://wa.me/27821234567', iconUrl: 'https://i.ibb.co/color/48/000000/whatsapp.png' },
+    { id: 'soc01', name: 'Facebook', url: 'https://facebook.com', iconUrl: 'https://cdn-icons-png.flaticon.com/512/5968/5968764.png' },
+    { id: 'soc02', name: 'Instagram', url: 'https://instagram.com', iconUrl: 'https://cdn-icons-png.flaticon.com/512/2111/2111463.png' },
+    { id: 'soc03', name: 'WhatsApp', url: 'https://wa.me/27821234567', iconUrl: 'https://cdn-icons-png.flaticon.com/512/733/733585.png' },
 ];
 
 export const MOCK_CAROUSEL_MEDIA: CarouselMedia[] = [
-    { id: 'car01', type: 'image', url: 'https://i.ibb.co/3k5fV82/image.png' },
-    { id: 'car02', type: 'image', url: 'https://i.ibb.co/B285bKq/image.png' },
-    { id: 'car03', type: 'image', url: 'https://i.ibb.co/YyVqL0r/image.png' },
+    { id: 'car01', type: 'image', url: 'https://i.ibb.co/dsh2c2hp/unnamed.jpg' },
+    { id: 'car02', type: 'image', url: 'https://i.ibb.co/C5fBF6p/image.png' },
+    { id: 'car03', type: 'image', url: 'https://i.ibb.co/bJxtzYw/image.png' },
 ];
 
 // Split up CompanyDetails for easier management in DataContext

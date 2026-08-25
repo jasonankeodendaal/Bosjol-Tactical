@@ -53,12 +53,51 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
 
             // Generic Admin Check: Look for ANY record in the admins table with this email
-            const { data: adminDoc } = await supabase!.from('admins').select('*').eq('email', email).single();
-            if (adminDoc) {
+            const { data: adminRows } = await supabase!.from('admins').select('*').eq('email', email);
+            if (adminRows && adminRows.length > 0) {
+                const adminDoc = adminRows[0];
                 setUser({ ...adminDoc, id: adminDoc.id } as Admin);
-            } else {
-                console.warn(`User ${email} authenticated but found no matching Admin or Creator record.`);
+                return;
             }
+
+            // Player Check: Look for ANY record in the players table with this email
+            const { data: playerRows } = await supabase!.from('players').select('*').eq('email', email);
+            if (playerRows && playerRows.length > 0) {
+                const playerDoc = playerRows[0];
+                setUser(playerDoc as Player);
+                localStorage.setItem('activePlayerId', playerDoc.id);
+                return;
+            }
+
+            // Auto-provision a new player profile if an authenticated user is not yet in the players table
+            const newPlayerId = `p_${Date.now()}`;
+            const cleanName = email.split('@')[0];
+            const formattedName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+            const newPlayerCode = `P${Math.floor(1000 + Math.random() * 9000)}`;
+
+            const newPlayer: Partial<Player> = {
+                id: newPlayerId,
+                name: formattedName,
+                surname: '',
+                playerCode: newPlayerCode,
+                email: email,
+                phone: '',
+                pin: '1234',
+                role: 'player',
+                callsign: cleanName.toUpperCase().slice(0, 8),
+                status: 'Active',
+                avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+                stats: { kills: 0, deaths: 0, headshots: 0, gamesPlayed: 0, xp: 0 },
+                badges: [],
+                legendaryBadges: [],
+                loadout: { primaryWeapon: '', secondaryWeapon: '', lethal: '', tactical: '' },
+                matchHistory: [],
+                xpAdjustments: []
+            };
+
+            await supabase!.from('players').upsert(newPlayer);
+            setUser(newPlayer as Player);
+            localStorage.setItem('activePlayerId', newPlayer.id);
         } catch (error) {
             console.error("Error handling Supabase user:", error);
         }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Rank, Tier, Badge, LegendaryBadge, GamificationRule, GamificationSettings, CompanyDetails } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
-import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, PlusIcon, InformationCircleIcon, ArrowPathIcon } from './icons/Icons';
+import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, PlusIcon, InformationCircleIcon, ArrowPathIcon, CodeBracketIcon, CheckCircleIcon, SparklesIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { DashboardCard } from './DashboardCard';
@@ -194,36 +194,143 @@ const RankEditorModal: React.FC<{
     onClose: () => void,
     onSave: (rank: Omit<Rank, 'id'> | Rank) => void
 }> = ({ rank, onClose, onSave }) => {
+    const existingTiers = rank?.tiers || [];
+    const initialMinXp = existingTiers.length > 0 ? Math.min(...existingTiers.map(t => t.minXp)) : (rank?.minXp ?? 0);
     const [formData, setFormData] = useState({
         name: rank?.name || '',
         description: rank?.description || '',
         rankBadgeUrl: rank?.rankBadgeUrl || '',
+        minXp: initialMinXp,
+        autoGenerateTiers: existingTiers.length === 0,
+        tierCount: 5,
+        xpPerTier: 200,
     });
 
     const handleSave = () => {
-        if (!formData.name) {
+        if (!formData.name.trim()) {
             alert("Rank name cannot be empty.");
             return;
         }
-        const finalRank = { tiers: [], ...rank, ...formData };
+
+        let tiers: Tier[] = rank?.tiers ? [...rank.tiers] : [];
+
+        // Auto-generate starting tiers if creating a new rank and option selected
+        if (tiers.length === 0 && formData.autoGenerateTiers) {
+            const count = Math.max(1, Math.min(10, formData.tierCount));
+            const step = Math.max(10, formData.xpPerTier);
+            const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+            
+            tiers = Array.from({ length: count }, (_, idx) => {
+                const tierMinXp = formData.minXp + (idx === 0 ? 0 : 1 + (idx * step));
+                return {
+                    id: `tier_${Date.now()}_${idx}`,
+                    name: count === 1 ? formData.name : `${formData.name} ${romanNumerals[idx] || (idx + 1)}`,
+                    minXp: idx === 0 ? formData.minXp : (formData.minXp + (idx * step) + (idx > 0 && formData.minXp === 0 && idx === 1 ? 1 : 1)),
+                    perks: [idx === count - 1 ? 'Exclusive Rank Title' : 'Standard Badge'],
+                    iconUrl: formData.rankBadgeUrl || 'https://img.icons8.com/color/48/insignia.png',
+                };
+            });
+        } else if (tiers.length === 0) {
+            // Default single base tier
+            tiers = [{
+                id: `tier_${Date.now()}_0`,
+                name: formData.name,
+                minXp: Number(formData.minXp) || 0,
+                perks: ['Base Operator Access'],
+                iconUrl: formData.rankBadgeUrl || 'https://img.icons8.com/color/48/insignia.png'
+            }];
+        }
+
+        const finalRank: Omit<Rank, 'id'> | Rank = {
+            ...rank,
+            name: formData.name.trim(),
+            description: formData.description.trim(),
+            rankBadgeUrl: formData.rankBadgeUrl || 'https://img.icons8.com/color/48/insignia.png',
+            minXp: Number(formData.minXp) || 0,
+            tiers: tiers
+        };
+
         onSave(finalRank);
     };
 
     return (
-        <Modal isOpen={true} onClose={onClose} title={rank?.id ? 'Edit Rank' : 'Create Rank'}>
+        <Modal isOpen={true} onClose={onClose} title={rank?.id ? `Edit Rank: ${rank.name}` : 'Create New Rank & XP Tier Structure'}>
             <div className="space-y-4">
-                <Input label="Rank Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
-                <Input label="Description" value={formData.description} onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} />
+                <Input 
+                    label="Rank Name" 
+                    value={formData.name} 
+                    onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} 
+                    placeholder="e.g., Rookie, Veteran, Elite, Master" 
+                />
+                <Input 
+                    label="Description" 
+                    value={formData.description} 
+                    onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} 
+                    placeholder="e.g., Introductory rank for new recruits starting at 0 XP" 
+                />
+                
+                <div className="bg-zinc-800/60 p-3.5 rounded-lg border border-zinc-700/60 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <label className="text-sm font-semibold text-gray-200">Required Starting XP</label>
+                        <span className="text-xs text-red-400 font-mono font-bold">{formData.minXp} XP</span>
+                    </div>
+                    <Input 
+                        label="Starts At (XP needed to attain this rank)" 
+                        type="number" 
+                        value={formData.minXp} 
+                        onChange={e => setFormData(f => ({ ...f, minXp: Math.max(0, parseInt(e.target.value, 10) || 0) }))} 
+                        placeholder="0 for 1st Rank (e.g. 0-100 XP)" 
+                        tooltip="Enter the minimum XP a player must earn to achieve this rank. For the initial starting rank (e.g. Rookie / Recruit), set this to 0."
+                    />
+                    <div className="text-xs text-gray-400 flex items-start gap-2 bg-zinc-900/60 p-2.5 rounded border border-zinc-800">
+                        <span className="text-amber-400 font-bold">💡 Example:</span>
+                        <span>
+                            First rank: <strong>0 – 100 XP</strong>. Second rank: <strong>101 – 500 XP</strong>. Third rank: <strong>501 – 1,000 XP</strong>.
+                        </span>
+                    </div>
+                </div>
+
+                {!rank?.id && (
+                    <div className="bg-zinc-800/40 p-3 rounded-lg border border-zinc-700/50 space-y-2">
+                        <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300 font-medium">
+                            <input 
+                                type="checkbox" 
+                                checked={formData.autoGenerateTiers} 
+                                onChange={e => setFormData(f => ({ ...f, autoGenerateTiers: e.target.checked }))} 
+                                className="w-4 h-4 rounded text-red-600 focus:ring-red-500 bg-zinc-900 border-zinc-700"
+                            />
+                            <span>Auto-generate Sub-Tiers (e.g., Tier I to V)</span>
+                        </label>
+                        {formData.autoGenerateTiers && (
+                            <div className="grid grid-cols-2 gap-3 pt-2">
+                                <Input 
+                                    label="Number of Sub-Tiers" 
+                                    type="number" 
+                                    value={formData.tierCount} 
+                                    onChange={e => setFormData(f => ({ ...f, tierCount: Math.max(1, Math.min(10, parseInt(e.target.value, 10) || 1)) }))} 
+                                />
+                                <Input 
+                                    label="XP Increment per Tier" 
+                                    type="number" 
+                                    value={formData.xpPerTier} 
+                                    onChange={e => setFormData(f => ({ ...f, xpPerTier: Math.max(10, parseInt(e.target.value, 10) || 50) }))} 
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 <UrlOrUploadField
-                    label="Rank Badge"
+                    label="Rank Insignia / Badge"
                     fileUrl={formData.rankBadgeUrl}
                     onUrlSet={(url) => setFormData(f => ({...f, rankBadgeUrl: url}))}
                     onRemove={() => setFormData(f => ({...f, rankBadgeUrl: ''}))}
                     accept="image/*"
                 />
             </div>
-            <div className="mt-6">
-                <Button onClick={handleSave} className="w-full">Save Rank</Button>
+            <div className="mt-6 flex justify-end gap-3">
+                <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                <Button onClick={handleSave}>Save Rank Structure</Button>
             </div>
         </Modal>
     );
@@ -237,7 +344,7 @@ const TierEditorModal: React.FC<{
 }> = ({ tier, allTiers, onClose, onSave }) => {
     const [formData, setFormData] = useState({
         name: tier?.name || '',
-        minXp: tier?.minXp || 0,
+        minXp: tier?.minXp !== undefined ? tier.minXp : 0,
         iconUrl: tier?.iconUrl || '',
         perks: tier?.perks?.join(', ') || '',
     });
@@ -246,69 +353,129 @@ const TierEditorModal: React.FC<{
     const nextTier = currentTierIndex > -1 && currentTierIndex < allTiers.length - 1 ? allTiers[currentTierIndex + 1] : null;
 
     const handleSave = () => {
-        if (!formData.name || !tier?.rankId) {
+        if (!formData.name.trim() || !tier?.rankId) {
             alert("Tier Name and Rank ID are required.");
             return;
         }
         const finalTier = {
             ...tier,
-            ...formData,
+            name: formData.name.trim(),
+            minXp: Math.max(0, Number(formData.minXp) || 0),
             perks: formData.perks.split(',').map(s => s.trim()).filter(Boolean),
-            minXp: Number(formData.minXp)
+            iconUrl: formData.iconUrl || 'https://img.icons8.com/color/48/insignia.png',
         };
         onSave(finalTier);
     };
     
     return (
-        <Modal isOpen={true} onClose={onClose} title={tier?.id ? 'Edit Tier' : 'Create Tier'}>
+        <Modal isOpen={true} onClose={onClose} title={tier?.id ? `Edit Tier: ${tier.name}` : 'Create Sub-Tier'}>
             <div className="space-y-4">
-                 <Input label="Tier Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))} />
-                <div className="grid grid-cols-2 gap-4">
-                    <Input label="Starts At (XP)" type="number" value={formData.minXp} onChange={e => setFormData(f => ({...f, minXp: Number(e.target.value)}))} />
-                    <Input label="Ends Before (XP)" type="number" value={nextTier ? nextTier.minXp : ''} disabled placeholder="No upper limit" tooltip="This value is determined by the 'Starts At' XP of the next tier." />
+                <Input 
+                    label="Tier Name" 
+                    value={formData.name} 
+                    onChange={e => setFormData(f => ({...f, name: e.target.value}))} 
+                    placeholder="e.g. Rookie I, Rookie II, Level 1" 
+                />
+                
+                <div className="bg-zinc-800/50 p-3 rounded-lg border border-zinc-700/60 space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input 
+                            label="Starts At (XP Required)" 
+                            type="number" 
+                            value={formData.minXp} 
+                            onChange={e => setFormData(f => ({...f, minXp: Math.max(0, parseInt(e.target.value, 10) || 0)}))} 
+                            placeholder="e.g., 0, 100, 201"
+                            tooltip="The exact minimum XP required for a player to be promoted to this tier."
+                        />
+                        <Input 
+                            label="Ends Before (XP)" 
+                            type="text" 
+                            value={nextTier ? `${nextTier.minXp.toLocaleString()} XP` : 'MAX (No upper limit)'} 
+                            disabled 
+                            tooltip="Calculated automatically by the 'Starts At' XP of the subsequent tier in the progression system." 
+                        />
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-xs px-2 py-1.5 bg-zinc-900/80 rounded border border-zinc-800">
+                        <span className="text-gray-400">Effective Active Bracket:</span>
+                        <span className="font-mono font-bold text-red-400">
+                            {formData.minXp.toLocaleString()} XP {nextTier ? `– ${(nextTier.minXp - 1).toLocaleString()} XP` : '+'}
+                        </span>
+                    </div>
                 </div>
-                <Input label="Perks (comma-separated)" value={formData.perks} onChange={e => setFormData(f => ({...f, perks: e.target.value}))} />
+
+                <Input 
+                    label="Perks & Rewards (comma-separated)" 
+                    value={formData.perks} 
+                    onChange={e => setFormData(f => ({...f, perks: e.target.value}))} 
+                    placeholder="e.g., Calling Card, Weapon XP, Custom Title" 
+                />
                 <UrlOrUploadField
-                    label="Tier Icon"
+                    label="Tier Insignia / Icon"
                     fileUrl={formData.iconUrl}
                     onUrlSet={(url) => setFormData(f => ({...f, iconUrl: url}))}
                     onRemove={() => setFormData(f => ({...f, iconUrl: ''}))}
                     accept="image/*"
                 />
             </div>
-            <div className="mt-6">
-                <Button onClick={handleSave} className="w-full">Save Tier</Button>
+            <div className="mt-6 flex justify-end gap-3">
+                <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                <Button onClick={handleSave}>Save Tier</Button>
             </div>
         </Modal>
-    )
+    );
 };
 
 const RankCard: React.FC<{
     rank: Rank;
+    allTiers: Tier[];
     onEditRank: () => void;
     onDeleteRank: () => void;
     onEditTier: (tier: Tier) => void;
     onDeleteTier: (tier: Tier) => void;
-    onAddTier: () => void;
-}> = ({ rank, onEditRank, onDeleteRank, onEditTier, onDeleteTier, onAddTier }) => {
+    onAddTier: (suggestedXp?: number) => void;
+}> = ({ rank, allTiers, onEditRank, onDeleteRank, onEditTier, onDeleteTier, onAddTier }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const sortedTiers = (rank.tiers || []).slice().sort((a,b) => a.minXp - b.minXp);
+    const lowestXp = sortedTiers.length > 0 ? sortedTiers[0].minXp : (rank.minXp ?? 0);
+    const highestXp = sortedTiers.length > 0 ? sortedTiers[sortedTiers.length - 1].minXp : lowestXp;
 
     return (
-        <div className="bg-zinc-900/50 rounded-lg border border-zinc-700/50">
-            <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center gap-3 p-3 text-left hover:bg-zinc-800/50 transition-colors">
-                <img src={rank.rankBadgeUrl} alt={rank.name} className="w-10 h-10 flex-shrink-0" />
-                <div className="flex-grow">
-                    <h3 className="text-lg font-bold text-red-400">{rank.name}</h3>
-                    <p className="text-xs text-gray-400 truncate">{rank.description}</p>
+        <div className="bg-zinc-900/60 rounded-xl border border-zinc-700/60 overflow-hidden shadow-lg transition-all hover:border-zinc-600">
+            <button 
+                onClick={() => setIsOpen(!isOpen)} 
+                className="w-full flex items-center gap-3 p-4 text-left hover:bg-zinc-800/40 transition-colors"
+            >
+                <div className="relative">
+                    <img src={rank.rankBadgeUrl} alt={rank.name} className="w-12 h-12 flex-shrink-0 object-contain drop-shadow" />
+                    <span className="absolute -bottom-1 -right-1 bg-red-600/90 text-[10px] text-white font-mono font-bold px-1.5 py-0.2 rounded-full border border-red-400/50">
+                        {sortedTiers.length}
+                    </span>
                 </div>
-                <div className="flex gap-2">
-                    <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onEditRank(); }} className="!p-1.5"><PencilIcon className="w-4 h-4"/></Button>
-                    <Button size="sm" variant="danger" onClick={(e) => { e.stopPropagation(); onDeleteRank(); }} className="!p-1.5"><TrashIcon className="w-4 h-4"/></Button>
+                <div className="flex-grow min-w-0">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-white tracking-wide">{rank.name}</h3>
+                        <span className="bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-mono font-bold px-2 py-0.5 rounded">
+                            {lowestXp.toLocaleString()} XP{sortedTiers.length > 1 ? ` – ${highestXp.toLocaleString()} XP` : '+'}
+                        </span>
+                    </div>
+                    <p className="text-xs text-gray-400 truncate mt-0.5">{rank.description || 'No description provided'}</p>
                 </div>
-                <motion.div animate={{ rotate: isOpen ? 180 : 0 }} className="flex-shrink-0 ml-2">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                <div className="flex gap-1.5 items-center">
+                    <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onEditRank(); }} className="!p-1.5" title="Edit Rank">
+                        <PencilIcon className="w-4 h-4 text-gray-300"/>
+                    </Button>
+                    <Button size="sm" variant="danger" onClick={(e) => { e.stopPropagation(); onDeleteRank(); }} className="!p-1.5" title="Delete Rank">
+                        <TrashIcon className="w-4 h-4"/>
+                    </Button>
+                </div>
+                <motion.div animate={{ rotate: isOpen ? 180 : 0 }} className="flex-shrink-0 ml-1">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                 </motion.div>
             </button>
+            
             <AnimatePresence>
                 {isOpen && (
                     <motion.div 
@@ -316,27 +483,64 @@ const RankCard: React.FC<{
                         initial={{ height: 0, opacity: 0 }} 
                         animate={{ height: 'auto', opacity: 1 }} 
                         exit={{ height: 0, opacity: 0 }} 
-                        transition={{ duration: 0.3, ease: 'easeInOut' }}
-                        className="border-t border-zinc-800"
+                        transition={{ duration: 0.25, ease: 'easeInOut' }}
+                        className="border-t border-zinc-800 bg-zinc-950/40"
                     >
-                        <div className="p-3 space-y-2">
-                            {(rank.tiers || []).sort((a,b) => a.minXp - b.minXp).map(tier => (
-                                <div key={tier.id} className="flex items-center gap-2 bg-zinc-800/50 p-2 rounded-md">
-                                    <img src={tier.iconUrl} alt={tier.name} className="w-6 h-6"/>
-                                    <div className="flex-grow">
-                                        <p className="font-semibold text-white text-sm">{tier.name}</p>
-                                        <p className="text-xs text-gray-400">Starts at {tier.minXp.toLocaleString()} XP</p>
-                                    </div>
-                                    <div className="flex gap-1.5">
-                                        <Button size="sm" variant="secondary" onClick={() => onEditTier(tier)} className="!p-1.5"><PencilIcon className="w-4 h-4"/></Button>
-                                        <Button size="sm" variant="danger" onClick={() => onDeleteTier(tier)} className="!p-1.5"><TrashIcon className="w-4 h-4"/></Button>
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="p-3.5 space-y-2">
+                            <div className="flex justify-between items-center px-1 pb-1">
+                                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Sub-Tiers ({sortedTiers.length})</span>
+                                <span className="text-[11px] text-zinc-500 font-mono">Rank Points Required</span>
+                            </div>
+
+                            {sortedTiers.length === 0 ? (
+                                <p className="text-xs text-zinc-500 italic py-2 text-center">No tiers configured yet. Click "Add Tier" below to set XP requirements.</p>
+                            ) : (
+                                sortedTiers.map((tier, idx) => {
+                                    const globalIndex = allTiers.findIndex(t => t.id === tier.id);
+                                    const nextTierInProgression = globalIndex > -1 && globalIndex < allTiers.length - 1 ? allTiers[globalIndex + 1] : null;
+                                    
+                                    return (
+                                        <div key={tier.id} className="flex items-center gap-3 bg-zinc-850/80 p-2.5 rounded-lg border border-zinc-800/80 hover:border-zinc-700 transition-colors">
+                                            <img src={tier.iconUrl} alt={tier.name} className="w-7 h-7 object-contain flex-shrink-0"/>
+                                            <div className="flex-grow min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-semibold text-white text-sm truncate">{tier.name}</p>
+                                                    <span className="bg-zinc-800 text-green-400 font-mono text-[11px] font-bold px-1.5 py-0.5 rounded border border-green-500/20">
+                                                        {tier.minXp.toLocaleString()} XP
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
+                                                    <span>Range: {tier.minXp.toLocaleString()} – {nextTierInProgression ? `${(nextTierInProgression.minXp - 1).toLocaleString()} XP` : 'MAX'}</span>
+                                                    {tier.perks && tier.perks.length > 0 && (
+                                                        <span className="text-zinc-500 truncate">• {tier.perks.join(', ')}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-1.5 flex-shrink-0">
+                                                <Button size="sm" variant="secondary" onClick={() => onEditTier(tier)} className="!p-1.5" title="Edit Tier XP">
+                                                    <PencilIcon className="w-3.5 h-3.5"/>
+                                                </Button>
+                                                <Button size="sm" variant="danger" onClick={() => onDeleteTier(tier)} className="!p-1.5" title="Delete Tier">
+                                                    <TrashIcon className="w-3.5 h-3.5"/>
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+
                             <div className="pt-2">
-                                <Button size="sm" variant="secondary" className="w-full" onClick={onAddTier}>
-                                    <PlusIcon className="w-4 h-4 mr-2" />
-                                    Add Tier
+                                <Button 
+                                    size="sm" 
+                                    variant="secondary" 
+                                    className="w-full !py-2 text-xs" 
+                                    onClick={() => {
+                                        const lastTierXp = sortedTiers.length > 0 ? sortedTiers[sortedTiers.length - 1].minXp : lowestXp;
+                                        onAddTier(lastTierXp + 200);
+                                    }}
+                                >
+                                    <PlusIcon className="w-4 h-4 mr-1.5" />
+                                    Add Sub-Tier & XP Threshold
                                 </Button>
                             </div>
                         </div>
@@ -470,6 +674,69 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     const earningRules = gamificationSettings.filter(rule => rule.xp >= 0);
     const penaltyRules = gamificationSettings.filter(rule => rule.xp < 0);
     
+    const [showSqlGuide, setShowSqlGuide] = useState(false);
+    const [copiedSql, setCopiedSql] = useState(false);
+
+    const rankSqlSnippet = `-- 1. Ensure ranks table has tiers jsonb column and security permissions
+CREATE TABLE IF NOT EXISTS public.ranks (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    "rankBadgeUrl" TEXT,
+    tiers JSONB DEFAULT '[]'::jsonb
+);
+
+-- 2. Insert or update Ranks with custom XP brackets (Example: Starting rank 0 - 100 XP)
+INSERT INTO public.ranks (id, name, description, "rankBadgeUrl", tiers)
+VALUES
+(
+    'rank_rookie', 
+    'Rookie', 
+    'Introductory rank for new operators (0 to 100 XP).',
+    'https://i.ibb.co/external-flatart-icons-outline-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-outline-flatarticons.png',
+    '[
+        {"id": "r_i", "name": "Rookie I", "minXp": 0, "perks": ["Basic Calling Card"], "iconUrl": "https://img.icons8.com/color/48/insignia.png"},
+        {"id": "r_ii", "name": "Rookie II", "minXp": 25, "perks": ["Calling Card"], "iconUrl": "https://img.icons8.com/color/48/insignia.png"},
+        {"id": "r_iii", "name": "Rookie III", "minXp": 50, "perks": ["Custom Banner"], "iconUrl": "https://img.icons8.com/color/48/insignia.png"},
+        {"id": "r_iv", "name": "Rookie IV", "minXp": 75, "perks": ["Weapon XP Card"], "iconUrl": "https://img.icons8.com/color/48/insignia.png"},
+        {"id": "r_v", "name": "Rookie V", "minXp": 100, "perks": ["Credits Reward"], "iconUrl": "https://img.icons8.com/color/48/insignia.png"}
+    ]'::jsonb
+),
+(
+    'rank_vet', 
+    'Veteran', 
+    'Experienced operators with proven battlefield record (101 to 500 XP).',
+    'https://i.ibb.co/external-flatart-icons-flat-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-flat-flatarticons.png',
+    '[
+        {"id": "v_i", "name": "Veteran I", "minXp": 101, "perks": ["Weapon XP Card"], "iconUrl": "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png"},
+        {"id": "v_ii", "name": "Veteran II", "minXp": 200, "perks": ["Custom Banner"], "iconUrl": "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png"},
+        {"id": "v_iii", "name": "Veteran III", "minXp": 300, "perks": ["Credits Reward"], "iconUrl": "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png"},
+        {"id": "v_iv", "name": "Veteran IV", "minXp": 400, "perks": ["Weapon XP Card"], "iconUrl": "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png"},
+        {"id": "v_v", "name": "Veteran V", "minXp": 500, "perks": ["Exclusive Skin"], "iconUrl": "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png"}
+    ]'::jsonb
+)
+ON CONFLICT (id) DO UPDATE 
+SET name = EXCLUDED.name,
+    description = EXCLUDED.description,
+    "rankBadgeUrl" = EXCLUDED."rankBadgeUrl",
+    tiers = EXCLUDED.tiers;
+
+-- 3. SQL Query to get player tier directly by total XP
+-- SELECT p.name, p.callsign, (p.stats->>'xp')::int as xp, t.*
+-- FROM public.players p
+-- CROSS JOIN LATERAL jsonb_to_recordset(
+--     (SELECT jsonb_agg(elem) FROM public.ranks r, jsonb_array_elements(r.tiers) elem)
+-- ) as t(id text, name text, "minXp" int, perks text[], "iconUrl" text)
+-- WHERE (p.stats->>'xp')::int >= t."minXp"
+-- ORDER BY t."minXp" DESC
+-- LIMIT 1;`;
+
+    const handleCopySql = () => {
+        navigator.clipboard.writeText(rankSqlSnippet);
+        setCopiedSql(true);
+        setTimeout(() => setCopiedSql(false), 2500);
+    };
+
     return (
         <div className="space-y-6">
             {/* Modals */}
@@ -485,18 +752,67 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
             {deletingTier && <Modal isOpen={true} onClose={() => setDeletingTier(null)} title="Confirm Deletion"><p>Delete "{deletingTier.name}" tier?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingTier(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteTier}>Delete</Button></div></Modal>}
 
             {/* Rank Structure */}
-            <DashboardCard title="Rank Structure" icon={<ShieldCheckIcon className="w-6 h-6"/>} titleAddon={<Button size="sm" onClick={() => setEditingRank({})}><PlusIcon className="w-5 h-5 mr-2" /> Add Rank</Button>}>
-                 <div className="p-4">
+            <DashboardCard 
+                title="Rank Structure & XP Thresholds" 
+                icon={<ShieldCheckIcon className="w-6 h-6"/>} 
+                titleAddon={
+                    <div className="flex items-center gap-2">
+                        <Button size="sm" variant="secondary" onClick={() => setShowSqlGuide(!showSqlGuide)}>
+                            <CodeBracketIcon className="w-4 h-4 mr-1.5" />
+                            {showSqlGuide ? 'Hide SQL Snippets' : 'SQL Snippets'}
+                        </Button>
+                        <Button size="sm" onClick={() => setEditingRank({})}>
+                            <PlusIcon className="w-5 h-5 mr-1.5" /> 
+                            Add Rank
+                        </Button>
+                    </div>
+                }
+            >
+                 <div className="p-4 space-y-4">
+                    {/* Information Banner */}
+                    <div className="bg-zinc-800/40 p-3 rounded-lg border border-zinc-700/50 flex items-start gap-3 text-xs text-gray-300">
+                        <InformationCircleIcon className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <span className="font-bold text-white">XP Progression Rules:</span> Ranks and Tiers are automatically calculated based on total Rank Points (XP). The starting rank begins at <strong>0 XP</strong> (e.g. 0 – 100 XP for Rookie). As players earn XP in matches or through gamification rules, their tier and military insignia unlock automatically.
+                        </div>
+                    </div>
+
+                    {/* SQL Snippets Drawer */}
+                    {showSqlGuide && (
+                        <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-700/80 space-y-3 shadow-inner">
+                            <div className="flex justify-between items-center pb-2 border-b border-zinc-800">
+                                <div className="flex items-center gap-2">
+                                    <CodeBracketIcon className="w-5 h-5 text-red-400" />
+                                    <h4 className="text-sm font-bold text-white">PostgreSQL Migration / SQL Snippet for Rank Structure</h4>
+                                </div>
+                                <Button size="sm" variant="secondary" onClick={handleCopySql} className="!py-1 !px-3 text-xs">
+                                    {copiedSql ? (
+                                        <>
+                                            <CheckCircleIcon className="w-4 h-4 mr-1 text-green-400" />
+                                            Copied!
+                                        </>
+                                    ) : (
+                                        'Copy SQL'
+                                    )}
+                                </Button>
+                            </div>
+                            <pre className="text-xs font-mono text-zinc-300 overflow-x-auto p-3 bg-zinc-900/90 rounded-lg border border-zinc-800/80 leading-relaxed">
+                                <code>{rankSqlSnippet}</code>
+                            </pre>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         {sortedRanks.map(rank => (
                             <RankCard 
                                 key={rank.id}
                                 rank={rank}
+                                allTiers={allTiers}
                                 onEditRank={() => setEditingRank(rank)}
                                 onDeleteRank={() => setDeletingRank(rank)}
                                 onEditTier={(tier) => setEditingTier({ ...tier, rankId: rank.id })}
                                 onDeleteTier={(tier) => setDeletingTier({ ...tier, rankId: rank.id })}
-                                onAddTier={() => setEditingTier({ rankId: rank.id })}
+                                onAddTier={(suggestedXp) => setEditingTier({ rankId: rank.id, minXp: suggestedXp ?? 0 })}
                             />
                         ))}
                     </div>

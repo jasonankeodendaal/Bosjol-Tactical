@@ -365,7 +365,7 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
         (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.callsign || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.playerCode || '').toLowerCase().includes(searchTerm.toLowerCase())
-    ).sort((a,b) => b.stats.xp - a.stats.xp);
+    ).sort((a,b) => (b.stats?.xp ?? 0) - (a.stats?.xp ?? 0));
 
     return (
         <div>
@@ -402,8 +402,8 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
 
 const LeaderboardTab: React.FC<{ players: Player[] }> = ({ players }) => {
     return (
-        <DashboardCard title="Global Leaderboard" icon={<TrophyIcon className="w-6 h-6" />} fullHeight>
-            <Leaderboard players={players} />
+        <DashboardCard title="Global Leaderboard & Hall of Fame" icon={<TrophyIcon className="w-6 h-6" />} fullHeight>
+            <Leaderboard players={players} isAdmin={true} />
         </DashboardCard>
     );
 };

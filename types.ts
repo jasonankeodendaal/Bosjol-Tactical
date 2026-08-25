@@ -236,6 +236,8 @@ export interface Rank {
   description: string;
   rankBadgeUrl: string;
   tiers: Tier[];
+  minXp?: number;
+  maxXp?: number;
 }
 
 
@@ -308,6 +310,19 @@ export interface Raffle extends RaffleCore {
     winners: RaffleWinnerDoc[];
 }
 
+export type HonorType = 'man_of_the_match' | 'man_of_the_month' | 'man_of_the_year';
+
+export interface PlayerHonor {
+    id: string;
+    playerId: string;
+    playerName?: string;
+    playerCallsign?: string;
+    playerAvatarUrl?: string;
+    type: HonorType;
+    title: string;
+    date: string;
+    notes?: string;
+}
 
 export interface GamificationRule {
     id: string;

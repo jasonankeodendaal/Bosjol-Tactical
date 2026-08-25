@@ -229,6 +229,7 @@ create table if not exists public.signups ( id text primary key, "eventId" text,
 create table if not exists public."activityLog" ( id text primary key, timestamp text, "userId" text, "userName" text, "userRole" text, action text, details jsonb );
 create table if not exists public.sessions ( id text primary key, "userId" text, "userName" text, "userRole" text, "currentView" text, "lastSeen" text );
 create table if not exists public.notifications ( id text primary key, title text, message text, type text, "timestamp" text, read boolean, "playerId" text, "playerName" text, "playerCallsign" text, "playerCode" text, "playerAvatarUrl" text, "eventId" text, "eventTitle" text, metadata jsonb );
+create table if not exists public.honors ( id text primary key, "playerId" text, "playerName" text, "playerCallsign" text, "playerAvatarUrl" text, type text, title text, date text, notes text );
 
 -- 4. Grant Access & Enable Security
 grant usage on schema public to postgres, anon, authenticated, service_role;
@@ -238,7 +239,7 @@ grant all privileges on all tables in schema public to postgres, anon, authentic
 -- This eliminates dashboard warnings and prepares the DB for security policies.
 do $$
 declare
-  tables text[] := array['admins', 'players', 'events', 'inventory', 'transactions', 'settings', 'ranks', 'badges', 'legendaryBadges', 'gamificationSettings', 'apiSetupGuide', 'sponsors', 'locations', 'socialLinks', 'carouselMedia', 'suppliers', 'vouchers', 'raffles', 'signups', 'activityLog', 'sessions', 'notifications'];
+  tables text[] := array['admins', 'players', 'events', 'inventory', 'transactions', 'settings', 'ranks', 'badges', 'legendaryBadges', 'gamificationSettings', 'apiSetupGuide', 'sponsors', 'locations', 'socialLinks', 'carouselMedia', 'suppliers', 'vouchers', 'raffles', 'signups', 'activityLog', 'sessions', 'notifications', 'honors'];
   t text;
 begin
   foreach t in array tables loop

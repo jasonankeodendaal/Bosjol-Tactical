@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode, useContext, useMemo, useCallback, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import * as mock from '../constants';
-import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters, AdminNotification } from '../types';
+import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters, AdminNotification, PlayerHonor } from '../types';
 import { AuthContext } from '../auth/AuthContext';
 
 export const IS_LIVE_DATA = isSupabaseConfigured();
@@ -207,6 +207,7 @@ export interface DataContextType {
     transactions: Transaction[]; setTransactions: (d: Transaction[] | ((p: Transaction[]) => Transaction[])) => void;
     locations: Location[]; setLocations: (d: Location[] | ((p: Location[]) => Location[])) => void;
     raffles: Raffle[]; setRaffles: (d: Raffle[] | ((p: Raffle[]) => Raffle[])) => void;
+    honors: PlayerHonor[]; setHonors: (d: PlayerHonor[] | ((p: PlayerHonor[]) => PlayerHonor[])) => void;
     signups: Signup[]; setSignups: (d: Signup[] | ((p: Signup[]) => Signup[])) => void;
     apiSetupGuide: ApiGuideStep[]; setApiSetupGuide: (d: ApiGuideStep[] | ((p: ApiGuideStep[]) => ApiGuideStep[])) => void;
     sessions: Session[]; setSessions: React.Dispatch<React.SetStateAction<Session[]>>;
@@ -261,6 +262,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [transactions, setTransactions, loadingTransactions] = useCollection<Transaction>('transactions', MOCK_DATA_MAP.transactions, { isProtected: true });
     const [locations, setLocations, loadingLocations] = useCollection<Location>('locations', MOCK_DATA_MAP.locations, { isProtected: true });
     const [raffles, setRaffles, loadingRaffles] = useCollection<Raffle>('raffles', MOCK_DATA_MAP.raffles, { isProtected: true });
+    const [honors, setHonors, loadingHonors] = useCollection<PlayerHonor>('honors', mock.MOCK_HONORS, { isProtected: true });
     const [signups, setSignups, loadingSignups] = useCollection<Signup>('signups', MOCK_DATA_MAP.signups, { isProtected: true });
     const [sessions, setSessions, loadingSessions] = useCollection<Session>('sessions', [], { isProtected: true });
     const [activityLog, setActivityLog, loadingActivityLog] = useCollection<ActivityLog>('activityLog', [], { isProtected: true });
@@ -667,6 +669,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         transactions, setTransactions,
         locations, setLocations,
         raffles, setRaffles,
+        honors, setHonors,
         signups, setSignups,
         apiSetupGuide, setApiSetupGuide,
         sessions, setSessions,
@@ -709,6 +712,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         transactions, setTransactions,
         locations, setLocations,
         raffles, setRaffles,
+        honors, setHonors,
         signups, setSignups,
         apiSetupGuide, setApiSetupGuide,
         sessions, setSessions,

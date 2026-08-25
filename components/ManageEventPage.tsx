@@ -4,7 +4,7 @@ import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { ArrowLeftIcon, CalendarIcon, UserIcon, TrashIcon, CheckCircleIcon, CreditCardIcon, PlusIcon, ChartBarIcon, ExclamationTriangleIcon, TrophyIcon, MinusIcon, CurrencyDollarIcon, CogIcon } from './icons/Icons';
-import { MOCK_EVENT_THEMES, EVENT_STATUSES, EVENT_TYPES, UNRANKED_TIER } from '../constants';
+import { MOCK_EVENT_THEMES, EVENT_STATUSES, EVENT_TYPES, UNRANKED_TIER, MOCK_LOCATIONS } from '../constants';
 import { BadgePill } from './BadgePill';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
@@ -59,6 +59,11 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     event, players, inventory, gamificationSettings, legendaryBadges, onBack, onSave, onDelete, setPlayers, setTransactions, signups, setDoc, deleteDoc, companyDetails
 }) => {
     const dataContext = useContext(DataContext);
+    const availableLocations = useMemo(() => {
+        const ctxLocs = dataContext?.locations || [];
+        return ctxLocs.length > 0 ? ctxLocs : MOCK_LOCATIONS;
+    }, [dataContext?.locations]);
+
     const [formData, setFormData] = useState<Omit<GameEvent, 'id'>>(() => {
         if (!event) return defaultEvent;
         // Ensure date is in 'YYYY-MM-DD' format for the input
@@ -455,7 +460,24 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <Input label="Date" type="date" value={formData.date} onChange={e => setFormData(f => ({ ...f, date: e.target.value }))} />
                                 <Input label="Start Time" type="time" value={formData.startTime} onChange={e => setFormData(f => ({ ...f, startTime: e.target.value }))} />
-                                <Input label="Location" value={formData.location} onChange={e => setFormData(f => ({ ...f, location: e.target.value }))} />
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Location</label>
+                                    <select
+                                        value={formData.location}
+                                        onChange={e => setFormData(f => ({ ...f, location: e.target.value }))}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    >
+                                        <option value="">-- Select Preset Location --</option>
+                                        {availableLocations.map(loc => (
+                                            <option key={loc.id || loc.name} value={loc.name}>
+                                                {loc.name}{loc.address ? ` (${loc.address})` : ''}
+                                            </option>
+                                        ))}
+                                        {formData.location && !availableLocations.some(l => l.name === formData.location) && (
+                                            <option value={formData.location}>{formData.location}</option>
+                                        )}
+                                    </select>
+                                </div>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>

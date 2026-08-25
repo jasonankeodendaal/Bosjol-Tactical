@@ -1,7 +1,7 @@
 
 
 // FIX: Import `PlayerStats` to resolve TypeScript error on line 516.
-import type { Player, PlayerCore, Admin, GameEvent, EventCore, Briefing, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, Tier, ApiGuideStep, MatchHistoryDoc, XpAdjustmentDoc, AttendeeDoc, RaffleCore, RaffleTicketDoc, RaffleWinnerDoc, VoucherCore, VoucherRedemption, PlayerStats, InventoryCategory, InventoryCondition } from './types';
+import type { Player, PlayerCore, Admin, GameEvent, EventCore, Briefing, GamificationSettings, Badge, Sponsor, CompanyDetails, MatchRecord, Loadout, PlayerRole, InventoryItem, Voucher, Supplier, Transaction, Location, LegendaryBadge, Raffle, EventStatus, EventType, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, Tier, ApiGuideStep, MatchHistoryDoc, XpAdjustmentDoc, AttendeeDoc, RaffleCore, RaffleTicketDoc, RaffleWinnerDoc, VoucherCore, VoucherRedemption, PlayerStats, InventoryCategory, InventoryCondition, PlayerHonor } from './types';
 
 export const MOCK_BADGES: Badge[] = [
     { id: 'b01', name: 'Sharpshooter', description: 'Achieve 50 headshots', iconUrl: 'https://img.icons8.com/color/96/target.png', criteria: { type: 'headshots', value: 50 }},
@@ -430,6 +430,41 @@ export const MOCK_NOTIFICATIONS: AdminNotification[] = [
     }
 ];
 
+export const MOCK_HONORS: PlayerHonor[] = [
+    {
+        id: 'h_01',
+        playerId: 'p1',
+        playerName: 'John Doe',
+        playerCallsign: 'Ghost',
+        playerAvatarUrl: 'https://api.dicebear.com/8.x/bottts/svg?seed=JohnDoe',
+        type: 'man_of_the_match',
+        title: 'Operation Nightfall',
+        date: '2026-08-15',
+        notes: 'Outmatched entire enemy squad with 14 kills and zero casualties.'
+    },
+    {
+        id: 'h_02',
+        playerId: 'p2',
+        playerName: 'Jane Smith',
+        playerCallsign: 'Valkyrie',
+        playerAvatarUrl: 'https://api.dicebear.com/8.x/bottts/svg?seed=JaneSmith',
+        type: 'man_of_the_month',
+        title: 'July 2026 Season',
+        date: '2026-07-31',
+        notes: 'Maintained highest win rate and led squad tactics across 8 consecutive missions.'
+    },
+    {
+        id: 'h_03',
+        playerId: 'p1',
+        playerName: 'John Doe',
+        playerCallsign: 'Ghost',
+        playerAvatarUrl: 'https://api.dicebear.com/8.x/bottts/svg?seed=JohnDoe',
+        type: 'man_of_the_year',
+        title: '2025 Annual Tactical League',
+        date: '2025-12-30',
+        notes: 'Crown Champion for overall score, accuracy, and leadership.'
+    }
+];
 
 export const MOCK_API_GUIDE: ApiGuideStep[] = [
     {

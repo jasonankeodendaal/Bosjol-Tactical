@@ -175,7 +175,7 @@ const RankAndLeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'pla
     const kills = player.stats?.kills ?? 0;
     const deaths = player.stats?.deaths ?? 0;
     const kdr = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
-    const avgKills = player.stats.gamesPlayed > 0 ? (kills / player.stats.gamesPlayed).toFixed(1) : '0.0';
+    const avgKills = (player.stats?.gamesPlayed ?? 0) > 0 ? (kills / (player.stats?.gamesPlayed || 1)).toFixed(1) : '0.0';
 
     const RankDisplayItem: React.FC<{ tier: Tier | null, type: 'side' | 'current', label: string }> = ({ tier, type, label }) => {
         if (!tier) return <div className="w-1/3" />;
@@ -202,7 +202,7 @@ const RankAndLeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'pla
                             </div>
                              <div className="rank-stats-item">
                                 <span className="label">Matches</span>
-                                <span className="value">{player.stats.gamesPlayed}</span>
+                                <span className="value">{player.stats?.gamesPlayed ?? 0}</span>
                             </div>
                             <div className="rank-stats-item">
                                 <span className="label">Avg. Kills</span>
@@ -214,7 +214,7 @@ const RankAndLeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'pla
                             </div>
                              <div className="rank-stats-item">
                                 <span className="label">Headshots</span>
-                                <span className="value">{player.stats.headshots}</span>
+                                <span className="value">{player.stats?.headshots ?? 0}</span>
                             </div>
                         </div>
                     </div>
@@ -657,7 +657,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
 
     const percentile = players.length > 1 ? (players.filter(p => (p.stats?.xp ?? 0) < playerXP).length / (players.length - 1)) * 100 : 100;
         
-    const sortedPlayers = useMemo(() => [...players].sort((a, b) => b.stats.xp - a.stats.xp), [players]);
+    const sortedPlayers = useMemo(() => [...players].sort((a, b) => (b.stats?.xp ?? 0) - (a.stats?.xp ?? 0)), [players]);
     const topThree = sortedPlayers.slice(0, 3);
     
     const kills = player.stats?.kills ?? 0;
@@ -734,22 +734,73 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
             
             <div className="overview-card commendations-card">
                 <h3 className="overview-section-title">Commendations</h3>
-                {(player.badges.length === 0 && player.legendaryBadges.length === 0) ? (
+                {((player.badges || []).length === 0 && (player.legendaryBadges || []).length === 0) ? (
                     <p className="text-center text-gray-500 py-4">No commendations earned yet.</p>
                 ) : (
                     <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-4 commendations-grid">
-                        {player.legendaryBadges.map(badge => (
+                        {(player.legendaryBadges || []).map(badge => (
                             <div key={badge.id} className="relative group flex justify-center items-center aspect-square legendary-badge-item !border-0" title={`${badge.name}: ${badge.description}`}>
                                 <img src={badge.iconUrl} alt={badge.name} className="w-12 h-12 object-contain" />
                             </div>
                         ))}
-                        {player.badges.map(badge => (
+                        {(player.badges || []).map(badge => (
                             <div key={badge.id} className="relative group flex justify-center items-center aspect-square" title={`${badge.name}: ${badge.description}`}>
                                 <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 object-contain"/>
                             </div>
                         ))}
                     </div>
                 )}
+            </div>
+
+            {/* Player Official Honors */}
+            <div className="overview-card bg-gradient-to-r from-zinc-900 via-zinc-900 to-amber-950/20 border-amber-500/30">
+                <div className="flex items-center justify-between mb-3 border-b border-amber-500/20 pb-2">
+                    <h3 className="overview-section-title !mb-0 text-amber-400 flex items-center gap-2">
+                        <TrophyIcon className="w-5 h-5 text-amber-400" /> My Hall of Fame Honors ({dataContext?.honors?.filter(h => h.playerId === player.id).length || 0})
+                    </h3>
+                    <span className="text-[11px] text-amber-500/80 font-mono uppercase tracking-wider">Official Awards</span>
+                </div>
+                {(() => {
+                    const playerHonors = dataContext?.honors?.filter(h => h.playerId === player.id) || [];
+                    if (playerHonors.length === 0) {
+                        return (
+                            <p className="text-center text-zinc-500 text-xs py-4">
+                                No official honors awarded yet. Excel in tactical matches to earn Man of the Match, Month, or Year!
+                            </p>
+                        );
+                    }
+                    return (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {playerHonors.map(honor => {
+                                const isMotm = honor.type === 'man_of_the_match';
+                                const isMotMth = honor.type === 'man_of_the_month';
+                                const isMotYr = honor.type === 'man_of_the_year';
+
+                                return (
+                                    <div
+                                        key={honor.id}
+                                        className={`p-3 rounded-xl border flex flex-col justify-between ${
+                                            isMotYr ? 'bg-amber-950/40 border-amber-400/80 shadow-lg shadow-amber-950/50' :
+                                            isMotMth ? 'bg-purple-950/40 border-purple-500/60' :
+                                            'bg-zinc-800/60 border-amber-500/40'
+                                        }`}
+                                    >
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1 text-amber-300">
+                                                    {isMotYr ? '👑 Man of Year' : isMotMth ? '🏆 Man of Month' : '🌟 Man of Match'}
+                                                </span>
+                                                <span className="text-[10px] text-zinc-400 font-mono">{honor.date}</span>
+                                            </div>
+                                            <p className="font-bold text-white text-sm">{honor.title}</p>
+                                            {honor.notes && <p className="text-xs text-zinc-300 italic mt-1 bg-black/30 p-1.5 rounded">"{honor.notes}"</p>}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                })()}
             </div>
             
             <div className="overview-card lifetime-stats-card">
@@ -807,7 +858,7 @@ const PodiumPlayer: React.FC<{ player: Player, rank: 1 | 2 | 3, delay: number }>
         <motion.div className={`podium-item ${podiumClass}`} variants={animationVariants}>
             <div className="podium-avatar-wrapper"><img src={player.avatarUrl} alt={player.name} className="podium-avatar" />
                 <p className={`font-bold text-base mt-2 truncate max-w-full px-1 ${rank === 1 ? 'text-amber-300' : 'text-white'}`}>{player.callsign}</p>
-                <p className="text-xs text-zinc-300">{player.stats.xp.toLocaleString()} RP</p>
+                <p className="text-xs text-zinc-300">{(player.stats?.xp ?? 0).toLocaleString()} RP</p>
             </div><div className="podium-base">{rank}</div>
         </motion.div>
     );
@@ -995,9 +1046,9 @@ const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendary
             </DashboardCard>
              <DashboardCard title="Legendary Commendations" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
                  <div className="p-4">
-                    {player.legendaryBadges.length > 0 ? (
+                    {(player.legendaryBadges || []).length > 0 ? (
                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            {player.legendaryBadges.map(badge => (
+                            {(player.legendaryBadges || []).map(badge => (
                                 <div key={badge.id} className="bg-zinc-800/50 p-4 rounded-lg text-center border border-amber-700/50">
                                     <img src={badge.iconUrl} alt={badge.name} className="w-16 h-16 mx-auto mb-2"/>
                                     <p className="font-bold text-amber-300">{badge.name}</p>

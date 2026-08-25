@@ -183,32 +183,36 @@ const NewPlayerModal: React.FC<{
         <>
             {newlyCreatedPlayer && <SendCredentialsModal player={newlyCreatedPlayer} onClose={() => { setNewlyCreatedPlayer(null); onClose(); }} />}
             <Modal isOpen={!newlyCreatedPlayer} onClose={onClose} title="Create New Player">
-                <div className="space-y-4">
-                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2 sm:space-y-4 text-xs sm:text-sm">
+                     <div className="grid grid-cols-2 gap-2 sm:gap-4">
                         <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                         <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({ ...f, surname: e.target.value }))} />
                     </div>
-                    <Input 
-                        label="Callsign (Admin Assigned)" 
-                        value={formData.callsign} 
-                        onChange={e => setFormData(f => ({ ...f, callsign: e.target.value }))} 
-                        placeholder="e.g., Ghost, Viper (Defaults to First Name)"
-                        tooltip="Only Administrators can assign or change player callsigns. Regular players cannot create or edit their own callsigns."
-                    />
-                    <div>
-                        <Input label="Player Code" value={playerCode} onChange={handlePlayerCodeChange} />
-                        {playerCodeError && <p className="text-red-500 text-xs mt-1">{playerCodeError}</p>}
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                        <Input 
+                            label="Callsign" 
+                            value={formData.callsign} 
+                            onChange={e => setFormData(f => ({ ...f, callsign: e.target.value }))} 
+                            placeholder="e.g. Ghost"
+                            tooltip="Only Administrators can assign or change player callsigns."
+                        />
+                        <div>
+                            <Input label="Player Code" value={playerCode} onChange={handlePlayerCodeChange} />
+                            {playerCodeError && <p className="text-red-500 text-[10px] sm:text-xs mt-0.5">{playerCodeError}</p>}
+                        </div>
                     </div>
-                    <Input label="Email" type="email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
-                    <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                        <Input label="Email" type="email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
+                        <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
                         <Input label="Age" type="number" value={formData.age} onChange={e => setFormData(f => ({ ...f, age: e.target.value }))} />
                         <Input label="ID Number" value={formData.idNumber} onChange={e => setFormData(f => ({ ...f, idNumber: e.target.value }))} />
                     </div>
                     <Input label="6-Digit PIN" type="password" value={formData.pin} onChange={e => setFormData(f => ({ ...f, pin: e.target.value.replace(/\D/g, '') }))} maxLength={6} />
                 </div>
-                <div className="mt-6">
-                    <Button className="w-full" onClick={handleSave} disabled={isSaving || !!playerCodeError}>
+                <div className="mt-3 sm:mt-6">
+                    <Button className="w-full !py-2 sm:!py-2.5" onClick={handleSave} disabled={isSaving || !!playerCodeError}>
                         {isSaving ? 'Creating...' : 'Create Player'}
                     </Button>
                 </div>

@@ -39,24 +39,24 @@ export const Modal: React.FC<ModalProps> = ({
           className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto"
         >
           <motion.div
-            initial={{ scale: 0.96, opacity: 0, y: 8 }}
+            initial={{ scale: 0.95, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.96, opacity: 0, y: 8 }}
+            exit={{ scale: 0.95, opacity: 0, y: 8 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
-            className={`bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full ${maxWidthClass} max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden my-auto ${className}`}
+            className={`bg-zinc-900 border border-zinc-800 rounded-lg sm:rounded-xl shadow-2xl w-full ${maxWidthClass} max-h-[96vh] sm:max-h-[88vh] flex flex-col overflow-hidden my-auto text-xs sm:text-base ${className}`}
           >
-            <div className="flex justify-between items-center px-4 py-3 sm:px-5 sm:py-4 border-b border-zinc-800 flex-shrink-0 bg-zinc-900/90 backdrop-blur-sm sticky top-0 z-10">
-              <h2 className="text-base sm:text-lg font-bold text-white tracking-wide truncate pr-2">{title}</h2>
+            <div className="flex justify-between items-center px-3 py-2 sm:px-5 sm:py-4 border-b border-zinc-800 flex-shrink-0 bg-zinc-900/90 backdrop-blur-sm sticky top-0 z-10">
+              <h2 className="text-sm sm:text-lg font-bold text-white tracking-wide truncate pr-2">{title}</h2>
               <button 
                 onClick={onClose} 
                 className="text-gray-400 hover:text-white p-1 rounded-md hover:bg-zinc-800 transition-colors flex-shrink-0"
                 aria-label="Close modal"
               >
-                <XIcon className="w-5 h-5" />
+                <XIcon className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
-            <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain flex-grow">
+            <div className="p-2.5 sm:p-5 overflow-y-auto overscroll-contain flex-grow space-y-2 sm:space-y-4">
               {children}
             </div>
           </motion.div>

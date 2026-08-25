@@ -26,9 +26,9 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({ title, icon, child
       transition={{ type: 'spring', stiffness: 300 }}
       className={`bg-zinc-950/80 backdrop-blur-md border border-zinc-800/60 rounded-lg shadow-lg flex flex-col ${fullHeight ? 'h-full' : ''} ${className}`}
     >
-      <header className="flex items-center p-5 border-b border-red-600/30 bg-black/20">
-        <div className="text-red-500 mr-4">{icon}</div>
-        <h3 className="font-bold text-lg text-gray-200 tracking-wider uppercase">{title}</h3>
+      <header className="flex items-center p-3 sm:p-5 border-b border-red-600/30 bg-black/20">
+        <div className="text-red-500 mr-2 sm:mr-4 [&>svg]:w-4 [&>svg]:h-4 sm:[&>svg]:w-6 sm:[&>svg]:h-6">{icon}</div>
+        <h3 className="font-bold text-xs sm:text-lg text-gray-200 tracking-wider uppercase">{title}</h3>
         {titleAddon && <div className="ml-auto pl-2">{titleAddon}</div>}
       </header>
       <div className="flex-grow bg-transparent">

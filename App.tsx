@@ -4,7 +4,7 @@ import { AuthContext, AuthProvider } from './auth/AuthContext';
 import { Button } from './components/Button';
 // FIX: Changed RankTier to Rank and SubRank to Tier to align with type definitions.
 import type { Player, GameEvent, CompanyDetails, SocialLink, CarouselMedia, CreatorDetails, Tier, Badge, Signup, Rank, XpAdjustment } from './types';
-import { XIcon, KeyIcon, ShieldCheckIcon, TrophyIcon } from './components/icons/Icons';
+import { XIcon, KeyIcon, ShieldCheckIcon, TrophyIcon, ArrowLeftIcon } from './components/icons/Icons';
 import { DataProvider, DataContext, IS_LIVE_DATA } from './data/DataContext';
 import { Loader } from './components/Loader';
 import { Modal } from './components/Modal';
@@ -80,26 +80,48 @@ Thank you, I look forward to hearing from you.
                     <XIcon className="w-6 h-6" />
                 </button>
 
-                 <div className="p-8">
-                    <div className="flex flex-col items-center text-center mb-6">
-                        <img src={creatorDetails.logoUrl} alt={`${creatorDetails.name} Logo`} className="h-24 w-auto mb-3" />
-                        <h3 className="text-3xl font-bold text-white tracking-wider">{creatorDetails.name}</h3>
-                        <p className="text-md text-red-400 font-semibold italic mt-1">"{creatorDetails.tagline}"</p>
+                 <div className="p-6 sm:p-8">
+                    <div className="flex flex-col items-center text-center mb-5 sm:mb-6">
+                        <img src={creatorDetails.logoUrl} alt={`${creatorDetails.name} Logo`} className="h-20 sm:h-24 w-auto mb-3" />
+                        <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-wider">{creatorDetails.name}</h3>
+                        <p className="text-sm sm:text-md text-red-400 font-semibold italic mt-1">"{creatorDetails.tagline}"</p>
                     </div>
                     
-                    <p className="text-center text-gray-300 text-sm mb-6 pb-6 border-b border-zinc-700/50">{creatorDetails.bio}</p>
+                    <p className="text-center text-gray-300 text-xs sm:text-sm mb-5 pb-5 border-b border-zinc-700/50">{creatorDetails.bio}</p>
 
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        <a href={emailHref} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 p-3 bg-zinc-800/50 border border-zinc-700 rounded-lg hover:bg-zinc-800 hover:border-red-500/50 transition-all">
-                            <img src="https://i.ibb.co/r2HkbjLj/image-removebg-preview-2.png" alt="Email" className="w-8 h-8"/>
-                            <span className="font-semibold text-white">Email Me</span>
+                    <div className="flex items-center justify-center gap-6 mb-5">
+                        <a 
+                            href={emailHref} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="p-3 bg-zinc-800/80 border border-zinc-700 rounded-full hover:bg-zinc-700 hover:border-red-500/60 transition-all hover:scale-110 shadow-lg"
+                            title="Email Creator"
+                            aria-label="Email Creator"
+                        >
+                            <img src="https://i.ibb.co/r2HkbjLj/image-removebg-preview-2.png" alt="Email" className="w-9 h-9 object-contain"/>
                         </a>
-                        <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 p-3 bg-zinc-800/50 border border-zinc-700 rounded-lg hover:bg-zinc-800 hover:border-red-500/50 transition-all">
-                            <img src="https://i.ibb.co/Z1YHvjgT/image-removebg-preview-1.png" alt="WhatsApp" className="w-8 h-8"/>
-                            <span className="font-semibold text-white">WhatsApp</span>
+                        <a 
+                            href={whatsappHref} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="p-3 bg-zinc-800/80 border border-zinc-700 rounded-full hover:bg-zinc-700 hover:border-emerald-500/60 transition-all hover:scale-110 shadow-lg"
+                            title="WhatsApp Creator"
+                            aria-label="WhatsApp Creator"
+                        >
+                            <img src="https://i.ibb.co/Z1YHvjgT/image-removebg-preview-1.png" alt="WhatsApp" className="w-9 h-9 object-contain"/>
                         </a>
                     </div>
-                     <p className="text-xs text-center text-gray-500 uppercase tracking-wider font-semibold">Creator Access via Login Screen</p>
+                    <p className="text-[11px] sm:text-xs text-center text-gray-500 uppercase tracking-wider font-semibold mb-4">Creator Access via Login Screen</p>
+
+                    <div className="pt-4 border-t border-zinc-800 flex justify-center">
+                        <button
+                            onClick={onClose}
+                            className="w-full py-2.5 px-4 bg-red-600/90 hover:bg-red-600 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 text-sm shadow-md active:scale-95"
+                        >
+                            <ArrowLeftIcon className="w-4 h-4" />
+                            <span>Back to Login Page</span>
+                        </button>
+                    </div>
                 </div>
             </motion.div>
         </motion.div>
@@ -739,7 +761,11 @@ const AppContent: React.FC = () => {
                     </motion.div>
                 ) : !isAuthenticated ? (
                     <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <LoginScreen companyDetails={companyDetails} socialLinks={socialLinks} />
+                        <LoginScreen 
+                            companyDetails={companyDetails} 
+                            socialLinks={socialLinks} 
+                            onBackToWelcome={() => setShowFrontPage(true)} 
+                        />
                         <PublicPageFloatingIcons onHelpClick={() => setShowHelp(true)} onCreatorClick={() => setShowCreatorPopup(true)} />
                     </motion.div>
                 ) : (

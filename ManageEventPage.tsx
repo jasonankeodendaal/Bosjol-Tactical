@@ -393,75 +393,92 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8">
-            <header className="flex items-center mb-6">
-                <Button onClick={onBack} variant="secondary" size="sm" className="mr-4">
-                    <ArrowLeftIcon className="w-5 h-5" />
+        <div className="p-2 sm:p-6 lg:p-8">
+            <header className="flex items-center mb-3 sm:mb-6">
+                <Button onClick={onBack} variant="secondary" size="sm" className="mr-2 sm:mr-4">
+                    <ArrowLeftIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
-                <h1 className="text-2xl font-bold text-white">{event ? 'Manage Event' : 'Create New Event'}</h1>
+                <h1 className="text-lg sm:text-2xl font-bold text-white">{event ? 'Manage Event' : 'Create New Event'}</h1>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
                 {/* Left Column - Event Details & Live Stats */}
-                <div className="lg:col-span-2 space-y-6">
-                    <DashboardCard title="Event Configuration" icon={<CalendarIcon className="w-6 h-6" />}>
-                        <div className="p-6 space-y-4">
+                <div className="lg:col-span-2 space-y-3 sm:space-y-6">
+                    <DashboardCard title="Event Configuration" icon={<CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6" />}>
+                        <div className="p-3 sm:p-6 space-y-2.5 sm:space-y-4 text-xs sm:text-sm">
                             <Input label="Event Title" value={formData.title} onChange={e => setFormData(f => ({ ...f, title: e.target.value }))} />
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
                                 <Input label="Date" type="date" value={formData.date} onChange={e => setFormData(f => ({ ...f, date: e.target.value }))} />
                                 <Input label="Start Time" type="time" value={formData.startTime} onChange={e => setFormData(f => ({ ...f, startTime: e.target.value }))} />
-                                <Input label="Location" value={formData.location} onChange={e => setFormData(f => ({ ...f, location: e.target.value }))} />
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Event Type</label>
-                                    <select value={formData.type} onChange={e => setFormData(f => ({ ...f, type: e.target.value as EventType }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-1.5">Location</label>
+                                    <select
+                                        value={formData.location}
+                                        onChange={e => setFormData(f => ({ ...f, location: e.target.value }))}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    >
+                                        <option value="">-- Select Preset Location --</option>
+                                        {availableLocations.map(loc => (
+                                            <option key={loc.id || loc.name} value={loc.name}>
+                                                {loc.name}{loc.address ? ` (${loc.address})` : ''}
+                                            </option>
+                                        ))}
+                                        {formData.location && !availableLocations.some(l => l.name === formData.location) && (
+                                            <option value={formData.location}>{formData.location}</option>
+                                        )}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
+                                <div>
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-1.5">Event Type</label>
+                                    <select value={formData.type} onChange={e => setFormData(f => ({ ...f, type: e.target.value as EventType }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500">
                                         {EVENT_TYPES.map(type => <option key={type}>{type}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Theme</label>
-                                    <select value={formData.theme} onChange={e => setFormData(f => ({ ...f, theme: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-1.5">Theme</label>
+                                    <select value={formData.theme} onChange={e => setFormData(f => ({ ...f, theme: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500">
                                         {MOCK_EVENT_THEMES.map(theme => <option key={theme}>{theme}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Description</label>
-                                <textarea value={formData.description} onChange={e => setFormData(f => ({...f, description: e.target.value}))} rows={3} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
+                                <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-1.5">Description</label>
+                                <textarea value={formData.description} onChange={e => setFormData(f => ({...f, description: e.target.value}))} rows={2} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Rules</label>
-                                <textarea value={formData.rules} onChange={e => setFormData(f => ({...f, rules: e.target.value}))} rows={3} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
+                                <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-1.5">Rules</label>
+                                <textarea value={formData.rules} onChange={e => setFormData(f => ({...f, rules: e.target.value}))} rows={2} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
                             </div>
                              <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Gear Available for Rent</label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto bg-zinc-900/50 p-2 rounded-md border border-zinc-700/50">
+                                <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Gear Available for Rent</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-h-40 sm:max-h-60 overflow-y-auto bg-zinc-900/50 p-2 rounded-md border border-zinc-700/50">
                                     {inventory.filter(i => i.isRental).map(item => {
                                         const isChecked = (formData.gearForRent || []).includes(item.id);
                                         const overridePrice = formData.rentalPriceOverrides?.[item.id];
                                         return (
-                                            <div key={item.id} className="bg-zinc-800 p-2 rounded-md">
+                                            <div key={item.id} className="bg-zinc-800 p-1.5 sm:p-2 rounded-md">
                                                 <div className="flex items-center justify-between">
-                                                    <label className="flex items-center gap-3 cursor-pointer flex-grow">
+                                                    <label className="flex items-center gap-2 cursor-pointer flex-grow">
                                                         <input
                                                             type="checkbox"
                                                             checked={isChecked}
                                                             onChange={() => handleGearToggle(item.id)}
-                                                            className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"
+                                                            className="h-3.5 w-3.5 sm:h-4 sm:w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"
                                                         />
-                                                        <span className="text-sm text-gray-200">{item.name}</span>
+                                                        <span className="text-xs sm:text-sm text-gray-200">{item.name}</span>
                                                     </label>
-                                                    <span className="text-xs text-gray-500 mr-2">Default: R{item.salePrice.toFixed(2)}</span>
+                                                    <span className="text-[10px] sm:text-xs text-gray-500 mr-1">Default: R{item.salePrice.toFixed(2)}</span>
                                                 </div>
                                                 {isChecked && (
-                                                    <div className="mt-2 pl-7">
+                                                    <div className="mt-1.5 pl-6">
                                                         <Input 
                                                             label="Event Rental Price (R)"
                                                             type="number"
                                                             value={overridePrice ?? item.salePrice}
                                                             onChange={(e) => handlePriceOverrideChange(item.id, e.target.value)}
-                                                            className="!py-1.5"
+                                                            className="!py-1"
                                                         />
                                                     </div>
                                                 )}
@@ -471,33 +488,33 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Event Commendations (Badges)</label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto bg-zinc-900/50 p-2 rounded-md border border-zinc-700/50">
+                                <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Event Commendations (Badges)</label>
+                                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-2 max-h-36 sm:max-h-48 overflow-y-auto bg-zinc-900/50 p-1.5 sm:p-2 rounded-md border border-zinc-700/50">
                                     {legendaryBadges.map(badge => (
-                                        <label key={badge.id} className="flex items-center gap-3 p-2 rounded-md bg-zinc-800 hover:bg-zinc-700 cursor-pointer">
+                                        <label key={badge.id} className="flex items-center gap-2 p-1.5 sm:p-2 rounded-md bg-zinc-800 hover:bg-zinc-700 cursor-pointer">
                                             <input
                                                 type="checkbox"
                                                 checked={(formData.eventBadges || []).includes(badge.id)}
                                                 onChange={() => handleBadgeToggle(badge.id)}
-                                                className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"
+                                                className="h-3.5 w-3.5 sm:h-4 sm:w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"
                                             />
-                                            <img src={badge.iconUrl} alt={badge.name} className="w-6 h-6"/>
-                                            <span className="text-sm text-amber-300">{badge.name}</span>
+                                            <img src={badge.iconUrl} alt={badge.name} className="w-5 h-5 sm:w-6 sm:h-6"/>
+                                            <span className="text-xs sm:text-sm text-amber-300 truncate">{badge.name}</span>
                                         </label>
                                     ))}
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
                                 <Input label="Game Fee (R)" type="number" value={formData.gameFee} onChange={e => setFormData(f => ({ ...f, gameFee: Number(e.target.value) }))} />
                                 <Input label="Participation RP" type="number" value={formData.participationXp} onChange={e => setFormData(f => ({ ...f, participationXp: Number(e.target.value) }))} />
                                  <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Event Status</label>
-                                    <select value={formData.status} onChange={e => setFormData(f => ({ ...f, status: e.target.value as EventStatus }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-1.5">Event Status</label>
+                                    <select value={formData.status} onChange={e => setFormData(f => ({ ...f, status: e.target.value as EventStatus }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500">
                                         {EVENT_STATUSES.map(s => <option key={s}>{s}</option>)}
                                     </select>
                                 </div>
                             </div>
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-4">
                                 <UrlOrUploadField
                                     label="Event Image"
                                     fileUrl={formData.imageUrl}
@@ -507,12 +524,12 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                     apiServerUrl={companyDetails.apiServerUrl}
                                 />
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Audio Briefing</label>
-                                    <div className="bg-zinc-900/50 p-3 rounded-lg border border-zinc-700/50 min-h-[96px] flex flex-col justify-center">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-1.5">Audio Briefing</label>
+                                    <div className="bg-zinc-900/50 p-2 sm:p-3 rounded-lg border border-zinc-700/50 min-h-[70px] sm:min-h-[96px] flex flex-col justify-center">
                                         {formData.audioBriefingUrl && !isRecording && (
-                                            <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-2 sm:gap-4">
                                                 <audio src={formData.audioBriefingUrl} controls className="flex-grow w-full" />
-                                                <div className="flex flex-col gap-2">
+                                                <div className="flex flex-col gap-1 sm:gap-2">
                                                     <Button variant="secondary" size="sm" onClick={handleStartRecording}>Record Again</Button>
                                                     <Button variant="danger" size="sm" onClick={handleRemoveAudio}>Remove</Button>
                                                 </div>
@@ -520,55 +537,55 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                         )}
                                 
                                         {isRecording && (
-                                            <div className="flex items-center justify-center gap-4 p-4">
-                                                <div className="relative w-6 h-6">
+                                            <div className="flex items-center justify-center gap-2 sm:gap-4 p-2 sm:p-4">
+                                                <div className="relative w-5 h-5 sm:w-6 sm:h-6">
                                                     <div className="absolute inset-0 bg-red-600 rounded-full animate-ping"></div>
-                                                    <div className="relative w-6 h-6 bg-red-600 rounded-full border-2 border-zinc-900"></div>
+                                                    <div className="relative w-5 h-5 sm:w-6 sm:h-6 bg-red-600 rounded-full border-2 border-zinc-900"></div>
                                                 </div>
-                                                <p className="font-mono text-lg text-red-400">{formatTime(recordingSeconds)}</p>
-                                                <Button variant="danger" onClick={handleStopRecording}>Stop</Button>
+                                                <p className="font-mono text-sm sm:text-lg text-red-400">{formatTime(recordingSeconds)}</p>
+                                                <Button variant="danger" size="sm" onClick={handleStopRecording}>Stop</Button>
                                             </div>
                                         )}
                                 
                                         {!formData.audioBriefingUrl && !isRecording && (
-                                            <Button variant="secondary" className="w-full" onClick={handleStartRecording}>
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-12 0H3a7.001 7.001 0 006 6.93V17H7a1 1 0 100 2h6a1 1 0 100-2h-2v-2.07z" clipRule="evenodd" /></svg>
+                                            <Button variant="secondary" size="sm" className="w-full" onClick={handleStartRecording}>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-12 0H3a7.001 7.001 0 006 6.93V17H7a1 1 0 100 2h6a1 1 0 100-2h-2v-2.07z" clipRule="evenodd" /></svg>
                                                 Record Briefing
                                             </Button>
                                         )}
                                 
                                         {permissionError && (
-                                             <p className="text-xs text-red-400 mt-2 text-center">{permissionError}</p>
+                                             <p className="text-[10px] sm:text-xs text-red-400 mt-1 text-center">{permissionError}</p>
                                         )}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </DashboardCard>
-                    <DashboardCard title="Event Live Stats" icon={<ChartBarIcon className="w-6 h-6" />}>
-                        <div className="p-6">
-                            <ul className="space-y-3">
+                    <DashboardCard title="Event Live Stats" icon={<ChartBarIcon className="w-5 h-5 sm:w-6 sm:h-6" />}>
+                        <div className="p-3 sm:p-6 text-xs sm:text-sm">
+                            <ul className="space-y-2 sm:space-y-3">
                                 {attendeesDetails.map(player => (
-                                    <li key={player.id} className="bg-zinc-900/50 p-3 rounded-lg">
-                                        <p className="font-bold text-white mb-2">{player.name}</p>
-                                        <div className="grid grid-cols-3 gap-3">
+                                    <li key={player.id} className="bg-zinc-900/50 p-2 sm:p-3 rounded-lg">
+                                        <p className="font-bold text-white mb-1.5 sm:mb-2">{player.name}</p>
+                                        <div className="grid grid-cols-3 gap-2 sm:gap-3">
                                             <Input 
                                                 label="Kills" type="number" 
                                                 value={liveStats[player.id]?.kills || 0}
                                                 onChange={e => handleStatChange(player.id, 'kills', Number(e.target.value))}
-                                                className="!py-1.5 text-center"
+                                                className="!py-1 text-center"
                                             />
                                             <Input 
                                                 label="Deaths" type="number"
                                                 value={liveStats[player.id]?.deaths || 0}
                                                 onChange={e => handleStatChange(player.id, 'deaths', Number(e.target.value))}
-                                                className="!py-1.5 text-center"
+                                                className="!py-1 text-center"
                                             />
                                             <Input 
                                                 label="Headshots" type="number"
                                                 value={liveStats[player.id]?.headshots || 0}
                                                 onChange={e => handleStatChange(player.id, 'headshots', Number(e.target.value))}
-                                                className="!py-1.5 text-center"
+                                                className="!py-1 text-center"
                                             />
                                         </div>
                                     </li>
@@ -579,50 +596,50 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                 </div>
 
                 {/* Right Column - Players & Actions */}
-                <div className="lg:col-span-1 space-y-6">
-                     <DashboardCard title={`Signed Up (${signedUpPlayersDetails.length})`} icon={<UserIcon className="w-6 h-6" />}>
-                        <div className="p-4 space-y-2 max-h-60 overflow-y-auto">
+                <div className="lg:col-span-1 space-y-3 sm:space-y-6">
+                     <DashboardCard title={`Signed Up (${signedUpPlayersDetails.length})`} icon={<UserIcon className="w-5 h-5 sm:w-6 sm:h-6" />}>
+                        <div className="p-2.5 sm:p-4 space-y-1.5 sm:space-y-2 max-h-48 sm:max-h-60 overflow-y-auto text-xs sm:text-sm">
                             {signedUpPlayersDetails.length > 0 ? signedUpPlayersDetails.map(player => (
-                                <div key={player.id} className="bg-zinc-800/50 p-2 rounded-md flex justify-between items-center">
-                                    <p className="font-semibold text-white">{player.name}</p>
+                                <div key={player.id} className="bg-zinc-800/50 p-1.5 sm:p-2 rounded-md flex justify-between items-center">
+                                    <p className="font-semibold text-white truncate mr-2">{player.name}</p>
                                     <Button size="sm" onClick={() => handleCheckIn(player.id)}>Check In</Button>
                                 </div>
-                            )) : <p className="text-center text-gray-500 text-sm py-4">No players signed up yet.</p>}
+                            )) : <p className="text-center text-gray-500 text-xs py-3">No players signed up yet.</p>}
                         </div>
                     </DashboardCard>
-                    <DashboardCard title={`Attendees (${formData.attendees.length})`} icon={<UserIcon className="w-6 h-6" />}>
-                        <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
+                    <DashboardCard title={`Attendees (${formData.attendees.length})`} icon={<UserIcon className="w-5 h-5 sm:w-6 sm:h-6" />}>
+                        <div className="p-2.5 sm:p-4 space-y-1.5 sm:space-y-2 max-h-60 sm:max-h-96 overflow-y-auto text-xs sm:text-sm">
                              {attendeesDetails.length > 0 ? attendeesDetails.map(player => {
                                 const attendee = formData.attendees.find(a => a.playerId === player.id)!;
                                 return (
-                                <div key={player.id} className="bg-zinc-800/50 p-3 rounded-md">
+                                <div key={player.id} className="bg-zinc-800/50 p-2 sm:p-3 rounded-md">
                                     <div className="flex justify-between items-center">
-                                        <p className="font-semibold text-white">{player.name}</p>
+                                        <p className="font-semibold text-white truncate mr-2">{player.name}</p>
                                         <Button size="sm" variant="danger" onClick={() => handleCheckOut(player.id)}>
-                                            <MinusIcon className="w-4 h-4" />
+                                            <MinusIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                         </Button>
                                     </div>
-                                    <div className="flex gap-2 items-center mt-2">
+                                    <div className="flex gap-1.5 sm:gap-2 items-center mt-1.5 sm:mt-2">
                                         <Button size="sm" variant={attendee.paymentStatus === 'Paid (Card)' ? 'primary' : 'secondary'} onClick={() => handlePaymentStatus(player.id, 'Paid (Card)')}>Card</Button>
                                         <Button size="sm" variant={attendee.paymentStatus === 'Paid (Cash)' ? 'primary' : 'secondary'} onClick={() => handlePaymentStatus(player.id, 'Paid (Cash)')}>Cash</Button>
                                         <Button size="sm" variant={attendee.paymentStatus === 'Unpaid' ? 'primary' : 'secondary'} onClick={() => handlePaymentStatus(player.id, 'Unpaid')}>Unpaid</Button>
                                     </div>
                                 </div>
                                 )
-                             }) : <p className="text-center text-gray-500 text-sm py-4">No players checked in.</p>}
+                             }) : <p className="text-center text-gray-500 text-xs py-3">No players checked in.</p>}
                         </div>
                     </DashboardCard>
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                          {event && formData.status === 'Completed' && (
-                            <div className="bg-green-900/50 border border-green-700 p-3 rounded-lg text-center">
-                                <CheckCircleIcon className="w-8 h-8 mx-auto text-green-400 mb-2" />
-                                <p className="font-semibold text-green-300">This event has been finalized.</p>
-                                <p className="text-xs text-green-400">RP and stats have been awarded.</p>
+                            <div className="bg-green-900/50 border border-green-700 p-2.5 sm:p-3 rounded-lg text-center">
+                                <CheckCircleIcon className="w-6 h-6 sm:w-8 sm:h-8 mx-auto text-green-400 mb-1 sm:mb-2" />
+                                <p className="font-semibold text-green-300 text-xs sm:text-base">This event has been finalized.</p>
+                                <p className="text-[10px] sm:text-xs text-green-400">RP and stats have been awarded.</p>
                             </div>
                         )}
                         {event && formData.status !== 'Completed' && (
                             <Button onClick={handleFinalizeEvent} variant="primary" className="w-full !bg-green-600 hover:!bg-green-500">
-                                <CheckCircleIcon className="w-5 h-5 mr-2" />
+                                <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />
                                 Finalize Event & Award RP
                             </Button>
                         )}
@@ -631,7 +648,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                         </Button>
                         {event && (
                             <Button onClick={() => onDelete(event.id)} variant="danger" className="w-full">
-                                <TrashIcon className="w-5 h-5 mr-2" />
+                                <TrashIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />
                                 Delete Event
                             </Button>
                         )}

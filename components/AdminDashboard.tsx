@@ -453,15 +453,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         return `admin-dashboard-${formattedTab}`;
     };
 
+    const setHelpTopic = auth?.setHelpTopic;
+
     useEffect(() => {
-        if(auth) {
+        if (setHelpTopic) {
             const topic = getHelpTopic();
-            auth.setHelpTopic(topic);
-            if (view === 'dashboard') {
+            setHelpTopic(topic);
+            if (view === 'dashboard' && logActivity) {
                 logActivity(`Viewed ${activeTab} tab`);
             }
         }
-    }, [activeTab, view, auth, logActivity]);
+    }, [activeTab, view, setHelpTopic, logActivity]);
 
     const handleViewPlayer = useCallback((id: string) => {
         const player = players.find(p => p.id === id);

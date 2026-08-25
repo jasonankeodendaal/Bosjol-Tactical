@@ -321,19 +321,13 @@ const AppContent: React.FC = () => {
     useEffect(() => {
         const handleBeforeUnload = () => {
             if (sessionRef.current.id) {
-                // This is a best-effort attempt. The browser might not wait for it.
-                data.deleteDoc('sessions', sessionRef.current.id);
+                deleteDoc('sessions', sessionRef.current.id);
             }
         };
 
         const createOrUpdateSession = async () => {
-            if (user && firebaseAuth) { // Only if firebase auth is available (it's null now)
-                // Fallback for Supabase or Mock: session management logic is simplified here
-                // as Firebase was removed.
-                // In a real Supabase app, we'd use supabase.auth.user().id
-            } else if (user) {
-                 // Simplified session tracking for mock/supabase without direct firebase dependency
-                 const uid = user.id; // Use user ID as session ID for simplicity in this context
+            if (user) {
+                 const uid = user.id;
                  sessionRef.current.id = uid;
                  const sessionData = {
                     userId: user.id,
@@ -342,13 +336,13 @@ const AppContent: React.FC = () => {
                     currentView: helpTopic,
                     lastSeen: new Date().toISOString(),
                 };
-                await data.setDoc('sessions', uid, sessionData);
+                await setDoc('sessions', uid, sessionData);
             }
         };
 
         const deleteSession = async () => {
             if (sessionRef.current.id) {
-                await data.deleteDoc('sessions', sessionRef.current.id);
+                await deleteDoc('sessions', sessionRef.current.id);
                 sessionRef.current.id = null;
             }
         };
@@ -357,24 +351,23 @@ const AppContent: React.FC = () => {
             createOrUpdateSession();
             window.addEventListener('beforeunload', handleBeforeUnload);
             
-            // The 'beforeunload' listener and the deleteSession on unmount is enough
             return () => {
                 window.removeEventListener('beforeunload', handleBeforeUnload);
                 deleteSession();
             };
         }
-    }, [isAuthenticated, user, data]);
+    }, [isAuthenticated, user?.id, user?.name, user?.role, setDoc, deleteDoc]);
 
     useEffect(() => {
         // Update current view AND lastSeen timestamp for session tracking
         if (isAuthenticated && sessionRef.current.id) {
-            data.updateDoc('sessions', { 
+            updateDoc('sessions', { 
                 id: sessionRef.current.id, 
                 currentView: helpTopic,
                 lastSeen: new Date().toISOString()
             });
         }
-    }, [helpTopic, isAuthenticated, data]);
+    }, [helpTopic, isAuthenticated, updateDoc]);
 
 
     useEffect(() => {
@@ -450,7 +443,7 @@ const AppContent: React.FC = () => {
         if (isAuthenticated && user?.role === 'admin' && ranks.length > 0 && players.length > 0) {
             performRankReset();
         }
-    }, [isAuthenticated, user?.role, companyDetails, setCompanyDetails, players, ranks, updateDoc, logActivity]);
+    }, [isAuthenticated, user?.role, companyDetails.nextRankResetDate, setCompanyDetails, players.length, ranks.length, updateDoc, logActivity]);
 
 
     const checkForPromotions = useCallback((player: Player) => {

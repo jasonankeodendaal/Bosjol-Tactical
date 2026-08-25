@@ -1122,12 +1122,17 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
     const auth = useContext(AuthContext);
     const data = useContext(DataContext);
     
-     useEffect(() => {
-        if (auth) {
-            auth.setHelpTopic(`player-dashboard-${activeTab.toLowerCase()}`);
-            data?.logActivity(`Viewed ${activeTab} tab`);
+    const setHelpTopic = auth?.setHelpTopic;
+    const logActivity = data?.logActivity;
+    
+    useEffect(() => {
+        if (setHelpTopic) {
+            setHelpTopic(`player-dashboard-${activeTab.toLowerCase()}`);
         }
-    }, [activeTab, auth, data]);
+        if (logActivity) {
+            logActivity(`Viewed ${activeTab} tab`);
+        }
+    }, [activeTab, setHelpTopic, logActivity]);
 
     return (
         <div className="flex flex-col h-full">

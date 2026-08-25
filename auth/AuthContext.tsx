@@ -1,9 +1,8 @@
 
-import React, { createContext, useState, ReactNode, useEffect, useContext } from 'react';
+import React, { createContext, useState, ReactNode, useEffect, useMemo, useCallback } from 'react';
 import type { User, AuthContextType, Player, Admin, CreatorDetails } from '../types';
 import { MOCK_PLAYERS, MOCK_ADMIN } from '../constants';
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
-import { DataContext } from '../data/DataContext';
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -18,58 +17,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | Player | Admin | null>(null);
     const [loading, setLoading] = useState(true);
     const [helpTopic, setHelpTopic] = useState('front-page');
-    const dataContext = useContext(DataContext);
 
     const IS_LIVE = isSupabaseConfigured();
 
-    useEffect(() => {
-        if (!IS_LIVE || !supabase) {
-            setLoading(false);
-            return;
-        }
-
-        // Check active Supabase session for Admins/Creators
-        supabase.auth.getSession().then(async ({ data: { session } }) => {
-            if (session?.user) {
-                await handleSupabaseUser(session.user);
-            } else {
-                // Check if we have a locally stored player session
-                const storedPlayerId = localStorage.getItem('activePlayerId');
-                if (storedPlayerId) {
-                    supabase.from('players').select('*').eq('id', storedPlayerId).single()
-                    .then(({ data, error }) => {
-                        if (data && !error) {
-                            setUser(data as Player);
-                        } else {
-                            localStorage.removeItem('activePlayerId');
-                        }
-                    })
-                    .finally(() => setLoading(false));
-                } else {
-                    setLoading(false);
-                }
-            }
-        });
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            try {
-                if (session?.user) {
-                    await handleSupabaseUser(session.user);
-                } else if (!localStorage.getItem('activePlayerId')) {
-                    setUser(null);
-                }
-            } catch (err) {
-                console.error("Auth state change error:", err);
-            } finally {
-                setLoading(false);
-            }
-        });
-
-        return () => subscription.unsubscribe();
-
-    }, [dataContext]);
-
-    const handleSupabaseUser = async (sbUser: any) => {
+    const handleSupabaseUser = useCallback(async (sbUser: any) => {
         try {
             const email = sbUser.email?.toLowerCase();
             
@@ -88,7 +39,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     setUser({ ...data, id: data.id } as Admin);
                 } else {
                     // Fallback: If auth matched but DB record missing (e.g. freshly seeded DB race condition), use Mock/Default
-                    // This ensures the admin can still log in even if the table isn't perfectly populated yet.
                     console.warn("Admin record not found in DB, using fallback.");
                     const fallbackAdmin = { ...MOCK_ADMIN, id: 'admin_fallback', email };
                     setUser(fallbackAdmin as Admin); 
@@ -112,9 +62,66 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } catch (error) {
             console.error("Error handling Supabase user:", error);
         }
-    };
+    }, []);
 
-    const login = async (identifier: string, password: string): Promise<boolean> => {
+    useEffect(() => {
+        if (!IS_LIVE || !supabase) {
+            setLoading(false);
+            return;
+        }
+
+        let isMounted = true;
+
+        // Check active Supabase session for Admins/Creators
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
+            if (!isMounted) return;
+            if (session?.user) {
+                await handleSupabaseUser(session.user);
+                if (isMounted) setLoading(false);
+            } else {
+                // Check if we have a locally stored player session
+                const storedPlayerId = localStorage.getItem('activePlayerId');
+                if (storedPlayerId) {
+                    supabase.from('players').select('*').eq('id', storedPlayerId).single()
+                    .then(({ data, error }) => {
+                        if (!isMounted) return;
+                        if (data && !error) {
+                            setUser(data as Player);
+                        } else {
+                            localStorage.removeItem('activePlayerId');
+                        }
+                    })
+                    .finally(() => {
+                        if (isMounted) setLoading(false);
+                    });
+                } else {
+                    if (isMounted) setLoading(false);
+                }
+            }
+        });
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            if (!isMounted) return;
+            try {
+                if (session?.user) {
+                    await handleSupabaseUser(session.user);
+                } else if (!localStorage.getItem('activePlayerId')) {
+                    setUser(null);
+                }
+            } catch (err) {
+                console.error("Auth state change error:", err);
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        });
+
+        return () => {
+            isMounted = false;
+            subscription.unsubscribe();
+        };
+    }, [IS_LIVE, handleSupabaseUser]);
+
+    const login = useCallback(async (identifier: string, password: string): Promise<boolean> => {
         setLoading(true);
         try {
             if (!IS_LIVE || !supabase) {
@@ -158,7 +165,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 if (player && player.pin === password) {
                     setUser(player as Player);
                     localStorage.setItem('activePlayerId', player.id);
-                    dataContext?.logActivity('Logged In', { userRole: 'player', playerId: player.id });
                     return true;
                 }
             }
@@ -167,27 +173,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.error("Login Error:", error);
             return false;
         } finally {
-            // Only stop loading if login failed immediately (sync return). 
-            // If async auth success, listener handles loading state.
-            if (!user) setLoading(false);
+            setLoading(false);
         }
-    };
+    }, [IS_LIVE]);
 
-    const logout = async () => {
+    const logout = useCallback(async () => {
         if (IS_LIVE && supabase) {
             await supabase.auth.signOut();
         }
         localStorage.removeItem('activePlayerId');
         setUser(null);
         setLoading(false);
-    };
+    }, [IS_LIVE]);
 
-    const updateUser = (updatedUserData: User | Player | Admin) => {
+    const updateUser = useCallback((updatedUserData: User | Player | Admin) => {
         setUser(updatedUserData);
-    };
+    }, []);
+
+    const contextValue = useMemo<AuthContextType>(() => ({
+        user,
+        isAuthenticated: !!user,
+        login,
+        logout,
+        updateUser,
+        helpTopic,
+        setHelpTopic
+    }), [user, login, logout, updateUser, helpTopic]);
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, updateUser, helpTopic, setHelpTopic }}>
+        <AuthContext.Provider value={contextValue}>
             {!loading && children}
         </AuthContext.Provider>
     );

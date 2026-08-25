@@ -33,9 +33,21 @@ if (!supabaseUrl || !supabaseAnonKey) {
   }
 }
 
-// Initialize the Supabase client only if credentials are available
-export const supabase = (supabaseUrl && supabaseAnonKey)
-  ? createClient(supabaseUrl, supabaseAnonKey)
+// Validate that anon key is not empty and not accidentally set to a URL
+const isValidAnonKey = (key: string) => {
+  if (!key || typeof key !== 'string') return false;
+  const trimmed = key.trim();
+  // An anon key is a JWT string, never a URL
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    console.error("CONFIGURATION ERROR: Your VITE_SUPABASE_ANON_KEY is set to a URL instead of a JWT anon key. Please copy the anon public key from Supabase Project Settings -> API.");
+    return false;
+  }
+  return trimmed.length > 20;
+};
+
+// Initialize the Supabase client only if valid credentials are available
+export const supabase = (supabaseUrl && isValidAnonKey(supabaseAnonKey))
+  ? createClient(supabaseUrl.trim(), supabaseAnonKey.trim())
   : null;
 
 // Helper to check if Supabase is properly configured

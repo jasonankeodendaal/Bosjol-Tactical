@@ -342,7 +342,7 @@ export const MOCK_COMPANY_CORE: Pick<CompanyDetails, 'name' | 'address' | 'phone
 };
 
 export const MOCK_BRANDING_DETAILS: Pick<CompanyDetails, 'logoUrl' | 'loginBackgroundUrl' | 'loginAudioUrl' | 'playerDashboardBackgroundUrl' | 'adminDashboardBackgroundUrl' | 'playerDashboardAudioUrl' | 'adminDashboardAudioUrl' | 'sponsorsBackgroundUrl'> = {
-    logoUrl: 'https://i.ibb.co/7k1pWpY/Bosjol-Tactical-Logo-White-Red.png',
+    logoUrl: 'https://i.ibb.co/HL2Lc6Rz/file-0000000043b061f7b655a0077343e063.png',
     loginBackgroundUrl: 'https://i.ibb.co/dsh2c2hp/unnamed.jpg',
     loginAudioUrl: '',
     playerDashboardBackgroundUrl: 'https://i.ibb.co/C5fBF6p/image.png',

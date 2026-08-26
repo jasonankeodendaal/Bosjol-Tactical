@@ -120,6 +120,9 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
     const [isSendingCredentials, setIsSendingCredentials] = useState(false);
     const dataContext = useContext(DataContext);
     
+    const [showSqlModal, setShowSqlModal] = useState(false);
+    const [copiedSql, setCopiedSql] = useState(false);
+
     useEffect(() => {
         setFormData(player);
     }, [player]);
@@ -132,14 +135,19 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
     const kdr = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
 
     const handleSave = () => {
-        let dataToSave = { ...formData, age: Number(formData.age), rank: player.rank };
+        let dataToSave = { ...formData, age: Number(formData.age) };
         if (!dataToSave.avatarUrl) {
             dataToSave.avatarUrl = `https://api.dicebear.com/8.x/bottts/svg?seed=${dataToSave.name}${dataToSave.surname}`;
         }
-        // Strip composed data that doesn't exist on the main Firestore document
-        // to prevent security rule violations on update.
-        const { matchHistory, xpAdjustments, ...playerCoreData } = dataToSave;
-        onUpdatePlayer(playerCoreData as Player);
+        // Retain latest stats, rank, and xpAdjustments from current player prop
+        const updatedPlayer: Player = {
+            ...player,
+            ...dataToSave,
+            stats: player.stats || dataToSave.stats,
+            rank: player.rank || playerTier,
+            xpAdjustments: player.xpAdjustments || [],
+        };
+        onUpdatePlayer(updatedPlayer);
         setIsEditing(false);
     };
 
@@ -166,7 +174,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
         };
         
         const currentStats = player.stats || { kills: 0, deaths: 0, headshots: 0, gamesPlayed: 0, xp: 0 };
-        const newXp = currentStats.xp + amount;
+        const newXp = (currentStats.xp ?? 0) + amount;
         
         const tempPlayerForRankCalc = { ...player, stats: { ...currentStats, xp: newXp }};
         const newTier = getTierForPlayer(tempPlayerForRankCalc, ranks);
@@ -180,6 +188,11 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
             xpAdjustments: [...(player.xpAdjustments || []), newAdjustment],
             rank: newTier,
         };
+
+        // Update local form state immediately
+        setFormData(updatedPlayer);
+
+        // Notify parent / DataContext to persist update
         onUpdatePlayer(updatedPlayer);
 
         // Notify admin if player ranked up
@@ -328,11 +341,57 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
     };
 
 
+    const playerSqlSnippet = `-- ==========================================================
+-- MANUAL XP AWARD SQL QUERY FOR POSTGRESQL / SUPABASE
+-- Target Operator: ${player.name} (${player.callsign})
+-- Player ID: ${player.id}
+-- ==========================================================
+
+-- Award 500 XP (replace 500 with desired amount & reason)
+UPDATE public.players
+SET 
+  stats = jsonb_set(
+    COALESCE(stats, '{"kills":0,"deaths":0,"headshots":0,"gamesPlayed":0,"xp":0}'::jsonb),
+    '{xp}',
+    to_jsonb(COALESCE((stats->>'xp')::int, 0) + 500)
+  ),
+  "xpAdjustments" = COALESCE("xpAdjustments", '[]'::jsonb) || jsonb_build_object(
+    'amount', 500,
+    'reason', 'Manual Admin XP Award',
+    'date', CURRENT_TIMESTAMP
+  )
+WHERE id = '${player.id}';`;
+
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             {isAwardingXp && <AwardXpModal onClose={() => setIsAwardingXp(false)} onSave={handleAwardXp} />}
             {isResettingPin && <ResetPinModal onClose={() => setIsResettingPin(false)} onSave={handleResetPin} />}
             {isSendingCredentials && <SendCredentialsModal player={player} onClose={() => setIsSendingCredentials(false)} />}
+            {showSqlModal && (
+                <Modal title={`SQL Query: Award XP to ${player.callsign}`} onClose={() => setShowSqlModal(false)}>
+                    <div className="space-y-4">
+                        <p className="text-sm text-zinc-300">
+                            Run this SQL query directly in your Supabase SQL Editor or PostgreSQL terminal to manually award XP and log the adjustment for <strong className="text-white">{player.name} ({player.callsign})</strong>.
+                        </p>
+                        <div className="relative bg-zinc-950 p-4 rounded-lg border border-zinc-800 font-mono text-xs text-green-400 overflow-x-auto">
+                            <pre>{playerSqlSnippet}</pre>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(playerSqlSnippet);
+                                    setCopiedSql(true);
+                                    setTimeout(() => setCopiedSql(false), 2000);
+                                }}
+                                className="absolute top-2 right-2 px-3 py-1 text-xs bg-red-600 hover:bg-red-500 text-white rounded font-sans transition-colors"
+                            >
+                                {copiedSql ? 'Copied!' : 'Copy SQL'}
+                            </button>
+                        </div>
+                        <div className="flex justify-end pt-2">
+                            <Button variant="secondary" onClick={() => setShowSqlModal(false)}>Close</Button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
             <header className="flex items-center mb-6">
                 <Button onClick={onBack} variant="secondary" size="sm" className="mr-4">
                     <ArrowLeftIcon className="w-5 h-5" />
@@ -446,9 +505,12 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
                                         <Button variant="secondary" onClick={() => setIsEditing(true)} className="w-full">Edit Profile</Button>
                                         <Button onClick={() => setIsAwardingXp(true)} className="w-full">Award XP</Button>
                                     </div>
-                                    <div className="pt-2">
+                                    <div className="pt-2 flex gap-2">
                                         <Button variant="secondary" onClick={() => setIsSendingCredentials(true)} className="w-full">
                                             Send Credentials
+                                        </Button>
+                                        <Button variant="secondary" onClick={() => setShowSqlModal(true)} className="w-full text-xs">
+                                            SQL Query
                                         </Button>
                                     </div>
                                     {onDeletePlayer && (

@@ -44,17 +44,47 @@ function recordDatabaseActivity(type: 'reads' | 'writes' | 'deletes', amount: nu
     }
 }
 
-// Helper to fetch collection data from Supabase
+// Helper to fetch collection data from Supabase or LocalStorage
 function useCollection<T extends {id: string}>(
     collectionName: string, 
     mockData: T[], 
     options: { isProtected?: boolean } = {}
 ) {
-    const [data, setData] = useState<T[]>(IS_LIVE_DATA ? [] : mockData);
+    const storageKey = `app_data_${collectionName}`;
+
+    const getStoredFallback = (): T[] => {
+        try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    return parsed;
+                }
+            }
+        } catch (e) {
+            console.warn(`Failed to read ${storageKey} from storage:`, e);
+        }
+        return mockData;
+    };
+
+    const [data, setData] = useState<T[]>(() => IS_LIVE_DATA ? [] : getStoredFallback());
     const [loading, setLoading] = useState(true);
     const auth = useContext(AuthContext);
     const isAuthenticated = auth?.isAuthenticated;
     const isProtected = !!options.isProtected;
+
+    // Wrapped setter that automatically mirrors to localStorage
+    const setCollectionData = useCallback((action: React.SetStateAction<T[]>) => {
+        setData(prev => {
+            const next = typeof action === 'function' ? (action as (p: T[]) => T[])(prev) : action;
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(next));
+            } catch (err) {
+                console.warn(`Failed to persist ${storageKey} to storage:`, err);
+            }
+            return next;
+        });
+    }, [storageKey]);
 
     useEffect(() => {
         if (IS_LIVE_DATA && supabase) {
@@ -67,25 +97,27 @@ function useCollection<T extends {id: string}>(
             setLoading(true);
             let isMounted = true;
             
-            // Initial Fetch with error fallback
+            // Initial Fetch with error fallback to LocalStorage/Mock
             supabase.from(collectionName).select('*')
                 .then(({ data: fetchedData, error }) => {
                     if (!isMounted) return;
                     if (error) {
                         console.warn(`Could not fetch ${collectionName} from Supabase, using local fallback:`, error.message || error);
-                        setData(mockData);
+                        setData(getStoredFallback());
                     } else {
                         if (fetchedData && fetchedData.length > 0) {
                             recordDatabaseActivity('reads', fetchedData.length);
+                            setCollectionData(fetchedData as unknown as T[]);
+                        } else {
+                            setData(getStoredFallback());
                         }
-                        setData(fetchedData ? (fetchedData as unknown as T[]) : []);
                     }
                     setLoading(false);
                 })
                 .catch(err => {
                     if (!isMounted) return;
                     console.warn(`Network error fetching ${collectionName}, using local fallback:`, err?.message || err);
-                    setData(mockData);
+                    setData(getStoredFallback());
                     setLoading(false);
                 });
 
@@ -96,11 +128,11 @@ function useCollection<T extends {id: string}>(
                     .on('postgres_changes', { event: '*', schema: 'public', table: collectionName }, (payload) => {
                         recordDatabaseActivity('reads', 1);
                         if (payload.eventType === 'INSERT') {
-                            setData(currentData => [...currentData.filter(item => item.id !== (payload.new as any).id), payload.new as unknown as T]);
+                            setCollectionData(currentData => [...currentData.filter(item => item.id !== (payload.new as any).id), payload.new as unknown as T]);
                         } else if (payload.eventType === 'UPDATE') {
-                            setData(currentData => currentData.map(item => item.id === (payload.new as any).id ? (payload.new as unknown as T) : item));
+                            setCollectionData(currentData => currentData.map(item => item.id === (payload.new as any).id ? (payload.new as unknown as T) : item));
                         } else if (payload.eventType === 'DELETE') {
-                            setData(currentData => currentData.filter(item => item.id !== (payload.old as any).id));
+                            setCollectionData(currentData => currentData.filter(item => item.id !== (payload.old as any).id));
                         }
                     })
                     .subscribe();
@@ -117,12 +149,12 @@ function useCollection<T extends {id: string}>(
                 }
             };
         } else {
-            setData(mockData);
+            setData(getStoredFallback());
             setLoading(false);
         }
     }, [collectionName, isAuthenticated, isProtected]);
 
-    return [data, setData, loading] as const;
+    return [data, setCollectionData, loading] as const;
 }
 
 // Helper to fetch a single document from Supabase (mapped to a table row by ID)

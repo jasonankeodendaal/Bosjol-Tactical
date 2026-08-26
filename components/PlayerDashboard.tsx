@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, Rank, Tier, PlayerRole } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
-import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon, InformationCircleIcon } from './icons/Icons';
+import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, ChevronDownIcon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon, InformationCircleIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
 // FIX: Changed UNRANKED_SUB_RANK to UNRANKED_TIER.
 import { UNRANKED_TIER, MOCK_PLAYER_ROLES, MOCK_BADGES } from '../constants';
@@ -503,55 +503,72 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     const activeTabInfo = tabs.find(t => t.name === activeTab);
 
     return (
-        <div className="border-b border-zinc-800 mb-6">
-            <div className="lg:hidden relative">
-                 <button 
+        <div className="mb-6">
+            {/* Mobile View Dropdown Menu */}
+            <div className="sm:hidden relative">
+                <button
                     onClick={() => setMenuOpen(!menuOpen)}
-                    className="flex items-center justify-between w-full px-4 py-3 text-left text-gray-200 bg-zinc-900/50 rounded-md border border-zinc-700"
+                    className="w-full flex items-center justify-between px-4 py-2.5 bg-zinc-900 border border-zinc-700/80 rounded-xl text-white font-bold text-xs uppercase tracking-wider shadow-lg transition-all active:scale-[0.99]"
                 >
-                    <div className="flex items-center gap-3">
-                        {activeTabInfo?.icon}
-                        <span className="font-semibold">{activeTab}</span>
+                    <div className="flex items-center gap-2.5 truncate">
+                        <div className="text-red-400">{activeTabInfo?.icon}</div>
+                        <span className="truncate">{activeTabInfo?.name || activeTab}</span>
                     </div>
-                    <Bars3Icon className="w-6 h-6"/>
+                    <ChevronDownIcon className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`} />
                 </button>
+
                 <AnimatePresence>
-                {menuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 mt-2 w-full bg-zinc-900 border border-zinc-700 rounded-md shadow-lg z-50 p-2"
-                    >
-                        {tabs.map(tab => (
-                            <button
-                                key={tab.name}
-                                onClick={() => {
-                                    setActiveTab(tab.name);
-                                    setMenuOpen(false);
-                                }}
-                                className={`w-full text-left flex items-center gap-3 p-3 rounded-md text-sm font-medium ${activeTab === tab.name ? 'bg-red-600/20 text-red-400' : 'text-gray-300 hover:bg-zinc-800'}`}
+                    {menuOpen && (
+                        <>
+                            <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs" onClick={() => setMenuOpen(false)} />
+                            <motion.div
+                                initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                                className="absolute top-full left-0 right-0 mt-2 z-50 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl py-2 max-h-80 overflow-y-auto"
                             >
-                                {tab.icon} {tab.name}
-                            </button>
-                        ))}
-                    </motion.div>
-                )}
+                                <div className="px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 border-b border-zinc-800 mb-1">
+                                    Navigation View
+                                </div>
+                                {tabs.map((tab) => (
+                                    <button
+                                        key={tab.name}
+                                        onClick={() => {
+                                            setActiveTab(tab.name);
+                                            setMenuOpen(false);
+                                        }}
+                                        className={`w-full text-left px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors ${
+                                            activeTab === tab.name
+                                                ? 'bg-red-600/20 text-red-400 border-l-2 border-red-500 font-extrabold'
+                                                : 'text-zinc-300 hover:bg-zinc-800/80 hover:text-white'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3 truncate">
+                                            <span className={activeTab === tab.name ? 'text-red-400' : 'text-zinc-400'}>{tab.icon}</span>
+                                            <span className="truncate">{tab.name}</span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </motion.div>
+                        </>
+                    )}
                 </AnimatePresence>
             </div>
-            <nav className="hidden lg:flex -mb-px space-x-6 overflow-x-auto" aria-label="Tabs">
+
+            {/* Desktop View Header Tabs */}
+            <nav className="hidden sm:flex flex-wrap gap-x-1.5 gap-y-1.5 mb-4 justify-start" aria-label="Tabs">
                 {tabs.map((tab) => (
                     <button
                         key={tab.name}
                         onClick={() => setActiveTab(tab.name)}
                         className={`${
                             activeTab === tab.name
-                                ? 'border-red-500 text-red-400'
-                                : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'
-                        } flex items-center gap-2 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors uppercase tracking-wider`}
+                                ? 'bg-red-500/20 text-red-400 border-red-500/50'
+                                : 'bg-zinc-900/50 text-gray-400 hover:text-gray-200 hover:bg-zinc-800 border-zinc-800'
+                        } flex items-center gap-1.5 whitespace-nowrap py-1.5 px-2.5 border rounded-md font-medium text-xs transition-colors uppercase tracking-wider flex-shrink-0`}
                     >
-                        {tab.icon}
-                        {tab.name}
+                        <div className="scale-90 opacity-80">{tab.icon}</div>
+                        <span>{tab.name}</span>
                     </button>
                 ))}
             </nav>

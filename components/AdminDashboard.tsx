@@ -6,7 +6,7 @@ import type { Player, GameEvent, Tier, GamificationSettings, Badge, Sponsor, Com
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
-import { UsersIcon, CogIcon, CalendarIcon, TrashIcon, ShieldCheckIcon, PlusIcon, TrophyIcon, BuildingOfficeIcon, SparklesIcon, PencilIcon, XIcon, TicketIcon, AtSymbolIcon, PhoneIcon, GlobeAltIcon, ArrowLeftIcon, ArchiveBoxIcon, CurrencyDollarIcon, TruckIcon, MapPinIcon, MinusIcon, KeyIcon, Bars3Icon, ExclamationTriangleIcon, InformationCircleIcon, CreditCardIcon, CheckCircleIcon, PrinterIcon, PlusCircleIcon, CodeBracketIcon, ChartBarIcon } from './icons/Icons';
+import { UsersIcon, CogIcon, CalendarIcon, TrashIcon, ShieldCheckIcon, PlusIcon, TrophyIcon, BuildingOfficeIcon, SparklesIcon, PencilIcon, XIcon, TicketIcon, AtSymbolIcon, PhoneIcon, GlobeAltIcon, ArrowLeftIcon, ArchiveBoxIcon, CurrencyDollarIcon, TruckIcon, MapPinIcon, MinusIcon, KeyIcon, Bars3Icon, ChevronDownIcon, ExclamationTriangleIcon, InformationCircleIcon, CreditCardIcon, CheckCircleIcon, PrinterIcon, PlusCircleIcon, CodeBracketIcon, ChartBarIcon, BellIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
 import { Modal } from './Modal';
 import { UNRANKED_TIER } from '../constants';
@@ -23,10 +23,8 @@ import { VouchersRafflesTab } from './VouchersRafflesTab';
 import { SponsorsTab } from './SponsorsTab';
 import { Leaderboard } from './Leaderboard';
 import { SettingsTab } from './SettingsTab';
-import { ApiSetupTab } from './ApiSetupTab';
 import { AboutTab } from './AboutTab';
 import { AdminNotificationsTab } from './AdminNotificationsTab';
-import { BellIcon } from './icons/Icons';
 import { DataContext, DataContextType } from '../data/DataContext';
 import { AuthContext } from '../auth/AuthContext';
 import { SendCredentialsModal } from './SendCredentialsModal';
@@ -38,7 +36,7 @@ export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' 
 };
 
 
-type Tab = 'Events' | 'Players' | 'Notifications' | 'Progression' | 'Ranks' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'API Setup' | 'About';
+type Tab = 'Events' | 'Players' | 'Notifications' | 'Progression' | 'Ranks' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'About';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
 
 const NewPlayerModal: React.FC<{
@@ -243,78 +241,90 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Sponsors', icon: <SparklesIcon className="w-5 h-5"/>},
         {name: 'Leaderboard', icon: <TrophyIcon className="w-5 h-5"/>},
         {name: 'Settings', icon: <CogIcon className="w-5 h-5"/>},
-        {name: 'API Setup', icon: <CodeBracketIcon className="w-5 h-5"/>},
         {name: 'About', icon: <InformationCircleIcon className="w-5 h-5"/>},
     ];
 
     const activeTabInfo = tabs.find(t => t.name === activeTab);
 
     return (
-        <div className="border-b border-zinc-800 mb-6">
-             {/* Mobile Menu Button */}
-            <div className="lg:hidden relative">
-                 <button 
+        <div className="mb-6">
+            {/* Mobile View Dropdown Menu */}
+            <div className="sm:hidden relative">
+                <button
                     onClick={() => setMenuOpen(!menuOpen)}
-                    className="flex items-center justify-between w-full px-4 py-3 text-left text-gray-200 bg-zinc-900/50 rounded-md border border-zinc-700"
+                    className="w-full flex items-center justify-between px-4 py-2.5 bg-zinc-900 border border-zinc-700/80 rounded-xl text-white font-bold text-xs uppercase tracking-wider shadow-lg transition-all active:scale-[0.99]"
                 >
-                    <div className="flex items-center gap-3">
-                        {activeTabInfo?.icon}
-                        <span className="font-semibold">{activeTab}</span>
+                    <div className="flex items-center gap-2.5 truncate">
+                        <div className="text-red-400">{activeTabInfo?.icon}</div>
+                        <span className="truncate">{activeTabInfo?.name || activeTab}</span>
                         {activeTabInfo?.badgeCount !== undefined && activeTabInfo.badgeCount > 0 && (
-                            <span className="bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                            <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
                                 {activeTabInfo.badgeCount}
                             </span>
                         )}
                     </div>
-                    <Bars3Icon className="w-6 h-6"/>
+                    <ChevronDownIcon className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`} />
                 </button>
+
                 <AnimatePresence>
-                {menuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 mt-2 w-full bg-zinc-900 border border-zinc-700 rounded-md shadow-lg z-50 p-2 max-h-80 overflow-y-auto"
-                    >
-                        {tabs.map(tab => (
-                            <button
-                                key={tab.name}
-                                onClick={() => {
-                                    setActiveTab(tab.name);
-                                    setMenuOpen(false);
-                                }}
-                                className={`w-full text-left flex items-center justify-between p-3 rounded-md text-sm font-medium ${activeTab === tab.name ? 'bg-red-600/20 text-red-400' : 'text-gray-300 hover:bg-zinc-800'}`}
+                    {menuOpen && (
+                        <>
+                            <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs" onClick={() => setMenuOpen(false)} />
+                            <motion.div
+                                initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                                className="absolute top-full left-0 right-0 mt-2 z-50 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl py-2 max-h-80 overflow-y-auto"
                             >
-                                <div className="flex items-center gap-3">
-                                    {tab.icon} {tab.name}
+                                <div className="px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 border-b border-zinc-800 mb-1">
+                                    Select Module Tab
                                 </div>
-                                {tab.badgeCount !== undefined && tab.badgeCount > 0 && (
-                                    <span className="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                                        {tab.badgeCount}
-                                    </span>
-                                )}
-                            </button>
-                        ))}
-                    </motion.div>
-                )}
+                                {tabs.map((tab) => (
+                                    <button
+                                        key={tab.name}
+                                        onClick={() => {
+                                            setActiveTab(tab.name);
+                                            setMenuOpen(false);
+                                        }}
+                                        className={`w-full text-left px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors ${
+                                            activeTab === tab.name
+                                                ? 'bg-red-600/20 text-red-400 border-l-2 border-red-500 font-extrabold'
+                                                : 'text-zinc-300 hover:bg-zinc-800/80 hover:text-white'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3 truncate">
+                                            <span className={activeTab === tab.name ? 'text-red-400' : 'text-zinc-400'}>{tab.icon}</span>
+                                            <span className="truncate">{tab.name}</span>
+                                        </div>
+                                        {tab.badgeCount !== undefined && tab.badgeCount > 0 && (
+                                            <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                                {tab.badgeCount}
+                                            </span>
+                                        )}
+                                    </button>
+                                ))}
+                            </motion.div>
+                        </>
+                    )}
                 </AnimatePresence>
             </div>
-            {/* Desktop Tabs */}
-            <nav className="hidden lg:flex -mb-px space-x-6 overflow-x-auto" aria-label="Tabs">
+
+            {/* Desktop View Header Tabs (No horizontal scrolling, fit to screen) */}
+            <nav className="hidden sm:flex flex-wrap gap-x-2 gap-y-1.5 mb-4 justify-start" aria-label="Tabs">
                 {tabs.map((tab) => (
                     <button
                         key={tab.name}
                         onClick={() => setActiveTab(tab.name)}
                         className={`${
                             activeTab === tab.name
-                                ? 'border-red-500 text-red-400'
-                                : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'
-                        } flex items-center gap-2 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors uppercase tracking-wider relative`}
+                                ? 'bg-red-500/20 text-red-400 border-red-500/50'
+                                : 'bg-zinc-900/50 text-gray-400 hover:text-gray-200 hover:bg-zinc-800 border-zinc-800'
+                        } flex items-center gap-1.5 whitespace-nowrap py-1.5 px-2.5 border rounded-md font-medium text-xs transition-colors uppercase tracking-wider relative flex-shrink-0`}
                     >
-                        {tab.icon}
+                        <div className="scale-90 opacity-80">{tab.icon}</div>
                         <span>{tab.name}</span>
                         {tab.badgeCount !== undefined && tab.badgeCount > 0 && (
-                            <span className="ml-1 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                            <span className="ml-1 bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
                                 {tab.badgeCount}
                             </span>
                         )}
@@ -533,7 +543,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab') as Tab | null;
-        const validTabs: Tab[] = ['Events', 'Players', 'Notifications', 'Progression', 'Ranks', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'API Setup', 'About'];
+        const validTabs: Tab[] = ['Events', 'Players', 'Notifications', 'Progression', 'Ranks', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'About'];
         if (tab && validTabs.includes(tab)) {
             setActiveTab(tab);
         }
@@ -741,7 +751,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
                         restoreFromBackup={restoreFromBackup}
                     />}
-                    {activeTab === 'API Setup' && <ApiSetupTab creatorDetails={props.creatorDetails} />}
                     {activeTab === 'About' && <AboutTab />}
                 </div>
             </main>

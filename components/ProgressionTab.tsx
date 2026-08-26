@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Rank, Tier, Badge, LegendaryBadge, GamificationRule, GamificationSettings, CompanyDetails } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
-import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, PlusIcon, InformationCircleIcon, ArrowPathIcon, CodeBracketIcon, CheckCircleIcon, SparklesIcon } from './icons/Icons';
+import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, PlusIcon, InformationCircleIcon, ArrowPathIcon, CodeBracketIcon, CheckCircleIcon, SparklesIcon, ChevronDownIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { DashboardCard } from './DashboardCard';
@@ -582,6 +582,7 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     const [deletingTier, setDeletingTier] = useState<(Tier & { rankId: string }) | null>(null);
     
     const [activeSection, setActiveSection] = useState<'ranks' | 'badges' | 'rules' | 'reset'>('ranks');
+    const [sectionMenuOpen, setSectionMenuOpen] = useState(false);
     const [resetDate, setResetDate] = useState(companyDetails.nextRankResetDate || '');
     
     useEffect(() => {
@@ -748,8 +749,73 @@ SET name = EXCLUDED.name,
             {editingTier && <TierEditorModal tier={editingTier} allTiers={allTiers} onClose={() => setEditingTier(null)} onSave={handleSaveTier} />}
             {deletingTier && <Modal isOpen={true} onClose={() => setDeletingTier(null)} title="Confirm Deletion"><p>Delete "{deletingTier.name}" tier?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingTier(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteTier}>Delete</Button></div></Modal>}
 
-            {/* Mobile-First Free View Navigation Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-zinc-800/80">
+            {/* Navigation Tabs (Mobile Dropdown & Desktop Tabs) */}
+            <div className="sm:hidden relative border-b border-zinc-800/80 pb-3">
+                <button
+                    onClick={() => setSectionMenuOpen(!sectionMenuOpen)}
+                    className="w-full flex items-center justify-between px-3.5 py-2.5 bg-zinc-900 border border-zinc-700/80 rounded-xl text-white font-bold text-xs uppercase tracking-wider shadow-md"
+                >
+                    <div className="flex items-center gap-2">
+                        {activeSection === 'ranks' && <ShieldCheckIcon className="w-4 h-4 text-red-500" />}
+                        {activeSection === 'badges' && <TrophyIcon className="w-4 h-4 text-amber-500" />}
+                        {activeSection === 'rules' && <PlusCircleIcon className="w-4 h-4 text-blue-500" />}
+                        {activeSection === 'reset' && <ArrowPathIcon className="w-4 h-4 text-emerald-500" />}
+                        <span>
+                            {activeSection === 'ranks' && `Ranks (${ranks.length})`}
+                            {activeSection === 'badges' && `Badges (${badges.length + legendaryBadges.length})`}
+                            {activeSection === 'rules' && `XP Rules (${gamificationSettings.length})`}
+                            {activeSection === 'reset' && 'Season Reset'}
+                        </span>
+                    </div>
+                    <ChevronDownIcon className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${sectionMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {sectionMenuOpen && (
+                    <>
+                        <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs" onClick={() => setSectionMenuOpen(false)} />
+                        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl py-1.5 space-y-0.5">
+                            <button
+                                onClick={() => { setActiveSection('ranks'); setSectionMenuOpen(false); }}
+                                className={`w-full text-left px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2.5 transition-colors ${
+                                    activeSection === 'ranks' ? 'bg-red-600/20 text-red-400 border-l-2 border-red-500 font-extrabold' : 'text-zinc-300 hover:bg-zinc-800/80 hover:text-white'
+                                }`}
+                            >
+                                <ShieldCheckIcon className="w-4 h-4 text-red-400" />
+                                <span>Ranks ({ranks.length})</span>
+                            </button>
+                            <button
+                                onClick={() => { setActiveSection('badges'); setSectionMenuOpen(false); }}
+                                className={`w-full text-left px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2.5 transition-colors ${
+                                    activeSection === 'badges' ? 'bg-red-600/20 text-red-400 border-l-2 border-red-500 font-extrabold' : 'text-zinc-300 hover:bg-zinc-800/80 hover:text-white'
+                                }`}
+                            >
+                                <TrophyIcon className="w-4 h-4 text-amber-400" />
+                                <span>Badges ({badges.length + legendaryBadges.length})</span>
+                            </button>
+                            <button
+                                onClick={() => { setActiveSection('rules'); setSectionMenuOpen(false); }}
+                                className={`w-full text-left px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2.5 transition-colors ${
+                                    activeSection === 'rules' ? 'bg-red-600/20 text-red-400 border-l-2 border-red-500 font-extrabold' : 'text-zinc-300 hover:bg-zinc-800/80 hover:text-white'
+                                }`}
+                            >
+                                <PlusCircleIcon className="w-4 h-4 text-blue-400" />
+                                <span>XP Rules ({gamificationSettings.length})</span>
+                            </button>
+                            <button
+                                onClick={() => { setActiveSection('reset'); setSectionMenuOpen(false); }}
+                                className={`w-full text-left px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2.5 transition-colors ${
+                                    activeSection === 'reset' ? 'bg-red-600/20 text-red-400 border-l-2 border-red-500 font-extrabold' : 'text-zinc-300 hover:bg-zinc-800/80 hover:text-white'
+                                }`}
+                            >
+                                <ArrowPathIcon className="w-4 h-4 text-emerald-400" />
+                                <span>Season Reset</span>
+                            </button>
+                        </div>
+                    </>
+                )}
+            </div>
+
+            <div className="hidden sm:flex items-center gap-1.5 pb-1 border-b border-zinc-800/80">
                 <button 
                     onClick={() => setActiveSection('ranks')}
                     className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${

@@ -11,7 +11,8 @@ import {
     CalendarIcon,
     MagnifyingGlassIcon,
     CodeBracketIcon,
-    InformationCircleIcon
+    InformationCircleIcon,
+    ChevronDownIcon
 } from './icons/Icons';
 import { Button } from './Button';
 import { Modal } from './Modal';
@@ -37,6 +38,7 @@ export const AdminNotificationsTab: React.FC<AdminNotificationsTabProps> = ({
     players = []
 }) => {
     const [filter, setFilter] = useState<'all' | 'unread' | 'badge' | 'rank' | 'signup'>('all');
+    const [filterMenuOpen, setFilterMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSqlModalOpen, setIsSqlModalOpen] = useState(false);
     const [copiedSql, setCopiedSql] = useState(false);
@@ -230,8 +232,81 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications (read)
 
             {/* Filters & Search Toolbar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-                {/* Filter Pills */}
-                <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                {/* Mobile Filter Dropdown */}
+                <div className="sm:hidden relative">
+                    <button
+                        onClick={() => setFilterMenuOpen(!filterMenuOpen)}
+                        className="w-full flex items-center justify-between px-3.5 py-2 bg-zinc-900 border border-zinc-700/80 rounded-xl text-white font-bold text-xs uppercase tracking-wider shadow-sm"
+                    >
+                        <div className="flex items-center gap-2">
+                            <span className="text-zinc-400 font-mono text-[10px]">FILTER:</span>
+                            <span className="text-red-400">
+                                {filter === 'all' && `All (${notifications.length})`}
+                                {filter === 'unread' && `Unread (${unreadCount})`}
+                                {filter === 'badge' && 'Badges'}
+                                {filter === 'rank' && 'Ranks'}
+                                {filter === 'signup' && 'Signups'}
+                            </span>
+                        </div>
+                        <ChevronDownIcon className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${filterMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {filterMenuOpen && (
+                        <>
+                            <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs" onClick={() => setFilterMenuOpen(false)} />
+                            <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl py-1.5 space-y-0.5">
+                                <button
+                                    onClick={() => { setFilter('all'); setFilterMenuOpen(false); }}
+                                    className={`w-full text-left px-3.5 py-2 text-xs font-bold uppercase tracking-wider flex items-center justify-between ${
+                                        filter === 'all' ? 'bg-red-600/20 text-red-400 border-l-2 border-red-500' : 'text-zinc-300 hover:bg-zinc-800'
+                                    }`}
+                                >
+                                    <span>All Notifications</span>
+                                    <span className="text-zinc-500 font-mono text-[10px]">({notifications.length})</span>
+                                </button>
+                                <button
+                                    onClick={() => { setFilter('unread'); setFilterMenuOpen(false); }}
+                                    className={`w-full text-left px-3.5 py-2 text-xs font-bold uppercase tracking-wider flex items-center justify-between ${
+                                        filter === 'unread' ? 'bg-red-600/20 text-red-400 border-l-2 border-red-500' : 'text-zinc-300 hover:bg-zinc-800'
+                                    }`}
+                                >
+                                    <span>Unread</span>
+                                    <span className="text-red-500 font-mono text-[10px]">({unreadCount})</span>
+                                </button>
+                                <button
+                                    onClick={() => { setFilter('badge'); setFilterMenuOpen(false); }}
+                                    className={`w-full text-left px-3.5 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+                                        filter === 'badge' ? 'bg-amber-600/20 text-amber-400 border-l-2 border-amber-500' : 'text-zinc-300 hover:bg-zinc-800'
+                                    }`}
+                                >
+                                    <TrophyIcon className="w-3.5 h-3.5 text-amber-500" />
+                                    <span>Badges</span>
+                                </button>
+                                <button
+                                    onClick={() => { setFilter('rank'); setFilterMenuOpen(false); }}
+                                    className={`w-full text-left px-3.5 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+                                        filter === 'rank' ? 'bg-emerald-600/20 text-emerald-400 border-l-2 border-emerald-500' : 'text-zinc-300 hover:bg-zinc-800'
+                                    }`}
+                                >
+                                    <ShieldCheckIcon className="w-3.5 h-3.5 text-emerald-500" />
+                                    <span>Ranks</span>
+                                </button>
+                                <button
+                                    onClick={() => { setFilter('signup'); setFilterMenuOpen(false); }}
+                                    className={`w-full text-left px-3.5 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+                                        filter === 'signup' ? 'bg-blue-600/20 text-blue-400 border-l-2 border-blue-500' : 'text-zinc-300 hover:bg-zinc-800'
+                                    }`}
+                                >
+                                    <UserIcon className="w-3.5 h-3.5 text-blue-500" />
+                                    <span>Signups</span>
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* Desktop Filter Pills */}
+                <div className="hidden sm:flex items-center gap-1">
                     <button
                         onClick={() => setFilter('all')}
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${

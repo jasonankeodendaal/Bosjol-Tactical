@@ -7,6 +7,7 @@ import { CalendarIcon } from './icons/Icons';
 
 interface EventCardProps {
   event: GameEvent;
+  className?: string;
 }
 
 const eventTypeColorMap: Record<EventType, 'amber' | 'blue' | 'green' | 'red'> = {
@@ -23,7 +24,7 @@ const eventStatusColorMap: Record<EventStatus, 'green' | 'blue' | 'red' | 'amber
     'Cancelled': 'red',
 };
 
-const EventCardComponent: React.FC<EventCardProps> = ({ event }) => {
+const EventCardComponent: React.FC<EventCardProps> = ({ event, className = '' }) => {
   const cardVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
@@ -32,26 +33,35 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event }) => {
   return (
     <motion.div 
       variants={cardVariants}
-      className={`bg-zinc-800/50 rounded-lg border border-zinc-700/50 ${event.status !== 'Upcoming' ? 'opacity-60' : 'hover:bg-zinc-800 hover:border-red-600/50'} transition-all duration-300 overflow-hidden flex flex-col h-full`}
+      className={`bg-zinc-800/50 rounded-lg border border-zinc-700/50 ${event.status !== 'Upcoming' ? 'opacity-60' : 'hover:bg-zinc-800 hover:border-red-600/50'} transition-all duration-300 overflow-hidden flex flex-col h-full ${className}`}
     >
-      {event.imageUrl && (
-        <img src={event.imageUrl} alt={event.title} className="w-full h-24 object-cover flex-shrink-0"/>
-      )}
-      <div className="p-3 flex flex-col flex-grow">
-        <div className="flex justify-between items-start mb-2">
-            <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-base text-gray-100 truncate">{event.title}</h4>
-                <div className="flex items-center text-xs text-gray-500 mt-1">
-                    <CalendarIcon className="w-4 h-4 mr-1.5 flex-shrink-0" />
-                    <span className="truncate">{new Date(event.date).toLocaleDateString()}, {event.startTime} @ {event.location}</span>
-                </div>
-            </div>
-            <div className="flex flex-col items-end space-y-1.5 flex-shrink-0 ml-2">
-                <BadgePill color={eventTypeColorMap[event.type]}>{event.type}</BadgePill>
-                <BadgePill color={eventStatusColorMap[event.status]}>{event.status}</BadgePill>
-            </div>
+      {event.imageUrl ? (
+        <img src={event.imageUrl} alt={event.title} className="w-full h-14 sm:h-24 object-cover flex-shrink-0"/>
+      ) : (
+        <div className="w-full h-10 sm:h-20 bg-zinc-900/80 flex items-center justify-center flex-shrink-0 text-zinc-600">
+          <CalendarIcon className="w-4 h-4 sm:w-8 sm:h-8" />
         </div>
-        <p className="text-sm text-gray-400 line-clamp-2 flex-grow">{event.description}</p>
+      )}
+      <div className="p-1.5 sm:p-3 flex flex-col flex-grow justify-between min-w-0">
+        <div>
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-0.5 sm:gap-2 mb-1">
+            <h4 className="font-bold text-[10px] sm:text-base text-gray-100 truncate leading-tight w-full">{event.title}</h4>
+            <div className="flex flex-wrap sm:flex-col items-start sm:items-end gap-0.5 sm:gap-1.5 flex-shrink-0">
+              <BadgePill color={eventTypeColorMap[event.type]} className="!px-1 !py-0 !text-[7px] sm:!px-2.5 sm:!py-0.5 sm:!text-xs !rounded">{event.type}</BadgePill>
+              <BadgePill color={eventStatusColorMap[event.status]} className="!px-1 !py-0 !text-[7px] sm:!px-2.5 sm:!py-0.5 sm:!text-xs !rounded">{event.status}</BadgePill>
+            </div>
+          </div>
+          <div className="flex items-center text-[8px] sm:text-xs text-gray-400 mt-0.5">
+            <CalendarIcon className="w-2.5 h-2.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1.5 flex-shrink-0 text-red-400" />
+            <span className="truncate">{new Date(event.date).toLocaleDateString()}</span>
+          </div>
+          <p className="text-[8px] sm:text-xs text-gray-400 truncate mt-0.5 font-mono">
+            {event.startTime} @ {event.location}
+          </p>
+        </div>
+        <p className="text-[8px] sm:text-sm text-gray-400 line-clamp-1 sm:line-clamp-2 mt-1 hidden sm:block">
+          {event.description}
+        </p>
       </div>
     </motion.div>
   );

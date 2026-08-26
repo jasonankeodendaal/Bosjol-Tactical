@@ -882,20 +882,20 @@ const EventsTab: React.FC<Pick<PlayerDashboardProps, 'events' | 'player' | 'onEv
     return (
         <DashboardCard title="Event Schedule" icon={<CalendarIcon className="w-6 h-6"/>}>
             {selectedEvent && <EventDetailsModal event={selectedEvent} player={player} onClose={() => setSelectedEvent(null)} onSignUp={onEventSignUp} locations={locations} signups={signups} />}
-            <div className="p-4">
-                 <div className="flex justify-start mb-4">
-                    <div className="flex space-x-1 p-1 bg-zinc-900 rounded-lg border border-zinc-700">
-                        <Button size="sm" variant={filter === 'upcoming' ? 'primary' : 'secondary'} onClick={() => setFilter('upcoming')}>Upcoming ({upcomingEvents.length})</Button>
-                        <Button size="sm" variant={filter === 'past' ? 'primary' : 'secondary'} onClick={() => setFilter('past')}>Past ({pastEvents.length})</Button>
+            <div className="p-2 sm:p-4">
+                 <div className="flex justify-start mb-3 sm:mb-4">
+                    <div className="flex space-x-1 p-0.5 sm:p-1 bg-zinc-900 rounded-lg border border-zinc-700">
+                        <Button size="sm" className="!px-2 !py-1 !text-[10px] sm:!text-xs" variant={filter === 'upcoming' ? 'primary' : 'secondary'} onClick={() => setFilter('upcoming')}>Upcoming ({upcomingEvents.length})</Button>
+                        <Button size="sm" className="!px-2 !py-1 !text-[10px] sm:!text-xs" variant={filter === 'past' ? 'primary' : 'secondary'} onClick={() => setFilter('past')}>Past ({pastEvents.length})</Button>
                     </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto pr-2">
+                <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-4 max-h-[65vh] overflow-y-auto pr-1 sm:pr-2">
                     {eventsToShow.length > 0 ? eventsToShow.map(event => (
-                        <div key={event.id} className="cursor-pointer" onClick={() => setSelectedEvent(event)}>
+                        <div key={event.id} className="cursor-pointer h-full" onClick={() => setSelectedEvent(event)}>
                             <EventCard event={event} />
                         </div>
                     )) : (
-                         <p className="text-center text-gray-500 py-8 col-span-full">No {filter} events found.</p>
+                         <p className="text-center text-gray-500 py-8 col-span-full text-xs sm:text-base">No {filter} events found.</p>
                     )}
                 </div>
             </div>

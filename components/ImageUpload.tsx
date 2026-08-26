@@ -4,6 +4,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloudIcon, CheckCircleIcon, XCircleIcon, CogIcon } from './icons/Icons';
 import { Button } from './Button';
+import { compressImageToUltraCompact } from '../utils/imageCompressor';
 
 interface FileUploadProps {
   onUpload: (urls: string[]) => void;
@@ -14,7 +15,7 @@ interface FileUploadProps {
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
-const MAX_FILE_SIZE_BYTES = 500 * 1024; // 500KB for database storage
+const MAX_FILE_SIZE_BYTES = 500 * 1024; // 500KB absolute fallback
 
 export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, apiServerUrl }) => {
   const [status, setStatus] = useState<UploadStatus>('idle');
@@ -23,12 +24,31 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
 
   const performUpload = useCallback(async (fileToUpload: File): Promise<string> => {
     setStatus('uploading');
-    setMessage(`Processing ${fileToUpload.name}...`);
+    setMessage(`Optimizing & compressing ${fileToUpload.name}...`);
+
+    let finalFile = fileToUpload;
+    let compressedDataUrl = '';
+
+    // If it's an image, compress to ultra-compact ~4KB - 10KB
+    if (fileToUpload.type.startsWith('image/') || accept.includes('image')) {
+      try {
+        const compressed = await compressImageToUltraCompact(fileToUpload, {
+          targetMaxKb: 10,
+          targetMinKb: 4,
+          maxDimension: 320
+        });
+        compressedDataUrl = compressed.dataUrl;
+        finalFile = compressed.file;
+        setMessage(`Compressed to ${compressed.sizeKb} KB (Target 4-10 KB)...`);
+      } catch (compErr) {
+        console.warn("Client-side image compression fallback:", compErr);
+      }
+    }
     
     if (apiServerUrl) {
         // Upload to external server
         const formData = new FormData();
-        formData.append('file', fileToUpload);
+        formData.append('file', finalFile);
 
         try {
             const response = await fetch(`${apiServerUrl}/upload`, {
@@ -46,8 +66,12 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
             throw new Error((error as Error).message || 'Failed to connect to the API server.');
         }
     } else {
-        // Fallback to data URL
-        if (fileToUpload.size > MAX_FILE_SIZE_BYTES) {
+        // Direct storage of compressed Data URL
+        if (compressedDataUrl) {
+            return compressedDataUrl;
+        }
+
+        if (finalFile.size > MAX_FILE_SIZE_BYTES) {
             throw new Error(`File > 500KB. Configure an API server for large files.`);
         }
 
@@ -59,10 +83,10 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
             reader.onerror = (error) => {
                 reject(new Error(`Failed to read file: ${error}`));
             };
-            reader.readAsDataURL(fileToUpload);
+            reader.readAsDataURL(finalFile);
         });
     }
-  }, [apiServerUrl]);
+  }, [apiServerUrl, accept]);
 
 
   const resetState = (delay: number) => {

@@ -275,11 +275,11 @@ const Footer: React.FC<{ details: CompanyDetails, apiServerUrl?: string }> = ({ 
         <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-4">
                 <img src={details.logoUrl} alt={details.name} className="h-8 w-auto rounded"/>
-                <p className="hidden sm:block">© 2025 Bosjol Tactical Nelspruit Airsoft. All rights reserved.</p>
+                <p className="hidden sm:block">© 2026 Bosjol Tactical Nelspruit Airsoft. All rights reserved.build by JSTYP.me</p>
             </div>
             <StorageStatusIndicator apiServerUrl={apiServerUrl} />
         </div>
-        <p className="sm:hidden text-center mt-2">© 2025 Bosjol Tactical Nelspruit Airsoft. All rights reserved.</p>
+        <p className="sm:hidden text-center mt-2">© 2026 Bosjol Tactical Nelspruit Airsoft. All rights reserved.build by JSTYP.me</p>
     </footer>
 );
 
@@ -340,56 +340,57 @@ const AppContent: React.FC = () => {
     }, []);
 
     // --- SESSION MANAGEMENT FOR OBSERVABILITY ---
+    const prevHelpTopicRef = useRef<string>(helpTopic);
+
     useEffect(() => {
+        if (!isAuthenticated || !user) {
+            return;
+        }
+
+        const uid = user.id;
+        sessionRef.current.id = uid;
+        const sessionData = {
+            userId: user.id,
+            userName: user.name,
+            userRole: user.role,
+            currentView: helpTopic,
+            lastSeen: new Date().toISOString(),
+        };
+
+        setDoc('sessions', uid, sessionData).catch(err => {
+            console.warn("Session register failed (handled):", err);
+        });
+
         const handleBeforeUnload = () => {
             if (sessionRef.current.id) {
-                deleteDoc('sessions', sessionRef.current.id);
+                deleteDoc('sessions', sessionRef.current.id).catch(() => {});
             }
         };
 
-        const createOrUpdateSession = async () => {
-            if (user) {
-                 const uid = user.id;
-                 sessionRef.current.id = uid;
-                 const sessionData = {
-                    userId: user.id,
-                    userName: user.name,
-                    userRole: user.role,
-                    currentView: helpTopic,
-                    lastSeen: new Date().toISOString(),
-                };
-                await setDoc('sessions', uid, sessionData);
-            }
-        };
-
-        const deleteSession = async () => {
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
             if (sessionRef.current.id) {
-                await deleteDoc('sessions', sessionRef.current.id);
+                deleteDoc('sessions', sessionRef.current.id).catch(() => {});
                 sessionRef.current.id = null;
             }
         };
-        
-        if (isAuthenticated && user) {
-            createOrUpdateSession();
-            window.addEventListener('beforeunload', handleBeforeUnload);
-            
-            return () => {
-                window.removeEventListener('beforeunload', handleBeforeUnload);
-                deleteSession();
-            };
-        }
-    }, [isAuthenticated, user?.id, user?.name, user?.role, setDoc, deleteDoc]);
+    }, [isAuthenticated, user?.id, user?.name, user?.role]);
 
     useEffect(() => {
-        // Update current view AND lastSeen timestamp for session tracking
-        if (isAuthenticated && sessionRef.current.id) {
+        // Update current view AND lastSeen timestamp only when view actually changes
+        if (isAuthenticated && sessionRef.current.id && prevHelpTopicRef.current !== helpTopic) {
+            prevHelpTopicRef.current = helpTopic;
             updateDoc('sessions', { 
                 id: sessionRef.current.id, 
                 currentView: helpTopic,
                 lastSeen: new Date().toISOString()
+            }).catch(err => {
+                console.warn("Session update failed (handled):", err);
             });
         }
-    }, [helpTopic, isAuthenticated, updateDoc]);
+    }, [helpTopic, isAuthenticated]);
 
 
     useEffect(() => {
@@ -465,7 +466,7 @@ const AppContent: React.FC = () => {
         if (isAuthenticated && user?.role === 'admin' && ranks.length > 0 && players.length > 0) {
             performRankReset();
         }
-    }, [isAuthenticated, user?.role, companyDetails.nextRankResetDate, setCompanyDetails, players.length, ranks.length, updateDoc, logActivity]);
+    }, [isAuthenticated, user?.role, companyDetails.nextRankResetDate, players.length, ranks.length]);
 
 
     const checkForPromotions = useCallback((player: Player) => {
@@ -559,7 +560,7 @@ const AppContent: React.FC = () => {
         if (user?.role === 'player' && currentPlayer) {
             checkForPromotions(currentPlayer);
         }
-    }, [user, currentPlayer, checkForPromotions]);
+    }, [user?.role, currentPlayer?.id, currentPlayer?.stats?.xp, checkForPromotions]);
 
 
     useEffect(() => {
@@ -671,7 +672,15 @@ const AppContent: React.FC = () => {
         return () => {
             audio.removeEventListener('error', handleAudioError);
         };
-    }, [showFrontPage, isAuthenticated, user, companyDetails, playAudio]);
+    }, [
+        showFrontPage, 
+        isAuthenticated, 
+        user?.role, 
+        companyDetails.loginAudioUrl, 
+        companyDetails.playerDashboardAudioUrl, 
+        companyDetails.adminDashboardAudioUrl, 
+        playAudio
+    ]);
 
     const onPlayerUpdate = async (player: Player) => {
         await updateDoc('players', player);

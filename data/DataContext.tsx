@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode, useContext, useMemo, useCallback, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
+import { extractAndCleanStorageUrlsFromDoc } from '../utils/storageCleaner';
 import * as mock from '../constants';
 import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters, AdminNotification, PlayerHonor } from '../types';
 import { AuthContext } from '../auth/AuthContext';
@@ -53,10 +54,11 @@ function useCollection<T extends {id: string}>(
     const [loading, setLoading] = useState(true);
     const auth = useContext(AuthContext);
     const isAuthenticated = auth?.isAuthenticated;
+    const isProtected = !!options.isProtected;
 
     useEffect(() => {
         if (IS_LIVE_DATA && supabase) {
-            if (options.isProtected && !isAuthenticated) {
+            if (isProtected && !isAuthenticated) {
                 setData([]); 
                 setLoading(false);
                 return; 
@@ -65,41 +67,60 @@ function useCollection<T extends {id: string}>(
             setLoading(true);
             let isMounted = true;
             
-            // Initial Fetch
-            supabase.from(collectionName).select('*').then(({ data: fetchedData, error }) => {
-                if (!isMounted) return;
-                if (error) {
-                    console.error(`Error fetching ${collectionName}:`, error);
-                } else if (fetchedData) {
-                    recordDatabaseActivity('reads', fetchedData.length);
-                    setData(fetchedData as unknown as T[]);
-                }
-                setLoading(false);
-            });
+            // Initial Fetch with error fallback
+            supabase.from(collectionName).select('*')
+                .then(({ data: fetchedData, error }) => {
+                    if (!isMounted) return;
+                    if (error) {
+                        console.warn(`Could not fetch ${collectionName} from Supabase, using local fallback:`, error.message || error);
+                        setData(mockData);
+                    } else if (fetchedData && fetchedData.length > 0) {
+                        recordDatabaseActivity('reads', fetchedData.length);
+                        setData(fetchedData as unknown as T[]);
+                    } else {
+                        setData(mockData.length > 0 ? mockData : []);
+                    }
+                    setLoading(false);
+                })
+                .catch(err => {
+                    if (!isMounted) return;
+                    console.warn(`Network error fetching ${collectionName}, using local fallback:`, err?.message || err);
+                    setData(mockData);
+                    setLoading(false);
+                });
 
             // Realtime Subscription
-            const channel = supabase.channel(`public:${collectionName}`)
-                .on('postgres_changes', { event: '*', schema: 'public', table: collectionName }, (payload) => {
-                    recordDatabaseActivity('reads', 1);
-                    if (payload.eventType === 'INSERT') {
-                        setData(currentData => [...currentData.filter(item => item.id !== (payload.new as any).id), payload.new as unknown as T]);
-                    } else if (payload.eventType === 'UPDATE') {
-                        setData(currentData => currentData.map(item => item.id === (payload.new as any).id ? (payload.new as unknown as T) : item));
-                    } else if (payload.eventType === 'DELETE') {
-                        setData(currentData => currentData.filter(item => item.id !== (payload.old as any).id));
-                    }
-                })
-                .subscribe();
+            let channel: any = null;
+            try {
+                channel = supabase.channel(`public:${collectionName}`)
+                    .on('postgres_changes', { event: '*', schema: 'public', table: collectionName }, (payload) => {
+                        recordDatabaseActivity('reads', 1);
+                        if (payload.eventType === 'INSERT') {
+                            setData(currentData => [...currentData.filter(item => item.id !== (payload.new as any).id), payload.new as unknown as T]);
+                        } else if (payload.eventType === 'UPDATE') {
+                            setData(currentData => currentData.map(item => item.id === (payload.new as any).id ? (payload.new as unknown as T) : item));
+                        } else if (payload.eventType === 'DELETE') {
+                            setData(currentData => currentData.filter(item => item.id !== (payload.old as any).id));
+                        }
+                    })
+                    .subscribe();
+            } catch (subErr) {
+                console.warn(`Could not subscribe to realtime changes for ${collectionName}:`, subErr);
+            }
 
             return () => {
                 isMounted = false;
-                supabase.removeChannel(channel);
+                if (channel) {
+                    try {
+                        supabase.removeChannel(channel);
+                    } catch {}
+                }
             };
         } else {
             setData(mockData);
             setLoading(false);
         }
-    }, [collectionName, isAuthenticated, options.isProtected]);
+    }, [collectionName, isAuthenticated, isProtected]);
 
     return [data, setData, loading] as const;
 }
@@ -117,30 +138,46 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
             supabase.from(collectionName).select('*').eq('id', docId)
                 .then(({ data: fetchedRows, error }) => {
                     if (!isMounted) return;
-                    recordDatabaseActivity('reads', 1);
                     if (fetchedRows && fetchedRows.length > 0) {
+                        recordDatabaseActivity('reads', 1);
                         const { id, ...rest } = fetchedRows[0];
                         setData({ ...mockData, ...rest });
                     } else if (error) {
-                        console.warn(`Could not fetch document ${collectionName}/${docId}:`, error.message);
+                        console.warn(`Could not fetch document ${collectionName}/${docId}:`, error.message || error);
+                        setData(mockData);
                     }
+                    setLoading(false);
+                })
+                .catch(err => {
+                    if (!isMounted) return;
+                    console.warn(`Network error fetching document ${collectionName}/${docId}:`, err?.message || err);
+                    setData(mockData);
                     setLoading(false);
                 });
 
             // Subscription for this specific document/row
-            const channel = supabase.channel(`public:${collectionName}:${docId}`)
-                .on('postgres_changes', { event: '*', schema: 'public', table: collectionName, filter: `id=eq.${docId}` }, (payload) => {
-                     recordDatabaseActivity('reads', 1);
-                     if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-                         const { id, ...rest } = payload.new as any;
-                         setData(prev => ({ ...prev, ...rest }));
-                     }
-                })
-                .subscribe();
+            let channel: any = null;
+            try {
+                channel = supabase.channel(`public:${collectionName}:${docId}`)
+                    .on('postgres_changes', { event: '*', schema: 'public', table: collectionName, filter: `id=eq.${docId}` }, (payload) => {
+                         recordDatabaseActivity('reads', 1);
+                         if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+                             const { id, ...rest } = payload.new as any;
+                             setData(prev => ({ ...prev, ...rest }));
+                         }
+                    })
+                    .subscribe();
+            } catch (subErr) {
+                console.warn(`Could not subscribe to document changes for ${collectionName}/${docId}:`, subErr);
+            }
 
             return () => {
                 isMounted = false;
-                supabase.removeChannel(channel);
+                if (channel) {
+                    try {
+                        supabase.removeChannel(channel);
+                    } catch {}
+                }
             };
         } else {
             setData(mockData);
@@ -155,11 +192,13 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
             try {
                 const payload = { id: docId, ...newData };
                 const { error } = await supabase.from(collectionName).upsert(payload);
-                if (error) throw error;
-                recordDatabaseActivity('writes', 1);
+                if (error) {
+                    console.warn(`Failed to update ${collectionName}/${docId}:`, error.message || error);
+                } else {
+                    recordDatabaseActivity('writes', 1);
+                }
             } catch (error: any) {
-                console.error(`Failed to save document ${collectionName}/${docId}:`, error);
-                alert(`Failed to save settings: ${error.message}`);
+                console.warn(`Failed to save document ${collectionName}/${docId}:`, error?.message || error);
             }
         }
     }, [collectionName, docId]);
@@ -328,8 +367,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }, [creatorDetails, creatorCore, updateCreatorCore]);
 
-    // Generic CRUD Functions with Instant Optimistic State Updates
-    const collectionSetters: Record<string, React.Dispatch<React.SetStateAction<any[]>>> = {
+    // Stable reference to collection setters to prevent recreation of CRUD callbacks
+    const collectionSettersRef = useRef<Record<string, React.Dispatch<React.SetStateAction<any[]>>>>({});
+    collectionSettersRef.current = {
         players: setPlayers,
         events: setEvents,
         ranks: setRanks,
@@ -343,6 +383,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         transactions: setTransactions,
         locations: setLocations,
         raffles: setRaffles,
+        honors: setHonors,
         signups: setSignups,
         sessions: setSessions,
         activityLog: setActivityLog,
@@ -354,69 +395,97 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const setDoc = useCallback(async (collectionName: string, docId: string, data: object) => {
         const fullDoc = { id: docId, ...data };
-        const setter = collectionSetters[collectionName];
+        const setter = collectionSettersRef.current[collectionName];
         if (setter) {
             setter(prev => [...prev.filter(item => item.id !== docId), fullDoc]);
         }
 
         if (IS_LIVE_DATA && supabase) {
-            const { error } = await supabase.from(collectionName).upsert(fullDoc);
-            if (error) console.error("Error in setDoc:", error);
-            else recordDatabaseActivity('writes', 1);
+            try {
+                const { error } = await supabase.from(collectionName).upsert(fullDoc);
+                if (error) console.warn(`Supabase setDoc error on ${collectionName}:`, error.message || error);
+                else recordDatabaseActivity('writes', 1);
+            } catch (err: any) {
+                console.warn(`Network error in setDoc (${collectionName}):`, err?.message || err);
+            }
         }
-    }, [collectionSetters]);
+    }, []);
 
     const addDoc = useCallback(async <T extends {}>(collectionName: string, data: T): Promise<string> => {
         const generatedId = (data as any).id || `doc_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
         const payload = { id: generatedId, ...data };
 
         // Instant optimistic update
-        const setter = collectionSetters[collectionName];
+        const setter = collectionSettersRef.current[collectionName];
         if (setter) {
             setter(prev => [...prev.filter(item => item.id !== generatedId), payload]);
         }
 
         if (IS_LIVE_DATA && supabase) {
-            const { data: insertedData, error } = await supabase.from(collectionName).insert(payload).select().single();
-            if (error) {
-                console.error("Error in addDoc:", error);
-                throw error;
+            try {
+                const { data: insertedData, error } = await supabase.from(collectionName).insert(payload).select().single();
+                if (error) {
+                    console.warn(`Supabase addDoc error on ${collectionName}:`, error.message || error);
+                } else {
+                    recordDatabaseActivity('writes', 1);
+                }
+                return insertedData?.id || payload.id;
+            } catch (err: any) {
+                console.warn(`Network error in addDoc (${collectionName}):`, err?.message || err);
+                return payload.id;
             }
-            recordDatabaseActivity('writes', 1);
-            return insertedData?.id || payload.id;
         } else {
             return payload.id;
         }
-    }, [collectionSetters]);
+    }, []);
 
     const updateDoc = useCallback(async <T extends {id: string}>(collectionName: string, doc: T) => {
         // Instant optimistic update
-        const setter = collectionSetters[collectionName];
+        const setter = collectionSettersRef.current[collectionName];
         if (setter) {
             setter(prev => prev.map(item => item.id === doc.id ? { ...item, ...doc } : item));
         }
 
         if (IS_LIVE_DATA && supabase) {
-            const { id, ...data } = doc;
-            const { error } = await supabase.from(collectionName).update(data).eq('id', id);
-            if (error) console.error("Error in updateDoc:", error);
-            else recordDatabaseActivity('writes', 1);
+            try {
+                const { id, ...data } = doc;
+                const { error } = await supabase.from(collectionName).update(data).eq('id', id);
+                if (error) console.warn(`Supabase updateDoc error on ${collectionName}:`, error.message || error);
+                else recordDatabaseActivity('writes', 1);
+            } catch (err: any) {
+                console.warn(`Network error in updateDoc (${collectionName}):`, err?.message || err);
+            }
         }
-    }, [collectionSetters]);
+    }, []);
 
     const deleteDoc = useCallback(async (collectionName: string, docId: string) => {
-        // Instant optimistic update
-        const setter = collectionSetters[collectionName];
+        // Find existing doc in state if possible to extract any storage URLs
+        let targetDoc: any = null;
+        const setter = collectionSettersRef.current[collectionName];
         if (setter) {
-            setter(prev => prev.filter(item => item.id !== docId));
+            setter(prev => {
+                targetDoc = prev.find(item => item && item.id === docId);
+                return prev.filter(item => item && item.id !== docId);
+            });
+        }
+
+        // Clean associated images/files from Supabase Storage asynchronously
+        if (targetDoc) {
+            extractAndCleanStorageUrlsFromDoc(targetDoc).catch(err => {
+                console.warn(`[StorageCleaner] Error cleaning files for ${collectionName}/${docId}:`, err);
+            });
         }
 
         if (IS_LIVE_DATA && supabase) {
-            const { error } = await supabase.from(collectionName).delete().eq('id', docId);
-            if (error) console.error("Error in deleteDoc:", error);
-            else recordDatabaseActivity('deletes', 1);
+            try {
+                const { error } = await supabase.from(collectionName).delete().eq('id', docId);
+                if (error) console.warn(`Supabase deleteDoc error on ${collectionName}:`, error.message || error);
+                else recordDatabaseActivity('deletes', 1);
+            } catch (err: any) {
+                console.warn(`Network error in deleteDoc (${collectionName}):`, err?.message || err);
+            }
         }
-    }, [collectionSetters]);
+    }, []);
 
     const logActivity = useCallback(async (action: string, details?: Record<string, any>) => {
         if (!auth?.user) return;
@@ -432,15 +501,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             timestamp: new Date().toISOString()
         };
         
+        // Optimistic update
+        setActivityLog(prev => [logEntryData, ...prev.slice(0, 99)]);
+
         if (IS_LIVE_DATA && supabase) {
             try {
                 await supabase.from('activityLog').insert(logEntryData);
                 recordDatabaseActivity('writes', 1);
-            } catch (error) {
-                console.error("Failed to log activity:", error);
+            } catch (error: any) {
+                console.warn("Failed to log activity remotely:", error?.message || error);
             }
         }
-    }, [auth?.user]);
+    }, [auth?.user?.id, auth?.user?.name, auth?.user?.role, setActivityLog]);
 
     const createNotification = useCallback(async (notif: Omit<AdminNotification, 'id' | 'timestamp' | 'read'> & Partial<AdminNotification>): Promise<string> => {
         const notifId = notif.id || `notif_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -475,8 +547,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             try {
                 await supabase.from('notifications').insert(newNotif);
                 recordDatabaseActivity('writes', 1);
-            } catch (error) {
-                console.error("Failed to create notification:", error);
+            } catch (error: any) {
+                console.warn("Failed to create notification remotely:", error?.message || error);
             }
         }
         return notifId;
@@ -489,8 +561,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             try {
                 await supabase.from('notifications').update({ read: true }).eq('read', false);
                 recordDatabaseActivity('writes', 1);
-            } catch (error) {
-                console.error("Failed to mark all notifications as read:", error);
+            } catch (error: any) {
+                console.warn("Failed to mark notifications read remotely:", error?.message || error);
             }
         }
     }, [setNotifications]);
@@ -502,8 +574,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             try {
                 await supabase.from('notifications').delete().gte('id', '');
                 recordDatabaseActivity('deletes', 1);
-            } catch (error) {
-                console.error("Failed to clear all notifications:", error);
+            } catch (error: any) {
+                console.warn("Failed to clear notifications remotely:", error?.message || error);
             }
         }
     }, [setNotifications]);
@@ -519,9 +591,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log(`Seeding collection: ${collectionName}...`);
         
         if (Array.isArray(dataToSeed)) {
-             const { error } = await supabase.from(collectionName).upsert(dataToSeed);
-             if (error) console.error(`Error seeding ${collectionName}:`, error);
-             else recordDatabaseActivity('writes', dataToSeed.length);
+            try {
+                const { error } = await supabase.from(collectionName).upsert(dataToSeed);
+                if (error) console.warn(`Error seeding ${collectionName}:`, error.message || error);
+                else recordDatabaseActivity('writes', dataToSeed.length);
+            } catch (err: any) {
+                console.warn(`Network error seeding ${collectionName}:`, err?.message || err);
+            }
         }
         console.log(`Successfully seeded ${collectionName}.`);
     }, []);
@@ -539,18 +615,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             await seedCollection('notifications');
             
             // Deconstructed Settings
-            await supabase.from('settings').upsert([
-                { id: 'companyDetails', ...mock.MOCK_COMPANY_CORE },
-                { id: 'brandingDetails', ...mock.MOCK_BRANDING_DETAILS },
-                { id: 'contentDetails', ...mock.MOCK_CONTENT_DETAILS },
-                { id: 'creatorDetails', ...mock.MOCK_CREATOR_CORE }
-            ]);
-            recordDatabaseActivity('writes', 4);
+            try {
+                await supabase.from('settings').upsert([
+                    { id: 'companyDetails', ...mock.MOCK_COMPANY_CORE },
+                    { id: 'brandingDetails', ...mock.MOCK_BRANDING_DETAILS },
+                    { id: 'contentDetails', ...mock.MOCK_CONTENT_DETAILS },
+                    { id: 'creatorDetails', ...mock.MOCK_CREATOR_CORE }
+                ]);
+                recordDatabaseActivity('writes', 4);
+            } catch (err: any) {
+                console.warn("Could not seed settings:", err?.message || err);
+            }
             
             // Admin User
-            const { id: adminId, ...adminData } = mock.MOCK_ADMIN;
-            await supabase.from('admins').upsert({ id: adminId, ...adminData });
-            recordDatabaseActivity('writes', 1);
+            try {
+                const { id: adminId, ...adminData } = mock.MOCK_ADMIN;
+                await supabase.from('admins').upsert({ id: adminId, ...adminData });
+                recordDatabaseActivity('writes', 1);
+            } catch (err: any) {
+                console.warn("Could not seed admin:", err?.message || err);
+            }
 
             // Transactional Data
             await seedCollection('players');
@@ -568,7 +652,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             
             console.log('All initial data seeded successfully.');
         } catch (error) {
-            console.error("Error seeding initial data: ", error);
+            console.warn("Error seeding initial data: ", error);
         } finally {
             setIsSeeding(false);
         }

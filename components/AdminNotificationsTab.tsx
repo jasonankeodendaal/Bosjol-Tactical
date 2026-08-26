@@ -160,355 +160,291 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications (read)
     };
 
     return (
-        <DashboardCard 
-            title="Admin Notification Center" 
-            icon={<BellIcon className="w-6 h-6 text-red-500" />}
-            fullHeight
-        >
-            <div className="p-4 sm:p-6 space-y-5">
-                {/* Header Actions & Banner */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-zinc-950/60 p-4 rounded-xl border border-zinc-800">
-                    <div className="flex items-center gap-3">
-                        <div className="relative">
-                            <div className="w-10 h-10 rounded-lg bg-red-600/10 border border-red-600/30 flex items-center justify-center text-red-400">
-                                <BellIcon className="w-6 h-6" />
-                            </div>
+        <div className="w-full space-y-4">
+            {/* Free View Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-800/80">
+                <div className="flex items-center gap-2.5">
+                    <div className="relative">
+                        <div className="w-8 h-8 rounded-lg bg-red-600/10 border border-red-600/30 flex items-center justify-center text-red-400">
+                            <BellIcon className="w-5 h-5" />
+                        </div>
+                        {unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-red-600 text-white font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-zinc-900 animate-pulse">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                        )}
+                    </div>
+                    <div>
+                        <h2 className="text-base sm:text-lg font-black text-white uppercase tracking-wider flex items-center gap-2">
+                            Notifications & Field Alerts
                             {unreadCount > 0 && (
-                                <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white font-bold text-xs w-5 h-5 rounded-full flex items-center justify-center ring-2 ring-zinc-900 animate-pulse">
-                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                <span className="text-[10px] bg-red-600/20 text-red-400 px-1.5 py-0.5 rounded-full font-mono border border-red-500/30">
+                                    {unreadCount} Unread
                                 </span>
                             )}
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                Activity & Milestone Alerts
-                                {unreadCount > 0 && (
-                                    <span className="text-xs bg-red-600/20 text-red-400 px-2 py-0.5 rounded-full font-mono border border-red-500/30">
-                                        {unreadCount} Unread
-                                    </span>
-                                )}
-                            </h2>
-                            <p className="text-xs text-zinc-400">
-                                Real-time alerts for player badge unlocks, promotions, and milestone events.
-                            </p>
-                        </div>
+                        </h2>
+                        <p className="text-[10px] sm:text-xs text-zinc-400">
+                            Real-time alerts for player badge unlocks, promotions, and milestone events.
+                        </p>
                     </div>
+                </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                    <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => setIsSqlModalOpen(true)}
+                        className="!py-1 !px-2.5 text-[11px] text-blue-400 border-blue-900/50 hover:bg-blue-950/30"
+                    >
+                        <CodeBracketIcon className="w-3.5 h-3.5 mr-1" />
+                        SQL Setup
+                    </Button>
+                    {unreadCount > 0 && (
                         <Button 
                             variant="secondary" 
                             size="sm" 
-                            onClick={() => setIsSqlModalOpen(true)}
-                            className="flex items-center gap-1.5 text-xs text-blue-400 border-blue-900/50 hover:bg-blue-950/30"
+                            onClick={onMarkAllAsRead}
+                            className="!py-1 !px-2.5 text-[11px] text-emerald-400 border-emerald-900/50 hover:bg-emerald-950/30"
                         >
-                            <CodeBracketIcon className="w-4 h-4" />
-                            SQL Setup Snippet
+                            <CheckCircleIcon className="w-3.5 h-3.5 mr-1" />
+                            Mark All Read
                         </Button>
-                        {unreadCount > 0 && (
-                            <Button 
-                                variant="secondary" 
-                                size="sm" 
-                                onClick={onMarkAllAsRead}
-                                className="flex items-center gap-1.5 text-xs text-emerald-400 border-emerald-900/50 hover:bg-emerald-950/30"
-                            >
-                                <CheckCircleIcon className="w-4 h-4" />
-                                Mark All Read
-                            </Button>
-                        )}
-                        {notifications.length > 0 && (
-                            <Button 
-                                variant="secondary" 
-                                size="sm" 
-                                onClick={() => {
-                                    if (confirm("Are you sure you want to clear all notifications? This cannot be undone.")) {
-                                        onClearAllNotifications();
-                                    }
-                                }}
-                                className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-red-400 hover:border-red-800"
-                            >
-                                <TrashIcon className="w-4 h-4" />
-                                Clear All
-                            </Button>
-                        )}
-                    </div>
-                </div>
-
-                {/* Filters & Search Toolbar */}
-                <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-                    {/* Filter Pills */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-thin">
-                        <button
-                            onClick={() => setFilter('all')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                                filter === 'all' 
-                                    ? 'bg-red-600 text-white' 
-                                    : 'bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                            }`}
+                    )}
+                    {notifications.length > 0 && (
+                        <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            onClick={() => {
+                                if (confirm("Are you sure you want to clear all notifications? This cannot be undone.")) {
+                                    onClearAllNotifications();
+                                }
+                            }}
+                            className="!py-1 !px-2.5 text-[11px] text-zinc-400 hover:text-red-400 hover:border-red-800"
                         >
-                            All ({notifications.length})
-                        </button>
-                        <button
-                            onClick={() => setFilter('unread')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                                filter === 'unread' 
-                                    ? 'bg-red-600 text-white' 
-                                    : 'bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                            }`}
-                        >
-                            Unread ({unreadCount})
-                        </button>
-                        <button
-                            onClick={() => setFilter('badge')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1 ${
-                                filter === 'badge' 
-                                    ? 'bg-amber-600 text-white' 
-                                    : 'bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                            }`}
-                        >
-                            <TrophyIcon className="w-3.5 h-3.5" />
-                            Badges
-                        </button>
-                        <button
-                            onClick={() => setFilter('rank')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1 ${
-                                filter === 'rank' 
-                                    ? 'bg-emerald-600 text-white' 
-                                    : 'bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                            }`}
-                        >
-                            <ShieldCheckIcon className="w-3.5 h-3.5" />
-                            Ranks
-                        </button>
-                        <button
-                            onClick={() => setFilter('signup')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1 ${
-                                filter === 'signup' 
-                                    ? 'bg-blue-600 text-white' 
-                                    : 'bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                            }`}
-                        >
-                            <UserIcon className="w-3.5 h-3.5" />
-                            Signups & Events
-                        </button>
-                    </div>
-
-                    {/* Search Input */}
-                    <div className="relative min-w-[240px]">
-                        <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500" />
-                        <input
-                            type="text"
-                            placeholder="Search player, badge, code..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500"
-                        />
-                        {searchQuery && (
-                            <button
-                                onClick={() => setSearchQuery('')}
-                                className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-zinc-500 hover:text-white text-xs"
-                            >
-                                ×
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {/* Notifications List */}
-                <div className="space-y-3 max-h-[65vh] overflow-y-auto pr-1">
-                    {filteredNotifications.length === 0 ? (
-                        <div className="text-center py-12 bg-zinc-950/40 rounded-xl border border-zinc-800/60 p-6">
-                            <BellIcon className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-                            <h3 className="text-base font-semibold text-zinc-300">No Notifications Found</h3>
-                            <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
-                                {searchQuery 
-                                    ? `No notifications matching "${searchQuery}". Try changing your search or filter.` 
-                                    : "You're all caught up! New badge unlocks and promotions will appear here instantly."}
-                            </p>
-                        </div>
-                    ) : (
-                        filteredNotifications.map((notif) => {
-                            const isLegendary = notif.type === 'legendary_badge_earned';
-                            const isBadge = notif.type === 'badge_earned' || isLegendary;
-                            const isRank = notif.type === 'rank_up';
-
-                            return (
-                                <article 
-                                    key={notif.id}
-                                    className={`p-4 rounded-xl border transition-all ${
-                                        notif.read 
-                                            ? 'bg-zinc-950/40 border-zinc-800/70 hover:border-zinc-700' 
-                                            : isLegendary
-                                                ? 'bg-purple-950/20 border-purple-800/60 shadow-lg shadow-purple-950/20'
-                                                : isBadge
-                                                    ? 'bg-amber-950/20 border-amber-800/60 shadow-lg shadow-amber-950/20'
-                                                    : isRank
-                                                        ? 'bg-emerald-950/20 border-emerald-800/60 shadow-lg shadow-emerald-950/20'
-                                                        : 'bg-zinc-900 border-zinc-700 shadow-md'
-                                    }`}
-                                >
-                                    <div className="flex items-start justify-between gap-3">
-                                        {/* Main Icon & Type */}
-                                        <div className="flex items-start gap-3.5 flex-grow">
-                                            {/* Badge or Icon Avatar */}
-                                            <div className="relative flex-shrink-0">
-                                                {notif.badgeIconUrl ? (
-                                                    <div className={`w-12 h-12 rounded-xl p-1.5 flex items-center justify-center border ${
-                                                        isLegendary 
-                                                            ? 'bg-purple-900/40 border-purple-500 shadow-md shadow-purple-600/30' 
-                                                            : 'bg-amber-900/30 border-amber-500/50'
-                                                    }`}>
-                                                        <img 
-                                                            src={notif.badgeIconUrl} 
-                                                            alt={notif.badgeName || 'Badge'} 
-                                                            className="w-full h-full object-contain"
-                                                        />
-                                                    </div>
-                                                ) : notif.rankIconUrl ? (
-                                                    <div className="w-12 h-12 rounded-xl p-1.5 bg-emerald-900/30 border border-emerald-500/50 flex items-center justify-center">
-                                                        <img 
-                                                            src={notif.rankIconUrl} 
-                                                            alt={notif.rankName || 'Rank'} 
-                                                            className="w-full h-full object-contain"
-                                                        />
-                                                    </div>
-                                                ) : notif.playerAvatarUrl ? (
-                                                    <img 
-                                                        src={notif.playerAvatarUrl} 
-                                                        alt={notif.playerName || 'Player'} 
-                                                        className="w-12 h-12 rounded-xl object-cover border border-zinc-700"
-                                                    />
-                                                ) : (
-                                                    <div className="w-12 h-12 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400">
-                                                        <BellIcon className="w-6 h-6" />
-                                                    </div>
-                                                )}
-
-                                                {/* Status indicator pip */}
-                                                {!notif.read && (
-                                                    <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 ring-2 ring-zinc-900 animate-pulse" />
-                                                )}
-                                            </div>
-
-                                            {/* Notification Content */}
-                                            <div className="space-y-1 flex-grow">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <h4 className="text-sm font-bold text-white">
-                                                        {notif.title}
-                                                    </h4>
-                                                    
-                                                    {/* Type Tags */}
-                                                    {isLegendary && (
-                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-600/30 text-purple-300 border border-purple-500/40 uppercase tracking-wider">
-                                                            <SparklesIcon className="w-3 h-3" />
-                                                            Legendary Badge
-                                                        </span>
-                                                    )}
-                                                    {notif.type === 'badge_earned' && (
-                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-600/30 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
-                                                            <TrophyIcon className="w-3 h-3" />
-                                                            Badge Unlocked
-                                                        </span>
-                                                    )}
-                                                    {isRank && (
-                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider">
-                                                            <ShieldCheckIcon className="w-3 h-3" />
-                                                            Rank Up
-                                                        </span>
-                                                    )}
-                                                    {notif.type === 'new_player' && (
-                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-600/30 text-blue-300 border border-blue-500/40 uppercase tracking-wider">
-                                                            New Player
-                                                        </span>
-                                                    )}
-                                                    {notif.type === 'event_signup' && (
-                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider">
-                                                            Event Signup
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                <p className="text-xs text-zinc-300 leading-relaxed">
-                                                    {notif.message}
-                                                </p>
-
-                                                {/* Embedded Details Box if Badge or Rank is present */}
-                                                {(notif.badgeDescription || notif.badgeCriteria || notif.details) && (
-                                                    <div className="mt-2 p-2.5 bg-zinc-950/70 rounded-lg border border-zinc-800/80 text-xs space-y-1 max-w-xl">
-                                                        {notif.badgeName && (
-                                                            <div className="flex items-center gap-2 font-medium text-amber-400">
-                                                                <span>Badge: {notif.badgeName}</span>
-                                                                {notif.badgeCriteria && (
-                                                                    <span className="text-zinc-500 font-normal">
-                                                                        • Requirement: {notif.badgeCriteria}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                        {notif.badgeDescription && (
-                                                            <p className="text-zinc-400 text-[11px]">
-                                                                "{notif.badgeDescription}"
-                                                            </p>
-                                                        )}
-                                                        {notif.eventTitle && (
-                                                            <p className="text-cyan-400 text-[11px] flex items-center gap-1">
-                                                                <CalendarIcon className="w-3 h-3" /> Event: {notif.eventTitle}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {/* Player Details & Timestamp */}
-                                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-zinc-400 pt-1">
-                                                    {notif.playerName && (
-                                                        <span className="flex items-center gap-1 text-zinc-300 font-medium">
-                                                            <UserIcon className="w-3 h-3 text-zinc-500" />
-                                                            {notif.playerCallsign ? `${notif.playerCallsign} (${notif.playerName})` : notif.playerName}
-                                                            {notif.playerCode && <span className="font-mono text-zinc-500">[{notif.playerCode}]</span>}
-                                                        </span>
-                                                    )}
-                                                    <span className="text-zinc-500">
-                                                        {formatRelativeTime(notif.timestamp)} • {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Action buttons */}
-                                        <div className="flex flex-col sm:flex-row items-center gap-1 flex-shrink-0">
-                                            {notif.playerId && onViewPlayer && (
-                                                <button
-                                                    onClick={() => onViewPlayer(notif.playerId!)}
-                                                    className="px-2.5 py-1 text-xs text-red-400 hover:text-white hover:bg-red-600/20 rounded-md border border-red-900/40 transition-colors whitespace-nowrap"
-                                                    title="View player profile"
-                                                >
-                                                    View Profile
-                                                </button>
-                                            )}
-                                            <button
-                                                onClick={() => handleToggleRead(notif)}
-                                                className={`p-1.5 rounded-md text-xs transition-colors ${
-                                                    notif.read 
-                                                        ? 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800' 
-                                                        : 'text-emerald-400 hover:bg-emerald-950/40'
-                                                }`}
-                                                title={notif.read ? "Mark as unread" : "Mark as read"}
-                                            >
-                                                <CheckCircleIcon className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => onDeleteNotification(notif.id)}
-                                                className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-950/30 rounded-md text-xs transition-colors"
-                                                title="Delete notification"
-                                            >
-                                                <TrashIcon className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </article>
-                            );
-                        })
+                            <TrashIcon className="w-3.5 h-3.5 mr-1" />
+                            Clear All
+                        </Button>
                     )}
                 </div>
+            </div>
+
+            {/* Filters & Search Toolbar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                {/* Filter Pills */}
+                <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                    <button
+                        onClick={() => setFilter('all')}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+                            filter === 'all' 
+                                ? 'bg-red-600 text-white shadow-md shadow-red-900/30' 
+                                : 'bg-zinc-900/70 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800'
+                        }`}
+                    >
+                        All ({notifications.length})
+                    </button>
+                    <button
+                        onClick={() => setFilter('unread')}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+                            filter === 'unread' 
+                                ? 'bg-red-600 text-white shadow-md shadow-red-900/30' 
+                                : 'bg-zinc-900/70 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800'
+                        }`}
+                    >
+                        Unread ({unreadCount})
+                    </button>
+                    <button
+                        onClick={() => setFilter('badge')}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-1 ${
+                            filter === 'badge' 
+                                ? 'bg-amber-600 text-white shadow-md shadow-amber-900/30' 
+                                : 'bg-zinc-900/70 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800'
+                        }`}
+                    >
+                        <TrophyIcon className="w-3 h-3" />
+                        Badges
+                    </button>
+                    <button
+                        onClick={() => setFilter('rank')}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-1 ${
+                            filter === 'rank' 
+                                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/30' 
+                                : 'bg-zinc-900/70 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800'
+                        }`}
+                    >
+                        <ShieldCheckIcon className="w-3 h-3" />
+                        Ranks
+                    </button>
+                    <button
+                        onClick={() => setFilter('signup')}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-1 ${
+                            filter === 'signup' 
+                                ? 'bg-blue-600 text-white shadow-md shadow-blue-900/30' 
+                                : 'bg-zinc-900/70 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800'
+                        }`}
+                    >
+                        <UserIcon className="w-3 h-3" />
+                        Signups
+                    </button>
+                </div>
+
+                {/* Search Input */}
+                <div className="relative min-w-[200px] flex-shrink-0">
+                    <MagnifyingGlassIcon className="w-3.5 h-3.5 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-zinc-500" />
+                    <input
+                        type="text"
+                        placeholder="Search player, code, badge..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-2.5 py-1 bg-zinc-900/80 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-zinc-500 hover:text-white text-xs"
+                        >
+                            ×
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Notifications Grid - Responsive side-by-side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-[68vh] overflow-y-auto pr-1">
+                {filteredNotifications.length === 0 ? (
+                    <div className="col-span-full text-center py-10 bg-zinc-900/20 rounded-xl border border-zinc-800/60 p-4">
+                        <BellIcon className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+                        <h3 className="text-sm font-semibold text-zinc-300">No Notifications Found</h3>
+                        <p className="text-[11px] text-zinc-500 mt-0.5 max-w-sm mx-auto">
+                            {searchQuery 
+                                ? `No notifications matching "${searchQuery}". Try changing your search or filter.` 
+                                : "You're all caught up! New badge unlocks and promotions will appear here instantly."}
+                        </p>
+                    </div>
+                ) : (
+                    filteredNotifications.map((notif) => {
+                        const isLegendary = notif.type === 'legendary_badge_earned';
+                        const isBadge = notif.type === 'badge_earned' || isLegendary;
+                        const isRank = notif.type === 'rank_up';
+
+                        return (
+                            <article 
+                                key={notif.id}
+                                className={`p-2.5 sm:p-3 rounded-xl border transition-all flex flex-col justify-between ${
+                                    notif.read 
+                                        ? 'bg-zinc-900/30 border-zinc-800/70 hover:border-zinc-700' 
+                                        : isLegendary
+                                            ? 'bg-purple-950/20 border-purple-800/60 shadow-lg shadow-purple-950/20'
+                                            : isBadge
+                                                ? 'bg-amber-950/20 border-amber-800/60 shadow-lg shadow-amber-950/20'
+                                                : isRank
+                                                    ? 'bg-emerald-950/20 border-emerald-800/60 shadow-lg shadow-emerald-950/20'
+                                                    : 'bg-zinc-900/80 border-zinc-700 shadow-md'
+                                }`}
+                            >
+                                <div className="flex items-start gap-2.5">
+                                    {/* Badge or Icon Avatar */}
+                                    <div className="relative flex-shrink-0">
+                                        {notif.badgeIconUrl ? (
+                                            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg p-1 flex items-center justify-center border ${
+                                                isLegendary 
+                                                    ? 'bg-purple-900/40 border-purple-500 shadow-md shadow-purple-600/30' 
+                                                    : 'bg-amber-900/30 border-amber-500/50'
+                                            }`}>
+                                                <img 
+                                                    src={notif.badgeIconUrl} 
+                                                    alt={notif.badgeName || 'Badge'} 
+                                                    className="w-full h-full object-contain"
+                                                />
+                                            </div>
+                                        ) : notif.rankIconUrl ? (
+                                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg p-1 bg-emerald-900/30 border border-emerald-500/50 flex items-center justify-center">
+                                                <img 
+                                                    src={notif.rankIconUrl} 
+                                                    alt={notif.rankName || 'Rank'} 
+                                                    className="w-full h-full object-contain"
+                                                />
+                                            </div>
+                                        ) : notif.playerAvatarUrl ? (
+                                            <img 
+                                                src={notif.playerAvatarUrl} 
+                                                alt={notif.playerName || 'Player'} 
+                                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg object-cover border border-zinc-700"
+                                            />
+                                        ) : (
+                                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400">
+                                                <BellIcon className="w-5 h-5" />
+                                            </div>
+                                        )}
+
+                                        {/* Status indicator pip */}
+                                        {!notif.read && (
+                                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-zinc-900 animate-pulse" />
+                                        )}
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="space-y-1 flex-grow min-w-0">
+                                        <div className="flex items-center justify-between gap-1 flex-wrap">
+                                            <h4 className="text-xs sm:text-sm font-bold text-white truncate">
+                                                {notif.title}
+                                            </h4>
+                                            <span className="text-[9px] font-mono text-zinc-500">
+                                                {formatRelativeTime(notif.timestamp)}
+                                            </span>
+                                        </div>
+
+                                        <p className="text-[11px] text-zinc-300 leading-snug line-clamp-2">
+                                            {notif.message}
+                                        </p>
+
+                                        {notif.badgeName && (
+                                            <div className="text-[10px] text-amber-400 font-medium truncate">
+                                                Badge: {notif.badgeName}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Footer details & actions */}
+                                <div className="flex items-center justify-between gap-2 pt-2 mt-2 border-t border-zinc-800/50 text-[10px]">
+                                    <div className="flex items-center gap-1.5 text-zinc-400 truncate">
+                                        {notif.playerName && (
+                                            <span className="truncate text-zinc-300 font-medium">
+                                                {notif.playerCallsign ? `"${notif.playerCallsign}"` : notif.playerName}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                        {notif.playerId && onViewPlayer && (
+                                            <button
+                                                onClick={() => onViewPlayer(notif.playerId!)}
+                                                className="px-2 py-0.5 text-[10px] text-red-400 hover:text-white hover:bg-red-600/20 rounded border border-red-900/40 transition-colors"
+                                            >
+                                                Profile
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => handleToggleRead(notif)}
+                                            className={`p-1 rounded text-xs transition-colors ${
+                                                notif.read ? 'text-zinc-500 hover:text-zinc-300' : 'text-emerald-400 hover:bg-emerald-950/40'
+                                            }`}
+                                            title={notif.read ? "Mark unread" : "Mark read"}
+                                        >
+                                            <CheckCircleIcon className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => onDeleteNotification(notif.id)}
+                                            className="p-1 text-zinc-500 hover:text-red-400 hover:bg-red-950/30 rounded text-xs transition-colors"
+                                            title="Delete"
+                                        >
+                                            <TrashIcon className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        );
+                    })
+                )}
             </div>
 
             {/* SQL Snippet Helper Modal */}
@@ -551,6 +487,6 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications (read)
                     </div>
                 </div>
             </Modal>
-        </DashboardCard>
+        </div>
     );
 };

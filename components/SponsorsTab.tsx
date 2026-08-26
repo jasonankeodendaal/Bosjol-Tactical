@@ -1,14 +1,11 @@
-
-
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import type { Sponsor } from '../types';
-import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
-import { SparklesIcon, PlusIcon, PencilIcon, TrashIcon } from './icons/Icons';
-import { DataContext } from '../data/DataContext';
+import { SparklesIcon, PlusIcon, PencilIcon, TrashIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon } from './icons/Icons';
 import { UrlOrUploadField } from './UrlOrUploadField';
+import { deleteFromSupabaseStorage } from '../utils/storageCleaner';
 
 interface SponsorsTabProps {
     sponsors: Sponsor[];
@@ -18,8 +15,11 @@ interface SponsorsTabProps {
     deleteDoc: (collectionName: string, docId: string) => Promise<void>;
 }
 
-const SponsorEditorModal: React.FC<{ sponsor: Partial<Sponsor>, onClose: () => void, onSave: (s: Sponsor | Omit<Sponsor, 'id'>) => void }> = ({ sponsor, onClose, onSave }) => {
-    const dataContext = useContext(DataContext);
+const SponsorEditorModal: React.FC<{ 
+    sponsor: Partial<Sponsor>, 
+    onClose: () => void, 
+    onSave: (s: Sponsor | Omit<Sponsor, 'id'>) => void 
+}> = ({ sponsor, onClose, onSave }) => {
     const [formData, setFormData] = useState({
         name: sponsor.name || '',
         logoUrl: sponsor.logoUrl || '',
@@ -37,8 +37,14 @@ const SponsorEditorModal: React.FC<{ sponsor: Partial<Sponsor>, onClose: () => v
     };
     
     const handleRemoveImage = (index: number) => {
+        const removedUrl = imageUrls[index];
+        if (removedUrl) {
+            deleteFromSupabaseStorage(removedUrl).catch(err => {
+                console.warn('[SponsorsTab] Error deleting removed gallery image from storage:', err);
+            });
+        }
         setImageUrls(current => current.filter((_, i) => i !== index));
-    }
+    };
     
     const handleSaveClick = () => {
         const finalSponsor = { ...sponsor, ...formData, imageUrls };
@@ -46,10 +52,10 @@ const SponsorEditorModal: React.FC<{ sponsor: Partial<Sponsor>, onClose: () => v
     };
 
     return (
-        <Modal isOpen={true} onClose={onClose} title={sponsor.id ? 'Edit Sponsor' : 'Add New Sponsor'}>
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+        <Modal isOpen={true} onClose={onClose} title={sponsor.id ? 'Edit Sponsor / Partner' : 'Add New Sponsor / Partner'}>
+            <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1 text-xs">
                 <Input label="Sponsor Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                     <Input label="Email" type="email" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
                     <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} />
                 </div>
@@ -62,39 +68,41 @@ const SponsorEditorModal: React.FC<{ sponsor: Partial<Sponsor>, onClose: () => v
                     accept="image/*"
                 />
                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Sponsor Bio</label>
+                    <label className="block text-xs font-medium text-gray-400 mb-1">Partner Bio & Perks</label>
                     <textarea 
-                        placeholder="Sponsor Bio" 
+                        placeholder="Sponsor Bio & special airsoft discount codes for members" 
                         value={formData.bio} 
                         onChange={e => setFormData(f => ({ ...f, bio: e.target.value }))} 
-                        rows={4} 
-                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" 
+                        rows={3} 
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500" 
                     />
                 </div>
                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Sponsor Images</label>
-                    <div className="space-y-2">
+                    <label className="block text-xs font-medium text-gray-400 mb-1">Partner Photo Gallery</label>
+                    <div className="flex flex-wrap gap-2 mb-2">
                         {imageUrls.map((url, index) => (
-                             <div key={index} className="flex items-center gap-2 bg-zinc-800/50 p-2 rounded-md">
-                                <img src={url} alt={`Preview ${index+1}`} className="w-12 h-12 object-cover rounded"/>
-                                <p className="text-xs text-gray-400 truncate flex-grow">{url}</p>
-                                <Button variant="danger" size="sm" onClick={() => handleRemoveImage(index)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
+                             <div key={index} className="relative w-14 h-12 rounded overflow-hidden border border-zinc-700">
+                                <img src={url} alt={`Preview ${index+1}`} className="w-full h-full object-cover"/>
+                                <button 
+                                    onClick={() => handleRemoveImage(index)} 
+                                    className="absolute top-0 right-0 bg-red-600/80 hover:bg-red-600 text-white p-0.5"
+                                >
+                                    <TrashIcon className="w-2.5 h-2.5"/>
+                                </button>
                             </div>
                         ))}
                     </div>
-                    <div className="mt-4">
-                         <UrlOrUploadField 
-                            label="Add New Image"
-                            fileUrl={undefined}
-                            onUrlSet={handleAddImage}
-                            onRemove={() => {}} // Not used in 'add' mode
-                            accept="image/*"
-                        />
-                    </div>
+                    <UrlOrUploadField 
+                        label="Add Gallery Image"
+                        fileUrl={undefined}
+                        onUrlSet={handleAddImage}
+                        onRemove={() => {}}
+                        accept="image/*"
+                    />
                 </div>
             </div>
-            <div className="mt-6">
-                <Button className="w-full" onClick={handleSaveClick}>Save Sponsor</Button>
+            <div className="mt-4">
+                <Button className="w-full !py-2 text-xs" onClick={handleSaveClick}>Save Sponsor Partner</Button>
             </div>
         </Modal>
     );
@@ -120,36 +128,86 @@ export const SponsorsTab: React.FC<SponsorsTabProps> = ({ sponsors, setSponsors,
     };
 
     return (
-        <div>
+        <div className="w-full space-y-3 sm:space-y-4">
             {isEditing && <SponsorEditorModal sponsor={isEditing} onClose={() => setIsEditing(null)} onSave={handleSave} />}
-             {deletingSponsor && (
+            {deletingSponsor && (
                 <Modal isOpen={true} onClose={() => setDeletingSponsor(null)} title="Confirm Deletion">
-                    <p className="text-gray-300">Are you sure you want to delete the sponsor "{deletingSponsor.name}"? This will remove them from the player dashboard.</p>
-                    <div className="flex justify-end gap-4 mt-6">
-                        <Button variant="secondary" onClick={() => setDeletingSponsor(null)}>Cancel</Button>
-                        <Button variant="danger" onClick={handleDelete}>Delete</Button>
+                    <p className="text-gray-300 text-xs">Are you sure you want to delete the sponsor "{deletingSponsor.name}"? This will remove them from the player dashboard.</p>
+                    <div className="flex justify-end gap-3 mt-4">
+                        <Button variant="secondary" size="sm" onClick={() => setDeletingSponsor(null)}>Cancel</Button>
+                        <Button variant="danger" size="sm" onClick={handleDelete}>Delete</Button>
                     </div>
                 </Modal>
             )}
-            <DashboardCard title="Manage Sponsors" icon={<SparklesIcon className="w-6 h-6"/>}>
-                 <div className="p-4">
-                    <div className="flex justify-end mb-4">
-                        <Button onClick={() => setIsEditing({})} size="sm"><PlusIcon className="w-5 h-5 mr-2"/>Add Sponsor</Button>
-                    </div>
-                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {sponsors.map(sponsor => (
-                            <div key={sponsor.id} className="bg-zinc-800/50 p-4 rounded-lg text-center relative group">
-                                <img src={sponsor.logoUrl} alt={sponsor.name} className="h-20 object-contain mx-auto mb-3" />
-                                <p className="font-bold text-white">{sponsor.name}</p>
-                                <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button size="sm" variant="secondary" className="!p-2" onClick={() => setIsEditing(sponsor)}><PencilIcon className="w-4 h-4"/></Button>
-                                    <Button size="sm" variant="danger" className="!p-2" onClick={() => setDeletingSponsor(sponsor)}><TrashIcon className="w-4 h-4"/></Button>
-                                </div>
-                            </div>
-                        ))}
+
+            {/* Free View Top Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-zinc-800/80">
+                <div className="flex items-center gap-2">
+                    <SparklesIcon className="w-5 h-5 text-red-500" />
+                    <div>
+                        <h2 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
+                            Sponsors & Brand Partnerships
+                        </h2>
+                        <p className="text-[10px] sm:text-xs text-zinc-400">
+                            {sponsors.length} active partners &bull; Brand visibility & player perks
+                        </p>
                     </div>
                 </div>
-            </DashboardCard>
+
+                <div className="flex items-center gap-2">
+                    <Button onClick={() => setIsEditing({})} size="sm" className="!py-1 !px-2.5 text-xs">
+                        <PlusIcon className="w-4 h-4 mr-1"/>Add Sponsor
+                    </Button>
+                </div>
+            </div>
+
+            {/* Side by side Grid on Mobile */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 max-h-[70vh] overflow-y-auto pr-1">
+                {sponsors.map(sponsor => (
+                    <div 
+                        key={sponsor.id} 
+                        className="p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 flex flex-col justify-between hover:border-zinc-700 transition-all text-center relative group"
+                    >
+                        <div>
+                            <div className="h-16 flex items-center justify-center p-1 bg-black/40 rounded-lg border border-zinc-800/60 mb-2">
+                                {sponsor.logoUrl ? (
+                                    <img src={sponsor.logoUrl} alt={sponsor.name} className="max-h-full max-w-full object-contain" />
+                                ) : (
+                                    <SparklesIcon className="w-6 h-6 text-amber-500/50" />
+                                )}
+                            </div>
+                            <p className="font-bold text-xs sm:text-sm text-white truncate">{sponsor.name}</p>
+                            {sponsor.bio && (
+                                <p className="text-[10px] text-zinc-500 line-clamp-2 mt-1 text-left">{sponsor.bio}</p>
+                            )}
+                        </div>
+
+                        <div className="mt-2.5 pt-2 border-t border-zinc-800/50 flex items-center justify-between">
+                            <div className="flex gap-1.5 text-[10px] text-zinc-400 text-left truncate">
+                                {sponsor.website && (
+                                    <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline flex items-center gap-0.5">
+                                        <GlobeAltIcon className="w-3 h-3" /> Web
+                                    </a>
+                                )}
+                            </div>
+                            <div className="flex gap-1">
+                                <button 
+                                    onClick={() => setIsEditing(sponsor)} 
+                                    className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                                >
+                                    <PencilIcon className="w-3 h-3"/>
+                                </button>
+                                <button 
+                                    onClick={() => setDeletingSponsor(sponsor)} 
+                                    className="p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+                                >
+                                    <TrashIcon className="w-3 h-3"/>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };

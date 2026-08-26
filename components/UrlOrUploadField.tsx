@@ -4,6 +4,7 @@ import { ImageUpload } from './ImageUpload';
 import { Input } from './Input';
 import { Button } from './Button';
 import { TrashIcon, MusicalNoteIcon, CheckCircleIcon, ExclamationTriangleIcon, ArrowPathIcon } from './icons/Icons';
+import { deleteFromSupabaseStorage } from '../utils/storageCleaner';
 
 interface UrlOrUploadFieldProps {
     label: string;
@@ -100,6 +101,11 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
     };
 
     const handleRemove = () => {
+        if (fileUrl) {
+            deleteFromSupabaseStorage(fileUrl).catch(err => {
+                console.warn('[UrlOrUploadField] Error cleaning removed storage file:', err);
+            });
+        }
         onRemove();
         setUrlInputValue('');
         setValidationStatus('idle');

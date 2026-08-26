@@ -581,6 +581,7 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     const [editingTier, setEditingTier] = useState<Partial<Tier & { rankId: string }> | null>(null);
     const [deletingTier, setDeletingTier] = useState<(Tier & { rankId: string }) | null>(null);
     
+    const [activeSection, setActiveSection] = useState<'ranks' | 'badges' | 'rules' | 'reset'>('ranks');
     const [resetDate, setResetDate] = useState(companyDetails.nextRankResetDate || '');
     
     useEffect(() => {
@@ -725,17 +726,7 @@ ON CONFLICT (id) DO UPDATE
 SET name = EXCLUDED.name,
     description = EXCLUDED.description,
     "rankBadgeUrl" = EXCLUDED."rankBadgeUrl",
-    tiers = EXCLUDED.tiers;
-
--- 3. SQL Query to get player tier directly by total XP
--- SELECT p.name, p.callsign, (p.stats->>'xp')::int as xp, t.*
--- FROM public.players p
--- CROSS JOIN LATERAL jsonb_to_recordset(
---     (SELECT jsonb_agg(elem) FROM public.ranks r, jsonb_array_elements(r.tiers) elem)
--- ) as t(id text, name text, "minXp" int, perks text[], "iconUrl" text)
--- WHERE (p.stats->>'xp')::int >= t."minXp"
--- ORDER BY t."minXp" DESC
--- LIMIT 1;`;
+    tiers = EXCLUDED.tiers;`;
 
     const handleCopySql = () => {
         navigator.clipboard.writeText(rankSqlSnippet);
@@ -744,7 +735,7 @@ SET name = EXCLUDED.name,
     };
 
     return (
-        <div className="space-y-6">
+        <div className="w-full max-w-full overflow-hidden space-y-4 sm:space-y-6">
             {/* Modals */}
             {editingRule && <GamificationRuleEditorModal rule={editingRule} onClose={() => setEditingRule(null)} onSave={handleSaveRule} />}
             {deletingRule && <Modal isOpen={true} onClose={() => setDeletingRule(null)} title="Confirm Deletion"><p>Delete "{deletingRule.name}"?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingRule(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteRule}>Delete</Button></div></Modal>}
@@ -757,59 +748,97 @@ SET name = EXCLUDED.name,
             {editingTier && <TierEditorModal tier={editingTier} allTiers={allTiers} onClose={() => setEditingTier(null)} onSave={handleSaveTier} />}
             {deletingTier && <Modal isOpen={true} onClose={() => setDeletingTier(null)} title="Confirm Deletion"><p>Delete "{deletingTier.name}" tier?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingTier(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteTier}>Delete</Button></div></Modal>}
 
-            {/* Rank Structure */}
-            <DashboardCard 
-                title="Rank Structure & XP Thresholds" 
-                icon={<ShieldCheckIcon className="w-5 h-5 sm:w-6 sm:h-6"/>} 
-                titleAddon={
-                    <div className="flex items-center gap-1 sm:gap-2">
-                        <Button size="sm" variant="secondary" onClick={() => setShowSqlGuide(!showSqlGuide)} className="!px-2 !py-1 text-[10px] sm:text-xs">
-                            <CodeBracketIcon className="w-3.5 h-3.5 mr-1" />
-                            <span className="hidden sm:inline">{showSqlGuide ? 'Hide SQL' : 'SQL Snippets'}</span>
-                            <span className="sm:hidden">SQL</span>
-                        </Button>
-                        <Button size="sm" onClick={() => setEditingRank({})} className="!px-2 !py-1 text-[10px] sm:text-xs">
-                            <PlusIcon className="w-3.5 h-3.5 mr-1" /> 
-                            <span>Add Rank</span>
-                        </Button>
-                    </div>
-                }
-            >
-                 <div className="p-2.5 sm:p-5 space-y-3 sm:space-y-4">
-                    {/* Information Banner */}
-                    <div className="bg-zinc-900/40 p-2.5 sm:p-3 rounded-lg border border-zinc-800/80 flex items-start gap-2.5 text-[11px] sm:text-xs text-zinc-300">
-                        <InformationCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            {/* Mobile-First Free View Navigation Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-zinc-800/80">
+                <button 
+                    onClick={() => setActiveSection('ranks')}
+                    className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        activeSection === 'ranks' 
+                            ? 'bg-red-600 text-white shadow-lg shadow-red-900/30' 
+                            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    }`}
+                >
+                    <ShieldCheckIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>Ranks ({ranks.length})</span>
+                </button>
+                <button 
+                    onClick={() => setActiveSection('badges')}
+                    className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        activeSection === 'badges' 
+                            ? 'bg-red-600 text-white shadow-lg shadow-red-900/30' 
+                            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    }`}
+                >
+                    <TrophyIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>Badges ({badges.length + legendaryBadges.length})</span>
+                </button>
+                <button 
+                    onClick={() => setActiveSection('rules')}
+                    className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        activeSection === 'rules' 
+                            ? 'bg-red-600 text-white shadow-lg shadow-red-900/30' 
+                            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    }`}
+                >
+                    <PlusCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>XP Rules ({gamificationSettings.length})</span>
+                </button>
+                <button 
+                    onClick={() => setActiveSection('reset')}
+                    className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        activeSection === 'reset' 
+                            ? 'bg-red-600 text-white shadow-lg shadow-red-900/30' 
+                            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    }`}
+                >
+                    <ArrowPathIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>Season Reset</span>
+                </button>
+            </div>
+
+            {/* SECTION 1: RANKS FREE VIEW */}
+            {activeSection === 'ranks' && (
+                <div className="space-y-4">
+                    {/* Free View Header Bar without heavy boxed container */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-zinc-800/60">
                         <div>
-                            <span className="font-bold text-white">XP Progression Rules:</span> Ranks and Tiers calculate automatically based on Rank Points (XP). Starting rank begins at <strong>0 XP</strong>.
+                            <h2 className="text-base sm:text-2xl font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                <ShieldCheckIcon className="w-5 h-5 text-red-500" />
+                                <span>Rank Badges & Tiers</span>
+                            </h2>
+                            <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5">
+                                Clean, free view of operator progression badges and tier brackets.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <Button size="sm" variant="secondary" onClick={() => setShowSqlGuide(!showSqlGuide)} className="!px-2.5 !py-1 text-[11px]">
+                                <CodeBracketIcon className="w-3.5 h-3.5 mr-1" />
+                                <span>{showSqlGuide ? 'Hide SQL' : 'SQL'}</span>
+                            </Button>
+                            <Button size="sm" onClick={() => setEditingRank({})} className="!px-3 !py-1 text-[11px]">
+                                <PlusIcon className="w-3.5 h-3.5 mr-1" /> 
+                                <span>Add Rank</span>
+                            </Button>
                         </div>
                     </div>
 
-                    {/* SQL Snippets Drawer */}
+                    {/* SQL Guide Dropdown */}
                     {showSqlGuide && (
-                        <div className="bg-zinc-950 p-3 sm:p-4 rounded-xl border border-zinc-800 space-y-2.5 shadow-inner">
+                        <div className="p-3 bg-zinc-950/90 rounded-xl border border-zinc-800 space-y-2 shadow-xl">
                             <div className="flex justify-between items-center pb-2 border-b border-zinc-800">
-                                <div className="flex items-center gap-1.5">
-                                    <CodeBracketIcon className="w-4 h-4 text-red-400" />
-                                    <h4 className="text-xs sm:text-sm font-bold text-white">SQL Snippet for Rank Structure</h4>
-                                </div>
-                                <Button size="sm" variant="secondary" onClick={handleCopySql} className="!py-0.5 !px-2 text-[10px] sm:text-xs">
-                                    {copiedSql ? (
-                                        <>
-                                            <CheckCircleIcon className="w-3.5 h-3.5 mr-1 text-green-400" />
-                                            Copied!
-                                        </>
-                                    ) : (
-                                        'Copy SQL'
-                                    )}
+                                <span className="text-xs font-bold text-white">Database Seed Script</span>
+                                <Button size="sm" variant="secondary" onClick={handleCopySql} className="!py-0.5 !px-2 text-[10px]">
+                                    {copiedSql ? 'Copied!' : 'Copy SQL'}
                                 </Button>
                             </div>
-                            <pre className="text-[10px] sm:text-xs font-mono text-zinc-300 overflow-x-auto p-2.5 bg-zinc-900/90 rounded-lg border border-zinc-800/80 leading-relaxed">
+                            <pre className="text-[10px] font-mono text-zinc-300 overflow-x-auto p-2 bg-black/60 rounded border border-zinc-800/70">
                                 <code>{rankSqlSnippet}</code>
                             </pre>
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
+                    {/* Free View Ranks List - Shrink to fit mobile without rigid containers */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                         {sortedRanks.map(rank => (
                             <RankCard 
                                 key={rank.id}
@@ -823,94 +852,150 @@ SET name = EXCLUDED.name,
                             />
                         ))}
                     </div>
-                 </div>
-            </DashboardCard>
-            
-             <DashboardCard title="Seasonal Rank Reset" icon={<ArrowPathIcon className="w-6 h-6"/>}>
-                <div className="p-6 space-y-4">
-                    <p className="text-sm text-gray-400">
-                        Set a future date to automatically reset all players' Rank Points (XP) and Rank to zero. This action will trigger for an admin who logs in on or after the specified date. Legendary Badges and other lifetime stats will not be affected. Once the reset occurs, the date will be cleared.
-                    </p>
-                    <Input
-                        label="Next Reset Date"
-                        type="date"
-                        value={resetDate}
-                        onChange={e => setResetDate(e.target.value)}
-                        min={new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0]}
-                    />
-                    <Button onClick={handleSetDate} className="w-full" disabled={resetDate === (companyDetails.nextRankResetDate || '')}>
-                        {companyDetails.nextRankResetDate ? 'Update Reset Date' : 'Set Reset Date'}
-                    </Button>
-                </div>
-            </DashboardCard>
 
-            {/* Other sections */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <DashboardCard title="Gamification Settings" icon={<PlusCircleIcon className="w-6 h-6" />}>
-                    <div className="p-4">
-                            <div className="flex justify-between items-center mb-4">
-                            <h4 className="font-semibold text-gray-200">XP Earning Rules</h4>
-                            <Button size="sm" onClick={() => setEditingRule({})}><PlusIcon className="w-5 h-5 mr-2" /> Add Rule</Button>
+                    {sortedRanks.length === 0 && (
+                        <div className="text-center py-12 text-zinc-500">
+                            <ShieldCheckIcon className="w-12 h-12 mx-auto text-zinc-700 mb-2" />
+                            <p className="font-bold text-white text-sm">No Ranks Configured</p>
+                            <p className="text-xs text-zinc-500 mt-1">Click "Add Rank" above to establish your progression hierarchy.</p>
                         </div>
-                        <div className="space-y-2">{earningRules.map(rule => <GamificationRuleItem key={rule.id} rule={rule} onEdit={setEditingRule} onDelete={setDeletingRule} />)}</div>
-                        
-                        <div className="mt-6 pt-6 border-t border-zinc-800">
-                            <h4 className="font-semibold text-gray-200 mb-2">XP Penalty Rules</h4>
-                            <div className="space-y-2">{penaltyRules.map(rule => <GamificationRuleItem key={rule.id} rule={rule} onEdit={setEditingRule} onDelete={setDeletingRule} />)}</div>
+                    )}
+                </div>
+            )}
+
+            {/* SECTION 2: BADGES FREE VIEW */}
+            {activeSection === 'badges' && (
+                <div className="space-y-6">
+                    {/* Standard Badges Free Flow */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between pb-2 border-b border-zinc-800/60">
+                            <div className="flex items-center gap-2">
+                                <TrophyIcon className="w-5 h-5 text-red-500" />
+                                <h3 className="text-sm sm:text-lg font-bold text-white uppercase tracking-wider">Standard Badges</h3>
+                            </div>
+                            <Button size="sm" onClick={() => setEditingBadge({})} className="!px-2.5 !py-1 text-[11px]">
+                                <PlusIcon className="w-3.5 h-3.5 mr-1"/> Add Badge
+                            </Button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                            {badges.map(badge => (
+                                <div key={badge.id} className="flex items-center gap-3 p-2.5 rounded-xl border border-zinc-800/80 bg-zinc-900/40 hover:bg-zinc-900/80 transition-all">
+                                    <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 object-contain flex-shrink-0 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]"/>
+                                    <div className="flex-grow min-w-0">
+                                        <p className="font-bold text-white text-xs sm:text-sm truncate">{badge.name}</p>
+                                        <p className="text-[10px] text-zinc-400 truncate">{badge.description}</p>
+                                        <span className="inline-block mt-1 text-[9px] font-mono text-red-400 bg-red-950/40 px-1.5 py-0.2 rounded border border-red-800/30">
+                                            {badge.criteria?.type}: {badge.criteria?.value}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col gap-1 flex-shrink-0">
+                                        <Button size="sm" variant="secondary" onClick={() => setEditingBadge(badge)} className="!p-1"><PencilIcon className="w-3.5 h-3.5"/></Button>
+                                        <Button size="sm" variant="danger" onClick={() => setDeletingBadge(badge)} className="!p-1"><TrashIcon className="w-3.5 h-3.5"/></Button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
-                </DashboardCard>
-                 <div className="space-y-6">
-                    <DashboardCard title="Standard Badges" icon={<TrophyIcon className="w-5 h-5 sm:w-6 sm:h-6" />}>
-                        <div className="p-2.5 sm:p-4">
-                            <div className="flex justify-between items-center mb-3">
-                                <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Badge Roster</span>
-                                <Button size="sm" onClick={() => setEditingBadge({})} className="!px-2 !py-1 text-[10px] sm:text-xs">
-                                    <PlusIcon className="w-3.5 h-3.5 mr-1"/>
-                                    Add Badge
-                                </Button>
+
+                    {/* Legendary Badges Free Flow */}
+                    <div className="space-y-3 pt-4 border-t border-zinc-800/80">
+                        <div className="flex items-center justify-between pb-2 border-b border-zinc-800/60">
+                            <div className="flex items-center gap-2">
+                                <SparklesIcon className="w-5 h-5 text-amber-400" />
+                                <h3 className="text-sm sm:text-lg font-bold text-amber-400 uppercase tracking-wider">Legendary Badges</h3>
                             </div>
-                            <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
-                                {badges.map(badge => (
-                                    <div key={badge.id} className="flex items-center gap-2 sm:gap-3 border-b border-zinc-800/60 p-2 hover:bg-zinc-900/40 transition-colors">
-                                        <img src={badge.iconUrl} alt={badge.name} className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"/>
-                                        <div className="flex-grow min-w-0">
-                                            <p className="font-bold text-white text-xs sm:text-sm truncate">{badge.name}</p>
-                                            <p className="text-[10px] sm:text-xs text-gray-400 truncate">{badge.description}</p>
-                                        </div>
-                                        <Button size="sm" variant="secondary" onClick={() => setEditingBadge(badge)} className="!p-1 sm:!p-2"><PencilIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/></Button>
-                                        <Button size="sm" variant="danger" onClick={() => setDeletingBadge(badge)} className="!p-1 sm:!p-2"><TrashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/></Button>
-                                    </div>
-                                ))}
-                            </div>
+                            <Button size="sm" onClick={() => setEditingLegendaryBadge({})} className="!px-2.5 !py-1 text-[11px] !bg-amber-600 hover:!bg-amber-500">
+                                <PlusIcon className="w-3.5 h-3.5 mr-1"/> Add Legendary
+                            </Button>
                         </div>
-                    </DashboardCard>
-                    <DashboardCard title="Legendary Badges" icon={<TrophyIcon className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />}>
-                        <div className="p-2.5 sm:p-4">
-                            <div className="flex justify-between items-center mb-3">
-                                <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Elite Awards</span>
-                                <Button size="sm" onClick={() => setEditingLegendaryBadge({})} className="!px-2 !py-1 text-[10px] sm:text-xs">
-                                    <PlusIcon className="w-3.5 h-3.5 mr-1"/>
-                                    Add Badge
-                                </Button>
-                            </div>
-                            <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
-                                {legendaryBadges.map(badge => (
-                                    <div key={badge.id} className="flex items-center gap-2 sm:gap-3 border-b border-zinc-800/60 p-2 hover:bg-zinc-900/40 transition-colors">
-                                        <img src={badge.iconUrl} alt={badge.name} className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0 drop-shadow-[0_0_10px_rgba(245,158,11,0.35)]"/>
-                                        <div className="flex-grow min-w-0">
-                                            <p className="font-bold text-amber-300 text-xs sm:text-sm truncate">{badge.name}</p>
-                                            <p className="text-[10px] sm:text-xs text-gray-400 truncate">{badge.description}</p>
-                                        </div>
-                                        <Button size="sm" variant="secondary" onClick={() => setEditingLegendaryBadge(badge)} className="!p-1 sm:!p-2"><PencilIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/></Button>
-                                        <Button size="sm" variant="danger" onClick={() => setDeletingLegendaryBadge(badge)} className="!p-1 sm:!p-2"><TrashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/></Button>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                            {legendaryBadges.map(badge => (
+                                <div key={badge.id} className="flex items-center gap-3 p-2.5 rounded-xl border border-amber-500/30 bg-amber-950/10 hover:bg-amber-950/30 transition-all">
+                                    <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 object-contain flex-shrink-0 drop-shadow-[0_0_10px_rgba(245,158,11,0.4)]"/>
+                                    <div className="flex-grow min-w-0">
+                                        <p className="font-bold text-amber-300 text-xs sm:text-sm truncate">{badge.name}</p>
+                                        <p className="text-[10px] text-zinc-400 truncate">{badge.description}</p>
+                                        {badge.howToObtain && (
+                                            <p className="text-[9px] text-amber-400/80 italic truncate mt-0.5">{badge.howToObtain}</p>
+                                        )}
                                     </div>
-                                ))}
-                            </div>
+                                    <div className="flex flex-col gap-1 flex-shrink-0">
+                                        <Button size="sm" variant="secondary" onClick={() => setEditingLegendaryBadge(badge)} className="!p-1"><PencilIcon className="w-3.5 h-3.5"/></Button>
+                                        <Button size="sm" variant="danger" onClick={() => setDeletingLegendaryBadge(badge)} className="!p-1"><TrashIcon className="w-3.5 h-3.5"/></Button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    </DashboardCard>
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {/* SECTION 3: XP RULES FREE VIEW */}
+            {activeSection === 'rules' && (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between pb-2 border-b border-zinc-800/60">
+                        <div className="flex items-center gap-2">
+                            <PlusCircleIcon className="w-5 h-5 text-red-500" />
+                            <h3 className="text-sm sm:text-lg font-bold text-white uppercase tracking-wider">XP Gamification Rules</h3>
+                        </div>
+                        <Button size="sm" onClick={() => setEditingRule({})} className="!px-2.5 !py-1 text-[11px]">
+                            <PlusIcon className="w-3.5 h-3.5 mr-1"/> Add Rule
+                        </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Earning Rules */}
+                        <div className="space-y-2">
+                            <h4 className="text-xs font-bold text-green-400 uppercase tracking-wider">XP Earning Rules</h4>
+                            <div className="space-y-1">
+                                {earningRules.map(rule => (
+                                    <GamificationRuleItem key={rule.id} rule={rule} onEdit={setEditingRule} onDelete={setDeletingRule} />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Penalty Rules */}
+                        <div className="space-y-2">
+                            <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider">XP Penalty Rules</h4>
+                            <div className="space-y-1">
+                                {penaltyRules.map(rule => (
+                                    <GamificationRuleItem key={rule.id} rule={rule} onEdit={setEditingRule} onDelete={setDeletingRule} />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* SECTION 4: SEASONAL RESET FREE VIEW */}
+            {activeSection === 'reset' && (
+                <div className="p-4 rounded-xl border border-zinc-800/80 bg-zinc-900/30 space-y-4 max-w-xl">
+                    <div className="flex items-center gap-2">
+                        <ArrowPathIcon className="w-5 h-5 text-red-500" />
+                        <h3 className="text-sm sm:text-lg font-bold text-white uppercase tracking-wider">Seasonal Rank Reset</h3>
+                    </div>
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                        Set a scheduled date to reset all operators' Rank Points (XP) and active Rank back to baseline tier. 
+                        Legendary Badges and permanent match counts will not be modified.
+                    </p>
+                    <div className="space-y-3 pt-2">
+                        <Input
+                            label="Next Reset Date"
+                            type="date"
+                            value={resetDate}
+                            onChange={e => setResetDate(e.target.value)}
+                            min={new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0]}
+                        />
+                        <Button 
+                            onClick={handleSetDate} 
+                            className="w-full !py-2 text-xs font-bold" 
+                            disabled={resetDate === (companyDetails.nextRankResetDate || '')}
+                        >
+                            {companyDetails.nextRankResetDate ? 'Update Reset Date' : 'Set Reset Date'}
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

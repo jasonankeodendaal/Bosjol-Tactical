@@ -1,30 +1,36 @@
-
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { Transaction, Player, GameEvent, Location, CompanyDetails } from '../types';
-import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
-import { CurrencyDollarIcon, PrinterIcon } from './icons/Icons';
+import { CurrencyDollarIcon, PrinterIcon, ArrowTrendingUpIcon, ShieldCheckIcon } from './icons/Icons';
 import { motion } from 'framer-motion';
 import { PrintableReport } from './PrintableReport';
 
 type TimeFilter = 'day' | 'week' | 'month' | '90days' | 'all';
 
-const StatCard: React.FC<{ title: string, value: string, colorClass: string }> = ({ title, value, colorClass }) => (
-    <div className="bg-zinc-800/50 p-4 rounded-lg text-center border border-zinc-700/50">
-        <p className="text-sm text-gray-400 uppercase tracking-wider">{title}</p>
-        <p className={`text-3xl font-bold ${colorClass}`}>{value}</p>
+const StatCard: React.FC<{ title: string, value: string, colorClass: string, subtitle?: string }> = ({ title, value, colorClass, subtitle }) => (
+    <div className="p-2.5 sm:p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 flex flex-col justify-between">
+        <p className="text-[10px] text-zinc-400 uppercase font-black tracking-wider">{title}</p>
+        <p className={`text-base sm:text-xl font-mono font-black mt-1 ${colorClass}`}>{value}</p>
+        {subtitle && <p className="text-[9px] text-zinc-400 mt-0.5">{subtitle}</p>}
     </div>
 );
 
 const BarChart: React.FC<{ data: { label: string, event: number, rental: number, retail: number }[] }> = ({ data }) => {
     const maxVal = Math.max(...data.map(d => d.event + d.rental + d.retail), 1);
 
+    if (data.length === 0) {
+        return (
+            <div className="h-44 flex items-center justify-center text-xs text-zinc-500 italic">
+                No revenue entries recorded for this period
+            </div>
+        );
+    }
+
     return (
-        <div className="h-64 flex items-end justify-around space-x-1 px-2 border-b border-l border-zinc-700 pb-4 pl-4 relative">
-            <span className="absolute left-0 top-0 -translate-x-full text-xs text-gray-500 pr-2">R {maxVal.toLocaleString()}</span>
-            <span className="absolute left-0 bottom-0 -translate-x-full text-xs text-gray-500 pr-2">R 0</span>
+        <div className="h-44 flex items-end justify-around space-x-1 px-1 border-b border-l border-zinc-800 pb-3 pl-3 relative">
+            <span className="absolute left-0 top-0 -translate-x-full text-[9px] text-zinc-400 pr-1">R{maxVal >= 1000 ? `${(maxVal/1000).toFixed(0)}k` : maxVal.toFixed(0)}</span>
+            <span className="absolute left-0 bottom-0 -translate-x-full text-[9px] text-zinc-400 pr-1">R0</span>
             {data.map((d, index) => {
                 const total = d.event + d.rental + d.retail;
                 const totalHeight = maxVal > 0 ? (total / maxVal) * 100 : 0;
@@ -37,28 +43,33 @@ const BarChart: React.FC<{ data: { label: string, event: number, rental: number,
                          <motion.div
                             initial={{height: 0}}
                             animate={{height: `${totalHeight}%`}}
-                            transition={{duration: 0.5, ease: 'easeOut'}}
+                            transition={{duration: 0.4, ease: 'easeOut'}}
                             className="w-full flex flex-col justify-end rounded-t-sm"
                         >
-                            <div style={{height: `${eventPercent}%`}} className="bg-green-500/80 group-hover:bg-green-400 w-full" />
+                            <div style={{height: `${eventPercent}%`}} className="bg-emerald-500/80 group-hover:bg-emerald-400 w-full" />
                             <div style={{height: `${rentalPercent}%`}} className="bg-blue-500/80 group-hover:bg-blue-400 w-full" />
                             <div className="bg-amber-500/80 group-hover:bg-amber-400 w-full flex-grow" />
                         </motion.div>
-                        <div className="absolute -bottom-5 text-xs text-gray-400">{d.label}</div>
-                         <div className="absolute -top-16 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-950 px-2 py-1 rounded text-xs text-white border border-zinc-700 whitespace-nowrap z-10">
-                            <p className="text-green-400">Events: R {(d.event || 0).toFixed(2)}</p>
-                            <p className="text-blue-400">Rentals: R {(d.rental || 0).toFixed(2)}</p>
-                            <p className="text-amber-400">Retail: R {(d.retail || 0).toFixed(2)}</p>
+                        <div className="absolute -bottom-4 text-[9px] text-zinc-500 truncate max-w-[40px] text-center">{d.label}</div>
+                         <div className="absolute -top-14 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-950 px-2 py-1 rounded text-[10px] text-white border border-zinc-700 whitespace-nowrap z-20 pointer-events-none shadow-lg">
+                            <p className="text-emerald-400">Events: R{(d.event || 0).toFixed(0)}</p>
+                            <p className="text-blue-400">Rentals: R{(d.rental || 0).toFixed(0)}</p>
+                            <p className="text-amber-400">Retail: R{(d.retail || 0).toFixed(0)}</p>
                         </div>
                     </div>
-                )
+                );
             })}
         </div>
-    )
-}
+    );
+};
 
-
-export const FinanceTab: React.FC<{ transactions: Transaction[], players: Player[], events: GameEvent[], locations: Location[], companyDetails: CompanyDetails }> = ({ transactions, players, events, locations, companyDetails }) => {
+export const FinanceTab: React.FC<{ 
+    transactions: Transaction[], 
+    players: Player[], 
+    events: GameEvent[], 
+    locations: Location[], 
+    companyDetails: CompanyDetails 
+}> = ({ transactions, players, events, locations, companyDetails }) => {
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
     const [playerFilter, setPlayerFilter] = useState<string>('all');
     const [eventFilter, setEventFilter] = useState<string>('all');
@@ -84,7 +95,7 @@ export const FinanceTab: React.FC<{ transactions: Transaction[], players: Player
             return () => {
                 clearTimeout(timeoutId);
                 window.removeEventListener('afterprint', handleAfterPrint);
-            }
+            };
         }
     }, [isPrinting]);
 
@@ -167,9 +178,9 @@ export const FinanceTab: React.FC<{ transactions: Transaction[], players: Player
             const date = new Date(t.date);
             let key: string;
             switch(timeFilter) {
-                case 'day': key = date.toISOString().split(':')[0]; break; // Group by hour
-                case 'week': case 'month': case '90days': key = date.toISOString().split('T')[0]; break; // Group by day
-                case 'all': key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; break; // Group by month
+                case 'day': key = date.toISOString().split(':')[0]; break;
+                case 'week': case 'month': case '90days': key = date.toISOString().split('T')[0]; break;
+                case 'all': key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; break;
             }
 
             if (!dataMap.has(key)) dataMap.set(key, { event: 0, rental: 0, retail: 0 });
@@ -191,14 +202,14 @@ export const FinanceTab: React.FC<{ transactions: Transaction[], players: Player
 
     const reportFilters = {
         timeFilter, playerFilter, eventFilter, locationFilter,
-        timeFilterLabel: document.querySelector(`select option[value="${timeFilter}"]`)?.textContent || timeFilter,
+        timeFilterLabel: timeFilter,
         playerFilterLabel: players.find(p => p.id === playerFilter)?.name || 'All Players',
         eventFilterLabel: events.find(e => e.id === eventFilter)?.title || 'All Events',
         locationFilterLabel: locations.find(l => l.id === locationFilter)?.name || 'All Locations',
     };
 
     return (
-        <div className="space-y-6">
+        <div className="w-full space-y-3 sm:space-y-4">
             {isPrinting && createPortal(
                 <PrintableReport
                     transactions={filteredTransactions}
@@ -210,82 +221,130 @@ export const FinanceTab: React.FC<{ transactions: Transaction[], players: Player
                 />,
                 document.getElementById('printable-report-container')!
             )}
-             <DashboardCard title="Financial Controls" icon={<CurrencyDollarIcon className="w-6 h-6" />}>
-                 <div className="p-4 flex flex-col md:flex-row gap-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 flex-grow">
-                        <select value={timeFilter} onChange={e => setTimeFilter(e.target.value as TimeFilter)} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
-                            <option value="day">Today</option>
-                            <option value="week">This Week</option>
-                            <option value="month">This Month</option>
-                            <option value="90days">Last 90 Days</option>
-                            <option value="all">All Time</option>
-                        </select>
-                        <select value={playerFilter} onChange={e => setPlayerFilter(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
-                            <option value="all">All Players</option>
-                            {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                        </select>
-                        <select value={eventFilter} onChange={e => setEventFilter(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
-                            <option value="all">All Events</option>
-                            {events.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
-                        </select>
-                         <select value={locationFilter} onChange={e => setLocationFilter(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
-                            <option value="all">All Locations</option>
-                            {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                        </select>
+
+            {/* Free View Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-zinc-800/80">
+                <div className="flex items-center gap-2">
+                    <CurrencyDollarIcon className="w-5 h-5 text-red-500" />
+                    <div>
+                        <h2 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
+                            Financial Intelligence & Ledger
+                        </h2>
+                        <p className="text-[10px] sm:text-xs text-zinc-400">
+                            Cash flow, rental margins, player dues & live reconciliation
+                        </p>
                     </div>
-                    <Button onClick={handlePrint} variant="secondary" className="flex-shrink-0">
-                        <PrinterIcon className="w-5 h-5 mr-2" />
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <Button onClick={handlePrint} variant="secondary" size="sm" className="!py-1 !px-2.5 text-xs">
+                        <PrinterIcon className="w-4 h-4 mr-1" />
                         Print Report
                     </Button>
-                 </div>
-             </DashboardCard>
-             
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <StatCard title="Total Revenue" value={`R ${metrics.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}`} colorClass="text-green-400" />
-                <StatCard title="Expenses" value={`R ${metrics.expenses.toLocaleString(undefined, {minimumFractionDigits: 2})}`} colorClass="text-red-400" />
-                <StatCard title="Net Profit" value={`R ${metrics.netProfit.toLocaleString(undefined, {minimumFractionDigits: 2})}`} colorClass={metrics.netProfit >= 0 ? 'text-white' : 'text-red-400'} />
-                <StatCard title="Outstanding" value={`R ${metrics.outstanding.toLocaleString(undefined, {minimumFractionDigits: 2})}`} colorClass="text-amber-400" />
-                <div className="col-span-1 sm:col-span-2 lg:col-span-1 bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50 space-y-1">
-                    <div className="flex justify-between items-center text-sm"><span className="text-gray-400">Event Fees:</span> <span className="font-semibold text-green-400">R {(metrics['Event Revenue'] || 0).toFixed(2)}</span></div>
-                    <div className="flex justify-between items-center text-sm"><span className="text-gray-400">Rentals:</span> <span className="font-semibold text-blue-400">R {(metrics['Rental Revenue'] || 0).toFixed(2)}</span></div>
-                    <div className="flex justify-between items-center text-sm"><span className="text-gray-400">Retail:</span> <span className="font-semibold text-amber-400">R {(metrics['Retail Revenue'] || 0).toFixed(2)}</span></div>
                 </div>
             </div>
 
-             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="xl:col-span-2">
-                    <DashboardCard title="Revenue Breakdown" icon={<CurrencyDollarIcon className="w-6 h-6" />}>
-                        <div className="p-6">
-                            <BarChart data={chartData} />
-                        </div>
-                    </DashboardCard>
+            {/* Compact Filter Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <select 
+                    value={timeFilter} 
+                    onChange={e => setTimeFilter(e.target.value as TimeFilter)} 
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                >
+                    <option value="day">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="90days">Last 90 Days</option>
+                    <option value="all">All Time</option>
+                </select>
+
+                <select 
+                    value={playerFilter} 
+                    onChange={e => setPlayerFilter(e.target.value)} 
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                >
+                    <option value="all">All Players</option>
+                    {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+
+                <select 
+                    value={eventFilter} 
+                    onChange={e => setEventFilter(e.target.value)} 
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                >
+                    <option value="all">All Events</option>
+                    {events.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
+                </select>
+
+                <select 
+                    value={locationFilter} 
+                    onChange={e => setLocationFilter(e.target.value)} 
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                >
+                    <option value="all">All Fields</option>
+                    {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+            </div>
+             
+            {/* Stat Cards - Side by Side Grid on Mobile */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                <StatCard title="Total Gross" value={`R${metrics.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} colorClass="text-emerald-400" />
+                <StatCard title="Expenses" value={`R${metrics.expenses.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} colorClass="text-red-400" />
+                <StatCard title="Net Profit" value={`R${metrics.netProfit.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} colorClass={metrics.netProfit >= 0 ? 'text-white' : 'text-red-400'} />
+                <StatCard title="Unpaid Dues" value={`R${metrics.outstanding.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} colorClass="text-amber-400" />
+                <div className="col-span-2 sm:col-span-1 p-2.5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 flex flex-col justify-center space-y-1 text-[10px]">
+                    <div className="flex justify-between items-center"><span className="text-zinc-400">Events:</span> <span className="font-bold text-emerald-400 font-mono">R{(metrics['Event Revenue'] || 0).toFixed(0)}</span></div>
+                    <div className="flex justify-between items-center"><span className="text-zinc-400">Rentals:</span> <span className="font-bold text-blue-400 font-mono">R{(metrics['Rental Revenue'] || 0).toFixed(0)}</span></div>
+                    <div className="flex justify-between items-center"><span className="text-zinc-400">Retail:</span> <span className="font-bold text-amber-400 font-mono">R{(metrics['Retail Revenue'] || 0).toFixed(0)}</span></div>
                 </div>
-                <div className="xl:col-span-1">
-                     <DashboardCard title="Transaction Ledger" icon={<CurrencyDollarIcon className="w-6 h-6" />}>
-                        <div className="p-4">
-                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                                {[...filteredTransactions].reverse().map(t => {
-                                    const player = players.find(p => p.id === t.relatedPlayerId);
-                                    return (
-                                        <div key={t.id} className="bg-zinc-800/50 p-3 rounded-md">
-                                             <div className="flex justify-between items-center">
-                                                <p className="font-semibold text-white truncate text-sm">{t.description}</p>
-                                                <p className={`font-bold text-lg ${t.type === 'Expense' ? 'text-red-400' : 'text-green-400'}`}>
-                                                    {t.type === 'Expense' ? '-' : ''} R{t.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
-                                                </p>
-                                             </div>
-                                            <div className="flex justify-between items-center text-xs text-gray-400 mt-1">
-                                                <span>{player?.name || 'N/A'}</span>
-                                                <span>{new Date(t.date).toLocaleDateString()}</span>
-                                            </div>
+            </div>
+
+            {/* Visualizer & Ledger Side-by-side on large screens, compact stacked on mobile */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                <div className="lg:col-span-7 p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80">
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                            <ArrowTrendingUpIcon className="w-3.5 h-3.5 text-emerald-400"/> Revenue Stream Trend
+                        </span>
+                        <div className="flex gap-2 text-[9px]">
+                            <span className="flex items-center gap-1 text-zinc-400"><span className="w-2 h-2 rounded bg-emerald-500"></span> Event</span>
+                            <span className="flex items-center gap-1 text-zinc-400"><span className="w-2 h-2 rounded bg-blue-500"></span> Rental</span>
+                            <span className="flex items-center gap-1 text-zinc-400"><span className="w-2 h-2 rounded bg-amber-500"></span> Retail</span>
+                        </div>
+                    </div>
+                    <BarChart data={chartData} />
+                </div>
+
+                <div className="lg:col-span-5 p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 flex flex-col">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
+                            Transaction Feed ({filteredTransactions.length})
+                        </span>
+                    </div>
+                    <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+                        {filteredTransactions.length === 0 ? (
+                            <p className="text-xs text-zinc-500 text-center py-6">No transactions in selected period</p>
+                        ) : (
+                            [...filteredTransactions].reverse().map(t => {
+                                const player = players.find(p => p.id === t.relatedPlayerId);
+                                return (
+                                    <div key={t.id} className="p-2 rounded-lg bg-zinc-900/70 border border-zinc-800 flex justify-between items-center text-xs">
+                                        <div className="min-w-0 pr-2">
+                                            <p className="font-semibold text-white truncate text-[11px]">{t.description}</p>
+                                            <p className="text-[9px] text-zinc-400 truncate">
+                                                {player?.name || 'Armory/Direct'} &bull; {new Date(t.date).toLocaleDateString()}
+                                            </p>
                                         </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    </DashboardCard>
+                                        <div className={`font-mono font-bold text-xs whitespace-nowrap ${t.type === 'Expense' ? 'text-red-400' : 'text-emerald-400'}`}>
+                                            {t.type === 'Expense' ? '-' : '+'}R{t.amount.toFixed(0)}
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
                 </div>
-             </div>
+            </div>
         </div>
     );
 };

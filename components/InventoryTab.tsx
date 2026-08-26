@@ -1,12 +1,9 @@
-
-
 import React, { useState, useMemo } from 'react';
 import type { InventoryItem, Supplier } from '../types';
-import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
-import { ArchiveBoxIcon, PlusIcon, PencilIcon, TrashIcon } from './icons/Icons';
+import { ArchiveBoxIcon, PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon } from './icons/Icons';
 import { INVENTORY_CATEGORIES, INVENTORY_CONDITIONS } from '../constants';
 import { BadgePill } from './BadgePill';
 
@@ -19,7 +16,12 @@ interface InventoryTabProps {
     deleteDoc: (collectionName: string, docId: string) => Promise<void>;
 }
 
-const InventoryEditorModal: React.FC<{ item: Partial<InventoryItem>, onClose: () => void, onSave: (item: InventoryItem | Omit<InventoryItem, 'id'>) => void, suppliers: Supplier[] }> = ({ item, onClose, onSave, suppliers }) => {
+const InventoryEditorModal: React.FC<{ 
+    item: Partial<InventoryItem>, 
+    onClose: () => void, 
+    onSave: (item: InventoryItem | Omit<InventoryItem, 'id'>) => void, 
+    suppliers: Supplier[] 
+}> = ({ item, onClose, onSave, suppliers }) => {
     const [formData, setFormData] = useState<Omit<InventoryItem, 'id'>>({
         name: item.name || '',
         description: item.description || '',
@@ -38,95 +40,136 @@ const InventoryEditorModal: React.FC<{ item: Partial<InventoryItem>, onClose: ()
     const handleSaveClick = () => {
         const finalItem = { ...item, ...formData };
         onSave(finalItem);
-    }
+    };
 
     return (
-        <Modal isOpen={true} onClose={onClose} title={item.id ? 'Edit Item' : 'Add New Item'}>
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+        <Modal isOpen={true} onClose={onClose} title={item.id ? 'Edit Inventory Item' : 'Add New Inventory Item'}>
+            <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1 text-xs">
                 <Input label="Item Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
                 <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Description</label>
-                    <textarea value={formData.description} onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} rows={3} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
+                    <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
+                    <textarea 
+                        value={formData.description} 
+                        onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} 
+                        rows={2} 
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500" 
+                    />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <Input label="Sale/Rental Price" type="number" value={formData.salePrice} onChange={e => setFormData(f => ({ ...f, salePrice: Number(e.target.value) }))} />
-                    <Input label="Stock Quantity" type="number" value={formData.stock} onChange={e => setFormData(f => ({ ...f, stock: Number(e.target.value) }))} />
+                <div className="grid grid-cols-2 gap-2">
+                    <Input label="Price (ZAR)" type="number" value={formData.salePrice} onChange={e => setFormData(f => ({ ...f, salePrice: Number(e.target.value) }))} />
+                    <Input label="Stock" type="number" value={formData.stock} onChange={e => setFormData(f => ({ ...f, stock: Number(e.target.value) }))} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <Input label="Purchase Price" type="number" value={formData.purchasePrice} onChange={e => setFormData(f => ({ ...f, purchasePrice: Number(e.target.value) }))} />
-                    <Input label="Re-order Level" type="number" value={formData.reorderLevel} onChange={e => setFormData(f => ({ ...f, reorderLevel: Number(e.target.value) }))} />
+                <div className="grid grid-cols-2 gap-2">
+                    <Input label="Cost Price" type="number" value={formData.purchasePrice} onChange={e => setFormData(f => ({ ...f, purchasePrice: Number(e.target.value) }))} />
+                    <Input label="Reorder Alert" type="number" value={formData.reorderLevel} onChange={e => setFormData(f => ({ ...f, reorderLevel: Number(e.target.value) }))} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                      <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Category</label>
-                        <select value={formData.category} onChange={e => setFormData(p => ({...p, category: e.target.value as InventoryItem['category']}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <label className="block text-xs font-medium text-gray-400 mb-1">Category</label>
+                        <select 
+                            value={formData.category} 
+                            onChange={e => setFormData(p => ({...p, category: e.target.value as InventoryItem['category']}))} 
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-2 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                        >
                             {INVENTORY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                     </div>
                      <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Condition</label>
-                        <select value={formData.condition} onChange={e => setFormData(p => ({...p, condition: e.target.value as InventoryItem['condition']}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <label className="block text-xs font-medium text-gray-400 mb-1">Condition</label>
+                        <select 
+                            value={formData.condition} 
+                            onChange={e => setFormData(p => ({...p, condition: e.target.value as InventoryItem['condition']}))} 
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-2 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                        >
                             {INVENTORY_CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                     </div>
                 </div>
                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Supplier</label>
-                    <select value={formData.supplierId} onChange={e => setFormData(p => ({...p, supplierId: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <label className="block text-xs font-medium text-gray-400 mb-1">Supplier</label>
+                    <select 
+                        value={formData.supplierId} 
+                        onChange={e => setFormData(p => ({...p, supplierId: e.target.value}))} 
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                    >
                         <option value="">None</option>
                         {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                 </div>
-                <div className="flex items-center pt-2">
-                    <input type="checkbox" id="isRental" checked={formData.isRental} onChange={e => setFormData(f => ({...f, isRental: e.target.checked}))} className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"/>
-                    <label htmlFor="isRental" className="ml-2 text-sm text-gray-300">Available for Rental</label>
+                <div className="flex items-center pt-1">
+                    <input 
+                        type="checkbox" 
+                        id="isRental" 
+                        checked={formData.isRental} 
+                        onChange={e => setFormData(f => ({...f, isRental: e.target.checked}))} 
+                        className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"
+                    />
+                    <label htmlFor="isRental" className="ml-2 text-xs text-gray-300">Available for Rental Gear Hires</label>
                 </div>
             </div>
-            <div className="mt-6">
-                <Button className="w-full" onClick={handleSaveClick}>Save Item</Button>
+            <div className="mt-4">
+                <Button className="w-full !py-2 text-xs" onClick={handleSaveClick}>Save Item</Button>
             </div>
         </Modal>
-    )
+    );
 };
 
-const InventoryItemCard: React.FC<{ item: InventoryItem, onEdit: (i: InventoryItem) => void, onDelete: (i: InventoryItem) => void }> = ({ item, onEdit, onDelete }) => {
-    const conditionColor = item.condition === 'New' ? 'green'
-        : item.condition === 'Needs Repair' ? 'red'
-        : item.condition === 'Needs Inspection' ? 'amber'
-        : 'blue'; // Used
+const InventoryItemCard: React.FC<{ 
+    item: InventoryItem, 
+    onEdit: (i: InventoryItem) => void, 
+    onDelete: (i: InventoryItem) => void 
+}> = ({ item, onEdit, onDelete }) => {
+    const isLowStock = item.stock <= (item.reorderLevel || 0);
 
     return (
-        <div className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700 flex flex-col justify-between">
+        <div className="p-2.5 sm:p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 flex flex-col justify-between hover:border-zinc-700 transition-all">
             <div>
-                <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-bold text-lg text-white pr-4">{item.name}</h4>
-                    <div className="flex gap-2 flex-shrink-0">
-                        <Button size="sm" variant="secondary" onClick={() => onEdit(item)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
-                        <Button size="sm" variant="danger" onClick={() => onDelete(item)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
+                <div className="flex justify-between items-start gap-1 mb-1">
+                    <h4 className="font-bold text-xs sm:text-sm text-white truncate" title={item.name}>{item.name}</h4>
+                    <div className="flex gap-1 flex-shrink-0">
+                        <button 
+                            onClick={() => onEdit(item)} 
+                            className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                        >
+                            <PencilIcon className="w-3 h-3"/>
+                        </button>
+                        <button 
+                            onClick={() => onDelete(item)} 
+                            className="p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+                        >
+                            <TrashIcon className="w-3 h-3"/>
+                        </button>
                     </div>
                 </div>
-                <p className="text-xs text-gray-400 mb-3">{item.category}</p>
-                {item.description && <p className="text-sm text-gray-300 line-clamp-2 mb-3">{item.description}</p>}
+                <p className="text-[10px] text-zinc-400 mb-1 truncate">{item.category}</p>
+                {item.description && (
+                    <p className="text-[10px] text-zinc-500 line-clamp-1 mb-2">{item.description}</p>
+                )}
             </div>
-            <div className="mt-auto pt-3 border-t border-zinc-700/50">
-                <div className="flex justify-between items-center mb-2">
-                    <p className="text-sm text-gray-400">Stock:</p>
-                    <p className={`font-bold text-lg ${item.stock <= (item.reorderLevel || 0) ? 'text-red-400' : 'text-white'}`}>{item.stock}</p>
+
+            <div className="pt-2 border-t border-zinc-800/50 space-y-1.5">
+                <div className="flex justify-between items-center text-[10px]">
+                    <span className="text-zinc-400">Stock:</span>
+                    <span className={`font-mono font-bold ${isLowStock ? 'text-red-400' : 'text-white'}`}>
+                        {item.stock}
+                    </span>
                 </div>
-                 <div className="flex justify-between items-center">
-                    <p className="text-sm text-gray-400">Price:</p>
-                    <p className="font-mono font-bold text-green-400">R{item.salePrice.toFixed(2)}</p>
+                <div className="flex justify-between items-center text-[10px]">
+                    <span className="text-zinc-400">Price:</span>
+                    <span className="font-mono font-bold text-emerald-400">R{item.salePrice.toFixed(0)}</span>
                 </div>
-                 <div className="flex gap-2 mt-3">
-                    {item.isRental && <BadgePill color="blue">Rental</BadgePill>}
-                    {!item.isRental && <BadgePill color="green">For Sale</BadgePill>}
-                    <BadgePill color={conditionColor}>{item.condition}</BadgePill>
+                <div className="flex flex-wrap gap-1 pt-1">
+                    <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${item.isRental ? 'bg-blue-950/60 text-blue-300 border border-blue-800/40' : 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/40'}`}>
+                        {item.isRental ? 'Rental' : 'Sale'}
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50">
+                        {item.condition}
+                    </span>
                 </div>
             </div>
         </div>
     );
 };
-
 
 export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInventory, suppliers, addDoc, updateDoc, deleteDoc }) => {
     const [isEditing, setIsEditing] = useState<Partial<InventoryItem> | null>(null);
@@ -139,7 +182,6 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInvent
         if (filter === 'inspection') return inventory.filter(i => i.condition === 'Needs Inspection');
         return inventory;
     }, [inventory, filter]);
-
 
     const handleSave = (item: InventoryItem | Omit<InventoryItem, 'id'>) => {
         if ('id' in item) {
@@ -157,37 +199,96 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInvent
     };
 
     return (
-        <div>
-            {isEditing && <InventoryEditorModal item={isEditing} onClose={() => setIsEditing(null)} onSave={handleSave} suppliers={suppliers} />}
+        <div className="w-full space-y-3 sm:space-y-4">
+            {isEditing && (
+                <InventoryEditorModal 
+                    item={isEditing} 
+                    onClose={() => setIsEditing(null)} 
+                    onSave={handleSave} 
+                    suppliers={suppliers} 
+                />
+            )}
             {deletingItem && (
-                 <Modal isOpen={true} onClose={() => setDeletingItem(null)} title="Confirm Deletion">
-                    <p className="text-gray-300">Are you sure you want to delete "{deletingItem.name}"? This action cannot be undone.</p>
-                    <div className="flex justify-end gap-4 mt-6">
-                        <Button variant="secondary" onClick={() => setDeletingItem(null)}>Cancel</Button>
-                        <Button variant="danger" onClick={handleDelete}>Delete</Button>
+                <Modal isOpen={true} onClose={() => setDeletingItem(null)} title="Confirm Deletion">
+                    <p className="text-gray-300 text-xs">Are you sure you want to delete "{deletingItem.name}"? This action cannot be undone.</p>
+                    <div className="flex justify-end gap-3 mt-4">
+                        <Button variant="secondary" size="sm" onClick={() => setDeletingItem(null)}>Cancel</Button>
+                        <Button variant="danger" size="sm" onClick={handleDelete}>Delete</Button>
                     </div>
                 </Modal>
             )}
-            <DashboardCard title="Inventory Management" icon={<ArchiveBoxIcon className="w-6 h-6"/>}>
-                <div className="p-4">
-                     <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-                        <div className="flex space-x-1 p-1 bg-zinc-900 rounded-lg border border-zinc-700">
-                            <Button size="sm" variant={filter === 'all' ? 'primary' : 'secondary'} onClick={() => setFilter('all')}>All</Button>
-                            <Button size="sm" variant={filter === 'rental' ? 'primary' : 'secondary'} onClick={() => setFilter('rental')}>Rental</Button>
-                            <Button size="sm" variant={filter === 'sale' ? 'primary' : 'secondary'} onClick={() => setFilter('sale')}>For Sale</Button>
-                            <Button size="sm" variant={filter === 'inspection' ? 'primary' : 'secondary'} onClick={() => setFilter('inspection')}>Needs Inspection</Button>
-                        </div>
-                        <Button onClick={() => setIsEditing({})} size="sm" className="w-full sm:w-auto">
-                            <PlusIcon className="w-5 h-5 mr-2"/>Add New Item
-                        </Button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto pr-2">
-                        {filteredInventory.map(item => (
-                            <InventoryItemCard key={item.id} item={item} onEdit={setIsEditing} onDelete={setDeletingItem} />
-                        ))}
+
+            {/* Free View Top Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-zinc-800/80">
+                <div className="flex items-center gap-2">
+                    <ArchiveBoxIcon className="w-5 h-5 text-red-500" />
+                    <div>
+                        <h2 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
+                            Armory & Inventory
+                        </h2>
+                        <p className="text-[10px] sm:text-xs text-zinc-400">
+                            {inventory.length} tactical units registered &bull; Rentals & Consumables
+                        </p>
                     </div>
                 </div>
-            </DashboardCard>
+
+                <div className="flex items-center gap-2">
+                    <Button onClick={() => setIsEditing({})} size="sm" className="!py-1 !px-2.5 text-xs">
+                        <PlusIcon className="w-4 h-4 mr-1"/>Add Item
+                    </Button>
+                </div>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
+                <button
+                    onClick={() => setFilter('all')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+                        filter === 'all' 
+                            ? 'bg-red-600 text-white shadow-md shadow-red-900/30' 
+                            : 'bg-zinc-900/70 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800'
+                    }`}
+                >
+                    All ({inventory.length})
+                </button>
+                <button
+                    onClick={() => setFilter('rental')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+                        filter === 'rental' 
+                            ? 'bg-red-600 text-white shadow-md shadow-red-900/30' 
+                            : 'bg-zinc-900/70 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800'
+                    }`}
+                >
+                    Rentals
+                </button>
+                <button
+                    onClick={() => setFilter('sale')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+                        filter === 'sale' 
+                            ? 'bg-red-600 text-white shadow-md shadow-red-900/30' 
+                            : 'bg-zinc-900/70 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800'
+                    }`}
+                >
+                    For Sale
+                </button>
+                <button
+                    onClick={() => setFilter('inspection')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+                        filter === 'inspection' 
+                            ? 'bg-red-600 text-white shadow-md shadow-red-900/30' 
+                            : 'bg-zinc-900/70 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800'
+                    }`}
+                >
+                    Inspection
+                </button>
+            </div>
+
+            {/* Side-by-side Grid on Mobile */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 max-h-[68vh] overflow-y-auto pr-1">
+                {filteredInventory.map(item => (
+                    <InventoryItemCard key={item.id} item={item} onEdit={setIsEditing} onDelete={setDeletingItem} />
+                ))}
+            </div>
         </div>
     );
 };

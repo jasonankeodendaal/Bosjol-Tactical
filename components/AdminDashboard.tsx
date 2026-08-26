@@ -332,33 +332,43 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer, onDeletePlayer 
     const kdr = deaths > 0 ? kills / deaths : kills;
 
     return (
-        <li onClick={() => onViewPlayer(player.id)} className="flex items-center p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer border border-transparent hover:border-red-600/50 group">
-            <img src={player.avatarUrl} alt={player.name} className="w-12 h-12 rounded-full object-cover mr-4 flex-shrink-0" />
-            <div className="flex-grow min-w-0 pr-2">
-                <p className="font-bold text-white truncate">{(player.name || 'Unnamed')} "{(player.callsign || 'N/A')}" {(player.surname || '')}</p>
-                <div className="flex items-center text-sm text-gray-400">
-                    <img src={rank.iconUrl} alt={rank.name} className="w-5 h-5 mr-1.5 flex-shrink-0"/>
-                    <span className="truncate">{rank.name}</span>
-                    <span className="mx-2">|</span>
-                    <span className="font-mono">{(player.playerCode || 'NO-CODE')}</span>
+        <div 
+            onClick={() => onViewPlayer(player.id)} 
+            className="p-2 sm:p-2.5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-red-600/50 hover:bg-zinc-900/80 transition-all cursor-pointer flex items-center justify-between gap-2 group"
+        >
+            <div className="flex items-center gap-2 min-w-0">
+                <img src={player.avatarUrl} alt={player.name} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-zinc-700 flex-shrink-0" />
+                <div className="min-w-0">
+                    <p className="font-bold text-white text-xs sm:text-sm truncate">
+                        {(player.name || 'Unnamed')} <span className="text-red-400">"{player.callsign || 'N/A'}"</span>
+                    </p>
+                    <div className="flex items-center gap-1 text-[10px] text-zinc-400 truncate">
+                        {rank.iconUrl && <img src={rank.iconUrl} alt={rank.name} className="w-3.5 h-3.5 flex-shrink-0"/>}
+                        <span className="truncate">{rank.name}</span>
+                        <span className="text-zinc-600">&bull;</span>
+                        <span className="font-mono text-zinc-300 font-bold">{player.playerCode || 'NO-CODE'}</span>
+                    </div>
                 </div>
             </div>
-            <div className="text-right mr-3 flex-shrink-0">
-                <p className="font-bold text-red-400 text-lg">{xp.toLocaleString()} RP</p>
-                <p className="text-xs text-gray-500">K/D: {kdr.toFixed(2)}</p>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="text-right">
+                    <p className="font-bold text-amber-400 text-xs sm:text-sm">{xp.toLocaleString()} RP</p>
+                    <p className="text-[9px] text-zinc-500">K/D {kdr.toFixed(1)}</p>
+                </div>
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDeletePlayer(player.id);
+                    }}
+                    className="p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+                    title={`Delete ${player.name}`}
+                >
+                    <TrashIcon className="w-3.5 h-3.5" />
+                </button>
             </div>
-            <button
-                type="button"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onDeletePlayer(player.id);
-                }}
-                className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition-colors border border-transparent hover:border-red-800/40 flex-shrink-0"
-                title={`Delete ${player.name}`}
-            >
-                <TrashIcon className="w-5 h-5" />
-            </button>
-        </li>
+        </div>
     );
 });
 
@@ -373,43 +383,59 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
     ).sort((a,b) => (b.stats?.xp ?? 0) - (a.stats?.xp ?? 0));
 
     return (
-        <div>
+        <div className="w-full space-y-3 sm:space-y-4">
             {showNewPlayerModal && <NewPlayerModal onClose={() => setShowNewPlayerModal(false)} players={players} addPlayerDoc={addPlayerDoc} companyDetails={companyDetails} ranks={ranks} />}
-            <DashboardCard title="Player Management" icon={<UsersIcon className="w-6 h-6" />}>
-                <div className="p-4">
-                    <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-                        <Input 
-                            placeholder="Search by name, callsign, or code..." 
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full sm:w-72"
-                        />
-                        <Button onClick={() => setShowNewPlayerModal(true)} size="sm" className="w-full sm:w-auto">
-                            <PlusIcon className="w-5 h-5 mr-2" />
-                            Add New Player
-                        </Button>
-                    </div>
-                    <div className="max-h-[60vh] overflow-y-auto pr-2">
-                        <ul className="space-y-2">
-                            {filteredPlayers.map(p => {
-                                const rank = p.rank || UNRANKED_TIER;
-                                return (
-                                    <PlayerListItem key={p.id} player={p} rank={rank} onViewPlayer={onViewPlayer} onDeletePlayer={onDeletePlayer} />
-                                );
-                            })}
-                        </ul>
+            
+            {/* Top Free-View Header Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-zinc-800/80">
+                <div className="flex items-center gap-2">
+                    <UsersIcon className="w-5 h-5 text-red-500" />
+                    <div>
+                        <h2 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
+                            Registered Operators
+                        </h2>
+                        <p className="text-[10px] sm:text-xs text-zinc-400">
+                            {players.length} total players registered &bull; Rank Points & match statistics
+                        </p>
                     </div>
                 </div>
-            </DashboardCard>
+
+                <div className="flex items-center gap-2">
+                    <Input 
+                        placeholder="Search callsign, code, name..." 
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="!text-xs !py-1 w-44 sm:w-60"
+                    />
+                    <Button onClick={() => setShowNewPlayerModal(true)} size="sm" className="!py-1 !px-2.5 text-xs flex-shrink-0">
+                        <PlusIcon className="w-3.5 h-3.5 mr-1" /> Add Player
+                    </Button>
+                </div>
+            </div>
+
+            {/* Side by side grid on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-2.5 max-h-[72vh] overflow-y-auto pr-1">
+                {filteredPlayers.map(p => {
+                    const rank = p.rank || UNRANKED_TIER;
+                    return (
+                        <PlayerListItem key={p.id} player={p} rank={rank} onViewPlayer={onViewPlayer} onDeletePlayer={onDeletePlayer} />
+                    );
+                })}
+                {filteredPlayers.length === 0 && (
+                    <div className="col-span-full py-12 text-center text-zinc-500 text-xs sm:text-sm">
+                        No operators matching "{searchTerm}".
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
 
 const LeaderboardTab: React.FC<{ players: Player[] }> = ({ players }) => {
     return (
-        <DashboardCard title="Global Leaderboard & Hall of Fame" icon={<TrophyIcon className="w-6 h-6" />} fullHeight>
+        <div className="w-full">
             <Leaderboard players={players} isAdmin={true} />
-        </DashboardCard>
+        </div>
     );
 };
 
@@ -433,56 +459,60 @@ const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
     }
 
     return (
-        <DashboardCard title="Rank Structure Overview" icon={<ShieldCheckIcon className="w-5 h-5 sm:w-6 sm:h-6"/>}>
-            <div className="p-2 sm:p-6">
-                 <div className="bg-blue-900/50 border border-blue-700 text-blue-200 p-2 sm:p-4 rounded-lg mb-3 sm:mb-6 flex items-center gap-2 sm:gap-3">
-                    <InformationCircleIcon className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
-                    <div>
-                        <p className="font-semibold text-xs sm:text-base">This is a read-only view of the rank structure.</p>
-                        <p className="text-[10px] sm:text-sm">To add, edit, or delete ranks and tiers, please go to the 'Progression' tab.</p>
-                    </div>
-                </div>
-
-                <div className="space-y-4 sm:space-y-12 max-h-[70vh] overflow-y-auto pr-1 sm:pr-2">
-                    {ranks.map((rank, rankIndex) => (
-                        <section key={rank.id} className="tier-section">
-                            <div className="tier-header">
-                                <img src={rank.rankBadgeUrl} alt={rank.name} className="w-8 h-8 sm:w-16 sm:h-16 flex-shrink-0 object-contain"/>
-                                <div>
-                                    <h2 className="text-base sm:text-3xl font-bold text-red-400 uppercase tracking-wider">{rank.name}</h2>
-                                    <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm text-gray-400">{rank.description}</p>
-                                </div>
-                            </div>
-
-                            <div className="subrank-grid">
-                                {(rank.tiers || []).sort((a,b) => a.minXp - b.minXp).map((sub) => (
-                                    <article key={sub.id} className="subrank-card">
-                                        <div className="flex items-center gap-1.5 sm:gap-3 mb-1.5 sm:mb-3">
-                                            <img src={sub.iconUrl} alt={sub.name} className="w-6 h-6 sm:w-10 sm:h-10 flex-shrink-0 object-contain"/>
-                                            <div className="min-w-0">
-                                                <h3 className="font-semibold text-white text-xs sm:text-base truncate">{sub.name}</h3>
-                                                <p className="text-[9px] sm:text-xs text-gray-400 font-mono truncate">{getRangeForTier(sub, rank, rankIndex)}</p>
-                                            </div>
-                                        </div>
-                                        <ul className="list-none text-[8px] sm:text-xs text-gray-300 space-y-0.5 sm:space-y-1">
-                                            {sub.perks.map((p, i) => (
-                                                <li key={i} className="flex items-start gap-1">
-                                                    <CheckCircleIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-green-500 flex-shrink-0 mt-0.5" />
-                                                    <span className="truncate">{p}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </article>
-                                ))}
-                            </div>
-                        </section>
-                    ))}
-                    {ranks.length === 0 && (
-                        <div className="text-center text-gray-500 py-8 text-xs sm:text-base">No ranks have been configured. Go to the 'Progression' tab to set them up.</div>
-                    )}
+        <div className="w-full space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+                <div className="flex items-center gap-2">
+                    <ShieldCheckIcon className="w-5 h-5 text-red-500" />
+                    <h2 className="text-base sm:text-xl font-black text-white uppercase tracking-wider">Rank Structure & Hierarchy</h2>
                 </div>
             </div>
-        </DashboardCard>
+
+            <div className="bg-zinc-900/40 border border-zinc-800/80 p-2.5 sm:p-3 rounded-lg flex items-center gap-2.5 text-[11px] sm:text-xs text-zinc-300">
+                <InformationCircleIcon className="w-4 h-4 text-red-400 flex-shrink-0" />
+                <p>Read-only overview of rank badges and tiers. Manage progression rules in the <strong className="text-white">Progression</strong> tab.</p>
+            </div>
+
+            <div className="space-y-4 sm:space-y-6">
+                {ranks.map((rank, rankIndex) => (
+                    <div key={rank.id} className="p-3 sm:p-4 rounded-xl border border-zinc-800/80 bg-zinc-900/20 space-y-3">
+                        <div className="flex items-center gap-3 sm:gap-4 pb-2 border-b border-zinc-800/60">
+                            <img src={rank.rankBadgeUrl} alt={rank.name} className="w-10 h-10 sm:w-16 sm:h-16 flex-shrink-0 object-contain drop-shadow-[0_0_12px_rgba(239,68,68,0.35)]"/>
+                            <div className="min-w-0">
+                                <h3 className="text-sm sm:text-xl font-black text-white uppercase tracking-wider">{rank.name}</h3>
+                                <p className="text-[10px] sm:text-xs text-zinc-400 truncate mt-0.5">{rank.description || 'Standard tactical rank bracket'}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {(rank.tiers || []).sort((a,b) => a.minXp - b.minXp).map((sub) => (
+                                <div key={sub.id} className="p-2 sm:p-2.5 rounded-lg border border-zinc-800/60 bg-zinc-900/40 hover:bg-zinc-900/80 transition-all flex items-start gap-2.5">
+                                    <img src={sub.iconUrl} alt={sub.name} className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 object-contain drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]"/>
+                                    <div className="min-w-0 flex-grow">
+                                        <div className="flex items-center justify-between gap-1 flex-wrap">
+                                            <h4 className="font-bold text-white text-xs sm:text-sm truncate">{sub.name}</h4>
+                                            <span className="text-[9px] font-mono text-green-400 font-bold bg-zinc-800 px-1.5 py-0.2 rounded border border-green-500/20">{getRangeForTier(sub, rank, rankIndex)}</span>
+                                        </div>
+                                        {sub.perks && sub.perks.length > 0 && (
+                                            <ul className="mt-1 text-[9px] sm:text-[11px] text-zinc-400 space-y-0.5">
+                                                {sub.perks.map((p, i) => (
+                                                    <li key={i} className="flex items-center gap-1 truncate">
+                                                        <CheckCircleIcon className="w-2.5 h-2.5 text-red-400 flex-shrink-0" />
+                                                        <span className="truncate">{p}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+                {ranks.length === 0 && (
+                    <div className="text-center text-zinc-500 py-8 text-xs sm:text-base">No ranks have been configured. Go to the 'Progression' tab to set them up.</div>
+                )}
+            </div>
+        </div>
     );
 };
 

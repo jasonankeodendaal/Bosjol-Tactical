@@ -1,170 +1,314 @@
-
-import React from 'react';
-import { DashboardCard } from './DashboardCard';
-import { InformationCircleIcon, ExclamationTriangleIcon, ServerStackIcon, CpuChipIcon, ShieldCheckIcon, PhotoIcon, CurrencyDollarIcon } from './icons/Icons';
-
-const SectionCard: React.FC<{ icon: React.ReactNode, title: string, children: React.ReactNode, color?: string }> = ({ icon, title, children, color = "text-gray-200" }) => {
-    return (
-        <div className="border border-zinc-800/80 rounded-lg shadow-lg overflow-hidden bg-zinc-900/50">
-            <header className="flex items-center p-4 border-b border-zinc-800/50 bg-black/20">
-                <div className={`mr-3 ${color}`}>{icon}</div>
-                <h3 className={`font-bold text-lg tracking-wide uppercase ${color}`}>{title}</h3>
-            </header>
-            <div className="p-6 text-gray-300 text-sm space-y-4 leading-relaxed">
-                {children}
-            </div>
-        </div>
-    );
-};
+import React, { useState } from 'react';
+import { 
+    InformationCircleIcon, 
+    ServerStackIcon, 
+    CpuChipIcon, 
+    ShieldCheckIcon, 
+    PhotoIcon, 
+    CurrencyDollarIcon,
+    SparklesIcon,
+    TrophyIcon,
+    CheckCircleIcon,
+    ArrowPathIcon,
+    GlobeAltIcon,
+    CircleStackIcon,
+    UserIcon,
+    TicketIcon
+} from './icons/Icons';
 
 export const AboutTab: React.FC = () => {
+    const [selectedTab, setSelectedTab] = useState<'architecture' | 'automation' | 'finance' | 'gamification' | 'media'>('architecture');
+
     return (
-        <div className="space-y-8 max-w-5xl mx-auto">
-            <DashboardCard title="System Architecture & Operational Guide" icon={<InformationCircleIcon className="w-6 h-6" />}>
-                <div className="p-6 space-y-8">
-                    
-                    {/* SYSTEM OVERVIEW */}
-                    <SectionCard 
-                        icon={<ServerStackIcon className="w-6 h-6" />} 
-                        title="1. The Bosjol Ecosystem" 
-                        color="text-blue-400"
-                    >
-                        <p>
-                            The Bosjol Tactical Dashboard is a high-performance, Progressive Web Application (PWA) built on a modern tech stack designed for speed, reliability, and offline capability.
+        <div className="w-full max-w-full overflow-hidden space-y-4 sm:space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                    <InformationCircleIcon className="w-5 h-5 text-red-500" />
+                    <div>
+                        <h2 className="text-base sm:text-xl font-black text-white uppercase tracking-wider">
+                            System Architecture & Operations Guide
+                        </h2>
+                        <p className="text-[11px] sm:text-xs text-zinc-400">
+                            Deep dive into the Bosjol tactical engine, automation cascades, security protocols & specifications.
                         </p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                            <div className="bg-zinc-800/40 p-4 rounded-lg border border-zinc-700/50">
-                                <h4 className="font-bold text-white mb-2">Frontend Core</h4>
-                                <ul className="list-disc list-inside text-xs space-y-1 text-gray-400">
-                                    <li><strong>React 19:</strong> The latest version of the industry-standard UI library for lightning-fast interactions.</li>
-                                    <li><strong>TypeScript:</strong> Ensures code reliability and prevents runtime errors through strict typing.</li>
-                                    <li><strong>Tailwind CSS:</strong> Provides a responsive, military-grade aesthetic that adapts to any device size.</li>
-                                    <li><strong>Vite:</strong> The build engine that delivers instant page loads.</li>
-                                </ul>
-                            </div>
-                            <div className="bg-zinc-800/40 p-4 rounded-lg border border-zinc-700/50">
-                                <h4 className="font-bold text-white mb-2">Backend Infrastructure</h4>
-                                <ul className="list-disc list-inside text-xs space-y-1 text-gray-400">
-                                    <li><strong>Supabase (PostgreSQL):</strong> An enterprise-grade SQL database storing all player and event data.</li>
-                                    <li><strong>Real-time Subscriptions:</strong> The dashboard listens for database changes instantly. If a player checks in on one device, the admin screen updates immediately without refreshing.</li>
-                                    <li><strong>Row Level Security (RLS):</strong> Cryptographic security rules ensure players can only read public data and never modify sensitive records.</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </SectionCard>
+                    </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-emerald-950/40 border border-emerald-800/30 text-emerald-400">
+                        PWA Edition &bull; v2.5.0
+                    </span>
+                </div>
+            </div>
 
-                    {/* AUTOMATION ENGINE */}
-                    <SectionCard 
-                        icon={<CpuChipIcon className="w-6 h-6" />} 
-                        title="2. The Automation Engine" 
-                        color="text-red-400"
-                    >
-                        <p>
-                            The heart of the system is a complex logic engine that handles the heavy lifting for administrators. Understanding these automations ensures you get the most out of the platform.
+            {/* Quick Metrics Bar - Free View */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/70 hover:border-red-500/30 transition-all">
+                    <p className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider">State Synchronizer</p>
+                    <p className="text-sm sm:text-lg font-black text-white mt-0.5">Real-Time Sub</p>
+                    <span className="text-[9px] text-emerald-400 font-mono">0ms Polling Latency</span>
+                </div>
+                <div className="p-2.5 sm:p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/70 hover:border-blue-500/30 transition-all">
+                    <p className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider">Database Engine</p>
+                    <p className="text-sm sm:text-lg font-black text-blue-400 mt-0.5">PostgreSQL 15</p>
+                    <span className="text-[9px] text-zinc-400 font-mono">23 Relational Collections</span>
+                </div>
+                <div className="p-2.5 sm:p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/70 hover:border-purple-500/30 transition-all">
+                    <p className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider">Auth Security</p>
+                    <p className="text-sm sm:text-lg font-black text-purple-400 mt-0.5">PIN + RLS</p>
+                    <span className="text-[9px] text-purple-300 font-mono">Row-Level Cryptography</span>
+                </div>
+                <div className="p-2.5 sm:p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/70 hover:border-green-500/30 transition-all">
+                    <p className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider">Match Engine</p>
+                    <p className="text-sm sm:text-lg font-black text-green-400 mt-0.5">Auto-Cascade</p>
+                    <span className="text-[9px] text-green-300 font-mono">Instant XP & Ledgering</span>
+                </div>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-zinc-800/80">
+                <button
+                    onClick={() => setSelectedTab('architecture')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        selectedTab === 'architecture'
+                            ? 'bg-red-600 text-white shadow-lg shadow-red-900/30'
+                            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    }`}
+                >
+                    <ServerStackIcon className="w-3.5 h-3.5" />
+                    <span>1. Architecture</span>
+                </button>
+                <button
+                    onClick={() => setSelectedTab('automation')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        selectedTab === 'automation'
+                            ? 'bg-red-600 text-white shadow-lg shadow-red-900/30'
+                            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    }`}
+                >
+                    <CpuChipIcon className="w-3.5 h-3.5" />
+                    <span>2. Automation Engine</span>
+                </button>
+                <button
+                    onClick={() => setSelectedTab('finance')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        selectedTab === 'finance'
+                            ? 'bg-red-600 text-white shadow-lg shadow-red-900/30'
+                            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    }`}
+                >
+                    <CurrencyDollarIcon className="w-3.5 h-3.5" />
+                    <span>3. Finance & Integrity</span>
+                </button>
+                <button
+                    onClick={() => setSelectedTab('gamification')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        selectedTab === 'gamification'
+                            ? 'bg-red-600 text-white shadow-lg shadow-red-900/30'
+                            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    }`}
+                >
+                    <TrophyIcon className="w-3.5 h-3.5" />
+                    <span>4. Gamification Logic</span>
+                </button>
+                <button
+                    onClick={() => setSelectedTab('media')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        selectedTab === 'media'
+                            ? 'bg-red-600 text-white shadow-lg shadow-red-900/30'
+                            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    }`}
+                >
+                    <PhotoIcon className="w-3.5 h-3.5" />
+                    <span>5. Media Protocols</span>
+                </button>
+            </div>
+
+            {/* TAB 1: ARCHITECTURE */}
+            {selectedTab === 'architecture' && (
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                        {/* Frontend Core */}
+                        <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/80 space-y-2">
+                            <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-800/60">
+                                <GlobeAltIcon className="w-4 h-4 text-blue-400" />
+                                <h3 className="font-bold text-white text-xs sm:text-sm uppercase tracking-wider">Frontend PWA Stack</h3>
+                            </div>
+                            <ul className="text-[11px] sm:text-xs text-zinc-300 space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircleIcon className="w-3.5 h-3.5 text-blue-400 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <strong className="text-white">React 19 & TypeScript:</strong> Zero runtime type flaws with strict contract typing for players, ranks, and events.
+                                    </div>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircleIcon className="w-3.5 h-3.5 text-blue-400 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <strong className="text-white">Tailwind Tactical Engine:</strong> High-contrast responsive styling optimized for outdoor sun readability.
+                                    </div>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircleIcon className="w-3.5 h-3.5 text-blue-400 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <strong className="text-white">Offline Resilience:</strong> Instant state caching guarantees operators can browse loadouts even with zero field reception.
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {/* Backend Infrastructure */}
+                        <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/80 space-y-2">
+                            <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-800/60">
+                                <CircleStackIcon className="w-4 h-4 text-emerald-400" />
+                                <h3 className="font-bold text-white text-xs sm:text-sm uppercase tracking-wider">Cloud Database & Sync</h3>
+                            </div>
+                            <ul className="text-[11px] sm:text-xs text-zinc-300 space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircleIcon className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <strong className="text-white">Supabase PostgreSQL 15:</strong> High-speed relational storage with native JSONB document flexibility.
+                                    </div>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircleIcon className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <strong className="text-white">WebSocket Subscriptions:</strong> Real-time bi-directional messaging updates attendance and live scores across all admin devices instantaneously.
+                                    </div>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircleIcon className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <strong className="text-white">Automated Health Fallbacks:</strong> Graceful fallback to cached mock states if database connectivity drops.
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* TAB 2: AUTOMATION ENGINE */}
+            {selectedTab === 'automation' && (
+                <div className="space-y-4">
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/80 space-y-3">
+                        <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-800/60">
+                            <CpuChipIcon className="w-4 h-4 text-red-500" />
+                            <h3 className="font-bold text-white text-xs sm:text-sm uppercase tracking-wider">
+                                The 7-Step "Finalize Event" Automation Cascade
+                            </h3>
+                        </div>
+                        <p className="text-[11px] sm:text-xs text-zinc-400">
+                            When an administrator clicks <strong>Finalize Event</strong>, the following operations occur atomically in milliseconds:
                         </p>
-
-                        <div className="space-y-6 mt-4">
-                            <div>
-                                <h4 className="font-bold text-white text-base border-b border-zinc-700 pb-2 mb-2">The "Finalize Event" Cascade</h4>
-                                <p className="mb-2">When you click <span className="text-green-400 font-mono text-xs border border-green-900 bg-green-900/20 px-1 rounded">Finalize Event</span>, the system executes a precise sequence of operations in milliseconds:</p>
-                                <ol className="list-decimal list-inside space-y-2 ml-2 bg-zinc-950/50 p-4 rounded-lg border border-zinc-800">
-                                    <li><strong>Score Calculation:</strong> It aggregates the Base Participation XP + (Kills × Kill XP) + (Headshots × HS XP) + (Deaths × Death Penalty) for every attendee.</li>
-                                    <li><strong>No-Show Detection:</strong> It compares the Signup list against the Attendee list. Any player who signed up but didn't check in receives the configured "No-Show Penalty".</li>
-                                    <li><strong>Stat Preservation:</strong> A permanent "Match History" record is created for each player, freezing their stats for that specific game in time.</li>
-                                    <li><strong>Lifetime Aggregation:</strong> The match stats are added to the player's lifetime totals (Total Kills, Total Deaths, etc.).</li>
-                                    <li><strong>Rank Evaluation:</strong> The system checks the player's new Total XP against the Rank Structure. If they cross a threshold, they are automatically promoted to the next Tier/Rank.</li>
-                                    <li><strong>Financial Ledgering:</strong> For every attendee marked as "Paid", a transaction record is generated in the Finance module, splitting revenue into "Event Fees" and "Rental Income".</li>
-                                    <li><strong>Cleanup:</strong> All temporary Signup records for the event are deleted to keep the database clean.</li>
-                                </ol>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] sm:text-xs">
+                            <div className="p-2 rounded-lg bg-zinc-900/60 border border-zinc-800 flex items-start gap-2">
+                                <span className="font-mono text-red-400 font-bold">01.</span>
+                                <div><strong className="text-white">XP Aggregation:</strong> Computes Base Participation + (Kills &times; 100) + (Headshots &times; 50) &minus; (Deaths &times; 25).</div>
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <h4 className="font-bold text-white text-base border-b border-zinc-700 pb-2 mb-2">Smart Inventory</h4>
-                                    <p>Stock levels are dynamic. When viewing the Inventory tab, items with <code className="text-red-400">Stock &le; Re-order Level</code> are visually flagged. During event setup, rental availability is calculated by subtracting live signups from total stock, preventing overbooking.</p>
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-white text-base border-b border-zinc-700 pb-2 mb-2">Raffle Logic</h4>
-                                    <p>The "Draw Winners" function performs a cryptographic shuffle of all purchased tickets. It guarantees that a single ticket cannot win multiple prizes in the same draw, though a player with multiple tickets can win multiple times.</p>
-                                </div>
+                            <div className="p-2 rounded-lg bg-zinc-900/60 border border-zinc-800 flex items-start gap-2">
+                                <span className="font-mono text-red-400 font-bold">02.</span>
+                                <div><strong className="text-white">No-Show Penalty:</strong> Automatically identifies absent signups and applies XP de-escalations.</div>
                             </div>
-                        </div>
-                    </SectionCard>
-
-                    {/* FINANCIAL & SECURITY */}
-                    <SectionCard 
-                        icon={<CurrencyDollarIcon className="w-6 h-6" />} 
-                        title="3. Financial & Data Integrity" 
-                        color="text-green-400"
-                    >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <h4 className="font-bold text-white mb-2">Revenue Tracking</h4>
-                                <p>The Finance tab is not just a log; it's an analytical tool. It distinguishes between:</p>
-                                <ul className="list-disc list-inside mt-2 space-y-1 text-gray-400">
-                                    <li><strong>Event Revenue:</strong> Pure profit from game fees.</li>
-                                    <li><strong>Rental Revenue:</strong> Income generated from asset usage (guns/gear).</li>
-                                    <li><strong>Retail Revenue:</strong> Sales of consumables (BBs, Gas).</li>
-                                    <li><strong>Expenses:</strong> Operational costs recorded manually.</li>
-                                </ul>
-                                <p className="mt-2 text-xs text-gray-500">Charts automatically adjust to show revenue distribution over time (Day/Week/Month).</p>
+                            <div className="p-2 rounded-lg bg-zinc-900/60 border border-zinc-800 flex items-start gap-2">
+                                <span className="font-mono text-red-400 font-bold">03.</span>
+                                <div><strong className="text-white">Match History Snapshot:</strong> Freezes permanent match records with K/D, headshots, and date stamps.</div>
                             </div>
-                            <div>
-                                <h4 className="font-bold text-white mb-2">Security Protocols</h4>
-                                <ul className="list-disc list-inside mt-2 space-y-1 text-gray-400">
-                                    <li><strong>Authentication:</strong> Admins use secure email/password auth via Supabase Auth. Players use a custom PIN system for quick access.</li>
-                                    <li><strong>Authorization:</strong> Database policies ensure that while players can <em>read</em> event details and their own stats, they cannot <em>write</em> or modify any data. Only authenticated Admins have write access.</li>
-                                    <li><strong>Backup & Restore:</strong> The Settings tab includes a JSON-based backup engine. This allows for a complete snapshot of the database to be saved locally and restored instantly in case of catastrophic data loss.</li>
-                                </ul>
+                            <div className="p-2 rounded-lg bg-zinc-900/60 border border-zinc-800 flex items-start gap-2">
+                                <span className="font-mono text-red-400 font-bold">04.</span>
+                                <div><strong className="text-white">Lifetime Accumulation:</strong> Updates global stats (Total Kills, Headshot accuracy, MVP records).</div>
+                            </div>
+                            <div className="p-2 rounded-lg bg-zinc-900/60 border border-zinc-800 flex items-start gap-2">
+                                <span className="font-mono text-red-400 font-bold">05.</span>
+                                <div><strong className="text-white">Rank & Tier Promotion:</strong> Evaluates thresholds and triggers instant promotions and notifications.</div>
+                            </div>
+                            <div className="p-2 rounded-lg bg-zinc-900/60 border border-zinc-800 flex items-start gap-2">
+                                <span className="font-mono text-red-400 font-bold">06.</span>
+                                <div><strong className="text-white">Financial Ledger Entry:</strong> Creates income entries splitting Event Fees and Rental Gear income.</div>
+                            </div>
+                            <div className="p-2 rounded-lg bg-zinc-900/60 border border-zinc-800 flex items-start gap-2 sm:col-span-2">
+                                <span className="font-mono text-red-400 font-bold">07.</span>
+                                <div><strong className="text-white">Roster Cleanup:</strong> Flushes temporary queue slots while preserving permanent attendance records.</div>
                             </div>
                         </div>
-                    </SectionCard>
+                    </div>
+                </div>
+            )}
 
-                    {/* MEDIA STRATEGY */}
-                    <SectionCard 
-                        icon={<PhotoIcon className="w-6 h-6" />} 
-                        title="4. Media & Content Strategy" 
-                        color="text-purple-400"
-                    >
-                        <div className="bg-purple-900/10 border border-purple-500/20 p-4 rounded-lg mb-4">
-                            <p className="font-bold text-purple-200 mb-1">Critical Performance Rule:</p>
-                            <p className="text-purple-300 text-sm">Always prefer <strong>External URLs</strong> over Direct Uploads for images, and <strong>mandatory</strong> for video/audio.</p>
+            {/* TAB 3: FINANCE */}
+            {selectedTab === 'finance' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/80 space-y-2">
+                        <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-800/60">
+                            <CurrencyDollarIcon className="w-4 h-4 text-green-400" />
+                            <h3 className="font-bold text-white text-xs sm:text-sm uppercase tracking-wider">Revenue Breakdown Streams</h3>
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <h4 className="font-bold text-white mb-2">Why External URLs?</h4>
-                                <ul className="list-disc list-inside space-y-2 text-xs text-gray-400">
-                                    <li><strong>Database Size:</strong> Storing images directly in the database (Base64) bloats the size, slows down initial load times, and can hit storage quotas.</li>
-                                    <li><strong>Streaming:</strong> Browsers cannot stream video/audio from a database text string efficiently. They need a file URL to buffer content.</li>
-                                    <li><strong>Caching:</strong> External CDNs (Content Delivery Networks) cache images closer to the user, making the dashboard feel instant.</li>
-                                </ul>
-                            </div>
-                            <div>
-                                <h4 className="font-bold text-white mb-2">Recommended Tools</h4>
-                                <div className="space-y-3">
-                                    <div className="bg-zinc-800 p-2 rounded border border-zinc-700">
-                                        <p className="font-bold text-gray-200 text-xs">For Images (Logos, Avatars)</p>
-                                        <a href="https://imgbb.com" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline text-xs">ImgBB</a>
-                                        <span className="text-gray-500 text-xs"> - Get the "Direct Link" (ending in .png/.jpg).</span>
-                                    </div>
-                                    <div className="bg-zinc-800 p-2 rounded border border-zinc-700">
-                                        <p className="font-bold text-gray-200 text-xs">For Audio/Video (Briefings, BG)</p>
-                                        <a href="https://catbox.moe" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline text-xs">Catbox.moe</a>
-                                        <span className="text-gray-500 text-xs"> - Supports MP3/MP4 with direct streaming links.</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </SectionCard>
-
-                    <div className="text-center pt-8 border-t border-zinc-800">
-                        <p className="text-gray-500 text-xs">System Version 2.4.0 (Supabase Edition)</p>
-                        <p className="text-gray-600 text-[10px] mt-1">Developed by JSTYP.me | Bosjol Tactical Command</p>
+                        <ul className="text-[11px] sm:text-xs text-zinc-300 space-y-1.5">
+                            <li><strong className="text-green-400">Event Revenue:</strong> Entry and match registration fees.</li>
+                            <li><strong className="text-blue-400">Rental Revenue:</strong> Primary AEGs, HPA rigs, masks, and tactical gear hire.</li>
+                            <li><strong className="text-amber-400">Retail & Consumables:</strong> Heavyweight BBs, green gas, pyro, and accessories.</li>
+                            <li><strong className="text-red-400">Expenses:</strong> Field maintenance, marshals, and inventory restock entries.</li>
+                        </ul>
                     </div>
 
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/80 space-y-2">
+                        <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-800/60">
+                            <ShieldCheckIcon className="w-4 h-4 text-purple-400" />
+                            <h3 className="font-bold text-white text-xs sm:text-sm uppercase tracking-wider">Data Snapshot & Backup Engine</h3>
+                        </div>
+                        <p className="text-[11px] sm:text-xs text-zinc-400 leading-relaxed">
+                            Admins can export a full JSON snapshot containing all 23 tables in one click from the <strong>Settings</strong> tab, enabling zero-downtime recovery and local backup archives.
+                        </p>
+                    </div>
                 </div>
-            </DashboardCard>
+            )}
+
+            {/* TAB 4: GAMIFICATION */}
+            {selectedTab === 'gamification' && (
+                <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/80 space-y-3">
+                    <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-800/60">
+                        <TrophyIcon className="w-4 h-4 text-amber-400" />
+                        <h3 className="font-bold text-white text-xs sm:text-sm uppercase tracking-wider">XP & Progression Algorithms</h3>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px] sm:text-xs">
+                        <div className="p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800 space-y-1">
+                            <p className="font-bold text-amber-400 uppercase tracking-wider">Kill & Objective XP</p>
+                            <p className="text-zinc-300">Base: 100 XP per confirmed hit. Precision Headshot: +50 XP bonus.</p>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800 space-y-1">
+                            <p className="font-bold text-red-400 uppercase tracking-wider">Death & Penalty Math</p>
+                            <p className="text-zinc-300">Tactical Death: -25 XP. No-Show Penalty: -200 XP to deter phantom signups.</p>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800 space-y-1">
+                            <p className="font-bold text-purple-400 uppercase tracking-wider">Legendary Badges</p>
+                            <p className="text-zinc-300">Granted exclusively by Command for exceptional field valor, sportsmanship, and tactical dominance.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* TAB 5: MEDIA */}
+            {selectedTab === 'media' && (
+                <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/80 space-y-3">
+                    <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-800/60">
+                        <PhotoIcon className="w-4 h-4 text-purple-400" />
+                        <h3 className="font-bold text-white text-xs sm:text-sm uppercase tracking-wider">CDN & Media Best Practices</h3>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] sm:text-xs text-zinc-300">
+                        <div className="p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800 space-y-1.5">
+                            <h4 className="font-bold text-white">Direct CDN Links vs Base64</h4>
+                            <p className="text-zinc-400">
+                                Always use direct HTTPS URLs for high-res tactical imagery and audio tracks. Direct URLs bypass database query payloads, enabling blazing-fast sub-50ms page hydration.
+                            </p>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800 space-y-1.5">
+                            <h4 className="font-bold text-white">Recommended Asset Hosts</h4>
+                            <p className="text-zinc-400">
+                                Recommended tools: <strong>ImgBB</strong> (direct PNG/JPG links), <strong>Catbox.moe</strong> (tactical MP3 briefing audio), and <strong>Supabase Storage</strong> (built-in media bucket).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

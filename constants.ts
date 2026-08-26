@@ -8,12 +8,18 @@ export const MOCK_BADGES: Badge[] = [
     { id: 'b02', name: 'Veteran', description: 'Participate in 25 matches', iconUrl: 'https://img.icons8.com/color/96/medal2.png', criteria: { type: 'gamesPlayed', value: 25 }},
     { id: 'b03', name: 'First Kill', description: 'Get your first kill', iconUrl: 'https://img.icons8.com/color/96/skull.png', criteria: { type: 'kills', value: 1 }},
     { id: 'b04', name: 'Gold Tier Operator', description: 'Awarded for reaching the Gold rank', iconUrl: 'https://img.icons8.com/color/96/gold-medal.png', criteria: { type: 'rank', value: 'Gold' } },
+    { id: 'b05', name: 'Man of Match', description: 'Awarded to the MVP player of an official tactical match.', iconUrl: 'https://img.icons8.com/color/96/military-medal.png', criteria: { type: 'custom', value: 1 } },
+    { id: 'b06', name: 'Man of Month', description: 'Awarded to the top performing operator of the month.', iconUrl: 'https://img.icons8.com/color/96/trophy.png', criteria: { type: 'custom', value: 1 } },
+    { id: 'b07', name: 'Man of Year', description: 'Awarded to the most distinguished player of the year.', iconUrl: 'https://img.icons8.com/color/96/crown.png', criteria: { type: 'custom', value: 1 } },
 ];
 
 export const MOCK_LEGENDARY_BADGES: LegendaryBadge[] = [
     { id: 'leg01', name: 'Medal of Valor', description: 'Awarded for exceptional bravery and selflessness in a critical situation.', iconUrl: 'https://img.icons8.com/color/96/laurel-wreath.png', howToObtain: 'Manually awarded by an admin for acts of exceptional bravery.' },
     { id: 'leg02', name: 'Tactical Genius', description: 'Recognizes an operator who devised and executed a game-changing strategy.', iconUrl: 'https://img.icons8.com/color/96/brain-3.png', howToObtain: 'Manually awarded by an admin for brilliant strategic plays.' },
     { id: 'leg03', name: 'Last Man Standing', description: 'For an operator who single-handedly clutched a victory against overwhelming odds.', iconUrl: 'https://i.ibb.co/fluency/96/shield.png', howToObtain: 'Be the last surviving member of your team and win the round.' },
+    { id: 'leg04', name: 'Man of Match', description: 'Awarded to the MVP player of an official tactical match.', iconUrl: 'https://img.icons8.com/color/96/military-medal.png', howToObtain: 'Awarded by game marshall for outstanding match performance.' },
+    { id: 'leg05', name: 'Man of Month', description: 'Awarded to the top performing operator of the month.', iconUrl: 'https://img.icons8.com/color/96/trophy.png', howToObtain: 'Awarded to the highest scoring operator across monthly operations.' },
+    { id: 'leg06', name: 'Man of Year', description: 'Awarded to the most distinguished player of the year.', iconUrl: 'https://img.icons8.com/color/96/crown.png', howToObtain: 'Highest annual prestige recognition for supreme excellence.' },
 ];
 
 export const UNRANKED_TIER: Tier = { 
@@ -438,9 +444,10 @@ export const MOCK_HONORS: PlayerHonor[] = [
         playerCallsign: 'Ghost',
         playerAvatarUrl: 'https://api.dicebear.com/8.x/bottts/svg?seed=JohnDoe',
         type: 'man_of_the_match',
-        title: 'Operation Nightfall',
+        title: 'Operation Nightfall - Man of Match',
         date: '2026-08-15',
-        notes: 'Outmatched entire enemy squad with 14 kills and zero casualties.'
+        notes: 'Outmatched entire enemy squad with 14 kills and zero casualties.',
+        badgeImageUrl: 'https://img.icons8.com/color/96/military-medal.png'
     },
     {
         id: 'h_02',
@@ -449,9 +456,10 @@ export const MOCK_HONORS: PlayerHonor[] = [
         playerCallsign: 'Valkyrie',
         playerAvatarUrl: 'https://api.dicebear.com/8.x/bottts/svg?seed=JaneSmith',
         type: 'man_of_the_month',
-        title: 'July 2026 Season',
+        title: 'July 2026 Season - Man of Month',
         date: '2026-07-31',
-        notes: 'Maintained highest win rate and led squad tactics across 8 consecutive missions.'
+        notes: 'Maintained highest win rate and led squad tactics across 8 consecutive missions.',
+        badgeImageUrl: 'https://img.icons8.com/color/96/trophy.png'
     },
     {
         id: 'h_03',
@@ -460,9 +468,10 @@ export const MOCK_HONORS: PlayerHonor[] = [
         playerCallsign: 'Ghost',
         playerAvatarUrl: 'https://api.dicebear.com/8.x/bottts/svg?seed=JohnDoe',
         type: 'man_of_the_year',
-        title: '2025 Annual Tactical League',
+        title: '2025 Annual Tactical League - Man of Year',
         date: '2025-12-30',
-        notes: 'Crown Champion for overall score, accuracy, and leadership.'
+        notes: 'Crown Champion for overall score, accuracy, and leadership.',
+        badgeImageUrl: 'https://img.icons8.com/color/96/crown.png'
     }
 ];
 

@@ -310,7 +310,7 @@ export interface Raffle extends RaffleCore {
     winners: RaffleWinnerDoc[];
 }
 
-export type HonorType = 'man_of_the_match' | 'man_of_the_month' | 'man_of_the_year';
+export type HonorType = 'man_of_the_match' | 'man_of_the_month' | 'man_of_the_year' | string;
 
 export interface PlayerHonor {
     id: string;
@@ -318,8 +318,9 @@ export interface PlayerHonor {
     playerName?: string;
     playerCallsign?: string;
     playerAvatarUrl?: string;
-    type: HonorType;
+    type: string;
     title: string;
+    badgeImageUrl?: string;
     date: string;
     notes?: string;
 }

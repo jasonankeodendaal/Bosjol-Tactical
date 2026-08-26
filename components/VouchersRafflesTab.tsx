@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Voucher, Raffle, Prize, Player, GameEvent, VoucherRedemption, RaffleTicketDoc, RaffleWinnerDoc, PaymentStatus } from '../types';
-import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';

@@ -1,10 +1,11 @@
 import React, { useState, useMemo, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, PlayerHonor, HonorType } from '../types';
-import { CrownIcon, TrophyIcon, SparklesIcon, PlusIcon, TrashIcon, PencilIcon, UserIcon, CalendarIcon } from './icons/Icons';
+import { CrownIcon, TrophyIcon, SparklesIcon, PlusIcon, TrashIcon, PencilIcon, UserIcon, CalendarIcon, PhotoIcon } from './icons/Icons';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
+import { UrlOrUploadField } from './UrlOrUploadField';
 import { useData } from '../data/DataContext';
 
 // RankedPlayerListItem Component
@@ -58,14 +59,19 @@ const AdminHonorModal: React.FC<{
     onSave: (honor: PlayerHonor | Omit<PlayerHonor, 'id'>) => void;
 }> = ({ honor, players, onClose, onSave }) => {
     const [selectedPlayerId, setSelectedPlayerId] = useState<string>(honor?.playerId || players[0]?.id || '');
-    const [type, setType] = useState<HonorType>(honor?.type || 'man_of_the_match');
+    const [type, setType] = useState<string>(honor?.type || 'Man of Match');
     const [title, setTitle] = useState<string>(honor?.title || '');
+    const [badgeImageUrl, setBadgeImageUrl] = useState<string>(honor?.badgeImageUrl || '');
     const [date, setDate] = useState<string>(honor?.date || new Date().toISOString().split('T')[0]);
     const [notes, setNotes] = useState<string>(honor?.notes || '');
 
     const handleSave = () => {
         if (!selectedPlayerId) {
             alert('Please select a player.');
+            return;
+        }
+        if (!type.trim()) {
+            alert('Please enter an honor category (e.g. Man of Match, Man of Month, Man of Year).');
             return;
         }
         if (!title.trim()) {
@@ -81,8 +87,9 @@ const AdminHonorModal: React.FC<{
             playerName: targetPlayer ? `${targetPlayer.name} ${targetPlayer.surname || ''}`.trim() : 'Unknown Player',
             playerCallsign: targetPlayer?.callsign || '',
             playerAvatarUrl: targetPlayer?.avatarUrl || '',
-            type,
+            type: type.trim(),
             title: title.trim(),
+            badgeImageUrl: badgeImageUrl.trim() || undefined,
             date,
             notes: notes.trim(),
         };
@@ -91,36 +98,40 @@ const AdminHonorModal: React.FC<{
     };
 
     return (
-        <Modal isOpen={true} onClose={onClose} title={honor?.id ? 'Edit Player Honor' : 'Assign Player Honor (MOTM / MOTMth / MOTYr)'}>
+        <Modal isOpen={true} onClose={onClose} title={honor?.id ? 'Edit Player Honor' : 'Assign Player Honor'}>
             <div className="space-y-4 text-left">
                 <div>
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
-                        Honor Category
+                        Honor Category (Manual Text Entry)
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <Input
+                        value={type}
+                        onChange={e => setType(e.target.value)}
+                        placeholder="e.g. Man of Match, Man of Month, Man of Year"
+                        className="mb-2"
+                    />
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] text-zinc-500 font-medium mr-1">Quick Select:</span>
                         <button
                             type="button"
-                            onClick={() => setType('man_of_the_match')}
-                            className={`p-2.5 rounded-lg border text-center transition-all ${type === 'man_of_the_match' ? 'bg-amber-950/80 border-amber-500 text-amber-300 font-bold shadow-lg shadow-amber-950/50' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'}`}
+                            onClick={() => setType('Man of Match')}
+                            className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all border ${type.toLowerCase().includes('match') ? 'bg-amber-950/90 border-amber-500 text-amber-300' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'}`}
                         >
-                            <span className="text-xl block mb-1">🌟</span>
-                            <span className="text-xs">Man of Match</span>
+                            🌟 Man of Match
                         </button>
                         <button
                             type="button"
-                            onClick={() => setType('man_of_the_month')}
-                            className={`p-2.5 rounded-lg border text-center transition-all ${type === 'man_of_the_month' ? 'bg-purple-950/80 border-purple-500 text-purple-300 font-bold shadow-lg shadow-purple-950/50' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'}`}
+                            onClick={() => setType('Man of Month')}
+                            className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all border ${type.toLowerCase().includes('month') ? 'bg-purple-950/90 border-purple-500 text-purple-300' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'}`}
                         >
-                            <span className="text-xl block mb-1">🏆</span>
-                            <span className="text-xs">Man of Month</span>
+                            🏆 Man of Month
                         </button>
                         <button
                             type="button"
-                            onClick={() => setType('man_of_the_year')}
-                            className={`p-2.5 rounded-lg border text-center transition-all ${type === 'man_of_the_year' ? 'bg-amber-900/90 border-amber-400 text-amber-200 font-bold shadow-lg shadow-amber-500/20' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'}`}
+                            onClick={() => setType('Man of Year')}
+                            className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all border ${type.toLowerCase().includes('year') ? 'bg-amber-900/90 border-amber-400 text-amber-200' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'}`}
                         >
-                            <span className="text-xl block mb-1">👑</span>
-                            <span className="text-xs">Man of Year</span>
+                            👑 Man of Year
                         </button>
                     </div>
                 </div>
@@ -147,7 +158,7 @@ const AdminHonorModal: React.FC<{
                         label="Event / Period Title"
                         value={title}
                         onChange={e => setTitle(e.target.value)}
-                        placeholder={type === 'man_of_the_match' ? 'e.g. Operation Nightfall' : type === 'man_of_the_month' ? 'e.g. August 2026' : 'e.g. 2025/2026 Season'}
+                        placeholder={type.toLowerCase().includes('match') ? 'e.g. Operation Nightfall' : type.toLowerCase().includes('month') ? 'e.g. August 2026' : 'e.g. 2025/2026 Season'}
                     />
                     <Input
                         label="Award Date"
@@ -156,6 +167,14 @@ const AdminHonorModal: React.FC<{
                         onChange={e => setDate(e.target.value)}
                     />
                 </div>
+
+                <UrlOrUploadField
+                    label="Badge Image (JPG / PNG Custom Upload)"
+                    fileUrl={badgeImageUrl}
+                    onUrlSet={setBadgeImageUrl}
+                    onRemove={() => setBadgeImageUrl('')}
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                />
 
                 <div>
                     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
@@ -188,7 +207,7 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
     const dataContext = useData();
     const honors = dataContext?.honors || [];
     const [viewMode, setViewMode] = useState<'leaderboard' | 'honors'>('leaderboard');
-    const [honorFilter, setHonorFilter] = useState<'all' | HonorType>('all');
+    const [honorFilter, setHonorFilter] = useState<string>('all');
     const [editingHonor, setEditingHonor] = useState<Partial<PlayerHonor> | null>(null);
 
     const sortedPlayers = useMemo(() => {
@@ -198,10 +217,25 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
     const topThree = sortedPlayers.slice(0, 3);
     const rest = sortedPlayers.slice(3);
 
+    const availableCategories = useMemo(() => {
+        const set = new Set<string>();
+        honors.forEach(h => {
+            if (h.type && h.type.trim()) set.add(h.type.trim());
+        });
+        return Array.from(set);
+    }, [honors]);
+
     const filteredHonors = useMemo(() => {
         let list = [...honors];
         if (honorFilter !== 'all') {
-            list = list.filter(h => h.type === honorFilter);
+            const filterNorm = honorFilter.toLowerCase().trim();
+            list = list.filter(h => {
+                const typeNorm = (h.type || '').toLowerCase().trim();
+                if (filterNorm === 'match') return typeNorm.includes('match') || typeNorm === 'man_of_the_match';
+                if (filterNorm === 'month') return typeNorm.includes('month') || typeNorm === 'man_of_the_month';
+                if (filterNorm === 'year') return typeNorm.includes('year') || typeNorm === 'man_of_the_year';
+                return typeNorm === filterNorm;
+            });
         }
         return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [honors, honorFilter]);
@@ -221,15 +255,18 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
         }
     };
 
-    const getHonorBadge = (type: HonorType) => {
-        switch (type) {
-            case 'man_of_the_match':
-                return { label: 'Man of the Match', badgeBg: 'bg-amber-950/70 border-amber-500/60 text-amber-400', icon: '🌟' };
-            case 'man_of_the_month':
-                return { label: 'Man of the Month', badgeBg: 'bg-purple-950/70 border-purple-500/60 text-purple-300', icon: '🏆' };
-            case 'man_of_the_year':
-                return { label: 'Man of the Year', badgeBg: 'bg-gradient-to-r from-amber-600/30 to-amber-900/30 border-amber-400 text-amber-200', icon: '👑' };
+    const getHonorBadge = (type: string = '') => {
+        const normalized = type.toLowerCase().replace(/[_\-\s]+/g, ' ').trim();
+        if (normalized.includes('match') || normalized === 'man of match') {
+            return { label: type || 'Man of Match', badgeBg: 'bg-amber-950/70 border-amber-500/60 text-amber-400', icon: '🌟' };
         }
+        if (normalized.includes('month') || normalized === 'man of month') {
+            return { label: type || 'Man of Month', badgeBg: 'bg-purple-950/70 border-purple-500/60 text-purple-300', icon: '🏆' };
+        }
+        if (normalized.includes('year') || normalized === 'man of year') {
+            return { label: type || 'Man of Year', badgeBg: 'bg-gradient-to-r from-amber-600/30 to-amber-900/30 border-amber-400 text-amber-200', icon: '👑' };
+        }
+        return { label: type || 'Honor', badgeBg: 'bg-zinc-800 border-amber-500/50 text-amber-300', icon: '🎖️' };
     };
 
     return (
@@ -255,13 +292,16 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
                     <div className="flex items-center gap-1.5">
                         <select
                             value={honorFilter}
-                            onChange={e => setHonorFilter(e.target.value as any)}
+                            onChange={e => setHonorFilter(e.target.value)}
                             className="bg-zinc-900 border border-zinc-700 rounded-lg px-1.5 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs text-white focus:outline-none"
                         >
                             <option value="all">All Honors</option>
-                            <option value="man_of_the_match">Man of the Match</option>
-                            <option value="man_of_the_month">Man of the Month</option>
-                            <option value="man_of_the_year">Man of the Year</option>
+                            <option value="match">Man of Match</option>
+                            <option value="month">Man of Month</option>
+                            <option value="year">Man of Year</option>
+                            {availableCategories.filter(c => !['match', 'month', 'year', 'man of match', 'man of month', 'man of year', 'man_of_the_match', 'man_of_the_month', 'man_of_the_year'].includes(c.toLowerCase())).map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                            ))}
                         </select>
 
                         {isAdmin && (
@@ -328,8 +368,13 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
                                                     className="w-7 h-7 sm:w-12 sm:h-12 rounded-full border border-amber-500/50 bg-zinc-950 object-cover flex-shrink-0"
                                                 />
                                                 <div className="min-w-0">
-                                                    <span className={`inline-flex items-center gap-0.5 text-[8px] sm:text-[11px] font-bold uppercase tracking-wider px-1 py-0.2 sm:px-2 sm:py-0.5 rounded-full border ${badgeInfo.badgeBg} mb-0.5 truncate max-w-full`}>
-                                                        <span>{badgeInfo.icon}</span> <span className="truncate">{badgeInfo.label}</span>
+                                                    <span className={`inline-flex items-center gap-1 text-[8px] sm:text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${badgeInfo.badgeBg} mb-0.5 truncate max-w-full`}>
+                                                        {honor.badgeImageUrl ? (
+                                                            <img src={honor.badgeImageUrl} alt={badgeInfo.label} className="w-3.5 h-3.5 sm:w-4 sm:h-4 object-contain rounded-full inline-block flex-shrink-0" />
+                                                        ) : (
+                                                            <span>{badgeInfo.icon}</span>
+                                                        )}
+                                                        <span className="truncate">{badgeInfo.label}</span>
                                                     </span>
                                                     <h3 className="font-bold text-white text-xs sm:text-base leading-tight truncate">
                                                         {name}

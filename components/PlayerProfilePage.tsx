@@ -507,18 +507,43 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
                                 if (playerHonors.length === 0) {
                                     return <p className="text-gray-500 text-center text-sm">No official honors assigned yet.</p>;
                                 }
-                                return playerHonors.map(h => (
-                                    <div key={h.id} className="p-3 bg-zinc-800/60 rounded-lg border border-amber-500/30">
-                                        <div className="flex justify-between items-center mb-1">
-                                            <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                                                {h.type === 'man_of_the_year' ? '👑 Man of Year' : h.type === 'man_of_the_month' ? '🏆 Man of Month' : '🌟 Man of Match'}
-                                            </span>
-                                            <span className="text-[11px] text-zinc-400 font-mono">{h.date}</span>
+                                return playerHonors.map(h => {
+                                    const typeNorm = (h.type || '').toLowerCase();
+                                    let icon = '🎖️';
+                                    let label = h.type || 'Honor';
+                                    if (typeNorm.includes('year') || typeNorm === 'man_of_the_year') {
+                                        icon = '👑';
+                                        label = h.type || 'Man of Year';
+                                    } else if (typeNorm.includes('month') || typeNorm === 'man_of_the_month') {
+                                        icon = '🏆';
+                                        label = h.type || 'Man of Month';
+                                    } else if (typeNorm.includes('match') || typeNorm === 'man_of_the_match') {
+                                        icon = '🌟';
+                                        label = h.type || 'Man of Match';
+                                    }
+
+                                    return (
+                                        <div key={h.id} className="p-3 bg-zinc-800/60 rounded-lg border border-amber-500/30 flex items-start gap-3">
+                                            {h.badgeImageUrl ? (
+                                                <img src={h.badgeImageUrl} alt={h.title} className="w-10 h-10 object-contain rounded-lg bg-zinc-950/80 p-1 border border-amber-500/40 flex-shrink-0" />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-lg bg-zinc-950/80 border border-amber-500/40 flex items-center justify-center text-xl flex-shrink-0">
+                                                    {icon}
+                                                </div>
+                                            )}
+                                            <div className="flex-grow min-w-0">
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                                                        <span>{icon}</span> <span>{label}</span>
+                                                    </span>
+                                                    <span className="text-[11px] text-zinc-400 font-mono">{h.date}</span>
+                                                </div>
+                                                <p className="text-sm font-bold text-white truncate">{h.title}</p>
+                                                {h.notes && <p className="text-xs text-zinc-300 italic mt-1 bg-zinc-900/60 p-1.5 rounded line-clamp-2">"{h.notes}"</p>}
+                                            </div>
                                         </div>
-                                        <p className="text-sm font-bold text-white">{h.title}</p>
-                                        {h.notes && <p className="text-xs text-zinc-300 italic mt-1 bg-zinc-900/60 p-1.5 rounded">"{h.notes}"</p>}
-                                    </div>
-                                ));
+                                    );
+                                });
                             })()}
                         </div>
                     </DashboardCard>

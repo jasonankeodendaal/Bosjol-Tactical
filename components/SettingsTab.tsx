@@ -53,6 +53,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const [carouselMediaData, setCarouselMediaData] = useState(carouselMedia);
     const [isSaving, setIsSaving] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
+    const justSavedRef = useRef(false);
     
     const [backupFile, setBackupFile] = useState<File | null>(null);
     const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false);
@@ -64,6 +65,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const [activeSection, setActiveSection] = useState<'profile' | 'company' | 'branding' | 'app' | 'backup' | 'danger'>('profile');
     
     useEffect(() => {
+        if (justSavedRef.current) {
+            justSavedRef.current = false;
+            return;
+        }
         if (!isDirty) {
             setFormData(normalizeCompanyDetails(companyDetails));
             setSocialLinksData(socialLinks);
@@ -127,6 +132,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            justSavedRef.current = true;
             await setCompanyDetails(formData);
             setSocialLinks(socialLinksData);
             setCarouselMedia(carouselMediaData);
@@ -138,6 +144,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             setIsDirty(false);
             alert('Settings saved successfully!');
         } catch (error) {
+            justSavedRef.current = false;
             console.error('Failed to save settings:', error);
             alert(`Failed to save settings: ${(error as Error).message}`);
         } finally {

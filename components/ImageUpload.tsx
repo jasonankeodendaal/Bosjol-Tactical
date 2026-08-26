@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloudIcon, CheckCircleIcon, XCircleIcon, CogIcon } from './icons/Icons';
 import { Button } from './Button';
-import { compressImageToUltraCompact } from '../utils/imageCompressor';
+import { supabase, isSupabaseConfigured } from '../supabaseClient';
 
 interface FileUploadProps {
   onUpload: (urls: string[]) => void;
@@ -16,8 +16,6 @@ interface FileUploadProps {
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
-const MAX_FILE_SIZE_BYTES = 500 * 1024; // 500KB absolute fallback
-
 export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, apiServerUrl, onUploadingChange }) => {
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [message, setMessage] = useState('');
@@ -26,31 +24,36 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
   const performUpload = useCallback(async (fileToUpload: File): Promise<string> => {
     setStatus('uploading');
     onUploadingChange?.(true);
-    setMessage(`Optimizing & compressing ${fileToUpload.name}...`);
+    setMessage(`Uploading ${fileToUpload.name} to Supabase...`);
 
-    let finalFile = fileToUpload;
-    let compressedDataUrl = '';
+    // Direct push to Supabase Storage if configured
+    if (isSupabaseConfigured() && supabase) {
+      const sanitizedName = fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const filePath = `uploads/${Date.now()}_${sanitizedName}`;
+      const bucketsToTry = ['media', 'public', 'uploads', 'settings'];
 
-    // If it's an image, compress to ultra-compact ~4KB - 10KB
-    if (fileToUpload.type.startsWith('image/') || accept.includes('image')) {
-      try {
-        const compressed = await compressImageToUltraCompact(fileToUpload, {
-          targetMaxKb: 10,
-          targetMinKb: 4,
-          maxDimension: 320
-        });
-        compressedDataUrl = compressed.dataUrl;
-        finalFile = compressed.file;
-        setMessage(`Compressed to ${compressed.sizeKb} KB (Target 4-10 KB)...`);
-      } catch (compErr) {
-        console.warn("Client-side image compression fallback:", compErr);
+      for (const bucket of bucketsToTry) {
+        try {
+          const { data, error } = await supabase.storage.from(bucket).upload(filePath, fileToUpload, {
+            cacheControl: '3600',
+            upsert: true
+          });
+          if (!error && data) {
+            const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(data.path || filePath);
+            if (publicUrlData && publicUrlData.publicUrl) {
+              return publicUrlData.publicUrl;
+            }
+          }
+        } catch (bucketErr) {
+          console.warn(`Bucket ${bucket} upload attempt failed:`, bucketErr);
+        }
       }
     }
-    
+
     if (apiServerUrl) {
         // Upload to external server
         const formData = new FormData();
-        formData.append('file', finalFile);
+        formData.append('file', fileToUpload);
 
         try {
             const response = await fetch(`${apiServerUrl}/upload`, {
@@ -68,15 +71,6 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
             throw new Error((error as Error).message || 'Failed to connect to the API server.');
         }
     } else {
-        // Direct storage of compressed Data URL
-        if (compressedDataUrl) {
-            return compressedDataUrl;
-        }
-
-        if (finalFile.size > MAX_FILE_SIZE_BYTES) {
-            throw new Error(`File > 500KB. Configure an API server for large files.`);
-        }
-
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => {
@@ -85,10 +79,10 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
             reader.onerror = (error) => {
                 reject(new Error(`Failed to read file: ${error}`));
             };
-            reader.readAsDataURL(finalFile);
+            reader.readAsDataURL(fileToUpload);
         });
     }
-  }, [apiServerUrl, accept]);
+  }, [apiServerUrl]);
 
 
   const resetState = (delay: number) => {

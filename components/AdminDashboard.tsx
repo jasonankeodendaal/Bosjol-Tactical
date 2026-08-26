@@ -432,42 +432,42 @@ const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
     }
 
     return (
-        <DashboardCard title="Rank Structure Overview" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
-            <div className="p-6">
-                 <div className="bg-blue-900/50 border border-blue-700 text-blue-200 p-4 rounded-lg mb-6 flex items-center gap-3">
-                    <InformationCircleIcon className="w-6 h-6 flex-shrink-0" />
+        <DashboardCard title="Rank Structure Overview" icon={<ShieldCheckIcon className="w-5 h-5 sm:w-6 sm:h-6"/>}>
+            <div className="p-2 sm:p-6">
+                 <div className="bg-blue-900/50 border border-blue-700 text-blue-200 p-2 sm:p-4 rounded-lg mb-3 sm:mb-6 flex items-center gap-2 sm:gap-3">
+                    <InformationCircleIcon className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
                     <div>
-                        <p className="font-semibold">This is a read-only view of the rank structure.</p>
-                        <p className="text-sm">To add, edit, or delete ranks and tiers, please go to the 'Progression' tab.</p>
+                        <p className="font-semibold text-xs sm:text-base">This is a read-only view of the rank structure.</p>
+                        <p className="text-[10px] sm:text-sm">To add, edit, or delete ranks and tiers, please go to the 'Progression' tab.</p>
                     </div>
                 </div>
 
-                <div className="space-y-12 max-h-[70vh] overflow-y-auto pr-2">
+                <div className="space-y-4 sm:space-y-12 max-h-[70vh] overflow-y-auto pr-1 sm:pr-2">
                     {ranks.map((rank, rankIndex) => (
                         <section key={rank.id} className="tier-section">
                             <div className="tier-header">
-                                <img src={rank.rankBadgeUrl} alt={rank.name} className="w-16 h-16 flex-shrink-0"/>
+                                <img src={rank.rankBadgeUrl} alt={rank.name} className="w-8 h-8 sm:w-16 sm:h-16 flex-shrink-0 object-contain"/>
                                 <div>
-                                    <h2 className="text-3xl font-bold text-red-400 uppercase tracking-wider">{rank.name}</h2>
-                                    <p className="mt-1 text-sm text-gray-400">{rank.description}</p>
+                                    <h2 className="text-base sm:text-3xl font-bold text-red-400 uppercase tracking-wider">{rank.name}</h2>
+                                    <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm text-gray-400">{rank.description}</p>
                                 </div>
                             </div>
 
                             <div className="subrank-grid">
                                 {(rank.tiers || []).sort((a,b) => a.minXp - b.minXp).map((sub) => (
                                     <article key={sub.id} className="subrank-card">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <img src={sub.iconUrl} alt={sub.name} className="w-10 h-10"/>
-                                            <div>
-                                                <h3 className="font-semibold text-white">{sub.name}</h3>
-                                                <p className="text-xs text-gray-400 font-mono">{getRangeForTier(sub, rank, rankIndex)}</p>
+                                        <div className="flex items-center gap-1.5 sm:gap-3 mb-1.5 sm:mb-3">
+                                            <img src={sub.iconUrl} alt={sub.name} className="w-6 h-6 sm:w-10 sm:h-10 flex-shrink-0 object-contain"/>
+                                            <div className="min-w-0">
+                                                <h3 className="font-semibold text-white text-xs sm:text-base truncate">{sub.name}</h3>
+                                                <p className="text-[9px] sm:text-xs text-gray-400 font-mono truncate">{getRangeForTier(sub, rank, rankIndex)}</p>
                                             </div>
                                         </div>
-                                        <ul className="list-none text-xs text-gray-300 space-y-1">
+                                        <ul className="list-none text-[8px] sm:text-xs text-gray-300 space-y-0.5 sm:space-y-1">
                                             {sub.perks.map((p, i) => (
-                                                <li key={i} className="flex items-start gap-1.5">
-                                                    <CheckCircleIcon className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
-                                                    <span>{p}</span>
+                                                <li key={i} className="flex items-start gap-1">
+                                                    <CheckCircleIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-green-500 flex-shrink-0 mt-0.5" />
+                                                    <span className="truncate">{p}</span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -477,7 +477,7 @@ const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
                         </section>
                     ))}
                     {ranks.length === 0 && (
-                        <div className="text-center text-gray-500 py-8">No ranks have been configured. Go to the 'Progression' tab to set them up.</div>
+                        <div className="text-center text-gray-500 py-8 text-xs sm:text-base">No ranks have been configured. Go to the 'Progression' tab to set them up.</div>
                     )}
                 </div>
             </div>

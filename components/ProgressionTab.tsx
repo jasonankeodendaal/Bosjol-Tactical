@@ -444,33 +444,33 @@ const RankCard: React.FC<{
         <div className="bg-zinc-900/60 rounded-xl border border-zinc-700/60 overflow-hidden shadow-lg transition-all hover:border-zinc-600">
             <button 
                 onClick={() => setIsOpen(!isOpen)} 
-                className="w-full flex items-center gap-3 p-4 text-left hover:bg-zinc-800/40 transition-colors"
+                className="w-full flex items-center gap-1.5 sm:gap-3 p-2 sm:p-4 text-left hover:bg-zinc-800/40 transition-colors"
             >
                 <div className="relative">
-                    <img src={rank.rankBadgeUrl} alt={rank.name} className="w-12 h-12 flex-shrink-0 object-contain drop-shadow" />
-                    <span className="absolute -bottom-1 -right-1 bg-red-600/90 text-[10px] text-white font-mono font-bold px-1.5 py-0.2 rounded-full border border-red-400/50">
+                    <img src={rank.rankBadgeUrl} alt={rank.name} className="w-7 h-7 sm:w-12 sm:h-12 flex-shrink-0 object-contain drop-shadow" />
+                    <span className="absolute -bottom-1 -right-1 bg-red-600/90 text-[8px] sm:text-[10px] text-white font-mono font-bold px-1 py-0.2 rounded-full border border-red-400/50">
                         {sortedTiers.length}
                     </span>
                 </div>
                 <div className="flex-grow min-w-0">
-                    <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-bold text-white tracking-wide">{rank.name}</h3>
-                        <span className="bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-mono font-bold px-2 py-0.5 rounded">
-                            {lowestXp.toLocaleString()} XP{sortedTiers.length > 1 ? ` – ${highestXp.toLocaleString()} XP` : '+'}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2">
+                        <h3 className="text-xs sm:text-lg font-bold text-white tracking-wide truncate">{rank.name}</h3>
+                        <span className="bg-red-500/20 text-red-300 border border-red-500/30 text-[9px] sm:text-xs font-mono font-bold px-1 py-0.2 sm:px-2 sm:py-0.5 rounded w-max truncate">
+                            {lowestXp.toLocaleString()} XP{sortedTiers.length > 1 ? `–${highestXp.toLocaleString()}` : '+'}
                         </span>
                     </div>
-                    <p className="text-xs text-gray-400 truncate mt-0.5">{rank.description || 'No description provided'}</p>
+                    <p className="text-[9px] sm:text-xs text-gray-400 truncate mt-0.5">{rank.description || 'No description'}</p>
                 </div>
-                <div className="flex gap-1.5 items-center">
-                    <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onEditRank(); }} className="!p-1.5" title="Edit Rank">
-                        <PencilIcon className="w-4 h-4 text-gray-300"/>
+                <div className="flex gap-1 items-center flex-shrink-0">
+                    <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onEditRank(); }} className="!p-1 sm:!p-1.5" title="Edit Rank">
+                        <PencilIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-300"/>
                     </Button>
-                    <Button size="sm" variant="danger" onClick={(e) => { e.stopPropagation(); onDeleteRank(); }} className="!p-1.5" title="Delete Rank">
-                        <TrashIcon className="w-4 h-4"/>
+                    <Button size="sm" variant="danger" onClick={(e) => { e.stopPropagation(); onDeleteRank(); }} className="!p-1 sm:!p-1.5" title="Delete Rank">
+                        <TrashIcon className="w-3 h-3 sm:w-4 sm:h-4"/>
                     </Button>
                 </div>
-                <motion.div animate={{ rotate: isOpen ? 180 : 0 }} className="flex-shrink-0 ml-1">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <motion.div animate={{ rotate: isOpen ? 180 : 0 }} className="flex-shrink-0 ml-0.5">
+                    <svg className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                 </motion.div>
@@ -802,7 +802,7 @@ SET name = EXCLUDED.name,
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-1.5 sm:gap-4">
                         {sortedRanks.map(rank => (
                             <RankCard 
                                 key={rank.id}

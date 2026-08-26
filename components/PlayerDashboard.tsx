@@ -191,45 +191,45 @@ const RankAndLeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'pla
     };
 
     return (
-        <div className="space-y-8">
-            <DashboardCard title="Ranked Status" icon={<ShieldCheckIcon className="w-6 h-6" />}>
-                 <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-1">
-                        <div className="rank-stats-grid">
+        <div className="space-y-4 sm:space-y-8">
+            <DashboardCard title="Ranked Status" icon={<ShieldCheckIcon className="w-5 h-5 sm:w-6 sm:h-6" />}>
+                 <div className="p-2 sm:p-6 grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6 items-center">
+                    <div className="col-span-1">
+                        <div className="rank-stats-grid !p-1.5 sm:!p-4">
                             <div className="rank-stats-item col-span-2">
-                                <span className="label">Season Ends</span>
-                                <span className="value">N/A</span>
+                                <span className="label text-[9px] sm:text-xs">Season</span>
+                                <span className="value text-[9px] sm:text-xs">N/A</span>
                             </div>
                              <div className="rank-stats-item">
-                                <span className="label">Matches</span>
-                                <span className="value">{player.stats?.gamesPlayed ?? 0}</span>
+                                <span className="label text-[9px] sm:text-xs">Matches</span>
+                                <span className="value text-[9px] sm:text-xs">{player.stats?.gamesPlayed ?? 0}</span>
                             </div>
                             <div className="rank-stats-item">
-                                <span className="label">Avg. Kills</span>
-                                <span className="value">{avgKills}</span>
+                                <span className="label text-[9px] sm:text-xs">Avg Kills</span>
+                                <span className="value text-[9px] sm:text-xs">{avgKills}</span>
                             </div>
                              <div className="rank-stats-item">
-                                <span className="label">K/D Ratio</span>
-                                <span className="value">{kdr}</span>
+                                <span className="label text-[9px] sm:text-xs">K/D</span>
+                                <span className="value text-[9px] sm:text-xs">{kdr}</span>
                             </div>
                              <div className="rank-stats-item">
-                                <span className="label">Headshots</span>
-                                <span className="value">{player.stats?.headshots ?? 0}</span>
+                                <span className="label text-[9px] sm:text-xs">HS</span>
+                                <span className="value text-[9px] sm:text-xs">{player.stats?.headshots ?? 0}</span>
                             </div>
                         </div>
                     </div>
-                    <div className="lg:col-span-2">
-                        <div className="rank-carousel-container">
-                            <RankDisplayItem tier={previous} type="side" label="Previous" />
-                            <RankDisplayItem tier={current} type="current" label="Current Rank" />
+                    <div className="col-span-1 lg:col-span-2">
+                        <div className="rank-carousel-container !py-1 sm:!py-6">
+                            <RankDisplayItem tier={previous} type="side" label="Prev" />
+                            <RankDisplayItem tier={current} type="current" label="Current" />
                             <RankDisplayItem tier={next} type="side" label="Next" />
                         </div>
                          <div className="xp-bar-container max-w-full">
                             <div className="xp-bar-info">
-                                <span className="xp-earned text-lg">Rank XP</span>
-                                <span className="xp-values text-lg">{playerXP.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'}</span>
+                                <span className="xp-earned text-xs sm:text-lg">Rank XP</span>
+                                <span className="xp-values text-xs sm:text-lg">{playerXP.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'}</span>
                             </div>
-                            <div className="xp-bar-track !h-3">
+                            <div className="xp-bar-track !h-2 sm:!h-3">
                                 <motion.div 
                                     className="xp-bar-fill" 
                                     initial={{ width: '0%'}}

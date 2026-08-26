@@ -11,17 +11,17 @@ import { useData } from '../data/DataContext';
 const RankedPlayerListItem: React.FC<{ player: Player, rank: number, isCurrentUser?: boolean }> = memo(({ player, rank, isCurrentUser }) => {
     return (
         <li
-            className={`flex items-center p-3 rounded-lg transition-colors bg-zinc-800/40 border border-transparent ${isCurrentUser ? 'bg-red-500/20 !border-red-500/30' : 'hover:bg-zinc-800/80'}`}
+            className={`flex items-center p-1.5 sm:p-3 rounded-lg transition-colors bg-zinc-800/40 border border-transparent ${isCurrentUser ? 'bg-red-500/20 !border-red-500/30' : 'hover:bg-zinc-800/80'}`}
         >
-            <div className={`text-center w-10 font-bold text-xl ${rank <= 3 ? 'text-amber-400' : isCurrentUser ? 'text-red-400' : 'text-gray-400'}`}>{rank}</div>
-            <img src={player.avatarUrl} alt={player.name} className="w-12 h-12 rounded-full object-cover mx-4 border-2 border-zinc-700" />
-            <div className="flex-grow">
-                <p className={`font-bold text-lg ${isCurrentUser ? 'text-white' : 'text-gray-200'}`}>{player.name}</p>
-                <p className="text-sm text-gray-500">"{player.callsign}"</p>
+            <div className={`text-center w-5 sm:w-10 font-bold text-xs sm:text-xl ${rank <= 3 ? 'text-amber-400' : isCurrentUser ? 'text-red-400' : 'text-gray-400'}`}>{rank}</div>
+            <img src={player.avatarUrl} alt={player.name} className="w-7 h-7 sm:w-12 sm:h-12 rounded-full object-cover mx-1.5 sm:mx-4 border-2 border-zinc-700 flex-shrink-0" />
+            <div className="flex-grow min-w-0">
+                <p className={`font-bold text-xs sm:text-lg truncate ${isCurrentUser ? 'text-white' : 'text-gray-200'}`}>{player.name}</p>
+                <p className="text-[9px] sm:text-sm text-gray-500 truncate">"{player.callsign}"</p>
             </div>
-            <div className="text-right">
-                <p className={`font-bold text-xl ${isCurrentUser ? 'text-red-300' : 'text-gray-100'}`}>{(player.stats?.xp ?? 0).toLocaleString()}</p>
-                <p className="text-xs text-gray-500">Rank Points</p>
+            <div className="text-right flex-shrink-0 ml-1">
+                <p className={`font-bold text-xs sm:text-xl ${isCurrentUser ? 'text-red-300' : 'text-gray-100'}`}>{(player.stats?.xp ?? 0).toLocaleString()}</p>
+                <p className="text-[8px] sm:text-xs text-gray-500">Rank Points</p>
             </div>
         </li>
     );
@@ -38,10 +38,10 @@ const PodiumPlayer: React.FC<{ player: Player, rank: 1 | 2 | 3, delay: number }>
     return (
         <motion.div className={`podium-item ${podiumClass}`} variants={animationVariants}>
             <div className="podium-avatar-wrapper">
-                {rank === 1 && <CrownIcon className="w-10 h-10 crown-icon" />}
+                {rank === 1 && <CrownIcon className="w-5 h-5 sm:w-10 sm:h-10 crown-icon" />}
                 <img src={player.avatarUrl} alt={player.name} className="podium-avatar" />
-                <p className={`font-bold text-base mt-2 truncate max-w-full px-1 ${rank === 1 ? 'text-amber-300' : 'text-white'}`}>{player.name}</p>
-                <p className="text-xs text-zinc-300">{(player.stats?.xp ?? 0).toLocaleString()} RP</p>
+                <p className={`font-bold text-[10px] sm:text-base mt-1 sm:mt-2 truncate max-w-full px-0.5 sm:px-1 ${rank === 1 ? 'text-amber-300' : 'text-white'}`}>{player.name}</p>
+                <p className="text-[9px] sm:text-xs text-zinc-300">{(player.stats?.xp ?? 0).toLocaleString()} RP</p>
             </div>
             <div className="podium-base">
                 {rank}
@@ -235,28 +235,28 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
     return (
         <div className="flex flex-col h-full">
             {/* View Switcher Header */}
-            <div className="p-3 bg-zinc-950/80 border-b border-zinc-800 flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-1.5 p-1 bg-zinc-900 rounded-lg border border-zinc-800">
+            <div className="p-2 sm:p-3 bg-zinc-950/80 border-b border-zinc-800 flex items-center justify-between gap-1.5 flex-wrap">
+                <div className="flex items-center gap-1 p-0.5 sm:p-1 bg-zinc-900 rounded-lg border border-zinc-800">
                     <button
                         onClick={() => setViewMode('leaderboard')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 ${viewMode === 'leaderboard' ? 'bg-red-600 text-white shadow' : 'text-zinc-400 hover:text-white'}`}
+                        className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1 ${viewMode === 'leaderboard' ? 'bg-red-600 text-white shadow' : 'text-zinc-400 hover:text-white'}`}
                     >
-                        <CrownIcon className="w-4 h-4" /> RP Standings
+                        <CrownIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> RP Standings
                     </button>
                     <button
                         onClick={() => setViewMode('honors')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 ${viewMode === 'honors' ? 'bg-amber-600 text-white shadow' : 'text-zinc-400 hover:text-white'}`}
+                        className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1 ${viewMode === 'honors' ? 'bg-amber-600 text-white shadow' : 'text-zinc-400 hover:text-white'}`}
                     >
-                        <TrophyIcon className="w-4 h-4" /> Hall of Fame & Honors ({honors.length})
+                        <TrophyIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Hall of Fame ({honors.length})
                     </button>
                 </div>
 
                 {viewMode === 'honors' && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                         <select
                             value={honorFilter}
                             onChange={e => setHonorFilter(e.target.value as any)}
-                            className="bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none"
+                            className="bg-zinc-900 border border-zinc-700 rounded-lg px-1.5 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs text-white focus:outline-none"
                         >
                             <option value="all">All Honors</option>
                             <option value="man_of_the_match">Man of the Match</option>
@@ -268,9 +268,9 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
                             <Button
                                 size="sm"
                                 onClick={() => setEditingHonor({})}
-                                className="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center gap-1"
+                                className="bg-amber-600 hover:bg-amber-500 text-white !px-2 !py-0.5 text-[10px] sm:text-xs font-bold flex items-center gap-1"
                             >
-                                <PlusIcon className="w-4 h-4" /> Record Honor
+                                <PlusIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Record Honor
                             </Button>
                         )}
                     </div>
@@ -291,8 +291,8 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
                             {topThree.length > 2 && <PodiumPlayer player={topThree[2]} rank={3} delay={0.2} />}
                         </motion.div>
                     </div>
-                    <div className="flex-grow overflow-y-auto p-4">
-                        <ul className="space-y-2">
+                    <div className="flex-grow overflow-y-auto p-1.5 sm:p-4">
+                        <ul className="space-y-1 sm:space-y-2">
                             {rest.map((player, index) => (
                                 <RankedPlayerListItem
                                     key={player.id}
@@ -305,9 +305,9 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
                     </div>
                 </>
             ) : (
-                <div className="flex-grow overflow-y-auto p-4 space-y-3">
+                <div className="flex-grow overflow-y-auto p-2 sm:p-4 space-y-3">
                     {filteredHonors.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 md:grid-cols-2 gap-1.5 sm:gap-3">
                             {filteredHonors.map(honor => {
                                 const badgeInfo = getHonorBadge(honor.type);
                                 const playerObj = players.find(p => p.id === honor.playerId);
@@ -318,60 +318,61 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
                                 return (
                                     <div
                                         key={honor.id}
-                                        className="bg-zinc-900/90 border border-zinc-800 rounded-xl p-4 flex flex-col justify-between hover:border-amber-500/40 transition-all shadow-md relative group overflow-hidden"
+                                        className="bg-zinc-900/90 border border-zinc-800 rounded-xl p-2 sm:p-4 flex flex-col justify-between hover:border-amber-500/40 transition-all shadow-md relative group overflow-hidden"
                                     >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="flex items-center gap-3">
+                                        <div className="flex items-start justify-between gap-1 sm:gap-3">
+                                            <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
                                                 <img
                                                     src={avatar}
                                                     alt={name}
-                                                    className="w-12 h-12 rounded-full border-2 border-amber-500/50 bg-zinc-950 object-cover"
+                                                    className="w-7 h-7 sm:w-12 sm:h-12 rounded-full border border-amber-500/50 bg-zinc-950 object-cover flex-shrink-0"
                                                 />
-                                                <div>
-                                                    <span className={`inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${badgeInfo.badgeBg} mb-1`}>
-                                                        <span>{badgeInfo.icon}</span> {badgeInfo.label}
+                                                <div className="min-w-0">
+                                                    <span className={`inline-flex items-center gap-0.5 text-[8px] sm:text-[11px] font-bold uppercase tracking-wider px-1 py-0.2 sm:px-2 sm:py-0.5 rounded-full border ${badgeInfo.badgeBg} mb-0.5 truncate max-w-full`}>
+                                                        <span>{badgeInfo.icon}</span> <span className="truncate">{badgeInfo.label}</span>
                                                     </span>
-                                                    <h3 className="font-bold text-white text-base leading-tight">
-                                                        {name} {callsign && <span className="text-amber-400 font-mono text-xs">("{callsign}")</span>}
+                                                    <h3 className="font-bold text-white text-xs sm:text-base leading-tight truncate">
+                                                        {name}
                                                     </h3>
-                                                    <p className="text-xs text-zinc-400 flex items-center gap-1 mt-0.5">
-                                                        <SparklesIcon className="w-3.5 h-3.5 text-amber-400" />
-                                                        <span className="font-semibold text-zinc-200">{honor.title}</span>
+                                                    {callsign && <p className="text-amber-400 font-mono text-[9px] sm:text-xs truncate">"{callsign}"</p>}
+                                                    <p className="text-[9px] sm:text-xs text-zinc-400 flex items-center gap-0.5 mt-0.5 truncate">
+                                                        <SparklesIcon className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-amber-400 flex-shrink-0" />
+                                                        <span className="font-semibold text-zinc-200 truncate">{honor.title}</span>
                                                     </p>
                                                 </div>
                                             </div>
 
                                             {isAdmin && (
-                                                <div className="flex items-center gap-1">
+                                                <div className="flex items-center gap-0.5 flex-shrink-0">
                                                     <button
                                                         onClick={() => setEditingHonor(honor)}
-                                                        className="p-1.5 text-zinc-400 hover:text-amber-400 transition-colors"
+                                                        className="p-1 text-zinc-400 hover:text-amber-400 transition-colors"
                                                         title="Edit Honor"
                                                     >
-                                                        <PencilIcon className="w-4 h-4" />
+                                                        <PencilIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDeleteHonor(honor.id)}
-                                                        className="p-1.5 text-zinc-400 hover:text-red-400 transition-colors"
+                                                        className="p-1 text-zinc-400 hover:text-red-400 transition-colors"
                                                         title="Delete Honor"
                                                     >
-                                                        <TrashIcon className="w-4 h-4" />
+                                                        <TrashIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                                                     </button>
                                                 </div>
                                             )}
                                         </div>
 
                                         {honor.notes && (
-                                            <p className="mt-3 text-xs text-zinc-300 italic bg-zinc-950/60 p-2.5 rounded-lg border border-zinc-800/80">
+                                            <p className="mt-1.5 sm:mt-3 text-[9px] sm:text-xs text-zinc-300 italic bg-zinc-950/60 p-1.5 sm:p-2.5 rounded-lg border border-zinc-800/80 line-clamp-2">
                                                 "{honor.notes}"
                                             </p>
                                         )}
 
-                                        <div className="mt-3 pt-2 border-t border-zinc-800/60 flex justify-between items-center text-[11px] text-zinc-500">
-                                            <span className="flex items-center gap-1">
-                                                <CalendarIcon className="w-3 h-3" /> Awarded: {honor.date}
+                                        <div className="mt-1.5 sm:mt-3 pt-1 sm:pt-2 border-t border-zinc-800/60 flex justify-between items-center text-[8px] sm:text-[11px] text-zinc-500">
+                                            <span className="flex items-center gap-0.5 truncate">
+                                                <CalendarIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" /> {honor.date}
                                             </span>
-                                            <span className="font-mono text-amber-500/80 uppercase tracking-widest text-[10px]">Official Record</span>
+                                            <span className="font-mono text-amber-500/80 uppercase tracking-widest text-[7px] sm:text-[10px] hidden sm:inline">Official</span>
                                         </div>
                                     </div>
                                 );

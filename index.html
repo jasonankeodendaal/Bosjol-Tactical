@@ -640,7 +640,89 @@
         text-transform: uppercase;
       }
       
-      /* NEW MOBILE OVERVIEW STYLES */
+      /* NEW MOBILE OVERVIEW & RANKS / LEADERBOARD STYLES */
+      @media (max-width: 640px) {
+        .leaderboard-podium-bg {
+          padding: 0.5rem 0;
+        }
+        .podium-container {
+          height: 140px;
+          gap: 0.25rem;
+          max-width: 100%;
+        }
+        .podium-avatar {
+          width: 36px;
+          height: 36px;
+          border-width: 2px;
+        }
+        .podium-1 .podium-avatar {
+          width: 48px;
+          height: 48px;
+          border-width: 2px;
+        }
+        .podium-avatar-wrapper {
+          margin-bottom: 0.25rem;
+        }
+        .crown-icon {
+          width: 18px;
+          height: 18px;
+          top: -12px;
+        }
+        .podium-base {
+          font-size: 1.25rem;
+          padding-bottom: 0.25rem;
+        }
+        .podium-1 .podium-base { height: 75px; }
+        .podium-2 .podium-base { height: 55px; }
+        .podium-3 .podium-base { height: 45px; }
+        
+        .subrank-grid {
+          grid-template-columns: repeat(2, 1fr) !important;
+          gap: 0.5rem !important;
+        }
+        .subrank-card {
+          padding: 0.5rem !important;
+        }
+        .tier-section {
+          padding: 0.5rem !important;
+          margin-bottom: 0.75rem !important;
+        }
+        .tier-header {
+          gap: 0.5rem !important;
+          margin-bottom: 0.5rem !important;
+          padding-bottom: 0.5rem !important;
+        }
+        .rank-stats-grid {
+          padding: 0.5rem !important;
+          gap: 0.25rem 0.5rem !important;
+        }
+        .rank-carousel-container {
+          padding: 0.5rem 0 !important;
+          min-height: 120px !important;
+        }
+        .rank-display-hex {
+          width: 55px !important;
+          height: 65px !important;
+          border-width: 1px !important;
+        }
+        .rank-display-hex img {
+          width: 30px !important;
+          height: 30px !important;
+        }
+        .rank-display-item {
+          gap: 0.25rem !important;
+        }
+        .rank-display-item .name {
+          font-size: 0.6rem !important;
+        }
+        .rank-display-item.current .name {
+          font-size: 0.7rem !important;
+        }
+        .rank-display-item .label {
+          font-size: 0.55rem !important;
+        }
+      }
+
       @media (max-width: 1024px) {
         .mobile-overview-grid .overview-card {
             padding: 1rem;

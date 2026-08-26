@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import type { CompanyDetails, SocialLink, CarouselMedia, Admin } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -235,12 +235,29 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    {/* Settings Section Dropdown Menu */}
+                    <div className="relative flex items-center">
+                        <select
+                            value={activeSection}
+                            onChange={(e) => setActiveSection(e.target.value as any)}
+                            className="bg-zinc-900/90 border border-zinc-700/80 text-white text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:border-red-500 cursor-pointer shadow-sm hover:bg-zinc-800 transition-colors"
+                            aria-label="Select Settings Section"
+                        >
+                            <option value="profile">👤 Admin Profile</option>
+                            <option value="company">🏢 Company & Banking</option>
+                            <option value="branding">✨ Branding & Media</option>
+                            <option value="app">⚙️ App & Content</option>
+                            <option value="backup">☁️ Backup & Restore</option>
+                            <option value="danger">⚠️ Danger Zone</option>
+                        </select>
+                    </div>
+
                     <Button 
                         onClick={handleSave} 
                         disabled={!isDirty || isSaving} 
                         size="sm" 
-                        className={`!py-1 !px-3 text-xs font-bold ${isDirty ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse' : 'bg-zinc-800 text-zinc-400'}`}
+                        className={`!py-1.5 !px-3.5 text-xs font-bold transition-all ${isDirty ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/30 animate-pulse' : 'bg-zinc-800 text-zinc-400'}`}
                     >
                         {isSaving ? 'Saving...' : isDirty ? 'Save Changes' : 'Saved'}
                     </Button>
@@ -260,7 +277,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     <button
                         key={sec.id}
                         onClick={() => setActiveSection(sec.id as any)}
-                        className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 whitespace-nowrap text-xs ${activeSection === sec.id ? 'bg-red-600 text-white' : 'bg-zinc-900/60 text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                        className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap text-xs ${activeSection === sec.id ? 'bg-red-600 text-white font-extrabold shadow-md shadow-red-950/40 border border-red-500' : 'bg-zinc-900/80 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800/80'}`}
                     >
                         {sec.icon}
                         <span>{sec.label}</span>

@@ -685,24 +685,36 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return;
         }
         
-        // Ordered carefully to prevent Foreign Key constraint violations
-        const collectionsToDelete = [
-            'signups', 'transactions', 'vouchers', 'honors', 'activityLog', 'sessions', 
-            'players', 'events', 'inventory', 'raffles', 'suppliers', 'sponsors', 
-            'locations', 'socialLinks', 'carouselMedia', 'notifications', 'settings'
-        ];
-        
         try {
-            console.log("Deleting all transactional data...");
-            for (const collectionName of collectionsToDelete) {
-                if (supabase) {
-                    // neq is safer than gte for matching all rows in PostgREST
-                    const { error } = await supabase.from(collectionName).delete().neq('id', 'dummy_delete_all_id'); 
-                    if (error) console.error(`Error clearing ${collectionName}:`, error);
-                    recordDatabaseActivity('deletes', 1);
+            console.log("Attempting to delete all transactional data via RPC...");
+            if (supabase) {
+                const { error: rpcError } = await supabase.rpc('delete_all_data');
+                
+                if (rpcError) {
+                    console.warn("RPC failed or not found, falling back to manual client-side deletion...", rpcError);
+                    // Ordered carefully to prevent Foreign Key constraint violations
+                    const collectionsToDelete = [
+                        'signups', 'transactions', 'vouchers', 'honors', 'activityLog', 'sessions', 
+                        'players', 'events', 'inventory', 'raffles', 'suppliers', 'sponsors', 
+                        'locations', 'socialLinks', 'carouselMedia', 'notifications', 'settings'
+                    ];
+                    for (const collectionName of collectionsToDelete) {
+                        const { data } = await supabase.from(collectionName).select('id');
+                        if (data && data.length > 0) {
+                            const ids = data.map(d => d.id);
+                            // Delete in chunks of 500 to avoid URL length limits
+                            for (let i = 0; i < ids.length; i += 500) {
+                                const chunk = ids.slice(i, i + 500);
+                                await supabase.from(collectionName).delete().in('id', chunk);
+                            }
+                        }
+                    }
                 }
+                recordDatabaseActivity('deletes', 1);
             }
             console.log('All transactional data deleted.');
+            alert('All data wiped successfully!');
+            window.location.reload();
         } catch (error) {
             console.error("Error deleting all data: ", error);
         }
@@ -716,18 +728,35 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         try {
             if (supabase) {
-                console.log("Deleting all player dependent data first...");
-                // Delete child records first to avoid foreign key constraints blocking player deletion
-                const dependentTables = ['signups', 'transactions', 'vouchers', 'honors', 'activityLog', 'sessions'];
-                for (const table of dependentTables) {
-                     await supabase.from(table).delete().neq('id', 'dummy_delete_all_id');
-                }
+                console.log("Attempting to delete all players via RPC...");
+                const { error: rpcError } = await supabase.rpc('delete_all_players');
+                
+                if (rpcError) {
+                    console.warn("RPC failed, falling back to manual client-side deletion...", rpcError);
+                    const dependentTables = ['signups', 'transactions', 'vouchers', 'honors', 'activityLog', 'sessions'];
+                    for (const table of dependentTables) {
+                         const { data } = await supabase.from(table).select('id');
+                         if (data && data.length > 0) {
+                             const ids = data.map(d => d.id);
+                             for (let i = 0; i < ids.length; i += 500) {
+                                 await supabase.from(table).delete().in('id', ids.slice(i, i + 500));
+                             }
+                         }
+                    }
 
-                console.log("Deleting all players...");
-                const { error } = await supabase.from('players').delete().neq('id', 'dummy_delete_all_id');
-                if (error) throw error;
+                    console.log("Deleting all players manually...");
+                    const { data: players } = await supabase.from('players').select('id');
+                    if (players && players.length > 0) {
+                        const pIds = players.map(p => p.id);
+                        for (let i = 0; i < pIds.length; i += 500) {
+                            await supabase.from('players').delete().in('id', pIds.slice(i, i + 500));
+                        }
+                    }
+                }
                 recordDatabaseActivity('deletes', 1);
                 console.log(`All players have been deleted.`);
+                alert('All players wiped successfully!');
+                window.location.reload();
             }
         } catch (error) {
             console.error("Error deleting all players: ", error);

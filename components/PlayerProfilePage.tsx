@@ -110,7 +110,7 @@ const AwardXpModal: React.FC<{ onClose: () => void, onSave: (amount: number, rea
     );
 };
 
-export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, players, events, legendaryBadges, onBack, onUpdatePlayer, ranks, companyDetails }) => {
+export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, players, events, legendaryBadges, onBack, onUpdatePlayer, onDeletePlayer, ranks, companyDetails }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ ...player });
     const [isAwardingXp, setIsAwardingXp] = useState(false);

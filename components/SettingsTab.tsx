@@ -63,6 +63,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const [deletePlayersConfirmText, setDeletePlayersConfirmText] = useState('');
 
     const [activeSection, setActiveSection] = useState<'profile' | 'company' | 'branding' | 'app' | 'backup' | 'danger'>('profile');
+    const [uploadingFieldsCount, setUploadingFieldsCount] = useState(0);
+
+    const handleUploadingChange = (uploading: boolean) => {
+        setUploadingFieldsCount(prev => uploading ? prev + 1 : Math.max(0, prev - 1));
+    };
     
     useEffect(() => {
         if (justSavedRef.current) {
@@ -130,6 +135,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     };
 
     const handleSave = async () => {
+        if (uploadingFieldsCount > 0) {
+            alert('Please wait for media uploads and optimization to complete before saving.');
+            return;
+        }
         setIsSaving(true);
         try {
             justSavedRef.current = true;
@@ -141,6 +150,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 await updateDoc('admins', adminFormData);
             }
 
+            setFormData(normalizeCompanyDetails(formData));
             setIsDirty(false);
             alert('Settings saved successfully!');
         } catch (error) {
@@ -255,35 +265,26 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
                     <Button 
                         onClick={handleSave} 
-                        disabled={!isDirty || isSaving} 
+                        disabled={!isDirty || isSaving || uploadingFieldsCount > 0} 
                         size="sm" 
-                        className={`!py-1.5 !px-3.5 text-xs font-bold transition-all ${isDirty ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/30 animate-pulse' : 'bg-zinc-800 text-zinc-400'}`}
+                        className={`!py-1.5 !px-3.5 text-xs font-bold transition-all ${uploadingFieldsCount > 0 ? 'bg-amber-600 text-white animate-pulse' : isDirty ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/30 animate-pulse' : 'bg-zinc-800 text-zinc-400'}`}
                     >
-                        {isSaving ? 'Saving...' : isDirty ? 'Save Changes' : 'Saved'}
+                        {uploadingFieldsCount > 0 ? 'Uploading Media...' : isSaving ? 'Saving...' : isDirty ? 'Save Changes' : 'Saved'}
                     </Button>
                 </div>
             </div>
 
-            {/* Quick Section Nav Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
-                {[
-                    { id: 'profile', label: 'Admin Profile', icon: <UserCircleIcon className="w-3.5 h-3.5" /> },
-                    { id: 'company', label: 'Company & Banking', icon: <BuildingOfficeIcon className="w-3.5 h-3.5" /> },
-                    { id: 'branding', label: 'Branding & Media', icon: <SparklesIcon className="w-3.5 h-3.5" /> },
-                    { id: 'app', label: 'App & Content', icon: <CogIcon className="w-3.5 h-3.5" /> },
-                    { id: 'backup', label: 'Backup & Restore', icon: <CloudArrowDownIcon className="w-3.5 h-3.5" /> },
-                    { id: 'danger', label: 'Danger Zone', icon: <ExclamationTriangleIcon className="w-3.5 h-3.5 text-red-400" /> },
-                ].map(sec => (
-                    <button
-                        key={sec.id}
-                        onClick={() => setActiveSection(sec.id as any)}
-                        className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap text-xs ${activeSection === sec.id ? 'bg-red-600 text-white font-extrabold shadow-md shadow-red-950/40 border border-red-500' : 'bg-zinc-900/80 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800/80'}`}
-                    >
-                        {sec.icon}
-                        <span>{sec.label}</span>
-                    </button>
-                ))}
-            </div>
+            {uploadingFieldsCount > 0 && (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-bold animate-pulse">
+                    <ArrowPathIcon className="w-5 h-5 animate-spin flex-shrink-0" />
+                    <div>
+                        <p className="font-extrabold uppercase">Media Uploading & Optimizing in Progress</p>
+                        <p className="text-[11px] text-amber-200 font-normal">Please do not click Save Changes yet. Wait for compression, thumbnail generation, and upload to finish.</p>
+                    </div>
+                </div>
+            )}
+
+
 
             {/* SECTION 1: ADMIN PROFILE */}
             {activeSection === 'profile' && (
@@ -302,6 +303,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             }}
                             accept="image/*"
                             apiServerUrl={formData.apiServerUrl}
+                            onUploadingChange={handleUploadingChange}
                         />
                     </div>
                     <div className="sm:col-span-2 space-y-2.5">
@@ -363,6 +365,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             onRemove={() => handleFormChange(f => ({ ...f, logoUrl: '' }))}
                             accept="image/*"
                             apiServerUrl={formData.apiServerUrl}
+                            onUploadingChange={handleUploadingChange}
                         />
                         <UrlOrUploadField
                             label="Login Background"
@@ -371,6 +374,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             onRemove={() => handleFormChange(f => ({ ...f, loginBackgroundUrl: '' }))}
                             accept="image/*,video/*"
                             apiServerUrl={formData.apiServerUrl}
+                            onUploadingChange={handleUploadingChange}
                         />
                         <UrlOrUploadField
                             label="Login Audio"
@@ -380,6 +384,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             accept="audio/*"
                             previewType="audio"
                             apiServerUrl={formData.apiServerUrl}
+                            onUploadingChange={handleUploadingChange}
                         />
                         <UrlOrUploadField
                             label="Player Dashboard BG"
@@ -389,6 +394,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             accept="image/*,video/*"
                             previewType="video"
                             apiServerUrl={formData.apiServerUrl}
+                            onUploadingChange={handleUploadingChange}
                         />
                         <UrlOrUploadField
                             label="Player Audio"
@@ -398,6 +404,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             accept="audio/*"
                             previewType="audio"
                             apiServerUrl={formData.apiServerUrl}
+                            onUploadingChange={handleUploadingChange}
                         />
                         <UrlOrUploadField
                             label="Admin Dashboard BG"
@@ -407,6 +414,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             accept="image/*,video/*"
                             previewType="video"
                             apiServerUrl={formData.apiServerUrl}
+                            onUploadingChange={handleUploadingChange}
                         />
                         <UrlOrUploadField
                             label="Admin Audio"
@@ -416,6 +424,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             accept="audio/*"
                             previewType="audio"
                             apiServerUrl={formData.apiServerUrl}
+                            onUploadingChange={handleUploadingChange}
                         />
                         <UrlOrUploadField
                             label="Sponsors BG"
@@ -424,6 +433,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             onRemove={() => handleFormChange(f => ({ ...f, sponsorsBackgroundUrl: '' }))}
                             accept="image/*"
                             apiServerUrl={formData.apiServerUrl}
+                            onUploadingChange={handleUploadingChange}
                         />
                     </div>
                 </div>
@@ -441,6 +451,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             onRemove={() => handleFormChange(f => ({ ...f, apkUrl: '' }))}
                             accept=".apk,application/vnd.android.package-archive"
                             apiServerUrl={formData.apiServerUrl}
+                            onUploadingChange={handleUploadingChange}
                         />
                     </div>
 

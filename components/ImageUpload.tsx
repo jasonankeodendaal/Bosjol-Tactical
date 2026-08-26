@@ -11,19 +11,21 @@ interface FileUploadProps {
   accept: string;
   multiple?: boolean;
   apiServerUrl?: string;
+  onUploadingChange?: (uploading: boolean) => void;
 }
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
 const MAX_FILE_SIZE_BYTES = 500 * 1024; // 500KB absolute fallback
 
-export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, apiServerUrl }) => {
+export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, apiServerUrl, onUploadingChange }) => {
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [message, setMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const performUpload = useCallback(async (fileToUpload: File): Promise<string> => {
     setStatus('uploading');
+    onUploadingChange?.(true);
     setMessage(`Optimizing & compressing ${fileToUpload.name}...`);
 
     let finalFile = fileToUpload;
@@ -94,6 +96,7 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
         setStatus('idle');
         setMessage('');
         if (fileInputRef.current) fileInputRef.current.value = "";
+        onUploadingChange?.(false);
     }, delay);
   }
 
@@ -112,6 +115,7 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
             console.error(`Failed to process file ${file.name}:`, err);
             setStatus('error');
             setMessage(err.message);
+            onUploadingChange?.(false);
             resetState(3000);
             return; // Stop processing further files on error
         }

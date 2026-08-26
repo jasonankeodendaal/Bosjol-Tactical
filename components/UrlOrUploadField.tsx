@@ -14,11 +14,12 @@ interface UrlOrUploadFieldProps {
     accept: string;
     previewType?: 'image' | 'audio' | 'video';
     apiServerUrl?: string;
+    onUploadingChange?: (uploading: boolean) => void;
 }
 
 type ValidationStatus = 'idle' | 'validating' | 'valid' | 'invalid_cors' | 'invalid_format' | 'invalid_unreachable';
 
-export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileUrl, onUrlSet, onRemove, accept, previewType, apiServerUrl }) => {
+export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileUrl, onUrlSet, onRemove, accept, previewType, apiServerUrl, onUploadingChange }) => {
     const [validationStatus, setValidationStatus] = useState<ValidationStatus>('idle');
     const [urlInputValue, setUrlInputValue] = useState(fileUrl || '');
 
@@ -128,23 +129,7 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
                 </div>
             ) : (
                 <div className="space-y-2">
-                    <ImageUpload onUpload={(urls) => { if(urls.length > 0) onUrlSet(urls[0]); }} accept={accept} apiServerUrl={apiServerUrl} />
-                    <div className="flex items-center gap-2">
-                        <hr className="flex-grow border-zinc-600"/>
-                        <span className="text-xs text-zinc-500">OR</span>
-                        <hr className="flex-grow border-zinc-600"/>
-                    </div>
-                    <div>
-                        <Input 
-                            placeholder="Paste direct URL"
-                            value={urlInputValue}
-                            onChange={handleUrlInputChange}
-                            onBlur={handleUrlInputBlur}
-                        />
-                        <div className="mt-2 min-h-5">
-                            {getValidationMessage()}
-                        </div>
-                    </div>
+                    <ImageUpload onUpload={(urls) => { if(urls.length > 0) onUrlSet(urls[0]); }} accept={accept} apiServerUrl={apiServerUrl} onUploadingChange={onUploadingChange} />
                 </div>
             )}
         </div>

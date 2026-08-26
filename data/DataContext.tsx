@@ -128,9 +128,22 @@ function useCollection<T extends {id: string}>(
                     .on('postgres_changes', { event: '*', schema: 'public', table: collectionName }, (payload) => {
                         recordDatabaseActivity('reads', 1);
                         if (payload.eventType === 'INSERT') {
-                            setCollectionData(currentData => [...currentData.filter(item => item.id !== (payload.new as any).id), payload.new as unknown as T]);
+                            setCollectionData(currentData => {
+                                const newDoc = payload.new as unknown as T;
+                                return [...currentData.filter(item => (item as any).id !== (newDoc as any).id), newDoc];
+                            });
                         } else if (payload.eventType === 'UPDATE') {
-                            setCollectionData(currentData => currentData.map(item => item.id === (payload.new as any).id ? (payload.new as unknown as T) : item));
+                            setCollectionData(currentData => currentData.map(item => {
+                                if ((item as any).id === (payload.new as any).id) {
+                                    const { id, ...rest } = payload.new as any;
+                                    const updated = { ...item };
+                                    for (const key in rest) {
+                                        if (rest[key] !== undefined) (updated as any)[key] = rest[key];
+                                    }
+                                    return updated;
+                                }
+                                return item;
+                            }));
                         } else if (payload.eventType === 'DELETE') {
                             setCollectionData(currentData => currentData.filter(item => item.id !== (payload.old as any).id));
                         }
@@ -231,7 +244,10 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
                              const { id, ...rest } = payload.new as any;
                              setData(prev => {
-                                 const merged = { ...prev, ...rest };
+                                 const merged = { ...prev };
+                                 for (const key in rest) {
+                                     if (rest[key] !== undefined) (merged as any)[key] = rest[key];
+                                 }
                                  try {
                                      localStorage.setItem(storageKey, JSON.stringify(merged));
                                  } catch {}
@@ -421,6 +437,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const setCompanyDetails = useCallback(async (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => {
         const finalData = typeof d === 'function' ? d(companyDetails) : d;
         
+        // Optimistic Update
+        // Manually update the state for companyCore, brandingDetails, contentDetails
+        // to prevent the fetch from overwriting us immediately
         const coreData: Partial<typeof mock.MOCK_COMPANY_CORE> = {};
         const brandingData: Partial<typeof mock.MOCK_BRANDING_DETAILS> = {};
         const contentData: Partial<typeof mock.MOCK_CONTENT_DETAILS> = {};
@@ -431,12 +450,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             else if (key in mock.MOCK_CONTENT_DETAILS) (contentData as any)[key] = (finalData as any)[key];
         }
 
+        // Apply optimistic updates to local state for each sub-document
+        updateCompanyCore({ ...companyCore, ...coreData });
+        updateBrandingDetails({ ...brandingDetails, ...brandingData });
+        updateContentDetails({ ...contentDetails, ...contentData });
+
         await Promise.all([
             updateCompanyCore(coreData),
             updateBrandingDetails(brandingData),
             updateContentDetails(contentData)
         ]);
-    }, [companyDetails, updateCompanyCore, updateBrandingDetails, updateContentDetails]);
+    }, [companyCore, brandingDetails, contentDetails, updateCompanyCore, updateBrandingDetails, updateContentDetails]);
 
     const setCreatorDetails = useCallback(async (d: (CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) | ((p: CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) => CreatorDetails & { apiSetupGuide: ApiGuideStep[] })) => {
         const finalData = typeof d === 'function' ? d(creatorDetails) : d;

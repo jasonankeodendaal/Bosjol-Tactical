@@ -144,9 +144,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             try {
                 if (session?.user) {
                     await handleSupabaseUser(session.user);
-                } else if (!localStorage.getItem('activePlayerId')) {
-                    setUser(null);
-                }
+                } 
+                // Removed auto-logout logic here to prevent unexpected logouts.
             } catch (err) {
                 console.error("Auth state change error:", err);
             } finally {

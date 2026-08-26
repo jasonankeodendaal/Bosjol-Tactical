@@ -69,20 +69,32 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         setUploadingFieldsCount(prev => uploading ? prev + 1 : Math.max(0, prev - 1));
     };
     
+    const prevCompanyDetailsRef = useRef(companyDetails);
+
     useEffect(() => {
+        // If the prop changed (likely a server push)
+        if (companyDetails !== prevCompanyDetailsRef.current) {
+            setFormData(prev => {
+                const next = { ...prev };
+                for (const key in companyDetails) {
+                    const typedKey = key as keyof CompanyDetails;
+                    // If this specific field was NOT edited by the user (it still matches the old server value)
+                    if (prev[typedKey] === prevCompanyDetailsRef.current[typedKey]) {
+                        // Then it is safe to update it from the server push
+                        next[typedKey] = companyDetails[typedKey];
+                    }
+                }
+                return next;
+            });
+            prevCompanyDetailsRef.current = companyDetails;
+        }
+        
         if (justSavedRef.current) {
             justSavedRef.current = false;
+            setIsDirty(false);
             return;
         }
-        if (!isDirty) {
-            setFormData(normalizeCompanyDetails(companyDetails));
-            setSocialLinksData(socialLinks);
-            setCarouselMediaData(carouselMedia);
-            if (adminUser) {
-                setAdminFormData(adminUser);
-            }
-        }
-    }, [companyDetails, socialLinks, carouselMedia, adminUser, isDirty]);
+    }, [companyDetails]);
 
     const handleFormChange = (updater: (prev: CompanyDetails) => CompanyDetails) => {
         setFormData(prev => {

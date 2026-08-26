@@ -74,11 +74,11 @@ function useCollection<T extends {id: string}>(
                     if (error) {
                         console.warn(`Could not fetch ${collectionName} from Supabase, using local fallback:`, error.message || error);
                         setData(mockData);
-                    } else if (fetchedData && fetchedData.length > 0) {
-                        recordDatabaseActivity('reads', fetchedData.length);
-                        setData(fetchedData as unknown as T[]);
                     } else {
-                        setData(mockData.length > 0 ? mockData : []);
+                        if (fetchedData && fetchedData.length > 0) {
+                            recordDatabaseActivity('reads', fetchedData.length);
+                        }
+                        setData(fetchedData ? (fetchedData as unknown as T[]) : []);
                     }
                     setLoading(false);
                 })
@@ -478,11 +478,42 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (IS_LIVE_DATA && supabase) {
             try {
+                // Manually cascade deletes to prevent foreign key constraint violations
+                if (collectionName === 'players') {
+                    console.log(`Cascading deletes for player ${docId}...`);
+                    await Promise.all([
+                        supabase.from('signups').delete().eq('playerId', docId),
+                        supabase.from('transactions').delete().eq('playerId', docId),
+                        supabase.from('vouchers').delete().eq('assignedToPlayerId', docId),
+                        supabase.from('honors').delete().eq('playerId', docId),
+                        supabase.from('sessions').delete().eq('id', docId),
+                        supabase.from('activityLog').delete().eq('playerId', docId)
+                    ]);
+                } else if (collectionName === 'events') {
+                    console.log(`Cascading deletes for event ${docId}...`);
+                    await Promise.all([
+                        supabase.from('signups').delete().eq('eventId', docId)
+                    ]);
+                }
+
                 const { error } = await supabase.from(collectionName).delete().eq('id', docId);
-                if (error) console.warn(`Supabase deleteDoc error on ${collectionName}:`, error.message || error);
-                else recordDatabaseActivity('deletes', 1);
+                if (error) {
+                    console.warn(`Supabase deleteDoc error on ${collectionName}:`, error.message || error);
+                    alert(`Failed to delete: ${error.message}`);
+                    // Revert the optimistic UI update
+                    if (setter && targetDoc) {
+                        setter(prev => [...prev, targetDoc]);
+                    }
+                } else {
+                    recordDatabaseActivity('deletes', 1);
+                }
             } catch (err: any) {
                 console.warn(`Network error in deleteDoc (${collectionName}):`, err?.message || err);
+                alert(`Network error deleting document: ${err?.message || err}`);
+                // Revert the optimistic UI update
+                if (setter && targetDoc) {
+                    setter(prev => [...prev, targetDoc]);
+                }
             }
         }
     }, []);
@@ -658,25 +689,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }, [seedCollection]);
     
-    // One-time initial seeding check
-    useEffect(() => {
-        if (!IS_LIVE_DATA || !supabase || hasCheckedSeedRef.current) return;
-        if (!loading) {
-            hasCheckedSeedRef.current = true;
-            const checkAndSeed = async () => {
-                try {
-                    const { data, error } = await supabase.from('settings').select('id').eq('id', 'companyDetails').maybeSingle();
-                    recordDatabaseActivity('reads', 1);
-                    if (!data || error) {
-                        await seedInitialData();
-                    }
-                } catch (err) {
-                    console.error("Error checking initial seed:", err);
-                }
-            };
-            checkAndSeed();
-        }
-    }, [loading, seedInitialData]);
+    // One-time initial seeding check has been removed.
+    // If you want to seed data, do it manually.
 
     const deleteAllData = useCallback(async () => {
         if (!IS_LIVE_DATA) {

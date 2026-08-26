@@ -197,8 +197,18 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                     if (fetchedRows && fetchedRows.length > 0) {
                         recordDatabaseActivity('reads', 1);
                         const { id, ...rest } = fetchedRows[0];
-                        const merged = { ...mockData, ...rest };
-                        updateStoredDoc(merged);
+                        setData(prev => {
+                            const merged = { ...prev, ...mockData, ...rest };
+                            for (const k in rest) {
+                                if (!rest[k] && (prev as any)[k]) {
+                                    (merged as any)[k] = (prev as any)[k];
+                                }
+                            }
+                            try {
+                                localStorage.setItem(storageKey, JSON.stringify(merged));
+                            } catch {}
+                            return merged;
+                        });
                     } else if (error) {
                         console.warn(`Could not fetch document ${collectionName}/${docId}:`, error.message || error);
                         setData(getStoredFallback());

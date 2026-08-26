@@ -421,13 +421,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             else if (key in mock.MOCK_CONTENT_DETAILS) (contentData as any)[key] = (finalData as any)[key];
         }
 
-        const updates: Promise<any>[] = [];
-        if (JSON.stringify(coreData) !== JSON.stringify(companyCore)) updates.push(updateCompanyCore(coreData));
-        if (JSON.stringify(brandingData) !== JSON.stringify(brandingDetails)) updates.push(updateBrandingDetails(brandingData));
-        if (JSON.stringify(contentData) !== JSON.stringify(contentDetails)) updates.push(updateContentDetails(contentData));
-        
-        await Promise.all(updates);
-    }, [companyDetails, companyCore, brandingDetails, contentDetails, updateCompanyCore, updateBrandingDetails, updateContentDetails]);
+        await Promise.all([
+            updateCompanyCore(coreData),
+            updateBrandingDetails(brandingData),
+            updateContentDetails(contentData)
+        ]);
+    }, [companyDetails, updateCompanyCore, updateBrandingDetails, updateContentDetails]);
 
     const setCreatorDetails = useCallback(async (d: (CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) | ((p: CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) => CreatorDetails & { apiSetupGuide: ApiGuideStep[] })) => {
         const finalData = typeof d === 'function' ? d(creatorDetails) : d;

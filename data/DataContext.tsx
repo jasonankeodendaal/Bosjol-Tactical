@@ -159,9 +159,33 @@ function useCollection<T extends {id: string}>(
 
 // Helper to fetch a single document from Supabase (mapped to a table row by ID)
 function useDocument<T>(collectionName: string, docId: string, mockData: T) {
-    const [data, setData] = useState<T>(mockData);
+    const storageKey = `app_doc_${collectionName}_${docId}`;
+
+    const getStoredFallback = (): T => {
+        try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                return { ...mockData, ...parsed };
+            }
+        } catch (e) {
+            console.warn(`Failed to read document ${storageKey} from storage:`, e);
+        }
+        return mockData;
+    };
+
+    const [data, setData] = useState<T>(() => getStoredFallback());
     const [loading, setLoading] = useState(true);
-    
+
+    const updateStoredDoc = useCallback((updated: T) => {
+        setData(updated);
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(updated));
+        } catch (err) {
+            console.warn(`Failed to save document ${storageKey} to storage:`, err);
+        }
+    }, [storageKey]);
+
     useEffect(() => {
         if (IS_LIVE_DATA && supabase) {
             setLoading(true);
@@ -173,17 +197,18 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                     if (fetchedRows && fetchedRows.length > 0) {
                         recordDatabaseActivity('reads', 1);
                         const { id, ...rest } = fetchedRows[0];
-                        setData({ ...mockData, ...rest });
+                        const merged = { ...mockData, ...rest };
+                        updateStoredDoc(merged);
                     } else if (error) {
                         console.warn(`Could not fetch document ${collectionName}/${docId}:`, error.message || error);
-                        setData(mockData);
+                        setData(getStoredFallback());
                     }
                     setLoading(false);
                 })
                 .catch(err => {
                     if (!isMounted) return;
                     console.warn(`Network error fetching document ${collectionName}/${docId}:`, err?.message || err);
-                    setData(mockData);
+                    setData(getStoredFallback());
                     setLoading(false);
                 });
 
@@ -195,7 +220,13 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                          recordDatabaseActivity('reads', 1);
                          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
                              const { id, ...rest } = payload.new as any;
-                             setData(prev => ({ ...prev, ...rest }));
+                             setData(prev => {
+                                 const merged = { ...prev, ...rest };
+                                 try {
+                                     localStorage.setItem(storageKey, JSON.stringify(merged));
+                                 } catch {}
+                                 return merged;
+                             });
                          }
                     })
                     .subscribe();
@@ -212,13 +243,21 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                 }
             };
         } else {
-            setData(mockData);
+            setData(getStoredFallback());
             setLoading(false);
         }
-    }, [collectionName, docId]);
+    }, [collectionName, docId, storageKey]);
 
      const updateData = useCallback(async (newData: Partial<T>) => {
-        setData(prev => ({...prev, ...newData}));
+        setData(prev => {
+            const updated = { ...prev, ...newData };
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(updated));
+            } catch (err) {
+                console.warn(`Failed to persist document ${storageKey}:`, err);
+            }
+            return updated;
+        });
 
         if (IS_LIVE_DATA && supabase) {
             try {
@@ -233,7 +272,7 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                 console.warn(`Failed to save document ${collectionName}/${docId}:`, error?.message || error);
             }
         }
-    }, [collectionName, docId]);
+    }, [collectionName, docId, storageKey]);
     
     return [data, updateData, loading] as const;
 }

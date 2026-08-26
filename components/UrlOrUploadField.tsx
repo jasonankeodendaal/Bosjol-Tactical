@@ -61,8 +61,12 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
     };
 
     const handleUrlInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setUrlInputValue(e.target.value);
+        const val = e.target.value;
+        setUrlInputValue(val);
         setValidationStatus('idle'); // Reset validation status on change
+        if (val.trim()) {
+            onUrlSet(val.trim());
+        }
     };
 
     const getValidationMessage = () => {

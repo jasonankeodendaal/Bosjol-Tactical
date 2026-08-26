@@ -685,13 +685,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return;
         }
         
-        const collectionsToDelete = ['players', 'events', 'signups', 'vouchers', 'inventory', 'transactions', 'raffles', 'suppliers', 'sponsors', 'locations', 'socialLinks', 'carouselMedia', 'sessions', 'activityLog', 'notifications'];
+        // Ordered carefully to prevent Foreign Key constraint violations
+        const collectionsToDelete = [
+            'signups', 'transactions', 'vouchers', 'honors', 'activityLog', 'sessions', 
+            'players', 'events', 'inventory', 'raffles', 'suppliers', 'sponsors', 
+            'locations', 'socialLinks', 'carouselMedia', 'notifications', 'settings'
+        ];
         
         try {
             console.log("Deleting all transactional data...");
             for (const collectionName of collectionsToDelete) {
                 if (supabase) {
-                    const { error } = await supabase.from(collectionName).delete().gte('id', ''); 
+                    // neq is safer than gte for matching all rows in PostgREST
+                    const { error } = await supabase.from(collectionName).delete().neq('id', 'dummy_delete_all_id'); 
                     if (error) console.error(`Error clearing ${collectionName}:`, error);
                     recordDatabaseActivity('deletes', 1);
                 }
@@ -710,8 +716,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         try {
             if (supabase) {
+                console.log("Deleting all player dependent data first...");
+                // Delete child records first to avoid foreign key constraints blocking player deletion
+                const dependentTables = ['signups', 'transactions', 'vouchers', 'honors', 'activityLog', 'sessions'];
+                for (const table of dependentTables) {
+                     await supabase.from(table).delete().neq('id', 'dummy_delete_all_id');
+                }
+
                 console.log("Deleting all players...");
-                const { error } = await supabase.from('players').delete().gte('id', '');
+                const { error } = await supabase.from('players').delete().neq('id', 'dummy_delete_all_id');
                 if (error) throw error;
                 recordDatabaseActivity('deletes', 1);
                 console.log(`All players have been deleted.`);

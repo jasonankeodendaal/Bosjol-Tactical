@@ -15,26 +15,32 @@ import { SendCredentialsModal } from './SendCredentialsModal';
 import { motion } from 'framer-motion';
 
 const getTierForPlayer = (player: Player, ranks: Rank[]): Tier => {
-    // Determines a player's tier based on their total XP.
-    if (!ranks || ranks.length === 0) return UNRANKED_TIER;
-    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - a.minXp);
+    if (!player || !ranks || ranks.length === 0) return UNRANKED_TIER;
+    const allTiers = (ranks || [])
+        .flatMap(rank => rank?.tiers || [])
+        .filter((t): t is Tier => Boolean(t && t.id))
+        .sort((a, b) => b.minXp - a.minXp);
     if (allTiers.length === 0) return UNRANKED_TIER;
-    const tier = allTiers.find(r => (player.stats?.xp ?? 0) >= r.minXp);
-    const lowestTier = [...allTiers].sort((a,b) => a.minXp - b.minXp)[0];
+    const playerXp = player.stats?.xp ?? 0;
+    const tier = allTiers.find(r => playerXp >= r.minXp);
+    const lowestTier = [...allTiers].sort((a, b) => a.minXp - b.minXp)[0];
     return tier || lowestTier || UNRANKED_TIER;
 };
 
 const getRankProgression = (player: Player, ranks: Rank[]) => {
-    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => a.minXp - b.minXp);
+    const allTiers = (ranks || [])
+        .flatMap(rank => rank?.tiers || [])
+        .filter((t): t is Tier => Boolean(t && t.id))
+        .sort((a, b) => a.minXp - b.minXp);
     
     const currentTier = getTierForPlayer(player, ranks);
     const currentTierIndex = allTiers.findIndex(r => r.id === currentTier.id);
 
-    const next = currentTierIndex < allTiers.length - 1 ? allTiers[currentTierIndex + 1] : null;
-    const rank = ranks.find(r => (r.tiers || []).some(t => t.id === currentTier.id)) || null;
+    const next = currentTierIndex >= 0 && currentTierIndex < allTiers.length - 1 ? allTiers[currentTierIndex + 1] : null;
+    const rank = (ranks || []).find(r => (r?.tiers || []).some(t => t?.id === currentTier.id)) || null;
 
     return { current: currentTier, next, rank };
-}
+};
 
 interface PlayerProfilePageProps {
     player: Player;
@@ -241,8 +247,8 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
         }
     };
     
-    const availableBadgesToAward = legendaryBadges.filter(
-        globalBadge => !(player.legendaryBadges || []).some(playerBadge => playerBadge.id === globalBadge.id)
+    const availableBadgesToAward = (legendaryBadges || []).filter(
+        globalBadge => globalBadge && !(player?.legendaryBadges || []).some(playerBadge => playerBadge?.id === globalBadge.id)
     );
     
     const handleResetPin = (newPin: string) => {
@@ -297,8 +303,8 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
     const progressPercentage = next ? (
         endXp > startXp ? Math.min(((playerXP - startXp) / (endXp - startXp)) * 100, 100) : 0
       ) : 100;
-    const percentile = players.length > 1
-        ? (players.filter(p => (p.stats?.xp ?? 0) < playerXP).length / (players.length - 1)) * 100
+    const percentile = (players || []).length > 1
+        ? (((players || []).filter(p => (p?.stats?.xp ?? 0) < playerXP).length / ((players || []).length - 1)) * 100)
         : 100;
 
     const allStandardBadges = dataContext?.badges || [];
@@ -358,7 +364,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
                                             onUrlSet={handleAvatarUpdate}
                                             onRemove={handleRemoveAvatar}
                                             accept="image/*"
-                                            apiServerUrl={companyDetails.apiServerUrl}
+                                            apiServerUrl={companyDetails?.apiServerUrl}
                                         />
                                     </div>
                                     <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))}/>
@@ -594,7 +600,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
                                         <div>
                                             <h4 className="text-sm font-semibold text-gray-400 mb-1">Next Tier Unlocks</h4>
                                             <ul className="text-xs text-gray-300 list-disc list-inside space-y-0.5">
-                                                {next.perks.map((perk, i) => <li key={i}>{perk}</li>)}
+                                                {(next.perks || []).map((perk, i) => <li key={i}>{perk}</li>)}
                                             </ul>
                                         </div>
                                     )}
@@ -614,18 +620,18 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
                     </DashboardCard>
                      <DashboardCard title="Match History" icon={<CalendarIcon className="w-6 h-6" />}>
                         <div className="p-6 space-y-4 max-h-[40rem] overflow-y-auto">
-                            {player.matchHistory && player.matchHistory.length > 0 ? (
+                            {player?.matchHistory && player.matchHistory.length > 0 ? (
                                 player.matchHistory
-                                    .map(record => ({...record, event: events.find(e => e.id === record.eventId)}))
+                                    .map(record => ({...record, event: (events || []).find(e => e.id === record?.eventId)}))
                                     .filter(record => record.event)
                                     .sort((a,b) => new Date(b.event!.date).getTime() - new Date(a.event!.date).getTime())
                                     .map(({ event, playerStats }) => (
                                         <div key={event!.id} className="bg-zinc-900/50 p-1 rounded-lg">
                                             <EventCard event={event!} />
                                             <div className="grid grid-cols-3 gap-2 text-center p-3">
-                                                <StatDisplay value={playerStats.kills} label="Kills" />
-                                                <StatDisplay value={playerStats.deaths} label="Deaths" />
-                                                <StatDisplay value={playerStats.headshots} label="Headshots" />
+                                                <StatDisplay value={playerStats?.kills ?? 0} label="Kills" />
+                                                <StatDisplay value={playerStats?.deaths ?? 0} label="Deaths" />
+                                                <StatDisplay value={playerStats?.headshots ?? 0} label="Headshots" />
                                             </div>
                                         </div>
                                     ))

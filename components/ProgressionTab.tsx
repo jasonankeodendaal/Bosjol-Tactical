@@ -73,17 +73,17 @@ const GamificationRuleItem: React.FC<{
     onDelete: (rule: GamificationRule) => void
 }> = ({ rule, onEdit, onDelete }) => {
     return (
-        <div className="flex items-center gap-4 bg-zinc-800/50 p-3 rounded-lg">
-            <div className="flex-grow">
-                <p className="font-bold text-white">{rule.name}</p>
-                <p className="text-xs text-gray-400">{rule.description}</p>
+        <div className="flex items-center gap-2 sm:gap-4 bg-transparent border-b border-zinc-800/60 p-2 sm:p-3 hover:bg-zinc-900/40 transition-colors">
+            <div className="flex-grow min-w-0">
+                <p className="font-bold text-white text-xs sm:text-base truncate">{rule.name}</p>
+                <p className="text-[10px] sm:text-xs text-gray-400 truncate">{rule.description}</p>
             </div>
-            <div className="flex items-center gap-2">
-                <p className={`font-bold text-lg w-24 text-right ${rule.xp >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                <p className={`font-bold text-xs sm:text-lg w-16 sm:w-24 text-right ${rule.xp >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {rule.xp >= 0 ? '+' : ''}{rule.xp} XP
                 </p>
-                <Button size="sm" variant="secondary" onClick={() => onEdit(rule)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
-                <Button size="sm" variant="danger" onClick={() => onDelete(rule)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
+                <Button size="sm" variant="secondary" onClick={() => onEdit(rule)} className="!p-1 sm:!p-2"><PencilIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/></Button>
+                <Button size="sm" variant="danger" onClick={() => onDelete(rule)} className="!p-1 sm:!p-2"><TrashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/></Button>
             </div>
         </div>
     );
@@ -441,40 +441,48 @@ const RankCard: React.FC<{
     const highestXp = sortedTiers.length > 0 ? sortedTiers[sortedTiers.length - 1].minXp : lowestXp;
 
     return (
-        <div className="bg-zinc-900/60 rounded-xl border border-zinc-700/60 overflow-hidden shadow-lg transition-all hover:border-zinc-600">
-            <button 
+        <div className="border-b border-zinc-800/70 pb-3 mb-2 transition-colors">
+            <div 
                 onClick={() => setIsOpen(!isOpen)} 
-                className="w-full flex items-center gap-1.5 sm:gap-3 p-2 sm:p-4 text-left hover:bg-zinc-800/40 transition-colors"
+                className="w-full flex items-center gap-2 sm:gap-4 p-1.5 sm:p-3 cursor-pointer hover:bg-zinc-900/40 rounded-xl transition-all group"
             >
-                <div className="relative">
-                    <img src={rank.rankBadgeUrl} alt={rank.name} className="w-7 h-7 sm:w-12 sm:h-12 flex-shrink-0 object-contain drop-shadow" />
-                    <span className="absolute -bottom-1 -right-1 bg-red-600/90 text-[8px] sm:text-[10px] text-white font-mono font-bold px-1 py-0.2 rounded-full border border-red-400/50">
+                <div className="relative flex-shrink-0">
+                    <img 
+                        src={rank.rankBadgeUrl} 
+                        alt={rank.name} 
+                        className="w-10 h-10 sm:w-16 sm:h-16 object-contain filter drop-shadow-[0_0_12px_rgba(239,68,68,0.35)] transition-transform group-hover:scale-105" 
+                    />
+                    <span className="absolute -bottom-1 -right-1 bg-red-600 text-[8px] sm:text-[10px] text-white font-mono font-bold px-1 py-0.2 rounded-full border border-red-400/60 shadow">
                         {sortedTiers.length}
                     </span>
                 </div>
+
                 <div className="flex-grow min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2">
-                        <h3 className="text-xs sm:text-lg font-bold text-white tracking-wide truncate">{rank.name}</h3>
-                        <span className="bg-red-500/20 text-red-300 border border-red-500/30 text-[9px] sm:text-xs font-mono font-bold px-1 py-0.2 sm:px-2 sm:py-0.5 rounded w-max truncate">
-                            {lowestXp.toLocaleString()} XP{sortedTiers.length > 1 ? `–${highestXp.toLocaleString()}` : '+'}
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <h3 className="text-sm sm:text-lg font-black text-white uppercase tracking-wider group-hover:text-red-400 transition-colors truncate">
+                            {rank.name}
+                        </h3>
+                        <span className="bg-red-950/60 text-red-300 border border-red-800/40 text-[9px] sm:text-xs font-mono font-bold px-1.5 py-0.2 rounded truncate">
+                            {lowestXp.toLocaleString()} XP{sortedTiers.length > 1 ? ` – ${highestXp.toLocaleString()} XP` : '+'}
                         </span>
                     </div>
-                    <p className="text-[9px] sm:text-xs text-gray-400 truncate mt-0.5">{rank.description || 'No description'}</p>
+                    <p className="text-[10px] sm:text-xs text-zinc-400 truncate mt-0.5">{rank.description || 'No description'}</p>
                 </div>
+
                 <div className="flex gap-1 items-center flex-shrink-0">
                     <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onEditRank(); }} className="!p-1 sm:!p-1.5" title="Edit Rank">
-                        <PencilIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-300"/>
+                        <PencilIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-300"/>
                     </Button>
                     <Button size="sm" variant="danger" onClick={(e) => { e.stopPropagation(); onDeleteRank(); }} className="!p-1 sm:!p-1.5" title="Delete Rank">
-                        <TrashIcon className="w-3 h-3 sm:w-4 sm:h-4"/>
+                        <TrashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/>
                     </Button>
+                    <motion.div animate={{ rotate: isOpen ? 180 : 0 }} className="ml-1 text-zinc-500 group-hover:text-zinc-300">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </motion.div>
                 </div>
-                <motion.div animate={{ rotate: isOpen ? 180 : 0 }} className="flex-shrink-0 ml-0.5">
-                    <svg className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                </motion.div>
-            </button>
+            </div>
             
             <AnimatePresence>
                 {isOpen && (
@@ -483,66 +491,64 @@ const RankCard: React.FC<{
                         initial={{ height: 0, opacity: 0 }} 
                         animate={{ height: 'auto', opacity: 1 }} 
                         exit={{ height: 0, opacity: 0 }} 
-                        transition={{ duration: 0.25, ease: 'easeInOut' }}
-                        className="border-t border-zinc-800 bg-zinc-950/40"
+                        transition={{ duration: 0.2, ease: 'easeInOut' }}
+                        className="mt-2 pl-2 sm:pl-6 space-y-1.5"
                     >
-                        <div className="p-3.5 space-y-2">
-                            <div className="flex justify-between items-center px-1 pb-1">
-                                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Sub-Tiers ({sortedTiers.length})</span>
-                                <span className="text-[11px] text-zinc-500 font-mono">Rank Points Required</span>
-                            </div>
+                        <div className="flex justify-between items-center px-1 text-[10px] sm:text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                            <span>Sub-Tiers & Details</span>
+                            <span className="font-mono text-zinc-500">XP Thresholds</span>
+                        </div>
 
-                            {sortedTiers.length === 0 ? (
-                                <p className="text-xs text-zinc-500 italic py-2 text-center">No tiers configured yet. Click "Add Tier" below to set XP requirements.</p>
-                            ) : (
-                                sortedTiers.map((tier, idx) => {
-                                    const globalIndex = allTiers.findIndex(t => t.id === tier.id);
-                                    const nextTierInProgression = globalIndex > -1 && globalIndex < allTiers.length - 1 ? allTiers[globalIndex + 1] : null;
-                                    
-                                    return (
-                                        <div key={tier.id} className="flex items-center gap-3 bg-zinc-850/80 p-2.5 rounded-lg border border-zinc-800/80 hover:border-zinc-700 transition-colors">
-                                            <img src={tier.iconUrl} alt={tier.name} className="w-7 h-7 object-contain flex-shrink-0"/>
-                                            <div className="flex-grow min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <p className="font-semibold text-white text-sm truncate">{tier.name}</p>
-                                                    <span className="bg-zinc-800 text-green-400 font-mono text-[11px] font-bold px-1.5 py-0.5 rounded border border-green-500/20">
-                                                        {tier.minXp.toLocaleString()} XP
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
-                                                    <span>Range: {tier.minXp.toLocaleString()} – {nextTierInProgression ? `${(nextTierInProgression.minXp - 1).toLocaleString()} XP` : 'MAX'}</span>
-                                                    {tier.perks && tier.perks.length > 0 && (
-                                                        <span className="text-zinc-500 truncate">• {tier.perks.join(', ')}</span>
-                                                    )}
-                                                </div>
+                        {sortedTiers.length === 0 ? (
+                            <p className="text-xs text-zinc-500 italic py-2 text-center">No sub-tiers configured. Click "Add Sub-Tier" below.</p>
+                        ) : (
+                            sortedTiers.map((tier) => {
+                                const globalIndex = allTiers.findIndex(t => t.id === tier.id);
+                                const nextTierInProgression = globalIndex > -1 && globalIndex < allTiers.length - 1 ? allTiers[globalIndex + 1] : null;
+                                
+                                return (
+                                    <div key={tier.id} className="flex items-center gap-2 sm:gap-3 bg-zinc-900/30 p-2 rounded-r-lg border-l-2 border-red-500/80 hover:bg-zinc-900/70 transition-all">
+                                        <img src={tier.iconUrl} alt={tier.name} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0 drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]"/>
+                                        <div className="flex-grow min-w-0">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <p className="font-bold text-white text-xs sm:text-sm truncate">{tier.name}</p>
+                                                <span className="bg-zinc-800/90 text-green-400 font-mono text-[9px] sm:text-[11px] font-bold px-1.5 py-0.2 rounded border border-green-500/20">
+                                                    {tier.minXp.toLocaleString()} XP
+                                                </span>
                                             </div>
-                                            <div className="flex gap-1.5 flex-shrink-0">
-                                                <Button size="sm" variant="secondary" onClick={() => onEditTier(tier)} className="!p-1.5" title="Edit Tier XP">
-                                                    <PencilIcon className="w-3.5 h-3.5"/>
-                                                </Button>
-                                                <Button size="sm" variant="danger" onClick={() => onDeleteTier(tier)} className="!p-1.5" title="Delete Tier">
-                                                    <TrashIcon className="w-3.5 h-3.5"/>
-                                                </Button>
+                                            <div className="text-[9px] sm:text-xs text-zinc-400 truncate mt-0.5">
+                                                <span>Range: {tier.minXp.toLocaleString()} – {nextTierInProgression ? `${(nextTierInProgression.minXp - 1).toLocaleString()} XP` : 'MAX'}</span>
+                                                {tier.perks && tier.perks.length > 0 && (
+                                                    <span className="text-zinc-500 ml-1.5 hidden sm:inline">• {tier.perks.join(', ')}</span>
+                                                )}
                                             </div>
                                         </div>
-                                    );
-                                })
-                            )}
+                                        <div className="flex gap-1 flex-shrink-0">
+                                            <Button size="sm" variant="secondary" onClick={() => onEditTier(tier)} className="!p-1 sm:!p-1.5" title="Edit Tier XP">
+                                                <PencilIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5"/>
+                                            </Button>
+                                            <Button size="sm" variant="danger" onClick={() => onDeleteTier(tier)} className="!p-1 sm:!p-1.5" title="Delete Tier">
+                                                <TrashIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5"/>
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
 
-                            <div className="pt-2">
-                                <Button 
-                                    size="sm" 
-                                    variant="secondary" 
-                                    className="w-full !py-2 text-xs" 
-                                    onClick={() => {
-                                        const lastTierXp = sortedTiers.length > 0 ? sortedTiers[sortedTiers.length - 1].minXp : lowestXp;
-                                        onAddTier(lastTierXp + 200);
-                                    }}
-                                >
-                                    <PlusIcon className="w-4 h-4 mr-1.5" />
-                                    Add Sub-Tier & XP Threshold
-                                </Button>
-                            </div>
+                        <div className="pt-1">
+                            <Button 
+                                size="sm" 
+                                variant="secondary" 
+                                className="w-full !py-1.5 text-[10px] sm:text-xs font-semibold" 
+                                onClick={() => {
+                                    const lastTierXp = sortedTiers.length > 0 ? sortedTiers[sortedTiers.length - 1].minXp : lowestXp;
+                                    onAddTier(lastTierXp + 200);
+                                }}
+                            >
+                                <PlusIcon className="w-3.5 h-3.5 mr-1" />
+                                Add Sub-Tier Threshold
+                            </Button>
                         </div>
                     </motion.div>
                 )}
@@ -754,41 +760,42 @@ SET name = EXCLUDED.name,
             {/* Rank Structure */}
             <DashboardCard 
                 title="Rank Structure & XP Thresholds" 
-                icon={<ShieldCheckIcon className="w-6 h-6"/>} 
+                icon={<ShieldCheckIcon className="w-5 h-5 sm:w-6 sm:h-6"/>} 
                 titleAddon={
-                    <div className="flex items-center gap-2">
-                        <Button size="sm" variant="secondary" onClick={() => setShowSqlGuide(!showSqlGuide)}>
-                            <CodeBracketIcon className="w-4 h-4 mr-1.5" />
-                            {showSqlGuide ? 'Hide SQL Snippets' : 'SQL Snippets'}
+                    <div className="flex items-center gap-1 sm:gap-2">
+                        <Button size="sm" variant="secondary" onClick={() => setShowSqlGuide(!showSqlGuide)} className="!px-2 !py-1 text-[10px] sm:text-xs">
+                            <CodeBracketIcon className="w-3.5 h-3.5 mr-1" />
+                            <span className="hidden sm:inline">{showSqlGuide ? 'Hide SQL' : 'SQL Snippets'}</span>
+                            <span className="sm:hidden">SQL</span>
                         </Button>
-                        <Button size="sm" onClick={() => setEditingRank({})}>
-                            <PlusIcon className="w-5 h-5 mr-1.5" /> 
-                            Add Rank
+                        <Button size="sm" onClick={() => setEditingRank({})} className="!px-2 !py-1 text-[10px] sm:text-xs">
+                            <PlusIcon className="w-3.5 h-3.5 mr-1" /> 
+                            <span>Add Rank</span>
                         </Button>
                     </div>
                 }
             >
-                 <div className="p-4 space-y-4">
+                 <div className="p-2.5 sm:p-5 space-y-3 sm:space-y-4">
                     {/* Information Banner */}
-                    <div className="bg-zinc-800/40 p-3 rounded-lg border border-zinc-700/50 flex items-start gap-3 text-xs text-gray-300">
-                        <InformationCircleIcon className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="bg-zinc-900/40 p-2.5 sm:p-3 rounded-lg border border-zinc-800/80 flex items-start gap-2.5 text-[11px] sm:text-xs text-zinc-300">
+                        <InformationCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 flex-shrink-0 mt-0.5" />
                         <div>
-                            <span className="font-bold text-white">XP Progression Rules:</span> Ranks and Tiers are automatically calculated based on total Rank Points (XP). The starting rank begins at <strong>0 XP</strong> (e.g. 0 – 100 XP for Rookie). As players earn XP in matches or through gamification rules, their tier and military insignia unlock automatically.
+                            <span className="font-bold text-white">XP Progression Rules:</span> Ranks and Tiers calculate automatically based on Rank Points (XP). Starting rank begins at <strong>0 XP</strong>.
                         </div>
                     </div>
 
                     {/* SQL Snippets Drawer */}
                     {showSqlGuide && (
-                        <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-700/80 space-y-3 shadow-inner">
+                        <div className="bg-zinc-950 p-3 sm:p-4 rounded-xl border border-zinc-800 space-y-2.5 shadow-inner">
                             <div className="flex justify-between items-center pb-2 border-b border-zinc-800">
-                                <div className="flex items-center gap-2">
-                                    <CodeBracketIcon className="w-5 h-5 text-red-400" />
-                                    <h4 className="text-sm font-bold text-white">PostgreSQL Migration / SQL Snippet for Rank Structure</h4>
+                                <div className="flex items-center gap-1.5">
+                                    <CodeBracketIcon className="w-4 h-4 text-red-400" />
+                                    <h4 className="text-xs sm:text-sm font-bold text-white">SQL Snippet for Rank Structure</h4>
                                 </div>
-                                <Button size="sm" variant="secondary" onClick={handleCopySql} className="!py-1 !px-3 text-xs">
+                                <Button size="sm" variant="secondary" onClick={handleCopySql} className="!py-0.5 !px-2 text-[10px] sm:text-xs">
                                     {copiedSql ? (
                                         <>
-                                            <CheckCircleIcon className="w-4 h-4 mr-1 text-green-400" />
+                                            <CheckCircleIcon className="w-3.5 h-3.5 mr-1 text-green-400" />
                                             Copied!
                                         </>
                                     ) : (
@@ -796,13 +803,13 @@ SET name = EXCLUDED.name,
                                     )}
                                 </Button>
                             </div>
-                            <pre className="text-xs font-mono text-zinc-300 overflow-x-auto p-3 bg-zinc-900/90 rounded-lg border border-zinc-800/80 leading-relaxed">
+                            <pre className="text-[10px] sm:text-xs font-mono text-zinc-300 overflow-x-auto p-2.5 bg-zinc-900/90 rounded-lg border border-zinc-800/80 leading-relaxed">
                                 <code>{rankSqlSnippet}</code>
                             </pre>
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-1.5 sm:gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
                         {sortedRanks.map(rank => (
                             <RankCard 
                                 key={rank.id}
@@ -854,31 +861,49 @@ SET name = EXCLUDED.name,
                     </div>
                 </DashboardCard>
                  <div className="space-y-6">
-                    <DashboardCard title="Standard Badges" icon={<TrophyIcon className="w-6 h-6" />}>
-                        <div className="p-4">
-                            <div className="flex justify-end mb-4"><Button size="sm" onClick={() => setEditingBadge({})}><PlusIcon className="w-5 h-5 mr-2"/>Add Badge</Button></div>
-                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                    <DashboardCard title="Standard Badges" icon={<TrophyIcon className="w-5 h-5 sm:w-6 sm:h-6" />}>
+                        <div className="p-2.5 sm:p-4">
+                            <div className="flex justify-between items-center mb-3">
+                                <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Badge Roster</span>
+                                <Button size="sm" onClick={() => setEditingBadge({})} className="!px-2 !py-1 text-[10px] sm:text-xs">
+                                    <PlusIcon className="w-3.5 h-3.5 mr-1"/>
+                                    Add Badge
+                                </Button>
+                            </div>
+                            <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
                                 {badges.map(badge => (
-                                    <div key={badge.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg">
-                                        <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10"/>
-                                        <div className="flex-grow"><p className="font-bold text-white">{badge.name}</p><p className="text-xs text-gray-400">{badge.description}</p></div>
-                                        <Button size="sm" variant="secondary" onClick={() => setEditingBadge(badge)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
-                                        <Button size="sm" variant="danger" onClick={() => setDeletingBadge(badge)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
+                                    <div key={badge.id} className="flex items-center gap-2 sm:gap-3 border-b border-zinc-800/60 p-2 hover:bg-zinc-900/40 transition-colors">
+                                        <img src={badge.iconUrl} alt={badge.name} className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"/>
+                                        <div className="flex-grow min-w-0">
+                                            <p className="font-bold text-white text-xs sm:text-sm truncate">{badge.name}</p>
+                                            <p className="text-[10px] sm:text-xs text-gray-400 truncate">{badge.description}</p>
+                                        </div>
+                                        <Button size="sm" variant="secondary" onClick={() => setEditingBadge(badge)} className="!p-1 sm:!p-2"><PencilIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/></Button>
+                                        <Button size="sm" variant="danger" onClick={() => setDeletingBadge(badge)} className="!p-1 sm:!p-2"><TrashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/></Button>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </DashboardCard>
-                    <DashboardCard title="Legendary Badges" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
-                        <div className="p-4">
-                            <div className="flex justify-end mb-4"><Button size="sm" onClick={() => setEditingLegendaryBadge({})}><PlusIcon className="w-5 h-5 mr-2"/>Add Badge</Button></div>
-                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                    <DashboardCard title="Legendary Badges" icon={<TrophyIcon className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />}>
+                        <div className="p-2.5 sm:p-4">
+                            <div className="flex justify-between items-center mb-3">
+                                <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Elite Awards</span>
+                                <Button size="sm" onClick={() => setEditingLegendaryBadge({})} className="!px-2 !py-1 text-[10px] sm:text-xs">
+                                    <PlusIcon className="w-3.5 h-3.5 mr-1"/>
+                                    Add Badge
+                                </Button>
+                            </div>
+                            <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
                                 {legendaryBadges.map(badge => (
-                                    <div key={badge.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg">
-                                        <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10"/>
-                                        <div className="flex-grow"><p className="font-bold text-amber-300">{badge.name}</p><p className="text-xs text-gray-400">{badge.description}</p></div>
-                                        <Button size="sm" variant="secondary" onClick={() => setEditingLegendaryBadge(badge)} className="!p-2"><PencilIcon className="w-4 h-4"/></Button>
-                                        <Button size="sm" variant="danger" onClick={() => setDeletingLegendaryBadge(badge)} className="!p-2"><TrashIcon className="w-4 h-4"/></Button>
+                                    <div key={badge.id} className="flex items-center gap-2 sm:gap-3 border-b border-zinc-800/60 p-2 hover:bg-zinc-900/40 transition-colors">
+                                        <img src={badge.iconUrl} alt={badge.name} className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0 drop-shadow-[0_0_10px_rgba(245,158,11,0.35)]"/>
+                                        <div className="flex-grow min-w-0">
+                                            <p className="font-bold text-amber-300 text-xs sm:text-sm truncate">{badge.name}</p>
+                                            <p className="text-[10px] sm:text-xs text-gray-400 truncate">{badge.description}</p>
+                                        </div>
+                                        <Button size="sm" variant="secondary" onClick={() => setEditingLegendaryBadge(badge)} className="!p-1 sm:!p-2"><PencilIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/></Button>
+                                        <Button size="sm" variant="danger" onClick={() => setDeletingLegendaryBadge(badge)} className="!p-1 sm:!p-2"><TrashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/></Button>
                                     </div>
                                 ))}
                             </div>

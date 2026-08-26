@@ -11,6 +11,7 @@ import { BadgePill } from './BadgePill';
 import { Modal } from './Modal';
 import { UNRANKED_TIER } from '../constants';
 import { PlayerProfilePage } from './PlayerProfilePage';
+import { ErrorBoundary } from './ErrorBoundary';
 import { FinanceTab } from './FinanceTab';
 import { SuppliersTab } from './SuppliersTab';
 import { LocationsTab } from './LocationsTab';
@@ -582,19 +583,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     
     const selectedPlayer = players.find(p => p.id === selectedPlayerId);
 
-    if (view === 'player_profile' && selectedPlayer) {
+    if (view === 'player_profile') {
+        if (!selectedPlayer) {
+            return (
+                <div className="p-8 text-center text-gray-400 space-y-4 my-12 bg-zinc-900/80 rounded-xl border border-zinc-800 max-w-md mx-auto">
+                    <p className="text-lg font-bold text-white">Player Not Found</p>
+                    <p className="text-sm">The selected operator profile could not be loaded or was removed.</p>
+                    <Button onClick={() => setView('dashboard')} className="w-full">Return to Dashboard</Button>
+                </div>
+            );
+        }
         return (
-            <PlayerProfilePage 
-                player={selectedPlayer} 
-                players={players}
-                events={events} 
-                legendaryBadges={legendaryBadges}
-                onBack={() => setView('dashboard')}
-                onUpdatePlayer={handleUpdatePlayer}
-                onDeletePlayer={handleDeletePlayer}
-                ranks={ranks}
-                companyDetails={companyDetails}
-            />
+            <ErrorBoundary fallbackTitle="Player Profile Error" onReset={() => setView('dashboard')}>
+                <PlayerProfilePage 
+                    player={selectedPlayer} 
+                    players={players}
+                    events={events} 
+                    legendaryBadges={legendaryBadges}
+                    onBack={() => setView('dashboard')}
+                    onUpdatePlayer={handleUpdatePlayer}
+                    onDeletePlayer={handleDeletePlayer}
+                    ranks={ranks}
+                    companyDetails={companyDetails}
+                />
+            </ErrorBoundary>
         );
     }
 

@@ -279,8 +279,18 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
     }, [collectionName, docId, storageKey]);
 
      const updateData = useCallback(async (newData: Partial<T>) => {
+        let diffData: Partial<T> = {};
+        let hasChanges = false;
+        
         setData(prev => {
-            const updated = { ...prev, ...newData };
+            for (const key in newData) {
+                if (newData[key] !== (prev as any)[key]) {
+                    (diffData as any)[key] = newData[key];
+                    hasChanges = true;
+                }
+            }
+            
+            const updated = { ...prev, ...diffData };
             try {
                 localStorage.setItem(storageKey, JSON.stringify(updated));
             } catch (err) {
@@ -289,10 +299,11 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
             return updated;
         });
 
+        if (!hasChanges) return;
+
         if (IS_LIVE_DATA && supabase) {
             try {
-                const payload = { id: docId, ...newData };
-                const { error } = await supabase.from(collectionName).upsert(payload);
+                const { error } = await supabase.from(collectionName).update(diffData).eq('id', docId);
                 if (error) {
                     console.warn(`Failed to update ${collectionName}/${docId}:`, error.message || error);
                     alert(`Failed to save to database: ${error.message}`);
@@ -443,29 +454,39 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const finalData = typeof d === 'function' ? d(companyDetails) : d;
         
         // Optimistic Update
-        // Manually update the state for companyCore, brandingDetails, contentDetails
-        // to prevent the fetch from overwriting us immediately
         const coreData: Partial<typeof mock.MOCK_COMPANY_CORE> = {};
         const brandingData: Partial<typeof mock.MOCK_BRANDING_DETAILS> = {};
         const contentData: Partial<typeof mock.MOCK_CONTENT_DETAILS> = {};
 
+        let coreChanged = false;
+        let brandingChanged = false;
+        let contentChanged = false;
+
         for (const key in finalData) {
-            if (key in mock.MOCK_COMPANY_CORE) (coreData as any)[key] = (finalData as any)[key];
-            else if (key in mock.MOCK_BRANDING_DETAILS) (brandingData as any)[key] = (finalData as any)[key];
-            else if (key in mock.MOCK_CONTENT_DETAILS) (contentData as any)[key] = (finalData as any)[key];
+            const typedKey = key as keyof CompanyDetails;
+            if (finalData[typedKey] !== companyDetails[typedKey]) {
+                if (key in mock.MOCK_COMPANY_CORE) {
+                    (coreData as any)[key] = finalData[typedKey];
+                    coreChanged = true;
+                } else if (key in mock.MOCK_BRANDING_DETAILS) {
+                    (brandingData as any)[key] = finalData[typedKey];
+                    brandingChanged = true;
+                } else if (key in mock.MOCK_CONTENT_DETAILS) {
+                    (contentData as any)[key] = finalData[typedKey];
+                    contentChanged = true;
+                }
+            }
         }
 
-        // Apply optimistic updates to local state for each sub-document
-        updateCompanyCore({ ...companyCore, ...coreData });
-        updateBrandingDetails({ ...brandingDetails, ...brandingData });
-        updateContentDetails({ ...contentDetails, ...contentData });
+        const promises = [];
+        if (coreChanged) promises.push(updateCompanyCore(coreData));
+        if (brandingChanged) promises.push(updateBrandingDetails(brandingData));
+        if (contentChanged) promises.push(updateContentDetails(contentData));
 
-        await Promise.all([
-            updateCompanyCore(coreData),
-            updateBrandingDetails(brandingData),
-            updateContentDetails(contentData)
-        ]);
-    }, [companyCore, brandingDetails, contentDetails, updateCompanyCore, updateBrandingDetails, updateContentDetails]);
+        if (promises.length > 0) {
+            await Promise.all(promises);
+        }
+    }, [companyDetails, updateCompanyCore, updateBrandingDetails, updateContentDetails]);
 
     const setCreatorDetails = useCallback(async (d: (CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) | ((p: CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) => CreatorDetails & { apiSetupGuide: ApiGuideStep[] })) => {
         const finalData = typeof d === 'function' ? d(creatorDetails) : d;
@@ -548,17 +569,36 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }, []);
 
-    const updateDoc = useCallback(async <T extends {id: string}>(collectionName: string, doc: T) => {
-        // Instant optimistic update
+    const updateDoc = useCallback(async <T extends {id: string}>(collectionName: string, doc: Partial<T> & {id: string}) => {
+        // Find existing doc to diff against
+        let existingDoc: any = null;
         const setter = collectionSettersRef.current[collectionName];
         if (setter) {
-            setter(prev => prev.map(item => item.id === doc.id ? { ...item, ...doc } : item));
+            setter(prev => {
+                existingDoc = prev.find(item => item.id === doc.id);
+                return prev.map(item => item.id === doc.id ? { ...item, ...doc } : item);
+            });
         }
 
         if (IS_LIVE_DATA && supabase) {
             try {
-                const { id, ...data } = doc;
-                const { error } = await supabase.from(collectionName).update(data).eq('id', id);
+                const { id, ...newData } = doc;
+                let dataToUpdate: any = { ...newData };
+                
+                // If we found the existing doc, only push fields that actually changed
+                if (existingDoc) {
+                    dataToUpdate = {};
+                    let hasChanges = false;
+                    for (const key in newData) {
+                        if (newData[key as keyof typeof newData] !== existingDoc[key]) {
+                            dataToUpdate[key] = newData[key as keyof typeof newData];
+                            hasChanges = true;
+                        }
+                    }
+                    if (!hasChanges) return; // Nothing to update remotely
+                }
+
+                const { error } = await supabase.from(collectionName).update(dataToUpdate).eq('id', id);
                 if (error) console.warn(`Supabase updateDoc error on ${collectionName}:`, error.message || error);
                 else recordDatabaseActivity('writes', 1);
             } catch (err: any) {

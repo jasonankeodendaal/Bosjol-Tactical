@@ -1160,17 +1160,7 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
                     </div>
                 </div>
                 
-                 <div className="pt-4 border-t border-zinc-700/50">
-                    <h3 className="text-lg font-semibold text-gray-200 mb-2">Game Preferences</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Preferred Role</label>
-                            <select value={formData.preferredRole} onChange={e => setFormData(p => ({...p, preferredRole: e.target.value as PlayerRole}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                                {MOCK_PLAYER_ROLES.map(role => <option key={role}>{role}</option>)}
-                            </select>
-                        </div>
-                    </div>
-                </div>
+
 
                 <div className="pt-4 border-t border-zinc-700/50">
                     <h3 className="text-lg font-semibold text-gray-200 mb-2">Personal & Medical Information</h3>

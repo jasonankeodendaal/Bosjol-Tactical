@@ -211,9 +211,11 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                         recordDatabaseActivity('reads', 1);
                         const { id, ...rest } = fetchedRows[0];
                         setData(prev => {
-                            const merged = { ...prev, ...mockData, ...rest };
-                            for (const k in rest) {
-                                if (!rest[k] && (prev as any)[k]) {
+                            const merged = { ...prev, ...mockData };
+                            for (const k in mockData) {
+                                if (rest[k] !== null && rest[k] !== undefined) {
+                                    (merged as any)[k] = rest[k];
+                                } else if ((prev as any)[k] !== undefined) {
                                     (merged as any)[k] = (prev as any)[k];
                                 }
                             }
@@ -245,8 +247,10 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                              const { id, ...rest } = payload.new as any;
                              setData(prev => {
                                  const merged = { ...prev };
-                                 for (const key in rest) {
-                                     if (rest[key] !== undefined) (merged as any)[key] = rest[key];
+                                 for (const key in mockData) {
+                                     if (rest[key] !== undefined && rest[key] !== null) {
+                                         (merged as any)[key] = rest[key];
+                                     }
                                  }
                                  try {
                                      localStorage.setItem(storageKey, JSON.stringify(merged));
@@ -291,6 +295,7 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                 const { error } = await supabase.from(collectionName).upsert(payload);
                 if (error) {
                     console.warn(`Failed to update ${collectionName}/${docId}:`, error.message || error);
+                    alert(`Failed to save to database: ${error.message}`);
                 } else {
                     recordDatabaseActivity('writes', 1);
                 }

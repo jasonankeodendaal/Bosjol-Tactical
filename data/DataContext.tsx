@@ -303,7 +303,8 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
 
         if (IS_LIVE_DATA && supabase) {
             try {
-                const { error } = await supabase.from(collectionName).update(diffData).eq('id', docId);
+                const payload = { id: docId, ...diffData };
+                const { error } = await supabase.from(collectionName).upsert(payload);
                 if (error) {
                     console.warn(`Failed to update ${collectionName}/${docId}:`, error.message || error);
                     alert(`Failed to save to database: ${error.message}`);

@@ -155,8 +155,34 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         try {
             justSavedRef.current = true;
             await setCompanyDetails(formData);
-            setSocialLinks(socialLinksData);
-            setCarouselMedia(carouselMediaData);
+
+            // Sync Social Links
+            const originalSocialIds = new Set(socialLinks.map(i => i.id));
+            const newSocialIds = new Set(socialLinksData.map(i => i.id));
+            for (const item of socialLinksData) {
+                if (!originalSocialIds.has(item.id)) await addDoc('socialLinks', item);
+                else {
+                    const orig = socialLinks.find(o => o.id === item.id);
+                    if (JSON.stringify(orig) !== JSON.stringify(item)) await updateDoc('socialLinks', item);
+                }
+            }
+            for (const item of socialLinks) {
+                if (!newSocialIds.has(item.id)) await deleteDoc('socialLinks', item.id);
+            }
+
+            // Sync Carousel Media
+            const originalCarouselIds = new Set(carouselMedia.map(i => i.id));
+            const newCarouselIds = new Set(carouselMediaData.map(i => i.id));
+            for (const item of carouselMediaData) {
+                if (!originalCarouselIds.has(item.id)) await addDoc('carouselMedia', item);
+                else {
+                    const orig = carouselMedia.find(o => o.id === item.id);
+                    if (JSON.stringify(orig) !== JSON.stringify(item)) await updateDoc('carouselMedia', item);
+                }
+            }
+            for (const item of carouselMedia) {
+                if (!newCarouselIds.has(item.id)) await deleteDoc('carouselMedia', item.id);
+            }
 
             if (adminUser && adminFormData) {
                 await updateDoc('admins', adminFormData);

@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, ReactNode, useContext, useMe
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import { extractAndCleanStorageUrlsFromDoc } from '../utils/storageCleaner';
 import * as mock from '../constants';
+import { getRankForPlayer } from '../utils/rankUtils';
 import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters, AdminNotification, PlayerHonor } from '../types';
 import { AuthContext } from '../auth/AuthContext';
 
@@ -413,9 +414,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const auth = useContext(AuthContext);
 
     // Protected collections (require auth)
-    const [players, setPlayers, loadingPlayers] = useCollection<Player>('players', MOCK_DATA_MAP.players, { isProtected: true });
+    const [rawPlayers, setRawPlayers, loadingPlayers] = useCollection<Player>('players', MOCK_DATA_MAP.players, { isProtected: true });
     const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', MOCK_DATA_MAP.events, { isProtected: true });
     const [ranks, setRanks, loadingRanks] = useCollection<Rank>('ranks', MOCK_DATA_MAP.ranks, { isProtected: true });
+
+    // Auto-calculate and ensure every player's rank strictly matches their current XP total
+    const players = useMemo(() => {
+        return (rawPlayers || []).map(p => {
+            if (!p) return p;
+            const correctTier = getRankForPlayer(p, ranks);
+            if (!p.rank || p.rank.id !== correctTier.id || p.rank.minXp !== correctTier.minXp || p.rank.name !== correctTier.name) {
+                return { ...p, rank: correctTier };
+            }
+            return p;
+        });
+    }, [rawPlayers, ranks]);
+    const setPlayers = setRawPlayers;
     const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', MOCK_DATA_MAP.badges, { isProtected: true });
     const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', MOCK_DATA_MAP.legendaryBadges, { isProtected: true });
     const [gamificationSettings, setGamificationSettings, loadingGamification] = useCollection<GamificationRule>('gamificationSettings', MOCK_DATA_MAP.gamificationSettings, { isProtected: true });
@@ -548,6 +562,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const generatedId = (data as any).id || `doc_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
         const payload = { id: generatedId, ...data };
 
+        if (collectionName === 'players') {
+            const rawPayload: any = payload;
+            if (rawPayload.stats?.xp !== undefined) {
+                rawPayload.rank = getRankForPlayer({ stats: rawPayload.stats }, ranks);
+            }
+        }
+
         // Instant optimistic update
         const setter = collectionSettersRef.current[collectionName];
         if (setter) {
@@ -570,10 +591,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } else {
             return payload.id;
         }
-    }, []);
+    }, [ranks]);
 
     const updateDoc = useCallback(async <T extends {id: string}>(collectionName: string, doc: Partial<T> & {id: string}) => {
         const { id, ...newData } = doc;
+
+        if (collectionName === 'players') {
+            const rawDoc: any = doc;
+            if (rawDoc.stats?.xp !== undefined) {
+                const calculatedTier = getRankForPlayer({ stats: rawDoc.stats }, ranks);
+                rawDoc.rank = calculatedTier;
+                (newData as any).rank = calculatedTier;
+            }
+        }
 
         // Instant optimistic local update
         const setter = collectionSettersRef.current[collectionName];
@@ -590,7 +620,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 console.warn(`Network error in updateDoc (${collectionName}):`, err?.message || err);
             }
         }
-    }, []);
+    }, [ranks]);
 
     const deleteDoc = useCallback(async (collectionName: string, docId: string) => {
         // Find existing doc in state if possible to extract any storage URLs

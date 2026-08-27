@@ -13,33 +13,14 @@ import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { SendCredentialsModal } from './SendCredentialsModal';
 import { motion } from 'framer-motion';
+import { getRankForPlayer, getRankProgression as computeRankProgression, FALLBACK_RECRUIT_TIER, resolveRankIcon, getRankBadgeSvg } from '../utils/rankUtils';
 
 const getTierForPlayer = (player: Player, ranks: Rank[]): Tier => {
-    if (!player || !ranks || ranks.length === 0) return UNRANKED_TIER;
-    const allTiers = (ranks || [])
-        .flatMap(rank => rank?.tiers || [])
-        .filter((t): t is Tier => Boolean(t && t.id))
-        .sort((a, b) => b.minXp - a.minXp);
-    if (allTiers.length === 0) return UNRANKED_TIER;
-    const playerXp = player.stats?.xp ?? 0;
-    const tier = allTiers.find(r => playerXp >= r.minXp);
-    const lowestTier = [...allTiers].sort((a, b) => a.minXp - b.minXp)[0];
-    return tier || lowestTier || UNRANKED_TIER;
+    return getRankForPlayer(player, ranks);
 };
 
 const getRankProgression = (player: Player, ranks: Rank[]) => {
-    const allTiers = (ranks || [])
-        .flatMap(rank => rank?.tiers || [])
-        .filter((t): t is Tier => Boolean(t && t.id))
-        .sort((a, b) => a.minXp - b.minXp);
-    
-    const currentTier = getTierForPlayer(player, ranks);
-    const currentTierIndex = allTiers.findIndex(r => r.id === currentTier.id);
-
-    const next = currentTierIndex >= 0 && currentTierIndex < allTiers.length - 1 ? allTiers[currentTierIndex + 1] : null;
-    const rank = (ranks || []).find(r => (r?.tiers || []).some(t => t?.id === currentTier.id)) || null;
-
-    return { current: currentTier, next, rank };
+    return computeRankProgression(player, ranks);
 };
 
 interface PlayerProfilePageProps {
@@ -396,11 +377,25 @@ WHERE id = '${player.id}';`;
                 <Button onClick={onBack} variant="secondary" size="sm" className="mr-4">
                     <ArrowLeftIcon className="w-5 h-5" />
                 </Button>
-                <img src={player.avatarUrl} alt={player.name} className="w-12 h-12 rounded-full object-cover mr-4" />
+                <img 
+                    src={player.avatarUrl} 
+                    alt={player.name} 
+                    onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
+                    }}
+                    className="w-12 h-12 rounded-full object-cover mr-4 border border-zinc-700" 
+                />
                 <div>
                     <h1 className="text-2xl font-bold text-white">{player.name} "{player.callsign}" {player.surname}</h1>
                     <div className="flex items-center mt-1">
-                        <img src={playerTier.iconUrl} alt={playerTier.name} className="w-6 h-6 mr-2" />
+                        <img 
+                            src={resolveRankIcon(playerTier.iconUrl, playerRank?.name || playerTier.name, playerTier.name)} 
+                            alt={playerTier.name} 
+                            onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(playerTier.name || playerRank?.name || '');
+                            }}
+                            className="w-6 h-6 mr-2 object-contain drop-shadow-sm" 
+                        />
                         <span className="text-md font-semibold text-red-400">
                             {playerRank ? `${playerRank.name} - ${playerTier.name}` : playerTier.name}
                         </span>
@@ -651,7 +646,14 @@ WHERE id = '${player.id}';`;
                     <DashboardCard title="Rank & Progression" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
                         <div className="p-6">
                             <div className="flex items-center gap-4 mb-4">
-                                {rank && <img src={rank.rankBadgeUrl} alt={rank.name} className="w-16 h-16"/>}
+                                <img 
+                                    src={resolveRankIcon(current.iconUrl, rank?.name, current.name, rank?.rankBadgeUrl)} 
+                                    alt={rank?.name || current.name} 
+                                    onError={(e) => {
+                                        (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(current.name || rank?.name || '');
+                                    }}
+                                    className="w-16 h-16 object-contain drop-shadow-md"
+                                />
                                 <div>
                                     <p className="text-sm text-gray-400 uppercase tracking-wider">{rank?.name || 'Unranked'}</p>
                                     <p className="text-2xl font-bold text-white">{current.name}</p>

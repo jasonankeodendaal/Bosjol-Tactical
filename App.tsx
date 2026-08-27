@@ -13,6 +13,7 @@ import { StorageStatusIndicator } from './components/StorageStatusIndicator';
 import { MockDataWatermark } from './components/MockDataWatermark';
 import { Input } from './components/Input';
 import { DashboardBackground } from './components/DashboardBackground';
+import { getTierForXp, getRankForPlayer } from './utils/rankUtils';
 import { auth as firebaseAuth } from './firebase'; // Deprecated import kept to prevent build crash, value is null.
 
 
@@ -478,23 +479,19 @@ const AppContent: React.FC = () => {
         const lastSeenBadges: string[] = JSON.parse(localStorage.getItem(`lastSeenBadges_${player.id}`) || '[]');
     
         if (player.stats.xp > lastSeenXp) {
-            const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - a.minXp);
+            const oldTier = lastSeenTierId ? (ranks.flatMap(r => r.tiers || []).find(t => t?.id === lastSeenTierId) || getTierForXp(lastSeenXp, ranks)) : getTierForXp(lastSeenXp, ranks);
+            const newTier = getTierForXp(player.stats.xp, ranks);
             
-            const getTierForXp = (xp: number): Tier | undefined => allTiers.find(r => xp >= r.minXp);
-            
-            const oldTier = lastSeenTierId ? allTiers.find(r => r.id === lastSeenTierId) : getTierForXp(lastSeenXp);
-            const newTier = getTierForXp(player.stats.xp);
-            
-            const newBadges = player.badges.filter(b => !lastSeenBadges.includes(b.id));
+            const newBadges = (player.badges || []).filter(b => !lastSeenBadges.includes(b.id));
     
-            const hasNewTier = newTier && oldTier && newTier.id !== oldTier.id;
+            const hasNewTier = newTier && oldTier && (newTier.id !== oldTier.id || newTier.minXp > oldTier.minXp);
     
             if (hasNewTier || newBadges.length > 0) {
-                 let bonusXp = 0;
+                let bonusXp = 0;
                 const rewards: string[] = [];
 
                 if (hasNewTier && newTier) {
-                    newTier.perks.forEach(perk => {
+                    (newTier.perks || []).forEach(perk => {
                         if (perk.includes('Weapon XP Card')) {
                             bonusXp += 100; // Bonus XP amount
                             rewards.push('Weapon XP Card');
@@ -518,40 +515,46 @@ const AppContent: React.FC = () => {
 
     const dismissPromotion = () => {
         if (promotion && user?.role === 'player' && currentPlayer) {
-            const { bonusXp, rewards } = promotion;
+            const { bonusXp, rewards, newTier } = promotion;
             
             if (bonusXp > 0 && rewards && rewards.length > 0) {
                 const finalXp = currentPlayer.stats.xp + bonusXp;
 
                 const newAdjustments: XpAdjustment[] = rewards.map(reward => ({
-                    amount: 100, // Hardcoded bonus for "Weapon XP Card"
+                    amount: 100, // Bonus for "Weapon XP Card"
                     reason: `Rank Up Reward: ${reward}`,
                     date: new Date().toISOString()
                 }));
 
-                const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - a.minXp);
-                const finalTier = allTiers.find(r => finalXp >= r.minXp) || currentPlayer.rank;
+                const finalTier = getTierForXp(finalXp, ranks) || currentPlayer.rank;
 
                 const updatedPlayer = {
                     ...currentPlayer,
                     stats: { ...currentPlayer.stats, xp: finalXp },
-                    xpAdjustments: [...currentPlayer.xpAdjustments, ...newAdjustments],
+                    xpAdjustments: [...(currentPlayer.xpAdjustments || []), ...newAdjustments],
                     rank: finalTier,
                 };
                 
                 updateDoc('players', updatedPlayer);
                 
                 localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(finalXp));
-                localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify(updatedPlayer.badges.map(b => b.id)));
+                localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify((updatedPlayer.badges || []).map(b => b.id)));
                 if (finalTier) {
                     localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
                 }
             } else {
-                 localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(currentPlayer.stats.xp));
-                 localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify(currentPlayer.badges.map(b => b.id)));
-                 if (currentPlayer.rank) {
-                    localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, currentPlayer.rank.id);
-                 }
+                const finalTier = newTier || getTierForXp(currentPlayer.stats.xp, ranks) || currentPlayer.rank;
+                if (finalTier && (!currentPlayer.rank || currentPlayer.rank.id !== finalTier.id)) {
+                    updateDoc('players', {
+                        ...currentPlayer,
+                        rank: finalTier,
+                    });
+                }
+                localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(currentPlayer.stats.xp));
+                localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify((currentPlayer.badges || []).map(b => b.id)));
+                if (finalTier) {
+                    localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
+                }
             }
         }
         setPromotion(null);

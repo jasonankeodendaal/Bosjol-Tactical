@@ -10,6 +10,7 @@ import { UsersIcon, CogIcon, CalendarIcon, TrashIcon, ShieldCheckIcon, PlusIcon,
 import { BadgePill } from './BadgePill';
 import { Modal } from './Modal';
 import { UNRANKED_TIER } from '../constants';
+import { getRankForPlayer, resolveRankIcon, getRankBadgeSvg } from '../utils/rankUtils';
 import { PlayerProfilePage } from './PlayerProfilePage';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FinanceTab } from './FinanceTab';
@@ -340,6 +341,7 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer, onDeletePlayer 
     const deaths = player.stats?.deaths || 0;
     const xp = player.stats?.xp || 0;
     const kdr = deaths > 0 ? kills / deaths : kills;
+    const resolvedIcon = resolveRankIcon(rank.iconUrl, rank.name);
 
     return (
         <div 
@@ -347,14 +349,28 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer, onDeletePlayer 
             className="p-2 sm:p-2.5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-red-600/50 hover:bg-zinc-900/80 transition-all cursor-pointer flex items-center justify-between gap-2 group"
         >
             <div className="flex items-center gap-2 min-w-0">
-                <img src={player.avatarUrl} alt={player.name} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-zinc-700 flex-shrink-0" />
+                <img 
+                    src={player.avatarUrl} 
+                    alt={player.name} 
+                    onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
+                    }}
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-zinc-700 flex-shrink-0" 
+                />
                 <div className="min-w-0">
                     <p className="font-bold text-white text-xs sm:text-sm truncate">
                         {(player.name || 'Unnamed')} <span className="text-red-400">"{player.callsign || 'N/A'}"</span>
                     </p>
-                    <div className="flex items-center gap-1 text-[10px] text-zinc-400 truncate">
-                        {rank.iconUrl && <img src={rank.iconUrl} alt={rank.name} className="w-3.5 h-3.5 flex-shrink-0"/>}
-                        <span className="truncate">{rank.name}</span>
+                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 truncate">
+                        <img 
+                            src={resolvedIcon} 
+                            alt={rank.name} 
+                            onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(rank.name);
+                            }}
+                            className="w-4 h-4 flex-shrink-0 object-contain drop-shadow-sm"
+                        />
+                        <span className="truncate font-medium text-zinc-300">{rank.name}</span>
                         <span className="text-zinc-600">&bull;</span>
                         <span className="font-mono text-zinc-300 font-bold">{player.playerCode || 'NO-CODE'}</span>
                     </div>
@@ -426,7 +442,7 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
             {/* Side by side grid on mobile */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-2.5 max-h-[72vh] overflow-y-auto pr-1">
                 {filteredPlayers.map(p => {
-                    const rank = p.rank || UNRANKED_TIER;
+                    const rank = getRankForPlayer(p, ranks);
                     return (
                         <PlayerListItem key={p.id} player={p} rank={rank} onViewPlayer={onViewPlayer} onDeletePlayer={onDeletePlayer} />
                     );
@@ -483,41 +499,61 @@ const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
             </div>
 
             <div className="space-y-4 sm:space-y-6">
-                {ranks.map((rank, rankIndex) => (
-                    <div key={rank.id} className="p-3 sm:p-4 rounded-xl border border-zinc-800/80 bg-zinc-900/20 space-y-3">
-                        <div className="flex items-center gap-3 sm:gap-4 pb-2 border-b border-zinc-800/60">
-                            <img src={rank.rankBadgeUrl} alt={rank.name} className="w-10 h-10 sm:w-16 sm:h-16 flex-shrink-0 object-contain drop-shadow-[0_0_12px_rgba(239,68,68,0.35)]"/>
-                            <div className="min-w-0">
-                                <h3 className="text-sm sm:text-xl font-black text-white uppercase tracking-wider">{rank.name}</h3>
-                                <p className="text-[10px] sm:text-xs text-zinc-400 truncate mt-0.5">{rank.description || 'Standard tactical rank bracket'}</p>
+                {ranks.map((rank, rankIndex) => {
+                    const resolvedRankBadge = resolveRankIcon(rank.rankBadgeUrl, rank.name);
+                    return (
+                        <div key={rank.id} className="p-3 sm:p-4 rounded-xl border border-zinc-800/80 bg-zinc-900/20 space-y-3">
+                            <div className="flex items-center gap-3 sm:gap-4 pb-2 border-b border-zinc-800/60">
+                                <img 
+                                    src={resolvedRankBadge} 
+                                    alt={rank.name} 
+                                    onError={(e) => {
+                                        (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(rank.name);
+                                    }}
+                                    className="w-10 h-10 sm:w-16 sm:h-16 flex-shrink-0 object-contain drop-shadow-[0_0_12px_rgba(239,68,68,0.35)]"
+                                />
+                                <div className="min-w-0">
+                                    <h3 className="text-sm sm:text-xl font-black text-white uppercase tracking-wider">{rank.name}</h3>
+                                    <p className="text-[10px] sm:text-xs text-zinc-400 truncate mt-0.5">{rank.description || 'Standard tactical rank bracket'}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                {(rank.tiers || []).sort((a,b) => a.minXp - b.minXp).map((sub) => {
+                                    const resolvedTierIcon = resolveRankIcon(sub.iconUrl, rank.name, sub.name);
+                                    return (
+                                        <div key={sub.id} className="p-2 sm:p-2.5 rounded-lg border border-zinc-800/60 bg-zinc-900/40 hover:bg-zinc-900/80 transition-all flex items-start gap-2.5">
+                                            <img 
+                                                src={resolvedTierIcon} 
+                                                alt={sub.name} 
+                                                onError={(e) => {
+                                                    (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(sub.name || rank.name);
+                                                }}
+                                                className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 object-contain drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]"
+                                            />
+                                            <div className="min-w-0 flex-grow">
+                                                <div className="flex items-center justify-between gap-1 flex-wrap">
+                                                    <h4 className="font-bold text-white text-xs sm:text-sm truncate">{sub.name}</h4>
+                                                    <span className="text-[9px] font-mono text-green-400 font-bold bg-zinc-800 px-1.5 py-0.2 rounded border border-green-500/20">{getRangeForTier(sub, rank, rankIndex)}</span>
+                                                </div>
+                                                {sub.perks && sub.perks.length > 0 && (
+                                                    <ul className="mt-1 text-[9px] sm:text-[11px] text-zinc-400 space-y-0.5">
+                                                        {sub.perks.map((p, i) => (
+                                                            <li key={i} className="flex items-center gap-1 truncate">
+                                                                <CheckCircleIcon className="w-2.5 h-2.5 text-red-400 flex-shrink-0" />
+                                                                <span className="truncate">{p}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {(rank.tiers || []).sort((a,b) => a.minXp - b.minXp).map((sub) => (
-                                <div key={sub.id} className="p-2 sm:p-2.5 rounded-lg border border-zinc-800/60 bg-zinc-900/40 hover:bg-zinc-900/80 transition-all flex items-start gap-2.5">
-                                    <img src={sub.iconUrl} alt={sub.name} className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 object-contain drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]"/>
-                                    <div className="min-w-0 flex-grow">
-                                        <div className="flex items-center justify-between gap-1 flex-wrap">
-                                            <h4 className="font-bold text-white text-xs sm:text-sm truncate">{sub.name}</h4>
-                                            <span className="text-[9px] font-mono text-green-400 font-bold bg-zinc-800 px-1.5 py-0.2 rounded border border-green-500/20">{getRangeForTier(sub, rank, rankIndex)}</span>
-                                        </div>
-                                        {sub.perks && sub.perks.length > 0 && (
-                                            <ul className="mt-1 text-[9px] sm:text-[11px] text-zinc-400 space-y-0.5">
-                                                {sub.perks.map((p, i) => (
-                                                    <li key={i} className="flex items-center gap-1 truncate">
-                                                        <CheckCircleIcon className="w-2.5 h-2.5 text-red-400 flex-shrink-0" />
-                                                        <span className="truncate">{p}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
                 {ranks.length === 0 && (
                     <div className="text-center text-zinc-500 py-8 text-xs sm:text-base">No ranks have been configured. Go to the 'Progression' tab to set them up.</div>
                 )}

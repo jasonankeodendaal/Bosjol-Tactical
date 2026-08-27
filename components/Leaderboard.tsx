@@ -7,18 +7,41 @@ import { Input } from './Input';
 import { Modal } from './Modal';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { useData } from '../data/DataContext';
+import { getTierForPlayer, FALLBACK_RECRUIT_TIER, resolveRankIcon, getRankBadgeSvg } from '../utils/rankUtils';
 
 // RankedPlayerListItem Component
 const RankedPlayerListItem: React.FC<{ player: Player, rank: number, isCurrentUser?: boolean }> = memo(({ player, rank, isCurrentUser }) => {
+    const dataContext = useData();
+    const playerTier = useMemo(() => getTierForPlayer(player, dataContext?.ranks), [player, dataContext?.ranks]);
+    const tierIcon = resolveRankIcon(playerTier.iconUrl, playerTier.name);
+
     return (
         <li
             className={`flex items-center p-1.5 sm:p-3 rounded-lg transition-colors bg-zinc-800/40 border border-transparent ${isCurrentUser ? 'bg-red-500/20 !border-red-500/30' : 'hover:bg-zinc-800/80'}`}
         >
             <div className={`text-center w-5 sm:w-10 font-bold text-xs sm:text-xl ${rank <= 3 ? 'text-amber-400' : isCurrentUser ? 'text-red-400' : 'text-gray-400'}`}>{rank}</div>
-            <img src={player.avatarUrl} alt={player.name} className="w-7 h-7 sm:w-12 sm:h-12 rounded-full object-cover mx-1.5 sm:mx-4 border-2 border-zinc-700 flex-shrink-0" />
+            <img 
+                src={player.avatarUrl} 
+                alt={player.name} 
+                onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
+                }}
+                className="w-7 h-7 sm:w-12 sm:h-12 rounded-full object-cover mx-1.5 sm:mx-3 border-2 border-zinc-700 flex-shrink-0" 
+            />
             <div className="flex-grow min-w-0">
-                <p className={`font-bold text-xs sm:text-lg truncate ${isCurrentUser ? 'text-white' : 'text-gray-200'}`}>{player.name}</p>
-                <p className="text-[9px] sm:text-sm text-gray-500 truncate">"{player.callsign}"</p>
+                <div className="flex items-center gap-1.5">
+                    <p className={`font-bold text-xs sm:text-lg truncate ${isCurrentUser ? 'text-white' : 'text-gray-200'}`}>{player.name}</p>
+                    <img 
+                        src={tierIcon} 
+                        alt={playerTier.name} 
+                        title={playerTier.name}
+                        onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(playerTier.name);
+                        }}
+                        className="w-4 h-4 sm:w-5 sm:h-5 object-contain flex-shrink-0" 
+                    />
+                </div>
+                <p className="text-[9px] sm:text-sm text-gray-500 truncate">"{player.callsign}" · <span className="text-amber-400/90 font-mono text-[9px] sm:text-xs">{playerTier.name}</span></p>
             </div>
             <div className="text-right flex-shrink-0 ml-1">
                 <p className={`font-bold text-xs sm:text-xl ${isCurrentUser ? 'text-red-300' : 'text-gray-100'}`}>{(player.stats?.xp ?? 0).toLocaleString()}</p>
@@ -40,7 +63,14 @@ const PodiumPlayer: React.FC<{ player: Player, rank: 1 | 2 | 3, delay: number }>
         <motion.div className={`podium-item ${podiumClass}`} variants={animationVariants}>
             <div className="podium-avatar-wrapper">
                 {rank === 1 && <CrownIcon className="w-5 h-5 sm:w-10 sm:h-10 crown-icon" />}
-                <img src={player.avatarUrl} alt={player.name} className="podium-avatar" />
+                <img 
+                    src={player.avatarUrl} 
+                    alt={player.name} 
+                    onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
+                    }}
+                    className="podium-avatar" 
+                />
                 <p className={`font-bold text-[10px] sm:text-base mt-1 sm:mt-2 truncate max-w-full px-0.5 sm:px-1 ${rank === 1 ? 'text-amber-300' : 'text-white'}`}>{player.name}</p>
                 <p className="text-[9px] sm:text-xs text-zinc-300">{(player.stats?.xp ?? 0).toLocaleString()} RP</p>
             </div>

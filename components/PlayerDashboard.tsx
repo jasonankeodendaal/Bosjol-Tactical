@@ -17,30 +17,9 @@ import { AuthContext } from '../auth/AuthContext';
 import { DataContext } from '../data/DataContext';
 import { Loader } from './Loader';
 import { UrlOrUploadField } from './UrlOrUploadField';
-
-const getRankForPlayer = (player: Player, ranks: Rank[]): Tier => {
-    if (!ranks || ranks.length === 0) return UNRANKED_TIER;
-    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => b.minXp - a.minXp);
-    if (allTiers.length === 0) return UNRANKED_TIER;
-    const tier = allTiers.find(r => (player.stats?.xp ?? 0) >= r.minXp);
-    const lowestTier = [...allTiers].sort((a,b) => a.minXp - b.minXp)[0];
-    return tier || lowestTier || UNRANKED_TIER;
-};
-
-const getRankProgression = (player: Player, ranks: Rank[]) => {
-    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => a.minXp - b.minXp);
-    
-    // The player's current rank based on XP
-    const currentTier = getRankForPlayer(player, ranks);
-    const currentTierIndex = allTiers.findIndex(r => r.id === currentTier.id);
-
-    const previous = currentTierIndex > 0 ? allTiers[currentTierIndex - 1] : null;
-    const next = currentTierIndex < allTiers.length - 1 ? allTiers[currentTierIndex + 1] : null;
-    
-    const rank = ranks.find(r => (r.tiers || []).some(t => t.id === currentTier.id)) || null;
-
-    return { previous, current: currentTier, next, rank };
-}
+import { PlayerRankShowcase } from './PlayerRankShowcase';
+import { getRankForPlayer, getRankProgression, FALLBACK_RECRUIT_TIER } from '../utils/rankUtils';
+import { resolveRankIcon, getRankBadgeSvg } from '../utils/rankBadges';
 
 const SponsorModal: React.FC<{ sponsor: Sponsor, onClose: () => void, onImageClick: (url: string) => void, backgroundUrl?: string }> = ({ sponsor, onClose, onImageClick, backgroundUrl }) => {
     const defaultBg = "https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png";
@@ -162,89 +141,46 @@ const FullscreenImageViewer: React.FC<{ imageUrl: string, onClose: () => void }>
 };
 
 
-const RankAndLeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'ranks'>> = ({ player, players, ranks }) => {
-    const { previous, current, next } = getRankProgression(player, ranks);
-
-    const playerXP = player.stats?.xp ?? 0;
-    const startXp = current.minXp;
-    const endXp = next ? next.minXp : playerXP; // If no next rank, bar is full
-    const progressPercentage = next ? (
-        endXp > startXp ? Math.min(((playerXP - startXp) / (endXp - startXp)) * 100, 100) : 0
-      ) : 100;
-
-    const kills = player.stats?.kills ?? 0;
-    const deaths = player.stats?.deaths ?? 0;
-    const kdr = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
-    const avgKills = (player.stats?.gamesPlayed ?? 0) > 0 ? (kills / (player.stats?.gamesPlayed || 1)).toFixed(1) : '0.0';
-
-    const RankDisplayItem: React.FC<{ tier: Tier | null, type: 'side' | 'current', label: string }> = ({ tier, type, label }) => {
-        if (!tier) return <div className="w-1/3" />;
-        return (
-            <div className={`rank-display-item ${type} w-1/3`}>
-                <p className="label">{label}</p>
-                <div className="rank-display-hex">
-                    <img src={tier.iconUrl} alt={tier.name} />
-                </div>
-                <p className="name">{tier.name}</p>
-            </div>
-        );
-    };
+const RankAndLeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'ranks' | 'events'> & { onNavigateTab?: (tab: string) => void }> = ({ player, players, ranks, events, onNavigateTab }) => {
+    const [showLeaderboard, setShowLeaderboard] = useState(false);
+    const dataContext = useContext(DataContext);
 
     return (
-        <div className="space-y-4 sm:space-y-8">
-            <DashboardCard title="Ranked Status" icon={<ShieldCheckIcon className="w-5 h-5 sm:w-6 sm:h-6" />}>
-                 <div className="p-2 sm:p-6 grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6 items-center">
-                    <div className="col-span-1">
-                        <div className="rank-stats-grid !p-1.5 sm:!p-4">
-                            <div className="rank-stats-item col-span-2">
-                                <span className="label text-[9px] sm:text-xs">Season</span>
-                                <span className="value text-[9px] sm:text-xs">N/A</span>
-                            </div>
-                             <div className="rank-stats-item">
-                                <span className="label text-[9px] sm:text-xs">Matches</span>
-                                <span className="value text-[9px] sm:text-xs">{player.stats?.gamesPlayed ?? 0}</span>
-                            </div>
-                            <div className="rank-stats-item">
-                                <span className="label text-[9px] sm:text-xs">Avg Kills</span>
-                                <span className="value text-[9px] sm:text-xs">{avgKills}</span>
-                            </div>
-                             <div className="rank-stats-item">
-                                <span className="label text-[9px] sm:text-xs">K/D</span>
-                                <span className="value text-[9px] sm:text-xs">{kdr}</span>
-                            </div>
-                             <div className="rank-stats-item">
-                                <span className="label text-[9px] sm:text-xs">HS</span>
-                                <span className="value text-[9px] sm:text-xs">{player.stats?.headshots ?? 0}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-span-1 lg:col-span-2">
-                        <div className="rank-carousel-container !py-1 sm:!py-6">
-                            <RankDisplayItem tier={previous} type="side" label="Prev" />
-                            <RankDisplayItem tier={current} type="current" label="Current" />
-                            <RankDisplayItem tier={next} type="side" label="Next" />
-                        </div>
-                         <div className="xp-bar-container max-w-full">
-                            <div className="xp-bar-info">
-                                <span className="xp-earned text-xs sm:text-lg">Rank XP</span>
-                                <span className="xp-values text-xs sm:text-lg">{playerXP.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'}</span>
-                            </div>
-                            <div className="xp-bar-track !h-2 sm:!h-3">
-                                <motion.div 
-                                    className="xp-bar-fill" 
-                                    initial={{ width: '0%'}}
-                                    animate={{ width: `${progressPercentage}%`}}
-                                    transition={{ duration: 1, delay: 0.2 }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                 </div>
-            </DashboardCard>
+        <div className="space-y-6">
+            {/* Free-View COD Mobile Style Rank Showcase */}
+            <PlayerRankShowcase 
+                player={player} 
+                players={players} 
+                ranks={ranks} 
+                events={events}
+                companyDetails={dataContext?.companyDetails}
+                onNavigateTab={onNavigateTab}
+            />
 
-             <DashboardCard title="Global Leaderboard" icon={<TrophyIcon className="w-6 h-6" />} fullHeight>
-                <Leaderboard players={players} currentPlayerId={player.id} />
-            </DashboardCard>
+            {/* Free-View Seamless Leaderboard Drawer/Section */}
+            <div className="pt-6 border-t border-zinc-800/80">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                        <TrophyIcon className="w-5 h-5 text-amber-400" />
+                        <h3 className="text-sm sm:text-base font-bold uppercase tracking-wider text-white font-mono">
+                            Global Ranked Standings
+                        </h3>
+                    </div>
+                    <button
+                        onClick={() => setShowLeaderboard(prev => !prev)}
+                        className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-mono text-amber-400 font-bold uppercase transition-colors flex items-center gap-1.5"
+                    >
+                        <span>{showLeaderboard ? 'Hide Leaderboard' : 'Expand Leaderboard'}</span>
+                        <ChevronDownIcon className={`w-4 h-4 transform transition-transform ${showLeaderboard ? 'rotate-180' : ''}`} />
+                    </button>
+                </div>
+
+                {showLeaderboard && (
+                    <div className="p-2 sm:p-4 rounded-xl bg-zinc-950/70 border border-zinc-800/80">
+                        <Leaderboard players={players} currentPlayerId={player.id} />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
@@ -709,7 +645,14 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
             <div className="overview-card">
                 <h3 className="overview-section-title">Current Rank & Progression</h3>
                 <div className="flex items-center gap-4 mb-4">
-                    {rank && <img src={rank.rankBadgeUrl} alt={rank.name} className="w-16 h-16 sm:w-20 sm:h-20"/>}
+                    <img 
+                        src={resolveRankIcon(current.iconUrl, rank?.name, current.name, rank?.rankBadgeUrl)} 
+                        alt={rank?.name || current.name} 
+                        onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(current.name || rank?.name || '');
+                        }}
+                        className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-md"
+                    />
                     <div>
                         <p className="text-md sm:text-lg text-gray-400 uppercase tracking-wider">{rank?.name || 'Unranked'}</p>
                         <p className="text-2xl sm:text-3xl font-bold text-white">{current.name}</p>
@@ -1234,7 +1177,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                             {activeTab === 'Overview' && <OverviewTab player={player} players={players} events={events} sponsors={sponsors} ranks={ranks} />}
                             {activeTab === 'Events' && <EventsTab events={events} player={player} onEventSignUp={onEventSignUp} locations={locations} signups={signups} />}
                             {activeTab === 'Raffles' && <RafflesTab raffles={raffles} player={player} players={players} />}
-                            {activeTab === 'Ranks' && <RankAndLeaderboardTab ranks={ranks} player={player} players={players} />}
+                            {activeTab === 'Ranks' && <RankAndLeaderboardTab ranks={ranks} player={player} players={players} events={events} onNavigateTab={(t) => setActiveTab(t as Tab)} />}
                             {activeTab === 'Stats' && <StatsTab player={player} events={events} />}
                             {activeTab === 'Achievements' && <AchievementsTab player={player} legendaryBadges={legendaryBadges} ranks={ranks}/>}
                             {activeTab === 'Settings' && <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />}

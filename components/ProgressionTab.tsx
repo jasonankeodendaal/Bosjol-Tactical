@@ -8,6 +8,7 @@ import { UrlOrUploadField } from './UrlOrUploadField';
 import { DashboardCard } from './DashboardCard';
 import { DataContext } from '../data/DataContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { resolveRankIcon, getRankBadgeSvg } from '../utils/rankUtils';
 
 
 interface ProgressionTabProps {
@@ -227,7 +228,7 @@ const RankEditorModal: React.FC<{
                     name: count === 1 ? formData.name : `${formData.name} ${romanNumerals[idx] || (idx + 1)}`,
                     minXp: idx === 0 ? formData.minXp : (formData.minXp + (idx * step) + (idx > 0 && formData.minXp === 0 && idx === 1 ? 1 : 1)),
                     perks: [idx === count - 1 ? 'Exclusive Rank Title' : 'Standard Badge'],
-                    iconUrl: formData.rankBadgeUrl || 'https://img.icons8.com/color/48/insignia.png',
+                    iconUrl: formData.rankBadgeUrl || '',
                 };
             });
         } else if (tiers.length === 0) {
@@ -237,7 +238,7 @@ const RankEditorModal: React.FC<{
                 name: formData.name,
                 minXp: Number(formData.minXp) || 0,
                 perks: ['Base Operator Access'],
-                iconUrl: formData.rankBadgeUrl || 'https://img.icons8.com/color/48/insignia.png'
+                iconUrl: formData.rankBadgeUrl || ''
             }];
         }
 
@@ -245,7 +246,7 @@ const RankEditorModal: React.FC<{
             ...rank,
             name: formData.name.trim(),
             description: formData.description.trim(),
-            rankBadgeUrl: formData.rankBadgeUrl || 'https://img.icons8.com/color/48/insignia.png',
+            rankBadgeUrl: formData.rankBadgeUrl || '',
             minXp: Number(formData.minXp) || 0,
             tiers: tiers
         };
@@ -362,7 +363,7 @@ const TierEditorModal: React.FC<{
             name: formData.name.trim(),
             minXp: Math.max(0, Number(formData.minXp) || 0),
             perks: formData.perks.split(',').map(s => s.trim()).filter(Boolean),
-            iconUrl: formData.iconUrl || 'https://img.icons8.com/color/48/insignia.png',
+            iconUrl: formData.iconUrl || '',
         };
         onSave(finalTier);
     };
@@ -439,6 +440,7 @@ const RankCard: React.FC<{
     const sortedTiers = (rank.tiers || []).slice().sort((a,b) => a.minXp - b.minXp);
     const lowestXp = sortedTiers.length > 0 ? sortedTiers[0].minXp : (rank.minXp ?? 0);
     const highestXp = sortedTiers.length > 0 ? sortedTiers[sortedTiers.length - 1].minXp : lowestXp;
+    const resolvedRankBadge = resolveRankIcon(rank.rankBadgeUrl, rank.name);
 
     return (
         <div className="border-b border-zinc-800/70 pb-3 mb-2 transition-colors">
@@ -448,8 +450,11 @@ const RankCard: React.FC<{
             >
                 <div className="relative flex-shrink-0">
                     <img 
-                        src={rank.rankBadgeUrl} 
+                        src={resolvedRankBadge} 
                         alt={rank.name} 
+                        onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(rank.name);
+                        }}
                         className="w-10 h-10 sm:w-16 sm:h-16 object-contain filter drop-shadow-[0_0_12px_rgba(239,68,68,0.35)] transition-transform group-hover:scale-105" 
                     />
                     <span className="absolute -bottom-1 -right-1 bg-red-600 text-[8px] sm:text-[10px] text-white font-mono font-bold px-1 py-0.2 rounded-full border border-red-400/60 shadow">
@@ -505,10 +510,18 @@ const RankCard: React.FC<{
                             sortedTiers.map((tier) => {
                                 const globalIndex = allTiers.findIndex(t => t.id === tier.id);
                                 const nextTierInProgression = globalIndex > -1 && globalIndex < allTiers.length - 1 ? allTiers[globalIndex + 1] : null;
+                                const resolvedTierIcon = resolveRankIcon(tier.iconUrl, rank.name, tier.name);
                                 
                                 return (
                                     <div key={tier.id} className="flex items-center gap-2 sm:gap-3 bg-zinc-900/30 p-2 rounded-r-lg border-l-2 border-red-500/80 hover:bg-zinc-900/70 transition-all">
-                                        <img src={tier.iconUrl} alt={tier.name} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0 drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]"/>
+                                        <img 
+                                            src={resolvedTierIcon} 
+                                            alt={tier.name} 
+                                            onError={(e) => {
+                                                (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(tier.name || rank.name);
+                                            }}
+                                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0 drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]"
+                                        />
                                         <div className="flex-grow min-w-0">
                                             <div className="flex items-center gap-1.5 flex-wrap">
                                                 <p className="font-bold text-white text-xs sm:text-sm truncate">{tier.name}</p>
@@ -685,49 +698,58 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     const [showSqlGuide, setShowSqlGuide] = useState(false);
     const [copiedSql, setCopiedSql] = useState(false);
 
-    const rankSqlSnippet = `-- 1. Ensure ranks table has tiers jsonb column and security permissions
+    const rankSqlSnippet = `-- 1. Ensure ranks table has all required columns including updated_at, created_at, and tiers jsonb
 CREATE TABLE IF NOT EXISTS public.ranks (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT,
     "rankBadgeUrl" TEXT,
-    tiers JSONB DEFAULT '[]'::jsonb
+    tiers JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. Insert or update Ranks with custom XP brackets (Example: Starting rank 0 - 100 XP)
+-- Ensure existing ranks tables have the updated_at & created_at columns if they were created earlier without them
+ALTER TABLE public.ranks ADD COLUMN IF NOT EXISTS "rankBadgeUrl" TEXT;
+ALTER TABLE public.ranks ADD COLUMN IF NOT EXISTS tiers JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.ranks ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE public.ranks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
+-- 2. Insert or update Ranks with custom XP brackets
 INSERT INTO public.ranks (id, name, description, "rankBadgeUrl", tiers)
 VALUES
 (
     'rank_rookie', 
     'Rookie', 
     'Introductory rank for new operators (0 to 100 XP).',
-    'https://i.ibb.co/external-flatart-icons-outline-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-outline-flatarticons.png',
+    '',
     '[
-        {"id": "r_i", "name": "Rookie I", "minXp": 0, "perks": ["Basic Calling Card"], "iconUrl": "https://img.icons8.com/color/48/insignia.png"},
-        {"id": "r_ii", "name": "Rookie II", "minXp": 25, "perks": ["Calling Card"], "iconUrl": "https://img.icons8.com/color/48/insignia.png"},
-        {"id": "r_iii", "name": "Rookie III", "minXp": 50, "perks": ["Custom Banner"], "iconUrl": "https://img.icons8.com/color/48/insignia.png"},
-        {"id": "r_iv", "name": "Rookie IV", "minXp": 75, "perks": ["Weapon XP Card"], "iconUrl": "https://img.icons8.com/color/48/insignia.png"},
-        {"id": "r_v", "name": "Rookie V", "minXp": 100, "perks": ["Credits Reward"], "iconUrl": "https://img.icons8.com/color/48/insignia.png"}
+        {"id": "r_i", "name": "Rookie I", "minXp": 0, "perks": ["Basic Calling Card"], "iconUrl": ""},
+        {"id": "r_ii", "name": "Rookie II", "minXp": 25, "perks": ["Calling Card"], "iconUrl": ""},
+        {"id": "r_iii", "name": "Rookie III", "minXp": 50, "perks": ["Custom Banner"], "iconUrl": ""},
+        {"id": "r_iv", "name": "Rookie IV", "minXp": 75, "perks": ["Weapon XP Card"], "iconUrl": ""},
+        {"id": "r_v", "name": "Rookie V", "minXp": 100, "perks": ["Credits Reward"], "iconUrl": ""}
     ]'::jsonb
 ),
 (
     'rank_vet', 
     'Veteran', 
     'Experienced operators with proven battlefield record (101 to 500 XP).',
-    'https://i.ibb.co/external-flatart-icons-flat-flatarticons/64/external-shield-achievements-and-badges-flatart-icons-flat-flatarticons.png',
+    '',
     '[
-        {"id": "v_i", "name": "Veteran I", "minXp": 101, "perks": ["Weapon XP Card"], "iconUrl": "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png"},
-        {"id": "v_ii", "name": "Veteran II", "minXp": 200, "perks": ["Custom Banner"], "iconUrl": "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png"},
-        {"id": "v_iii", "name": "Veteran III", "minXp": 300, "perks": ["Credits Reward"], "iconUrl": "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png"},
-        {"id": "v_iv", "name": "Veteran IV", "minXp": 400, "perks": ["Weapon XP Card"], "iconUrl": "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png"},
-        {"id": "v_v", "name": "Veteran V", "minXp": 500, "perks": ["Exclusive Skin"], "iconUrl": "https://i.ibb.co/external-smashingstocks-glyph-smashing-stocks/66/external-rank-military-smashingstocks-glyph-smashing-stocks.png"}
+        {"id": "v_i", "name": "Veteran I", "minXp": 101, "perks": ["Weapon XP Card"], "iconUrl": ""},
+        {"id": "v_ii", "name": "Veteran II", "minXp": 200, "perks": ["Custom Banner"], "iconUrl": ""},
+        {"id": "v_iii", "name": "Veteran III", "minXp": 300, "perks": ["Credits Reward"], "iconUrl": ""},
+        {"id": "v_iv", "name": "Veteran IV", "minXp": 400, "perks": ["Weapon XP Card"], "iconUrl": ""},
+        {"id": "v_v", "name": "Veteran V", "minXp": 500, "perks": ["Exclusive Skin"], "iconUrl": ""}
     ]'::jsonb
 )
 ON CONFLICT (id) DO UPDATE 
 SET name = EXCLUDED.name,
     description = EXCLUDED.description,
     "rankBadgeUrl" = EXCLUDED."rankBadgeUrl",
-    tiers = EXCLUDED.tiers;`;
+    tiers = EXCLUDED.tiers,
+    updated_at = NOW();`;
 
     const handleCopySql = () => {
         navigator.clipboard.writeText(rankSqlSnippet);

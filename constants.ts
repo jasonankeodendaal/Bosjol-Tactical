@@ -64,7 +64,9 @@ export const MOCK_EVENTS: any[] = [];
 export const MOCK_SIGNUPS: Signup[] = [];
 export const MOCK_INVENTORY: InventoryItem[] = [];
 export const MOCK_TRANSACTIONS: Transaction[] = [];
-export const MOCK_RANKS: Rank[] = [];
+import { DEFAULT_RANKS, FALLBACK_RECRUIT_TIER } from './utils/rankUtils';
+
+export const MOCK_RANKS: Rank[] = DEFAULT_RANKS;
 export const MOCK_BADGES: Badge[] = [];
 export const MOCK_LEGENDARY_BADGES: LegendaryBadge[] = [];
 export const MOCK_HONORS: Honor[] = [];
@@ -85,7 +87,7 @@ export const EVENT_TYPES = ['CQB Match', 'MilSim Operation', 'Night Raid', 'Spee
 export const EVENT_STATUSES = ['Upcoming', 'Active', 'Completed', 'Cancelled'];
 export const INVENTORY_CATEGORIES = ['Primary Rifle', 'Sidearm', 'Equipment', 'Consumable', 'Protection'];
 export const INVENTORY_CONDITIONS = ['New', 'Good', 'Fair', 'Needs Maintenance', 'Retired'];
-export const UNRANKED_TIER = { name: 'Recruit', minXp: 0, color: '#71717a' };
+export const UNRANKED_TIER: Tier = FALLBACK_RECRUIT_TIER;
 
 export const INITIAL_PLAYERS: Player[] = [];
 export const INITIAL_EVENTS: Event[] = [];

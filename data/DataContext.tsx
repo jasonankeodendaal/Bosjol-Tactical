@@ -209,12 +209,22 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                     if (!isMounted) return;
                     if (fetchedRows && fetchedRows.length > 0) {
                         recordDatabaseActivity('reads', 1);
-                        const { id, ...rest } = fetchedRows[0];
+                        const { id, ...rawRest } = fetchedRows[0];
+                        const rest: any = {};
+                        for (const k in rawRest) {
+                            rest[k] = rawRest[k];
+                            if (k.toLowerCase() !== k) {
+                                rest[k.toLowerCase()] = rawRest[k];
+                            }
+                        }
+                        
                         setData(prev => {
                             const merged = { ...prev, ...mockData };
                             for (const k in mockData) {
-                                if (rest[k] !== null && rest[k] !== undefined) {
-                                    (merged as any)[k] = rest[k];
+                                // Try camelCase first, then lowercase
+                                const val = rest[k] !== undefined ? rest[k] : rest[k.toLowerCase()];
+                                if (val !== null && val !== undefined) {
+                                    (merged as any)[k] = val;
                                 } else if ((prev as any)[k] !== undefined) {
                                     (merged as any)[k] = (prev as any)[k];
                                 }
@@ -244,12 +254,20 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                     .on('postgres_changes', { event: '*', schema: 'public', table: collectionName, filter: `id=eq.${docId}` }, (payload) => {
                          recordDatabaseActivity('reads', 1);
                          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-                             const { id, ...rest } = payload.new as any;
+                             const { id, ...rawRest } = payload.new as any;
+                             const rest: any = {};
+                             for (const k in rawRest) {
+                                 rest[k] = rawRest[k];
+                                 if (k.toLowerCase() !== k) {
+                                     rest[k.toLowerCase()] = rawRest[k];
+                                 }
+                             }
                              setData(prev => {
                                  const merged = { ...prev };
                                  for (const key in mockData) {
-                                     if (rest[key] !== undefined && rest[key] !== null) {
-                                         (merged as any)[key] = rest[key];
+                                     const val = rest[key] !== undefined ? rest[key] : rest[key.toLowerCase()];
+                                     if (val !== undefined && val !== null) {
+                                         (merged as any)[key] = val;
                                      }
                                  }
                                  try {

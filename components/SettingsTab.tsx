@@ -78,7 +78,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 const next = { ...prev };
                 for (const key in companyDetails) {
                     const typedKey = key as keyof CompanyDetails;
-                    // If this specific field was NOT edited by the user (it still matches the old server value)
+                    // If this specific field was NOT edited by the user OR the server explicitly says it's empty (which shouldn't happen unless we wiped it)
                     if (prev[typedKey] === prevCompanyDetailsRef.current[typedKey]) {
                         // Then it is safe to update it from the server push
                         next[typedKey] = companyDetails[typedKey];
@@ -267,6 +267,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         }
     };
 
+    
     return (
         <div className="w-full space-y-3 sm:space-y-4">
             {/* Top Free-View Header Bar */}

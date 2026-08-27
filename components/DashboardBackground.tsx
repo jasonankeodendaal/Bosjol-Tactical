@@ -29,7 +29,7 @@ export const DashboardBackground: React.FC<{ url?: string }> = ({ url }) => {
     return (
         <div
             className="absolute inset-0 bg-cover bg-center bg-fixed -z-10"
-            style={{ backgroundImage: `url(${url})` }}
+            style={{ backgroundImage: `url("${url}")` }}
         />
     );
 };

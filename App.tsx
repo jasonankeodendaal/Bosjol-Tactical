@@ -53,6 +53,7 @@ Thank you, I look forward to hearing from you.
     const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(clientInquiryTemplate)}`;
 
 
+    console.log('App render companyDetails:', companyDetails.loginBackgroundUrl);
     return (
         <motion.div
             initial={{ opacity: 0 }}

@@ -222,7 +222,8 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                             const merged = { ...prev, ...mockData };
                             for (const k in mockData) {
                                 // Try camelCase first, then lowercase
-                                const val = rest[k] !== undefined ? rest[k] : rest[k.toLowerCase()];
+                                let val = rest[k];
+                                if (val === undefined || val === null) val = rest[k.toLowerCase()];
                                 if (val !== null && val !== undefined) {
                                     (merged as any)[k] = val;
                                 } else if ((prev as any)[k] !== undefined) {
@@ -254,18 +255,12 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
                     .on('postgres_changes', { event: '*', schema: 'public', table: collectionName, filter: `id=eq.${docId}` }, (payload) => {
                          recordDatabaseActivity('reads', 1);
                          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-                             const { id, ...rawRest } = payload.new as any;
-                             const rest: any = {};
-                             for (const k in rawRest) {
-                                 rest[k] = rawRest[k];
-                                 if (k.toLowerCase() !== k) {
-                                     rest[k.toLowerCase()] = rawRest[k];
-                                 }
-                             }
+                             const rawRest = (payload.new as any) || {};
                              setData(prev => {
                                  const merged = { ...prev };
                                  for (const key in mockData) {
-                                     const val = rest[key] !== undefined ? rest[key] : rest[key.toLowerCase()];
+                                     let val = rawRest[key];
+                                     if (val === undefined || val === null) val = rawRest[key.toLowerCase()];
                                      if (val !== undefined && val !== null) {
                                          (merged as any)[key] = val;
                                      }
@@ -297,18 +292,11 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
     }, [collectionName, docId, storageKey]);
 
      const updateData = useCallback(async (newData: Partial<T>) => {
-        let diffData: Partial<T> = {};
-        let hasChanges = false;
-        
+        if (!newData || Object.keys(newData).length === 0) return;
+
+        // Immediate optimistic state update
         setData(prev => {
-            for (const key in newData) {
-                if (newData[key] !== (prev as any)[key]) {
-                    (diffData as any)[key] = newData[key];
-                    hasChanges = true;
-                }
-            }
-            
-            const updated = { ...prev, ...diffData };
+            const updated = { ...prev, ...newData };
             try {
                 localStorage.setItem(storageKey, JSON.stringify(updated));
             } catch (err) {
@@ -317,11 +305,16 @@ function useDocument<T>(collectionName: string, docId: string, mockData: T) {
             return updated;
         });
 
-        if (!hasChanges) return;
-
         if (IS_LIVE_DATA && supabase) {
             try {
-                const payload = { id: docId, ...diffData };
+                const payload: any = { id: docId, ...newData };
+                // Also mirror lowercased fields for database schema compatibility
+                for (const key in newData) {
+                    if (key.toLowerCase() !== key) {
+                        payload[key.toLowerCase()] = (newData as any)[key];
+                    }
+                }
+
                 const { error } = await supabase.from(collectionName).upsert(payload);
                 if (error) {
                     console.warn(`Failed to update ${collectionName}/${docId}:`, error.message || error);
@@ -472,35 +465,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const setCompanyDetails = useCallback(async (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => {
         const finalData = typeof d === 'function' ? d(companyDetails) : d;
         
-        // Optimistic Update
         const coreData: Partial<typeof mock.MOCK_COMPANY_CORE> = {};
         const brandingData: Partial<typeof mock.MOCK_BRANDING_DETAILS> = {};
         const contentData: Partial<typeof mock.MOCK_CONTENT_DETAILS> = {};
 
-        let coreChanged = false;
-        let brandingChanged = false;
-        let contentChanged = false;
-
         for (const key in finalData) {
             const typedKey = key as keyof CompanyDetails;
-            if (finalData[typedKey] !== companyDetails[typedKey]) {
-                if (key in mock.MOCK_COMPANY_CORE) {
-                    (coreData as any)[key] = finalData[typedKey];
-                    coreChanged = true;
-                } else if (key in mock.MOCK_BRANDING_DETAILS) {
-                    (brandingData as any)[key] = finalData[typedKey];
-                    brandingChanged = true;
-                } else if (key in mock.MOCK_CONTENT_DETAILS) {
-                    (contentData as any)[key] = finalData[typedKey];
-                    contentChanged = true;
-                }
+            const val = finalData[typedKey];
+            if (key in mock.MOCK_COMPANY_CORE) {
+                (coreData as any)[key] = val;
+            } else if (key in mock.MOCK_BRANDING_DETAILS) {
+                (brandingData as any)[key] = val;
+            } else if (key in mock.MOCK_CONTENT_DETAILS) {
+                (contentData as any)[key] = val;
             }
         }
 
         const promises = [];
-        if (coreChanged) promises.push(updateCompanyCore(coreData));
-        if (brandingChanged) promises.push(updateBrandingDetails(brandingData));
-        if (contentChanged) promises.push(updateContentDetails(contentData));
+        if (Object.keys(coreData).length > 0) promises.push(updateCompanyCore(coreData));
+        if (Object.keys(brandingData).length > 0) promises.push(updateBrandingDetails(brandingData));
+        if (Object.keys(contentData).length > 0) promises.push(updateContentDetails(contentData));
 
         if (promises.length > 0) {
             await Promise.all(promises);
@@ -589,35 +573,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     const updateDoc = useCallback(async <T extends {id: string}>(collectionName: string, doc: Partial<T> & {id: string}) => {
-        // Find existing doc to diff against
-        let existingDoc: any = null;
+        const { id, ...newData } = doc;
+
+        // Instant optimistic local update
         const setter = collectionSettersRef.current[collectionName];
         if (setter) {
-            setter(prev => {
-                existingDoc = prev.find(item => item.id === doc.id);
-                return prev.map(item => item.id === doc.id ? { ...item, ...doc } : item);
-            });
+            setter(prev => prev.map(item => item.id === id ? { ...item, ...doc } : item));
         }
 
         if (IS_LIVE_DATA && supabase) {
             try {
-                const { id, ...newData } = doc;
-                let dataToUpdate: any = { ...newData };
-                
-                // If we found the existing doc, only push fields that actually changed
-                if (existingDoc) {
-                    dataToUpdate = {};
-                    let hasChanges = false;
-                    for (const key in newData) {
-                        if (newData[key as keyof typeof newData] !== existingDoc[key]) {
-                            dataToUpdate[key] = newData[key as keyof typeof newData];
-                            hasChanges = true;
-                        }
-                    }
-                    if (!hasChanges) return; // Nothing to update remotely
-                }
-
-                const { error } = await supabase.from(collectionName).update(dataToUpdate).eq('id', id);
+                const { error } = await supabase.from(collectionName).update(newData).eq('id', id);
                 if (error) console.warn(`Supabase updateDoc error on ${collectionName}:`, error.message || error);
                 else recordDatabaseActivity('writes', 1);
             } catch (err: any) {

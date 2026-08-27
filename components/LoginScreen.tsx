@@ -76,7 +76,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
     return (
       <div
         className="absolute z-0 w-full h-full bg-cover bg-center opacity-20"
-        style={{ backgroundImage: `url(${url})` }}
+        style={{ backgroundImage: `url("${url}")` }}
       />
     );
   };

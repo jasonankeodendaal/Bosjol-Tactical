@@ -154,7 +154,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         setIsSaving(true);
         try {
             justSavedRef.current = true;
-            await setCompanyDetails(formData);
+            const normalized = normalizeCompanyDetails(formData);
+            await setCompanyDetails(normalized);
 
             // Sync Social Links
             const originalSocialIds = new Set(socialLinks.map(i => i.id));
@@ -188,7 +189,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 await updateDoc('admins', adminFormData);
             }
 
-            setFormData(normalizeCompanyDetails(formData));
+            setFormData(normalized);
+            prevCompanyDetailsRef.current = normalized;
             setIsDirty(false);
             alert('Settings saved successfully!');
         } catch (error) {

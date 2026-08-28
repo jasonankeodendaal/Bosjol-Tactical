@@ -27,8 +27,9 @@ const SponsorModal: React.FC<{ sponsor: Sponsor, onClose: () => void, onImageCli
     
     // Determine WhatsApp link formatting
     const formatPhoneLink = (phone: string) => {
+        if (!phone) return '#';
         if (phone.startsWith('http')) return phone;
-        return `https://wa.me/${phone.replace(/\D/g, '')}`;
+        return `https://wa.me/${(phone || '').replace(/\D/g, '')}`;
     };
     
     return (
@@ -692,7 +693,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                             
                             <div className="mt-2 sm:mt-3 flex flex-col">
                                 <span className="text-[10px] sm:text-xs font-mono text-amber-500/80 tracking-widest uppercase mb-1">Sub-Tier</span>
-                                <p className="text-lg sm:text-xl font-bold text-gray-300 leading-none uppercase tracking-wider">{current.name.replace(new RegExp(`^${rank?.name || ''}\\s*`, 'i'), '') || current.name}</p>
+                                <p className="text-lg sm:text-xl font-bold text-gray-300 leading-none uppercase tracking-wider">{(current?.name || '').replace(new RegExp(`^${rank?.name || ''}\\s*`, 'i'), '') || current?.name || ''}</p>
                             </div>
                         </div>
                     </div>

@@ -8,6 +8,7 @@ import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { AuthContext } from '../auth/AuthContext';
 import { deleteFromSupabaseStorage } from '../utils/storageCleaner';
+import { THEME_PRESETS } from './ThemeInjector';
 
 interface SettingsTabProps {
     companyDetails: CompanyDetails;
@@ -417,11 +418,260 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 </div>
             )}
 
-            {/* SECTION 3: BRANDING & MEDIA */}
+            {/* SECTION 3: BRANDING & MEDIA & THEME COLORS */}
             {activeSection === 'branding' && (
-                <div className="space-y-3 p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80">
-                    <div className="flex justify-between items-center mb-2">
-                        <p className="text-xs text-zinc-400">Media is saved immediately upon successful upload.</p>
+                <div className="space-y-4 p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80">
+                    <div className="flex justify-between items-center mb-1">
+                        <p className="text-xs text-zinc-400">Media uploads auto-save; theme colors save on "Save Changes".</p>
+                    </div>
+
+                    {/* Modern Pro Version Theme & Color Palette Mix Suite */}
+                    <div className="p-4 bg-zinc-950/80 border border-zinc-800 rounded-xl space-y-4 shadow-xl">
+                        <div className="flex flex-wrap items-center justify-between border-b border-zinc-800 pb-3 gap-2">
+                            <div className="flex items-center gap-2">
+                                <SparklesIcon className="w-5 h-5 text-amber-400 animate-pulse" />
+                                <div>
+                                    <h4 className="text-sm font-bold text-white uppercase tracking-wider">Pro Version Theme & Color Palette Studio</h4>
+                                    <p className="text-[11px] text-zinc-400">Select pre-crafted tactical themes or customize individual colors and glass FX.</p>
+                                </div>
+                            </div>
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                className="!py-1 !px-2.5 text-xs font-semibold"
+                                onClick={() => {
+                                    handleFormChange(f => ({
+                                        ...f,
+                                        themeColors: {
+                                            presetName: 'Red Alert Tactical',
+                                            primary: '#dc2626',
+                                            primaryHover: '#ef4444',
+                                            secondary: '#f59e0b',
+                                            darkBg: '#0a0a0a',
+                                            cardBg: '#18181b',
+                                            textHighlight: '#f87171',
+                                            borderGlow: '#7f1d1d',
+                                            gradientStyle: 'linear-glow',
+                                            glassOpacity: 'subtle',
+                                            borderRadius: 'standard'
+                                        }
+                                    }));
+                                }}
+                            >
+                                Reset Defaults
+                            </Button>
+                        </div>
+
+                        {/* 1. Tactical Presets Selector Grid */}
+                        <div className="space-y-2">
+                            <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider">Quick Select Tactical Theme Presets</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                {THEME_PRESETS.map((preset) => {
+                                    const isActive = formData.themeColors?.primary === preset.colors.primary && formData.themeColors?.darkBg === preset.colors.darkBg;
+                                    return (
+                                        <button
+                                            key={preset.id}
+                                            type="button"
+                                            onClick={() => {
+                                                handleFormChange(f => ({
+                                                    ...f,
+                                                    themeColors: {
+                                                        presetName: preset.name,
+                                                        ...preset.colors
+                                                    }
+                                                }));
+                                            }}
+                                            className={`p-2.5 rounded-lg border text-left transition-all relative overflow-hidden group ${
+                                                isActive
+                                                    ? 'border-amber-400 bg-zinc-900 shadow-lg ring-1 ring-amber-400/50'
+                                                    : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700 hover:bg-zinc-900'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <span className="text-[11px] font-bold text-white truncate">{preset.name}</span>
+                                                {isActive && <CheckCircleIcon className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />}
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-3.5 h-3.5 rounded-full border border-black/30" style={{ backgroundColor: preset.colors.primary }} title="Primary Accent" />
+                                                <div className="w-3.5 h-3.5 rounded-full border border-black/30" style={{ backgroundColor: preset.colors.secondary }} title="Secondary" />
+                                                <div className="w-3.5 h-3.5 rounded-full border border-black/30" style={{ backgroundColor: preset.colors.darkBg }} title="Background" />
+                                                <div className="w-3.5 h-3.5 rounded-full border border-black/30" style={{ backgroundColor: preset.colors.textHighlight }} title="Highlight" />
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* 2. Granular Color Mix Channels & Palette Controls */}
+                        <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+                            <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider">Color Palette Mix Channels</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                                <div>
+                                    <label className="block text-[11px] font-semibold text-zinc-300 mb-1">Primary Accent</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="color"
+                                            value={formData.themeColors?.primary || '#dc2626'}
+                                            onChange={e => handleFormChange(f => ({ ...f, themeColors: { ...f.themeColors, primary: e.target.value } }))}
+                                            className="w-8 h-8 rounded border border-zinc-700 bg-zinc-900 cursor-pointer p-0.5 flex-shrink-0"
+                                        />
+                                        <Input
+                                            value={formData.themeColors?.primary || '#dc2626'}
+                                            onChange={e => handleFormChange(f => ({ ...f, themeColors: { ...f.themeColors, primary: e.target.value } }))}
+                                            className="!text-xs uppercase font-mono"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-semibold text-zinc-300 mb-1">Accent Hover State</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="color"
+                                            value={formData.themeColors?.primaryHover || '#ef4444'}
+                                            onChange={e => handleFormChange(f => ({ ...f, themeColors: { ...f.themeColors, primaryHover: e.target.value } }))}
+                                            className="w-8 h-8 rounded border border-zinc-700 bg-zinc-900 cursor-pointer p-0.5 flex-shrink-0"
+                                        />
+                                        <Input
+                                            value={formData.themeColors?.primaryHover || '#ef4444'}
+                                            onChange={e => handleFormChange(f => ({ ...f, themeColors: { ...f.themeColors, primaryHover: e.target.value } }))}
+                                            className="!text-xs uppercase font-mono"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-semibold text-zinc-300 mb-1">Secondary / Badges</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="color"
+                                            value={formData.themeColors?.secondary || '#f59e0b'}
+                                            onChange={e => handleFormChange(f => ({ ...f, themeColors: { ...f.themeColors, secondary: e.target.value } }))}
+                                            className="w-8 h-8 rounded border border-zinc-700 bg-zinc-900 cursor-pointer p-0.5 flex-shrink-0"
+                                        />
+                                        <Input
+                                            value={formData.themeColors?.secondary || '#f59e0b'}
+                                            onChange={e => handleFormChange(f => ({ ...f, themeColors: { ...f.themeColors, secondary: e.target.value } }))}
+                                            className="!text-xs uppercase font-mono"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-semibold text-zinc-300 mb-1">Border & Glow Accent</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="color"
+                                            value={formData.themeColors?.borderGlow || '#7f1d1d'}
+                                            onChange={e => handleFormChange(f => ({ ...f, themeColors: { ...f.themeColors, borderGlow: e.target.value } }))}
+                                            className="w-8 h-8 rounded border border-zinc-700 bg-zinc-900 cursor-pointer p-0.5 flex-shrink-0"
+                                        />
+                                        <Input
+                                            value={formData.themeColors?.borderGlow || '#7f1d1d'}
+                                            onChange={e => handleFormChange(f => ({ ...f, themeColors: { ...f.themeColors, borderGlow: e.target.value } }))}
+                                            className="!text-xs uppercase font-mono"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-semibold text-zinc-300 mb-1">Dark Canvas BG</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="color"
+                                            value={formData.themeColors?.darkBg || '#0a0a0a'}
+                                            onChange={e => handleFormChange(f => ({ ...f, themeColors: { ...f.themeColors, darkBg: e.target.value } }))}
+                                            className="w-8 h-8 rounded border border-zinc-700 bg-zinc-900 cursor-pointer p-0.5 flex-shrink-0"
+                                        />
+                                        <Input
+                                            value={formData.themeColors?.darkBg || '#0a0a0a'}
+                                            onChange={e => handleFormChange(f => ({ ...f, themeColors: { ...f.themeColors, darkBg: e.target.value } }))}
+                                            className="!text-xs uppercase font-mono"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-semibold text-zinc-300 mb-1">Card Container BG</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="color"
+                                            value={formData.themeColors?.cardBg || '#18181b'}
+                                            onChange={e => handleFormChange(f => ({ ...f, themeColors: { ...f.themeColors, cardBg: e.target.value } }))}
+                                            className="w-8 h-8 rounded border border-zinc-700 bg-zinc-900 cursor-pointer p-0.5 flex-shrink-0"
+                                        />
+                                        <Input
+                                            value={formData.themeColors?.cardBg || '#18181b'}
+                                            onChange={e => handleFormChange(f => ({ ...f, themeColors: { ...f.themeColors, cardBg: e.target.value } }))}
+                                            className="!text-xs uppercase font-mono"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-semibold text-zinc-300 mb-1">Text Highlight Accent</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="color"
+                                            value={formData.themeColors?.textHighlight || '#f87171'}
+                                            onChange={e => handleFormChange(f => ({ ...f, themeColors: { ...f.themeColors, textHighlight: e.target.value } }))}
+                                            className="w-8 h-8 rounded border border-zinc-700 bg-zinc-900 cursor-pointer p-0.5 flex-shrink-0"
+                                        />
+                                        <Input
+                                            value={formData.themeColors?.textHighlight || '#f87171'}
+                                            onChange={e => handleFormChange(f => ({ ...f, themeColors: { ...f.themeColors, textHighlight: e.target.value } }))}
+                                            className="!text-xs uppercase font-mono"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. Live Interactive Theme Preview Box */}
+                        <div className="pt-3 border-t border-zinc-800/80">
+                            <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-2">Live Theme Color Mix Preview</label>
+                            <div 
+                                className="p-4 rounded-xl border transition-all duration-300 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4"
+                                style={{
+                                    backgroundColor: formData.themeColors?.cardBg || '#18181b',
+                                    borderColor: formData.themeColors?.borderGlow || '#7f1d1d'
+                                }}
+                            >
+                                <div className="space-y-1 text-center sm:text-left">
+                                    <span 
+                                        className="text-[10px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 rounded border"
+                                        style={{
+                                            color: formData.themeColors?.secondary || '#f59e0b',
+                                            borderColor: `${formData.themeColors?.secondary || '#f59e0b'}50`,
+                                            backgroundColor: `${formData.themeColors?.secondary || '#f59e0b'}15`
+                                        }}
+                                    >
+                                        Sub-Tier Preview
+                                    </span>
+                                    <h5 
+                                        className="text-lg font-black uppercase tracking-wider"
+                                        style={{ color: formData.themeColors?.textHighlight || '#f87171' }}
+                                    >
+                                        TACTICAL OPERATOR UNIT
+                                    </h5>
+                                    <p className="text-xs text-zinc-400">Live preview of button, badge, container card, and typography highlights.</p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-md text-white transition-all shadow-md"
+                                        style={{
+                                            backgroundColor: formData.themeColors?.primary || '#dc2626',
+                                            boxShadow: `0 4px 12px ${formData.themeColors?.borderGlow || '#7f1d1d'}80`
+                                        }}
+                                    >
+                                        Primary Action
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                         <UrlOrUploadField

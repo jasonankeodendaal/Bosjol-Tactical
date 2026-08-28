@@ -33,7 +33,20 @@ export const MOCK_BRANDING_DETAILS = {
     adminDashboardBackgroundUrl: '',
     playerDashboardAudioUrl: '',
     adminDashboardAudioUrl: '',
-    sponsorsBackgroundUrl: ''
+    sponsorsBackgroundUrl: '',
+    themeColors: {
+        presetName: 'Red Alert Tactical',
+        primary: '#dc2626',
+        primaryHover: '#ef4444',
+        secondary: '#f59e0b',
+        darkBg: '#0a0a0a',
+        cardBg: '#18181b',
+        textHighlight: '#f87171',
+        borderGlow: '#7f1d1d',
+        gradientStyle: 'linear-glow' as const,
+        glassOpacity: 'subtle' as const,
+        borderRadius: 'standard' as const,
+    }
 };
 
 export const MOCK_CONTENT_DETAILS = {

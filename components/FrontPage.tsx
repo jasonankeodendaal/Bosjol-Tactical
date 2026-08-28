@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CompanyDetails, CarouselMedia, SocialLink } from '../types';
 import { Button } from './Button';
 import { Modal } from './Modal';
-import { DocumentIcon } from './icons/Icons';
+import { DocumentIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from './icons/Icons';
 
 const SignUpInfoModal: React.FC<{ companyDetails: CompanyDetails, onContinue: () => void }> = ({ companyDetails, onContinue }) => {
     const [copied, setCopied] = useState(false);
@@ -185,15 +185,36 @@ interface FrontPageProps {
 export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLinks, carouselMedia, onEnter }) => {
     const [showSignUpModal, setShowSignUpModal] = useState(false);
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+    const [isMuted, setIsMuted] = useState(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    const loginBackgroundUrl = companyDetails.loginBackgroundUrl;
+    const loginAudioUrl = companyDetails.loginAudioUrl;
 
     useEffect(() => {
-        if (carouselMedia.length > 1) {
+        if (carouselMedia.length > 1 && (!loginBackgroundUrl || loginBackgroundUrl.trim() === '')) {
             const timer = setInterval(() => {
                 setCurrentMediaIndex(prevIndex => (prevIndex + 1) % carouselMedia.length);
             }, 7000); // Change media every 7 seconds
             return () => clearInterval(timer);
         }
-    }, [carouselMedia.length]);
+    }, [carouselMedia.length, loginBackgroundUrl]);
+
+    useEffect(() => {
+        if (audioRef.current && loginAudioUrl && loginAudioUrl.trim() !== '') {
+            audioRef.current.volume = 0.5;
+            audioRef.current.play().catch(() => {
+                // Autoplay policy restriction catch
+            });
+        }
+    }, [loginAudioUrl]);
+
+    const toggleMute = () => {
+        if (audioRef.current) {
+            audioRef.current.muted = !isMuted;
+            setIsMuted(!isMuted);
+        }
+    };
 
     const handleEnter = () => {
         onEnter();
@@ -201,40 +222,70 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
 
     const currentMedia = carouselMedia[currentMediaIndex];
 
+    const renderBackground = () => {
+        const bgUrl = (loginBackgroundUrl && loginBackgroundUrl.trim() !== '') 
+            ? loginBackgroundUrl 
+            : (currentMedia && currentMedia.url ? currentMedia.url : null);
+
+        if (!bgUrl || typeof bgUrl !== 'string' || bgUrl.trim() === '') return null;
+
+        const isVideo = bgUrl.startsWith('data:video') || bgUrl.includes('.mp4') || bgUrl.includes('.webm') || bgUrl.includes('.mov') || (currentMedia && currentMedia.type === 'video' && bgUrl === currentMedia.url);
+
+        return (
+            <AnimatePresence key={bgUrl}>
+                <motion.div
+                    initial={{ opacity: 0, scale: 1.05 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1.2, ease: 'easeOut' }}
+                    className="absolute inset-0 z-0"
+                >
+                    {isVideo ? (
+                        <video
+                            key={bgUrl}
+                            autoPlay
+                            loop
+                            muted={isMuted}
+                            playsInline
+                            className="w-full h-full object-cover opacity-80"
+                        >
+                            <source src={bgUrl} />
+                        </video>
+                    ) : (
+                        <div
+                            className="w-full h-full bg-cover bg-center opacity-80"
+                            style={{ backgroundImage: `url("${bgUrl}")` }}
+                        />
+                    )}
+                </motion.div>
+            </AnimatePresence>
+        );
+    };
+
     return (
         <div className="relative min-h-screen flex flex-col items-center justify-center bg-black p-4 overflow-hidden">
-            <AnimatePresence>
-                {currentMedia && currentMedia.url && currentMedia.url.trim() !== '' && (
-                    <motion.div
-                        key={currentMedia.id}
-                        initial={{ opacity: 0, scale: 1.1 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 1.5, ease: 'easeOut' }}
-                        className="absolute inset-0"
-                    >
-                        {currentMedia.type === 'video' ? (
-                            <video
-                                key={currentMedia.url}
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
-                                className="w-full h-full object-cover"
-                            >
-                                <source src={currentMedia.url} />
-                            </video>
-                        ) : (
-                            <div
-                                className="w-full h-full bg-cover bg-center"
-                                style={{ backgroundImage: `url(${currentMedia.url})` }}
-                            />
-                        )}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {renderBackground()}
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
+            {/* Background Audio */}
+            {loginAudioUrl && loginAudioUrl.trim() !== '' && (
+                <>
+                    <audio ref={audioRef} src={loginAudioUrl} loop autoPlay />
+                    <button
+                        type="button"
+                        onClick={toggleMute}
+                        className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-zinc-800/60 text-zinc-300 hover:text-white transition-all shadow-md"
+                        title={isMuted ? "Unmute Audio" : "Mute Audio"}
+                    >
+                        {isMuted ? (
+                            <SpeakerXMarkIcon className="w-4 h-4 text-zinc-400" />
+                        ) : (
+                            <SpeakerWaveIcon className="w-4 h-4 text-red-500" />
+                        )}
+                    </button>
+                </>
+            )}
+
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-black/70 pointer-events-none z-1"></div>
             
             <AnimatePresence>
                 {showSignUpModal && (
@@ -245,25 +296,25 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
             <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-                className="relative z-10 text-center"
+                transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+                className="relative z-10 text-center max-w-lg px-4"
             >
                 {companyDetails.logoUrl && companyDetails.logoUrl.trim() !== '' && (
-                    <img src={companyDetails.logoUrl} alt={`${companyDetails.name} Logo`} className="h-20 sm:h-24 mx-auto mb-4" />
+                    <img src={companyDetails.logoUrl} alt={`${companyDetails.name} Logo`} className="h-16 sm:h-20 mx-auto mb-3 object-contain drop-shadow-lg" />
                 )}
                 <h1 
-                  className="text-4xl sm:text-6xl md:text-7xl font-black text-white tracking-widest uppercase glitch-text mb-4"
+                  className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-widest uppercase glitch-text mb-2"
                   data-text="Bosjol Tactical"
                 >
                   Bosjol Tactical
                 </h1>
-                <h2 className="text-md sm:text-lg text-red-400 font-semibold italic">"Where weekends become warzones"</h2>
+                <h2 className="text-sm sm:text-base text-red-400 font-semibold italic">"Where weekends become warzones"</h2>
                 
-                <div className="mt-12 space-y-4 max-w-sm mx-auto">
-                    <Button onClick={() => setShowSignUpModal(true)} className="w-full !py-3 text-md">
+                <div className="mt-8 space-y-3 max-w-xs sm:max-w-sm mx-auto">
+                    <Button onClick={() => setShowSignUpModal(true)} className="w-full !py-2.5 text-sm sm:text-base font-bold shadow-lg">
                         Enlist as a New Recruit
                     </Button>
-                     <Button onClick={handleEnter} variant="secondary" className="w-full !py-3 text-md">
+                     <Button onClick={handleEnter} variant="secondary" className="w-full !py-2.5 text-sm sm:text-base font-bold shadow-lg">
                         Returning Operator Login
                     </Button>
                 </div>
@@ -273,14 +324,14 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
                 <motion.div 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 1, duration: 1 }}
-                    className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10"
+                    transition={{ delay: 0.8, duration: 1 }}
+                    className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10"
                 >
-                    <div className="flex items-center justify-center gap-6 bg-black/30 backdrop-blur-sm px-6 py-3 rounded-full border border-zinc-800">
+                    <div className="flex items-center justify-center gap-5 bg-black/40 backdrop-blur-md px-5 py-2.5 rounded-full border border-zinc-800/60 shadow-lg">
                         {socialLinks.map(link => (
                             <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:scale-110 transition-transform">
                                 {link.iconUrl && link.iconUrl.trim() !== '' ? (
-                                    <img src={link.iconUrl} alt={link.name} className="h-6 w-6 object-contain" title={link.name} />
+                                    <img src={link.iconUrl} alt={link.name} className="h-5 w-5 object-contain" title={link.name} />
                                 ) : (
                                     <span className="text-xs font-bold text-zinc-400">{link.name}</span>
                                 )}

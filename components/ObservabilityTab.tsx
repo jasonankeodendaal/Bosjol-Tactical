@@ -20,7 +20,7 @@ const LineGraph: React.FC<{ data: number[]; color: string; title: string; total:
     
     const areaPoints = `0,${height} ${points} ${width},${height}`;
     
-    const uniqueId = `grad_${title.replace(/\s+/g, '_')}`;
+    const uniqueId = `grad_${(title || '').replace(/\s+/g, '_')}`;
 
     return (
         <DashboardCard title="" icon={<></>}>
@@ -346,7 +346,7 @@ export const ObservabilityTab: React.FC = () => {
                                         <tr key={session.id}>
                                             <td className="px-4 py-3 font-medium text-gray-200">{session.userName}</td>
                                             <td className="px-4 py-3">{session.userRole}</td>
-                                            <td className="px-4 py-3 text-gray-400">{session.currentView.replace('player-dashboard-', '').replace('admin-dashboard-', '')}</td>
+                                            <td className="px-4 py-3 text-gray-400">{(session?.currentView || '').replace('player-dashboard-', '').replace('admin-dashboard-', '')}</td>
                                             <td className="px-4 py-3 text-gray-500">{formatDistanceToNow(new Date(session.lastSeen), { addSuffix: true })}</td>
                                         </tr>
                                     ))}

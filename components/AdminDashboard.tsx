@@ -589,7 +589,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         if (view === 'player_profile') return 'admin-player-profile';
         if (view === 'manage_event') return 'admin-manage-event';
         // Format tab name for help content key
-        const formattedTab = activeTab.toLowerCase().replace(' & ', '-').replace(/\s+/g, '-');
+        const formattedTab = (activeTab || '').toLowerCase().replace(' & ', '-').replace(/\s+/g, '-');
         return `admin-dashboard-${formattedTab}`;
     };
 

@@ -23,6 +23,7 @@ import { PlayerDashboard } from './components/PlayerDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import FrontPage from './components/FrontPage';
 import { CreatorDashboard } from './components/CreatorDashboard';
+import { ThemeInjector } from './components/ThemeInjector';
 
 
 // --- Creator Popup Component and Icons ---
@@ -48,13 +49,11 @@ Thank you, I look forward to hearing from you.
 `;
 
     const emailSubject = "Project Inquiry via Bosjol Tactical Dashboard";
-    const emailHref = `mailto:${creatorDetails.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(clientInquiryTemplate)}`;
+    const emailHref = `mailto:${creatorDetails?.email || ''}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(clientInquiryTemplate)}`;
     
-    const whatsappNumber = creatorDetails.whatsapp.replace(/\D/g, '');
+    const whatsappNumber = (creatorDetails?.whatsapp || '').replace(/\D/g, '');
     const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(clientInquiryTemplate)}`;
 
-
-    console.log('App render companyDetails:', companyDetails.loginBackgroundUrl);
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -82,43 +81,45 @@ Thank you, I look forward to hearing from you.
                     <XIcon className="w-6 h-6" />
                 </button>
 
-                 <div className="p-6 sm:p-8">
-                    <div className="flex flex-col items-center text-center mb-5 sm:mb-6">
-                        <img src={creatorDetails.logoUrl} alt={`${creatorDetails.name} Logo`} className="h-20 sm:h-24 w-auto mb-3" />
-                        <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-wider">{creatorDetails.name}</h3>
-                        <p className="text-sm sm:text-md text-red-400 font-semibold italic mt-1">"{creatorDetails.tagline}"</p>
+                 <div className="p-5 sm:p-6">
+                    <div className="flex flex-col items-center text-center mb-4 sm:mb-5">
+                        {creatorDetails.logoUrl && creatorDetails.logoUrl.trim() !== '' && (
+                            <img src={creatorDetails.logoUrl} alt={`${creatorDetails.name} Logo`} className="h-14 sm:h-16 w-auto mb-2 object-contain" />
+                        )}
+                        <h3 className="text-xl sm:text-2xl font-bold text-white tracking-wider">{creatorDetails.name}</h3>
+                        <p className="text-xs sm:text-sm text-red-400 font-semibold italic mt-0.5">"{creatorDetails.tagline}"</p>
                     </div>
                     
-                    <p className="text-center text-gray-300 text-xs sm:text-sm mb-5 pb-5 border-b border-zinc-700/50">{creatorDetails.bio}</p>
+                    <p className="text-center text-gray-300 text-xs sm:text-sm mb-4 pb-4 border-b border-zinc-700/50">{creatorDetails.bio}</p>
 
-                    <div className="flex items-center justify-center gap-6 mb-5">
+                    <div className="flex items-center justify-center gap-5 mb-4">
                         <a 
                             href={emailHref} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="p-3 bg-zinc-800/80 border border-zinc-700 rounded-full hover:bg-zinc-700 hover:border-red-500/60 transition-all hover:scale-110 shadow-lg"
+                            className="p-2.5 bg-zinc-800/80 border border-zinc-700 rounded-full hover:bg-zinc-700 hover:border-red-500/60 transition-all hover:scale-110 shadow-lg"
                             title="Email Creator"
                             aria-label="Email Creator"
                         >
-                            <img src="https://i.ibb.co/r2HkbjLj/image-removebg-preview-2.png" alt="Email" className="w-9 h-9 object-contain"/>
+                            <img src="https://i.ibb.co/r2HkbjLj/image-removebg-preview-2.png" alt="Email" className="w-7 h-7 object-contain"/>
                         </a>
                         <a 
                             href={whatsappHref} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="p-3 bg-zinc-800/80 border border-zinc-700 rounded-full hover:bg-zinc-700 hover:border-emerald-500/60 transition-all hover:scale-110 shadow-lg"
+                            className="p-2.5 bg-zinc-800/80 border border-zinc-700 rounded-full hover:bg-zinc-700 hover:border-emerald-500/60 transition-all hover:scale-110 shadow-lg"
                             title="WhatsApp Creator"
                             aria-label="WhatsApp Creator"
                         >
-                            <img src="https://i.ibb.co/Z1YHvjgT/image-removebg-preview-1.png" alt="WhatsApp" className="w-9 h-9 object-contain"/>
+                            <img src="https://i.ibb.co/Z1YHvjgT/image-removebg-preview-1.png" alt="WhatsApp" className="w-7 h-7 object-contain"/>
                         </a>
                     </div>
-                    <p className="text-[11px] sm:text-xs text-center text-gray-500 uppercase tracking-wider font-semibold mb-4">Creator Access via Login Screen</p>
+                    <p className="text-[10px] sm:text-xs text-center text-gray-500 uppercase tracking-wider font-semibold mb-3">Creator Access via Login Screen</p>
 
-                    <div className="pt-4 border-t border-zinc-800 flex justify-center">
+                    <div className="pt-3 border-t border-zinc-800 flex justify-center">
                         <button
                             onClick={onClose}
-                            className="w-full py-2.5 px-4 bg-red-600/90 hover:bg-red-600 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 text-sm shadow-md active:scale-95"
+                            className="w-full py-2 px-4 bg-red-600/90 hover:bg-red-600 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm shadow-md active:scale-95"
                         >
                             <ArrowLeftIcon className="w-4 h-4" />
                             <span>Back to Login Page</span>
@@ -141,13 +142,13 @@ const PublicPageFloatingIcons: React.FC<{
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 1, type: 'spring' }}
-            whileHover={{ scale: 1.1, rotate: -15 }}
+            whileHover={{ scale: 1.1, rotate: -10 }}
             whileTap={{ scale: 0.9 }}
-            className="fixed bottom-5 left-5 z-20 bg-zinc-900/80 backdrop-blur-sm p-2 rounded-full shadow-lg border border-zinc-700"
+            className="fixed bottom-4 left-4 z-20 bg-zinc-900/80 backdrop-blur-md p-1.5 sm:p-2 rounded-full shadow-lg border border-zinc-700/70 hover:border-zinc-500 transition-all"
             title="Help"
             aria-label="Open help menu"
         >
-            <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Help Icon" className="w-10 h-10" />
+            <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Help Icon" className="w-6 h-6 sm:w-7 sm:h-7 object-contain" />
         </motion.button>
 
         {/* Creator Icon */}
@@ -156,13 +157,13 @@ const PublicPageFloatingIcons: React.FC<{
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 1, type: 'spring' }}
-            whileHover={{ scale: 1.1, rotate: 15 }}
+            whileHover={{ scale: 1.1, rotate: 10 }}
             whileTap={{ scale: 0.9 }}
-            className="fixed bottom-5 right-5 z-20 bg-zinc-900/80 backdrop-blur-sm p-2 rounded-full shadow-lg border border-zinc-700"
+            className="fixed bottom-4 right-4 z-20 bg-zinc-900/80 backdrop-blur-md p-1.5 sm:p-2 rounded-full shadow-lg border border-zinc-700/70 hover:border-zinc-500 transition-all"
             title="Creator Information"
             aria-label="Open creator information"
         >
-            <img src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png" alt="Creator Icon" className="w-10 h-10" />
+            <img src="https://i.ibb.co/0phm4WGq/image-removebg-preview.png" alt="Creator Icon" className="w-6 h-6 sm:w-7 sm:h-7 object-contain" />
         </motion.button>
     </>
 );
@@ -736,6 +737,7 @@ const AppContent: React.FC = () => {
     
     return (
         <div className="bg-zinc-950 text-gray-100 font-sans min-h-screen flex flex-col antialiased">
+            <ThemeInjector themeColors={companyDetails?.themeColors} />
             <AnimatePresence>
                 {isSeeding && (
                     <motion.div

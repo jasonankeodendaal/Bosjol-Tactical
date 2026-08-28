@@ -421,6 +421,19 @@ export interface CompanyDetails {
     fixedEventRules?: string;
     minimumSignupAge: number;
     nextRankResetDate?: string;
+    themeColors?: {
+        presetName?: string;     // Active preset name
+        primary?: string;       // Primary Accent (default #dc2626)
+        primaryHover?: string;  // Hover state (default #ef4444)
+        secondary?: string;     // Secondary accent / Sub-tier (default #f59e0b)
+        darkBg?: string;        // Main background (default #0a0a0a)
+        cardBg?: string;        // Dashboard Card bg (default #18181b)
+        textHighlight?: string; // Glitch/Highlight text color (default #f87171)
+        borderGlow?: string;    // Border & Glow Accent (default #7f1d1d)
+        gradientStyle?: 'solid' | 'linear-glow' | 'neon-pulse'; // Accent gradient mode
+        glassOpacity?: 'off' | 'subtle' | 'heavy';             // Glassmorphism intensity
+        borderRadius?: 'sharp' | 'standard' | 'rounded';       // Element corner radius
+    };
 }
 
 export interface ApiGuideStep {

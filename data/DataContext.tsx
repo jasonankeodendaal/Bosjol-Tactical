@@ -142,9 +142,52 @@ function extractDocumentField(rawRow: Record<string, any>, key: string, fallback
     return fallback;
 }
 
-// Helper to fetch a single document from Supabase live with real-time sync (no localStorage)
+// Helper to safely upsert a row to Supabase, stripping missing columns automatically if table schema does not include them yet
+async function safeUpsertRow(table: string, initialPayload: any): Promise<boolean> {
+    if (!supabase) return false;
+    let currentPayload = { ...initialPayload };
+    let attempts = 0;
+    while (attempts < 10) {
+        attempts++;
+        const { error } = await supabase.from(table).upsert(currentPayload);
+        if (!error) {
+            recordDatabaseActivity('writes', 1);
+            return true;
+        }
+        const msg = error.message || String(error);
+        const match = msg.match(/Could not find the '([^']+)' column/i) || msg.match(/column "([^"]+)" of relation/i);
+        if (match && match[1]) {
+            const missingCol = match[1];
+            let removed = false;
+            for (const k of Object.keys(currentPayload)) {
+                if (k === missingCol || k.toLowerCase() === missingCol.toLowerCase()) {
+                    delete currentPayload[k];
+                    removed = true;
+                }
+            }
+            if (removed && Object.keys(currentPayload).length > 0) {
+                console.warn(`Supabase table '${table}' missing column '${missingCol}'. Stripped missing column and retrying upsert...`);
+                continue;
+            }
+        }
+        console.warn(`Supabase upsert notice for ${table}:`, msg);
+        break;
+    }
+    return false;
+}
+
+// Helper to fetch a single document from Supabase live with real-time sync
 function useDocument<T>(collectionName: string, docId: string, defaultShape: T) {
-    const [data, setData] = useState<T>(defaultShape);
+    const storageKey = `doc_${collectionName}_${docId}`;
+    const [data, setData] = useState<T>(() => {
+        try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) {
+                return { ...defaultShape, ...JSON.parse(saved) };
+            }
+        } catch {}
+        return defaultShape;
+    });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -168,18 +211,21 @@ function useDocument<T>(collectionName: string, docId: string, defaultShape: T) 
                     setData(prev => {
                         const merged: any = { ...prev, ...defaultShape };
                         for (const k in defaultShape) {
-                            merged[k] = extractDocumentField(rawRow, k, (defaultShape as any)[k]);
+                            merged[k] = extractDocumentField(rawRow, k, (prev as any)[k] ?? (defaultShape as any)[k]);
                         }
+                        try {
+                            localStorage.setItem(storageKey, JSON.stringify(merged));
+                        } catch {}
                         return merged;
                     });
                 } else if (error) {
-                    console.error(`Live fetch error on ${collectionName}/${docId}:`, error.message || error);
+                    console.warn(`Live fetch note on ${collectionName}/${docId}:`, error.message || error);
                 }
                 setLoading(false);
             })
             .catch(err => {
                 if (!isMounted) return;
-                console.error(`Network error on ${collectionName}/${docId}:`, err?.message || err);
+                console.warn(`Network note on ${collectionName}/${docId}:`, err?.message || err);
                 setLoading(false);
             });
 
@@ -196,6 +242,9 @@ function useDocument<T>(collectionName: string, docId: string, defaultShape: T) 
                              for (const key in defaultShape) {
                                  merged[key] = extractDocumentField(rawRow, key, (prev as any)[key] ?? (defaultShape as any)[key]);
                              }
+                             try {
+                                 localStorage.setItem(storageKey, JSON.stringify(merged));
+                             } catch {}
                              return merged;
                          });
                      }
@@ -213,13 +262,19 @@ function useDocument<T>(collectionName: string, docId: string, defaultShape: T) 
                 } catch {}
             }
         };
-    }, [collectionName, docId]);
+    }, [collectionName, docId, storageKey]);
 
     const updateData = useCallback(async (newData: Partial<T>) => {
         if (!newData || Object.keys(newData).length === 0) return;
 
-        // Immediate optimistic in-memory update
-        setData(prev => ({ ...prev, ...newData }));
+        // Immediate optimistic in-memory and local storage update
+        setData(prev => {
+            const updated = { ...prev, ...newData };
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(updated));
+            } catch {}
+            return updated;
+        });
 
         if (IS_LIVE_DATA && supabase) {
             try {
@@ -232,17 +287,12 @@ function useDocument<T>(collectionName: string, docId: string, defaultShape: T) 
                     }
                 }
 
-                const { error } = await supabase.from(collectionName).upsert(payload);
-                if (error) {
-                    console.error(`Supabase update failed for ${collectionName}/${docId}:`, error.message || error);
-                } else {
-                    recordDatabaseActivity('writes', 1);
-                }
+                await safeUpsertRow(collectionName, payload);
             } catch (error: any) {
-                console.error(`Network error updating ${collectionName}/${docId}:`, error?.message || error);
+                console.warn(`Network error updating ${collectionName}/${docId}:`, error?.message || error);
             }
         }
-    }, [collectionName, docId]);
+    }, [collectionName, docId, storageKey]);
     
     return [data, updateData, loading] as const;
 }
@@ -726,13 +776,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             
             // Deconstructed Settings
             try {
-                await supabase.from('settings').upsert([
+                const settingsDocs = [
                     { id: 'companyDetails', ...mock.MOCK_COMPANY_CORE },
                     { id: 'brandingDetails', ...mock.MOCK_BRANDING_DETAILS },
                     { id: 'contentDetails', ...mock.MOCK_CONTENT_DETAILS },
                     { id: 'creatorDetails', ...mock.MOCK_CREATOR_CORE }
-                ]);
-                recordDatabaseActivity('writes', 4);
+                ];
+                for (const docItem of settingsDocs) {
+                    await safeUpsertRow('settings', docItem);
+                }
             } catch (err: any) {
                 console.warn("Could not seed settings:", err?.message || err);
             }

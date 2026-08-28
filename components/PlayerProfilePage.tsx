@@ -389,7 +389,7 @@ WHERE id = '${player.id}';`;
                     <h1 className="text-2xl font-bold text-white">{player.name} "{player.callsign}" {player.surname}</h1>
                     <div className="flex items-center mt-1">
                         <img 
-                            src={resolveRankIcon(playerTier.iconUrl, playerRank?.name || playerTier.name, playerTier.name)} 
+                            src={resolveRankIcon(playerTier.iconUrl, playerRank?.name || playerTier.name, playerTier.name, playerRank?.rankBadgeUrl)} 
                             alt={playerTier.name} 
                             onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(playerTier.name || playerRank?.name || '');

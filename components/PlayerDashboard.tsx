@@ -25,87 +25,103 @@ const SponsorModal: React.FC<{ sponsor: Sponsor, onClose: () => void, onImageCli
     const defaultBg = "https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png";
     const bgUrl = backgroundUrl || defaultBg;
     
+    // Determine WhatsApp link formatting
+    const formatPhoneLink = (phone: string) => {
+        if (phone.startsWith('http')) return phone;
+        return `https://wa.me/${phone.replace(/\D/g, '')}`;
+    };
+    
     return (
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black/90 sm:bg-black/60 backdrop-blur-xl sm:backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 z-[100] overflow-y-auto"
             aria-modal="true" role="dialog"
         >
             <motion.div
-                initial={{ scale: 0.95, y: 10 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.95, y: 10 }}
+                initial={{ scale: 0.95, y: 20, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.95, y: 20, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 onClick={(e) => e.stopPropagation()}
-                className="relative bg-zinc-900 border border-zinc-700/50 rounded-xl shadow-2xl w-full max-w-2xl"
-                 style={{
-                    backgroundImage: `linear-gradient(rgba(10, 10, 10, 0.92), rgba(10, 10, 10, 0.92)), url('${bgUrl}')`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                }}
+                className="relative max-w-4xl w-full sm:w-auto min-w-[300px] flex-shrink-0 my-auto"
             >
-                <div className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center gap-4">
-                            <img src={sponsor.logoUrl} alt={sponsor.name} className="h-16 w-auto object-contain bg-black/20 p-2 rounded-md" />
-                            <div>
-                                <h2 className="text-2xl font-bold text-white tracking-wide">{sponsor.name}</h2>
-                                {sponsor.bio && <p className="text-gray-300 text-sm max-w-md">{sponsor.bio}</p>}
-                            </div>
+                {/* Background with overlay - Only visible as a card on desktop */}
+                <div 
+                    className="hidden sm:block absolute inset-0 z-0 opacity-40 rounded-3xl overflow-hidden"
+                    style={{
+                        backgroundImage: `url('${bgUrl}')`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                    }}
+                />
+                <div className="hidden sm:block absolute inset-0 z-0 bg-gradient-to-br from-zinc-950/95 via-zinc-900/95 to-black rounded-3xl shadow-2xl overflow-hidden border border-white/5"></div>
+                
+                {/* Content */}
+                <div className="relative z-10 p-2 sm:p-10 flex flex-col md:flex-row gap-8 sm:gap-12 items-stretch justify-center pb-12 sm:pb-10">
+                    
+                    <button onClick={onClose} className="fixed sm:absolute top-4 right-4 sm:top-6 sm:right-6 text-gray-400 hover:text-white transition-colors bg-white/10 sm:bg-black/20 hover:bg-white/20 sm:hover:bg-black/40 rounded-full p-2.5 sm:p-2 z-50 shadow-lg sm:shadow-none" aria-label="Close sponsor details">
+                        <XIcon className="w-6 h-6 sm:w-5 sm:h-5" />
+                    </button>
+
+                    {/* Left Column: Logo & Info */}
+                    <div className="flex flex-col items-center md:items-start max-w-sm w-full md:w-80 text-center md:text-left shrink-0 mx-auto mt-8 sm:mt-0">
+                        <div className="sm:bg-white/5 p-4 sm:p-6 sm:rounded-3xl sm:backdrop-blur-md sm:border border-white/10 sm:shadow-xl mb-4 sm:mb-6 w-full flex justify-center items-center h-32 sm:h-40">
+                            <img src={sponsor.logoUrl} alt={sponsor.name} className="max-h-full max-w-full object-contain drop-shadow-2xl" />
                         </div>
-                        <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors" aria-label="Close sponsor details">
-                            <XIcon className="w-6 h-6" />
-                        </button>
+                        
+                        <h2 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-400 tracking-tight mb-2 sm:mb-4">{sponsor.name}</h2>
+                        
+                        {sponsor.bio && <p className="text-gray-300 sm:text-gray-400 text-sm sm:text-base leading-relaxed mb-6 sm:mb-8">{sponsor.bio}</p>}
+                        
+                        {/* Contact Links */}
+                        <div className="flex flex-col gap-3 w-full mt-auto">
+                            {sponsor.website && (
+                                <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center md:justify-start gap-3 px-5 py-3.5 sm:py-3 bg-red-600/15 sm:bg-red-600/10 hover:bg-red-600/25 sm:hover:bg-red-600/20 text-red-400 rounded-2xl sm:rounded-xl border border-red-500/30 sm:border-red-500/20 transition-all group shadow-[0_0_15px_rgba(229,9,20,0.1)] sm:shadow-none">
+                                    <GlobeAltIcon className="w-5 h-5 group-hover:scale-110 transition-transform"/>
+                                    <span className="font-semibold tracking-wide text-sm">Visit Website</span>
+                                </a>
+                            )}
+                            {sponsor.email && (
+                                <a href={`mailto:${sponsor.email}`} className="flex items-center justify-center md:justify-start gap-3 px-5 py-3.5 sm:py-3 bg-white/10 sm:bg-white/5 hover:bg-white/15 sm:hover:bg-white/10 text-gray-200 sm:text-gray-300 rounded-2xl sm:rounded-xl border border-white/10 sm:border-white/5 transition-all group">
+                                    <AtSymbolIcon className="w-5 h-5 group-hover:scale-110 transition-transform"/>
+                                    <span className="font-medium text-sm truncate">{sponsor.email}</span>
+                                </a>
+                            )}
+                            {sponsor.phone && (
+                                <a href={formatPhoneLink(sponsor.phone)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center md:justify-start gap-3 px-5 py-3.5 sm:py-3 bg-white/10 sm:bg-white/5 hover:bg-white/15 sm:hover:bg-white/10 text-gray-200 sm:text-gray-300 rounded-2xl sm:rounded-xl border border-white/10 sm:border-white/5 transition-all group">
+                                    <PhoneIcon className="w-5 h-5 group-hover:scale-110 transition-transform text-green-400"/>
+                                    <span className="font-medium text-sm">{sponsor.phone}</span>
+                                </a>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 max-h-[60vh] overflow-y-auto pr-2">
-                        {/* Gallery Section */}
-                        {sponsor.imageUrls && sponsor.imageUrls.length > 0 && (
-                            <div className="md:col-span-2">
-                                <h4 className="font-semibold text-gray-200 mb-2 uppercase tracking-wider text-red-400 border-b border-red-600/30 pb-1">Gallery</h4>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
-                                    {sponsor.imageUrls.map((url, index) => (
-                                        <motion.img 
-                                            key={index} 
+                    {/* Right Column: Gallery (Only if exists) */}
+                    {sponsor.imageUrls && sponsor.imageUrls.length > 0 && (
+                        <div className="flex-1 min-w-0 w-full flex flex-col pt-8 md:pt-0 border-t border-white/10 md:border-t-0 md:border-l md:pl-10 mt-4 sm:mt-0">
+                            <h4 className="font-mono text-xs text-gray-400 sm:text-gray-500 uppercase tracking-[0.2em] mb-4 text-center md:text-left">Media Showcase</h4>
+                            <div className="flex overflow-x-auto gap-4 sm:gap-6 pb-6 pt-2 custom-scrollbar snap-x snap-mandatory">
+                                {sponsor.imageUrls.map((url, index) => (
+                                    <motion.div 
+                                        key={index}
+                                        whileHover={{ scale: 1.03, y: -5 }}
+                                        className="relative flex-none w-32 h-32 sm:w-48 sm:h-32 rounded-xl overflow-hidden cursor-pointer shadow-lg group snap-center border border-white/5 sm:border-none"
+                                        onClick={() => onImageClick(url)}
+                                    >
+                                        <div className="absolute inset-0 bg-red-600/20 opacity-0 group-hover:opacity-100 transition-opacity z-10 mix-blend-overlay"></div>
+                                        <img 
                                             src={url} 
                                             alt={`${sponsor.name} gallery image ${index + 1}`} 
-                                            className="w-full aspect-video object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-red-500" 
-                                            onClick={() => onImageClick(url)}
-                                            whileHover={{ scale: 1.05 }}
-                                            transition={{ type: 'spring', stiffness: 300 }}
+                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
                                         />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Contact Section */}
-                        <div className="md:col-span-1">
-                            <h4 className="font-semibold text-gray-200 mb-2 uppercase tracking-wider text-red-400 border-b border-red-600/30 pb-1">Contact Intel</h4>
-                             <div className="space-y-3 mt-3">
-                                {sponsor.website && (
-                                    <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-red-400 hover:underline">
-                                        <GlobeAltIcon className="w-5 h-5"/>
-                                        <span>Visit Website</span>
-                                    </a>
-                                )}
-                                {sponsor.email && (
-                                    <p className="flex items-center gap-2 text-gray-300">
-                                        <AtSymbolIcon className="w-5 h-5"/>
-                                        <span>{sponsor.email}</span>
-                                    </p>
-                                )}
-                                {sponsor.phone && (
-                                    <p className="flex items-center gap-2 text-gray-300">
-                                        <PhoneIcon className="w-5 h-5"/>
-                                        <span>{sponsor.phone}</span>
-                                    </p>
-                                )}
+                                    </motion.div>
+                                ))}
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </motion.div>
         </motion.div>
@@ -119,7 +135,7 @@ const FullscreenImageViewer: React.FC<{ imageUrl: string, onClose: () => void }>
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[60]"
+            className="fixed inset-0 bg-black/95 flex items-center justify-center p-4 sm:p-8 z-[200]"
             aria-modal="true"
             role="dialog"
         >
@@ -127,14 +143,14 @@ const FullscreenImageViewer: React.FC<{ imageUrl: string, onClose: () => void }>
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                 src={imageUrl}
                 alt="Fullscreen sponsor image"
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                className="max-w-full max-h-full w-auto h-auto object-contain rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.8)]"
                 onClick={(e) => e.stopPropagation()}
             />
-            <button onClick={onClose} className="absolute top-4 right-4 text-white hover:text-red-400 transition-colors" aria-label="Close image viewer">
-                <XIcon className="w-8 h-8"/>
+            <button onClick={onClose} className="absolute top-4 right-4 sm:top-8 sm:right-8 text-gray-400 hover:text-white transition-colors bg-black/40 hover:bg-black/60 rounded-full p-2 z-[210]" aria-label="Close image viewer">
+                <XIcon className="w-8 h-8 sm:w-6 sm:h-6"/>
             </button>
         </motion.div>
     );
@@ -644,22 +660,34 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
             </AnimatePresence>
             <div className="overview-card">
                 <h3 className="overview-section-title">Current Rank & Progression</h3>
-                <div className="flex items-center gap-4 mb-4">
-                    <img 
-                        src={resolveRankIcon(current.iconUrl, rank?.name, current.name, rank?.rankBadgeUrl)} 
-                        alt={rank?.name || current.name} 
-                        onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(current.name || rank?.name || '');
-                        }}
-                        className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-md"
-                    />
-                    <div>
-                        <p className="text-md sm:text-lg text-gray-400 uppercase tracking-wider">{rank?.name || 'Unranked'}</p>
-                        <p className="text-2xl sm:text-3xl font-bold text-white">{current.name}</p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-6 mb-6">
+                    <div className="flex items-center justify-center sm:justify-start gap-5 flex-1">
+                        <div className="relative group">
+                            <div className="absolute inset-0 bg-red-500/20 rounded-full blur-xl group-hover:bg-red-500/30 transition-colors duration-500"></div>
+                            <img 
+                                src={resolveRankIcon(current.iconUrl, rank?.name, current.name, rank?.rankBadgeUrl)} 
+                                alt={rank?.name || current.name} 
+                                onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(current.name || rank?.name || '');
+                                }}
+                                className="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-[0_10px_15px_rgba(229,9,20,0.4)] relative z-10 transform group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300"
+                            />
+                        </div>
+                        
+                        <div className="flex flex-col">
+                            <span className="text-[10px] sm:text-xs font-mono text-red-500/80 tracking-widest uppercase mb-1">Rank</span>
+                            <p className="text-xl sm:text-2xl text-white uppercase tracking-widest font-black leading-none drop-shadow-md">{rank?.name || 'Unranked'}</p>
+                            
+                            <div className="mt-2 sm:mt-3 flex flex-col">
+                                <span className="text-[10px] sm:text-xs font-mono text-amber-500/80 tracking-widest uppercase mb-1">Sub-Tier</span>
+                                <p className="text-lg sm:text-xl font-bold text-gray-300 leading-none uppercase tracking-wider">{current.name.replace(new RegExp(`^${rank?.name || ''}\\s*`, 'i'), '') || current.name}</p>
+                            </div>
+                        </div>
                     </div>
-                     <div className="ml-auto text-right">
-                        <p className="text-sm font-semibold text-gray-400">Percentile</p>
-                        <p className="text-xl sm:text-2xl font-bold text-white">Top {(100 - percentile).toFixed(1)}%</p>
+                    
+                    <div className="sm:ml-auto text-center sm:text-right bg-gradient-to-b from-zinc-900/80 to-zinc-950/80 p-4 rounded-xl border border-zinc-800/50 shadow-inner sm:w-auto w-full flex sm:flex-col justify-between sm:justify-center items-center">
+                        <p className="text-xs sm:text-sm font-mono text-gray-400 uppercase tracking-widest">Percentile</p>
+                        <p className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-500 mt-1 sm:mt-2">Top {(100 - percentile).toFixed(1)}%</p>
                     </div>
                 </div>
                 <div className="space-y-1">

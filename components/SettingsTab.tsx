@@ -69,6 +69,28 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         setUploadingFieldsCount(prev => uploading ? prev + 1 : Math.max(0, prev - 1));
     };
     
+    const handleInstantUrlSet = async (key: keyof CompanyDetails, url: string) => {
+        handleFormChange(f => ({ ...f, [key]: url }));
+        try {
+            const updated = { ...formData, [key]: url };
+            await setCompanyDetails(normalizeCompanyDetails(updated));
+            setIsDirty(false); 
+        } catch (err) {
+            console.error('Failed to auto-save branding upload', err);
+        }
+    };
+
+    const handleInstantUrlRemove = async (key: keyof CompanyDetails) => {
+        handleFormChange(f => ({ ...f, [key]: '' }));
+        try {
+            const updated = { ...formData, [key]: '' };
+            await setCompanyDetails(normalizeCompanyDetails(updated));
+            setIsDirty(false);
+        } catch (err) {
+            console.error('Failed to auto-save branding removal', err);
+        }
+    };
+
     const prevCompanyDetailsRef = useRef(companyDetails);
 
     useEffect(() => {
@@ -398,12 +420,15 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             {/* SECTION 3: BRANDING & MEDIA */}
             {activeSection === 'branding' && (
                 <div className="space-y-3 p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80">
+                    <div className="flex justify-between items-center mb-2">
+                        <p className="text-xs text-zinc-400">Media is saved immediately upon successful upload.</p>
+                    </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                         <UrlOrUploadField
                             label="Company Logo"
                             fileUrl={formData.logoUrl}
-                            onUrlSet={(url) => handleFormChange(f => ({ ...f, logoUrl: url }))}
-                            onRemove={() => handleFormChange(f => ({ ...f, logoUrl: '' }))}
+                            onUrlSet={(url) => handleInstantUrlSet('logoUrl', url)}
+                            onRemove={() => handleInstantUrlRemove('logoUrl')}
                             accept="image/*"
                             apiServerUrl={formData.apiServerUrl}
                             onUploadingChange={handleUploadingChange}
@@ -411,8 +436,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         <UrlOrUploadField
                             label="Login Background"
                             fileUrl={formData.loginBackgroundUrl}
-                            onUrlSet={(url) => handleFormChange(f => ({ ...f, loginBackgroundUrl: url }))}
-                            onRemove={() => handleFormChange(f => ({ ...f, loginBackgroundUrl: '' }))}
+                            onUrlSet={(url) => handleInstantUrlSet('loginBackgroundUrl', url)}
+                            onRemove={() => handleInstantUrlRemove('loginBackgroundUrl')}
                             accept="image/*,video/*"
                             apiServerUrl={formData.apiServerUrl}
                             onUploadingChange={handleUploadingChange}
@@ -420,8 +445,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         <UrlOrUploadField
                             label="Login Audio"
                             fileUrl={formData.loginAudioUrl}
-                            onUrlSet={(url) => handleFormChange(f => ({ ...f, loginAudioUrl: url }))}
-                            onRemove={() => handleFormChange(f => ({ ...f, loginAudioUrl: '' }))}
+                            onUrlSet={(url) => handleInstantUrlSet('loginAudioUrl', url)}
+                            onRemove={() => handleInstantUrlRemove('loginAudioUrl')}
                             accept="audio/*"
                             previewType="audio"
                             apiServerUrl={formData.apiServerUrl}
@@ -430,8 +455,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         <UrlOrUploadField
                             label="Player Dashboard BG"
                             fileUrl={formData.playerDashboardBackgroundUrl}
-                            onUrlSet={(url) => handleFormChange(f => ({ ...f, playerDashboardBackgroundUrl: url }))}
-                            onRemove={() => handleFormChange(f => ({ ...f, playerDashboardBackgroundUrl: '' }))}
+                            onUrlSet={(url) => handleInstantUrlSet('playerDashboardBackgroundUrl', url)}
+                            onRemove={() => handleInstantUrlRemove('playerDashboardBackgroundUrl')}
                             accept="image/*,video/*"
                             previewType="video"
                             apiServerUrl={formData.apiServerUrl}
@@ -440,8 +465,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         <UrlOrUploadField
                             label="Player Audio"
                             fileUrl={formData.playerDashboardAudioUrl}
-                            onUrlSet={(url) => handleFormChange(f => ({ ...f, playerDashboardAudioUrl: url }))}
-                            onRemove={() => handleFormChange(f => ({ ...f, playerDashboardAudioUrl: '' }))}
+                            onUrlSet={(url) => handleInstantUrlSet('playerDashboardAudioUrl', url)}
+                            onRemove={() => handleInstantUrlRemove('playerDashboardAudioUrl')}
                             accept="audio/*"
                             previewType="audio"
                             apiServerUrl={formData.apiServerUrl}
@@ -450,8 +475,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         <UrlOrUploadField
                             label="Admin Dashboard BG"
                             fileUrl={formData.adminDashboardBackgroundUrl}
-                            onUrlSet={(url) => handleFormChange(f => ({ ...f, adminDashboardBackgroundUrl: url }))}
-                            onRemove={() => handleFormChange(f => ({ ...f, adminDashboardBackgroundUrl: '' }))}
+                            onUrlSet={(url) => handleInstantUrlSet('adminDashboardBackgroundUrl', url)}
+                            onRemove={() => handleInstantUrlRemove('adminDashboardBackgroundUrl')}
                             accept="image/*,video/*"
                             previewType="video"
                             apiServerUrl={formData.apiServerUrl}
@@ -460,8 +485,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         <UrlOrUploadField
                             label="Admin Audio"
                             fileUrl={formData.adminDashboardAudioUrl}
-                            onUrlSet={(url) => handleFormChange(f => ({ ...f, adminDashboardAudioUrl: url }))}
-                            onRemove={() => handleFormChange(f => ({ ...f, adminDashboardAudioUrl: '' }))}
+                            onUrlSet={(url) => handleInstantUrlSet('adminDashboardAudioUrl', url)}
+                            onRemove={() => handleInstantUrlRemove('adminDashboardAudioUrl')}
                             accept="audio/*"
                             previewType="audio"
                             apiServerUrl={formData.apiServerUrl}
@@ -470,8 +495,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         <UrlOrUploadField
                             label="Sponsors BG"
                             fileUrl={formData.sponsorsBackgroundUrl}
-                            onUrlSet={(url) => handleFormChange(f => ({ ...f, sponsorsBackgroundUrl: url }))}
-                            onRemove={() => handleFormChange(f => ({ ...f, sponsorsBackgroundUrl: '' }))}
+                            onUrlSet={(url) => handleInstantUrlSet('sponsorsBackgroundUrl', url)}
+                            onRemove={() => handleInstantUrlRemove('sponsorsBackgroundUrl')}
                             accept="image/*"
                             apiServerUrl={formData.apiServerUrl}
                             onUploadingChange={handleUploadingChange}

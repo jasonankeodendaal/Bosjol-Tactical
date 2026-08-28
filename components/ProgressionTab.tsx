@@ -968,7 +968,11 @@ SET name = EXCLUDED.name,
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                             {badges.map(badge => (
                                 <div key={badge.id} className="flex items-center gap-3 p-2.5 rounded-xl border border-zinc-800/80 bg-zinc-900/40 hover:bg-zinc-900/80 transition-all">
-                                    <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 object-contain flex-shrink-0 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]"/>
+                                    {badge.iconUrl && badge.iconUrl.trim() !== '' ? (
+                                        <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 object-contain flex-shrink-0 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]"/>
+                                    ) : (
+                                        <TrophyIcon className="w-10 h-10 text-red-500 flex-shrink-0" />
+                                    )}
                                     <div className="flex-grow min-w-0">
                                         <p className="font-bold text-white text-xs sm:text-sm truncate">{badge.name}</p>
                                         <p className="text-[10px] text-zinc-400 truncate">{badge.description}</p>
@@ -999,7 +1003,11 @@ SET name = EXCLUDED.name,
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                             {legendaryBadges.map(badge => (
                                 <div key={badge.id} className="flex items-center gap-3 p-2.5 rounded-xl border border-amber-500/30 bg-amber-950/10 hover:bg-amber-950/30 transition-all">
-                                    <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 object-contain flex-shrink-0 drop-shadow-[0_0_10px_rgba(245,158,11,0.4)]"/>
+                                    {badge.iconUrl && badge.iconUrl.trim() !== '' ? (
+                                        <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 object-contain flex-shrink-0 drop-shadow-[0_0_10px_rgba(245,158,11,0.4)]"/>
+                                    ) : (
+                                        <SparklesIcon className="w-10 h-10 text-amber-400 flex-shrink-0" />
+                                    )}
                                     <div className="flex-grow min-w-0">
                                         <p className="font-bold text-amber-300 text-xs sm:text-sm truncate">{badge.name}</p>
                                         <p className="text-[10px] text-zinc-400 truncate">{badge.description}</p>

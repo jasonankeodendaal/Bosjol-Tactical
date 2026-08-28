@@ -474,9 +474,9 @@ const AppContent: React.FC = () => {
     const checkForPromotions = useCallback((player: Player) => {
         if (promotion || !ranks || ranks.length === 0) return;
     
-        const lastSeenXp = parseInt(localStorage.getItem(`lastSeenXp_${player.id}`) || '0', 10);
-        const lastSeenTierId = localStorage.getItem(`lastSeenTierId_${player.id}`);
-        const lastSeenBadges: string[] = JSON.parse(localStorage.getItem(`lastSeenBadges_${player.id}`) || '[]');
+        const lastSeenXp = parseInt(sessionStorage.getItem(`lastSeenXp_${player.id}`) || '0', 10);
+        const lastSeenTierId = sessionStorage.getItem(`lastSeenTierId_${player.id}`);
+        const lastSeenBadges: string[] = JSON.parse(sessionStorage.getItem(`lastSeenBadges_${player.id}`) || '[]');
     
         if (player.stats.xp > lastSeenXp) {
             const oldTier = lastSeenTierId ? (ranks.flatMap(r => r.tiers || []).find(t => t?.id === lastSeenTierId) || getTierForXp(lastSeenXp, ranks)) : getTierForXp(lastSeenXp, ranks);
@@ -537,10 +537,10 @@ const AppContent: React.FC = () => {
                 
                 updateDoc('players', updatedPlayer);
                 
-                localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(finalXp));
-                localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify((updatedPlayer.badges || []).map(b => b.id)));
+                sessionStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(finalXp));
+                sessionStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify((updatedPlayer.badges || []).map(b => b.id)));
                 if (finalTier) {
-                    localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
+                    sessionStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
                 }
             } else {
                 const finalTier = newTier || getTierForXp(currentPlayer.stats.xp, ranks) || currentPlayer.rank;
@@ -550,10 +550,10 @@ const AppContent: React.FC = () => {
                         rank: finalTier,
                     });
                 }
-                localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(currentPlayer.stats.xp));
-                localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify((currentPlayer.badges || []).map(b => b.id)));
+                sessionStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(currentPlayer.stats.xp));
+                sessionStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify((currentPlayer.badges || []).map(b => b.id)));
                 if (finalTier) {
-                    localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
+                    sessionStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
                 }
             }
         }
@@ -786,10 +786,10 @@ const AppContent: React.FC = () => {
                         key="dashboard"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="flex-grow flex flex-col relative isolate"
+                        className="flex-grow flex flex-col relative"
                     >
                         <DashboardBackground url={user?.role === 'admin' || user?.role === 'creator' ? companyDetails.adminDashboardBackgroundUrl : companyDetails.playerDashboardBackgroundUrl} />
-                        <div className="flex-grow bg-black/50 backdrop-blur-sm">
+                        <div className="flex-grow relative z-10 flex flex-col">
                             {user?.role === 'player' && currentPlayer && (
                                 <PlayerDashboard
                                     player={currentPlayer}

@@ -35,7 +35,7 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, className = '' })
       variants={cardVariants}
       className={`bg-zinc-800/50 rounded-lg border border-zinc-700/50 ${event.status !== 'Upcoming' ? 'opacity-60' : 'hover:bg-zinc-800 hover:border-red-600/50'} transition-all duration-300 overflow-hidden flex flex-col h-full ${className}`}
     >
-      {event.imageUrl ? (
+      {event.imageUrl && event.imageUrl.trim() !== '' ? (
         <img src={event.imageUrl} alt={event.title} className="w-full h-14 sm:h-24 object-cover flex-shrink-0"/>
       ) : (
         <div className="w-full h-10 sm:h-20 bg-zinc-900/80 flex items-center justify-center flex-shrink-0 text-zinc-600">

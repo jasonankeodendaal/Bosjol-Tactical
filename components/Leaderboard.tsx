@@ -21,7 +21,7 @@ const RankedPlayerListItem: React.FC<{ player: Player, rank: number, isCurrentUs
         >
             <div className={`text-center w-5 sm:w-10 font-bold text-xs sm:text-xl ${rank <= 3 ? 'text-amber-400' : isCurrentUser ? 'text-red-400' : 'text-gray-400'}`}>{rank}</div>
             <img 
-                src={player.avatarUrl} 
+                src={player.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`} 
                 alt={player.name} 
                 onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
@@ -64,7 +64,7 @@ const PodiumPlayer: React.FC<{ player: Player, rank: 1 | 2 | 3, delay: number }>
             <div className="podium-avatar-wrapper">
                 {rank === 1 && <CrownIcon className="w-5 h-5 sm:w-10 sm:h-10 crown-icon" />}
                 <img 
-                    src={player.avatarUrl} 
+                    src={player.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`} 
                     alt={player.name} 
                     onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
@@ -381,9 +381,9 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
                             {filteredHonors.map(honor => {
                                 const badgeInfo = getHonorBadge(honor.type);
                                 const playerObj = players.find(p => p.id === honor.playerId);
-                                const avatar = honor.playerAvatarUrl || playerObj?.avatarUrl || `https://api.dicebear.com/8.x/bottts/svg?seed=${honor.playerId}`;
                                 const name = honor.playerName || playerObj?.name || 'Player';
                                 const callsign = honor.playerCallsign || playerObj?.callsign || '';
+                                const avatar = honor.playerAvatarUrl || playerObj?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(callsign || name || 'OP')}&background=18181b&color=ef4444&bold=true`;
 
                                 return (
                                     <div
@@ -395,11 +395,14 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
                                                 <img
                                                     src={avatar}
                                                     alt={name}
+                                                    onError={(e) => {
+                                                        (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(callsign || name || 'OP')}&background=18181b&color=ef4444&bold=true`;
+                                                    }}
                                                     className="w-7 h-7 sm:w-12 sm:h-12 rounded-full border border-amber-500/50 bg-zinc-950 object-cover flex-shrink-0"
                                                 />
                                                 <div className="min-w-0">
                                                     <span className={`inline-flex items-center gap-1 text-[8px] sm:text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${badgeInfo.badgeBg} mb-0.5 truncate max-w-full`}>
-                                                        {honor.badgeImageUrl ? (
+                                                        {honor.badgeImageUrl && honor.badgeImageUrl.trim() !== '' ? (
                                                             <img src={honor.badgeImageUrl} alt={badgeInfo.label} className="w-3.5 h-3.5 sm:w-4 sm:h-4 object-contain rounded-full inline-block flex-shrink-0" />
                                                         ) : (
                                                             <span>{badgeInfo.icon}</span>

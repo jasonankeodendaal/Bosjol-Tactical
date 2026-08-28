@@ -31,7 +31,7 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({
                     <h1 className="text-3xl font-bold">{companyDetails.name}</h1>
                     <h2 className="text-xl">Financial Report</h2>
                 </div>
-                {companyDetails.logoUrl && (
+                {companyDetails.logoUrl && companyDetails.logoUrl.trim() !== '' && (
                     <img src={companyDetails.logoUrl} alt="Company Logo" className="h-16" />
                 )}
             </header>

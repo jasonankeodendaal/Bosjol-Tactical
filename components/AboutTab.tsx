@@ -44,8 +44,8 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
         {
             id: 'faq-2',
             category: 'Data & Persistence',
-            question: 'What happens if the internet connection drops during an airsoft event?',
-            answer: 'The Bosjol engine utilizes dual-layer offline fallbacks (`localStorage` + `DataContext` optimistic state). Any player edits, check-ins, or score entries remain saved on the local device and automatically synchronize to the Supabase cloud database as soon as network connectivity is restored.'
+            question: 'How does live data synchronization and persistence work across the application?',
+            answer: 'The Bosjol engine utilizes direct, live Supabase Cloud PostgreSQL database synchronization with real-time WebSocket listeners (`postgres_changes`). Every read, write, upload, and update is securely persisted straight to Supabase and immediately streamed to all active player and admin dashboards without relying on local browser cache.'
         },
         {
             id: 'faq-3',
@@ -230,7 +230,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
                                 <CpuChipIcon className="w-5 h-5 text-red-500" /> Technical Architecture & Data Replication Engine
                             </h3>
                             <p className="text-sm text-zinc-400">
-                                The Bosjol engine combines a zero-latency client state manager with persistent browser storage (`localStorage`) and automated Supabase PostgreSQL real-time WebSocket replication.
+                                The Bosjol engine operates on a direct, 100% cloud-synced architecture backed by Supabase Cloud PostgreSQL with automated real-time WebSocket replication for all reads, writes, and media assets.
                             </p>
                         </div>
 
@@ -242,7 +242,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
                                 <div className="hidden md:flex items-center justify-center text-zinc-600 font-bold">➔</div>
                                 <ArchNode title="DataContext" tag="State Manager" color="border-amber-500/50 text-amber-400 bg-amber-950/30" desc="Optimistic UI updates" />
                                 <div className="hidden md:flex items-center justify-center text-zinc-600 font-bold">➔</div>
-                                <ArchNode title="Local Cache" tag="Persistence" color="border-purple-500/50 text-purple-400 bg-purple-950/30" desc="Offline survival" />
+                                <ArchNode title="Supabase DB" tag="Cloud Engine" color="border-emerald-500/50 text-emerald-400 bg-emerald-950/30" desc="Live Realtime Sync" />
                             </div>
                             <div className="pt-3 border-t border-zinc-800/60 grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <div className="p-3 rounded-lg bg-zinc-900/50 border border-zinc-800 text-left">

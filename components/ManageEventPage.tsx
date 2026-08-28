@@ -541,7 +541,11 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                                 onChange={() => handleBadgeToggle(badge.id)}
                                                 className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"
                                             />
-                                            <img src={badge.iconUrl} alt={badge.name} className="w-6 h-6"/>
+                                            {badge.iconUrl && badge.iconUrl.trim() !== '' ? (
+                                                <img src={badge.iconUrl} alt={badge.name} className="w-6 h-6 object-contain"/>
+                                            ) : (
+                                                <SparklesIcon className="w-6 h-6 text-amber-400" />
+                                            )}
                                             <span className="text-sm text-amber-300">{badge.name}</span>
                                         </label>
                                     ))}

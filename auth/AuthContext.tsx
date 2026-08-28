@@ -65,7 +65,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (playerRows && playerRows.length > 0) {
                 const playerDoc = playerRows[0];
                 setUser(playerDoc as Player);
-                localStorage.setItem('activePlayerId', playerDoc.id);
+                sessionStorage.setItem('activePlayerId', playerDoc.id);
                 return;
             }
 
@@ -97,7 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             await supabase!.from('players').upsert(newPlayer);
             setUser(newPlayer as Player);
-            localStorage.setItem('activePlayerId', newPlayer.id);
+            sessionStorage.setItem('activePlayerId', newPlayer.id);
         } catch (error) {
             console.error("Error handling Supabase user:", error);
         }
@@ -118,8 +118,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 await handleSupabaseUser(session.user);
                 if (isMounted) setLoading(false);
             } else {
-                // Check if we have a locally stored player session
-                const storedPlayerId = localStorage.getItem('activePlayerId');
+                // Check if we have an active player session in current browser tab session
+                const storedPlayerId = sessionStorage.getItem('activePlayerId');
                 if (storedPlayerId) {
                     supabase.from('players').select('*').eq('id', storedPlayerId).single()
                     .then(({ data, error }) => {
@@ -127,7 +127,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         if (data && !error) {
                             setUser(data as Player);
                         } else {
-                            localStorage.removeItem('activePlayerId');
+                            sessionStorage.removeItem('activePlayerId');
                         }
                     })
                     .finally(() => {
@@ -202,7 +202,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
                 if (player && player.pin === password) {
                     setUser(player as Player);
-                    localStorage.setItem('activePlayerId', player.id);
+                    sessionStorage.setItem('activePlayerId', player.id);
                     return true;
                 }
             }
@@ -219,7 +219,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (IS_LIVE && supabase) {
             await supabase.auth.signOut();
         }
-        localStorage.removeItem('activePlayerId');
+        sessionStorage.removeItem('activePlayerId');
         setUser(null);
         setLoading(false);
     }, [IS_LIVE]);

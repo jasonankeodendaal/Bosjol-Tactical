@@ -419,7 +419,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications (read)
                                 <div className="flex items-start gap-2.5">
                                     {/* Badge or Icon Avatar */}
                                     <div className="relative flex-shrink-0">
-                                        {notif.badgeIconUrl ? (
+                                        {notif.badgeIconUrl && notif.badgeIconUrl.trim() !== '' ? (
                                             <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg p-1 flex items-center justify-center border ${
                                                 isLegendary 
                                                     ? 'bg-purple-900/40 border-purple-500 shadow-md shadow-purple-600/30' 
@@ -431,7 +431,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications (read)
                                                     className="w-full h-full object-contain"
                                                 />
                                             </div>
-                                        ) : notif.rankIconUrl ? (
+                                        ) : notif.rankIconUrl && notif.rankIconUrl.trim() !== '' ? (
                                             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg p-1 bg-emerald-900/30 border border-emerald-500/50 flex items-center justify-center">
                                                 <img 
                                                     src={notif.rankIconUrl} 
@@ -439,10 +439,13 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications (read)
                                                     className="w-full h-full object-contain"
                                                 />
                                             </div>
-                                        ) : notif.playerAvatarUrl ? (
+                                        ) : notif.playerAvatarUrl && notif.playerAvatarUrl.trim() !== '' ? (
                                             <img 
                                                 src={notif.playerAvatarUrl} 
                                                 alt={notif.playerName || 'Player'} 
+                                                onError={(e) => {
+                                                    (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(notif.playerName || 'OP')}&background=18181b&color=ef4444&bold=true`;
+                                                }}
                                                 className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg object-cover border border-zinc-700"
                                             />
                                         ) : (

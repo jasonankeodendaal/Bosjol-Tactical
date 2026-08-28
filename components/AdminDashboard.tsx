@@ -350,7 +350,7 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer, onDeletePlayer 
         >
             <div className="flex items-center gap-2 min-w-0">
                 <img 
-                    src={player.avatarUrl} 
+                    src={player.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`} 
                     alt={player.name} 
                     onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
@@ -712,7 +712,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         <div className="flex flex-col h-full">
             <header className="flex items-center justify-between p-3 sm:p-4 bg-zinc-950/70 backdrop-blur-sm border-b border-zinc-800 flex-shrink-0">
                 <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
-                    {adminUser?.avatarUrl && <img src={adminUser.avatarUrl} alt={adminUser?.name || 'Admin'} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-red-600 flex-shrink-0"/>}
+                    {adminUser?.avatarUrl && adminUser.avatarUrl.trim() !== '' && <img src={adminUser.avatarUrl} alt={adminUser?.name || 'Admin'} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-red-600 flex-shrink-0"/>}
                     <div className="overflow-hidden">
                         <h1 className="text-base sm:text-xl font-bold text-white truncate">{adminUser?.name || 'Admin'}</h1>
                         <p className="text-xs sm:text-sm text-red-400">Administrator</p>

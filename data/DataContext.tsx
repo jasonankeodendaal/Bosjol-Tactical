@@ -17,19 +17,8 @@ const INITIAL_QUOTA_COUNTERS: FirestoreQuotaCounters = {
     deletes: 0,
 };
 
-// Global memory for quota tracking so we don't trigger cascading React re-renders on every read
-let globalQuota = (() => {
-    try {
-        const saved = localStorage.getItem('supabaseQuotaCounters');
-        if (saved) {
-            const parsed: FirestoreQuotaCounters = JSON.parse(saved);
-            if (parsed.date === TODAY_KEY) return parsed;
-        }
-    } catch (e) {
-        console.error("Failed to parse quota counters from storage:", e);
-    }
-    return INITIAL_QUOTA_COUNTERS;
-})();
+// Global memory for quota tracking in-memory
+let globalQuota: FirestoreQuotaCounters = { ...INITIAL_QUOTA_COUNTERS };
 
 function recordDatabaseActivity(type: 'reads' | 'writes' | 'deletes', amount: number = 1) {
     const currentDay = new Date().toISOString().split('T')[0];
@@ -38,296 +27,222 @@ function recordDatabaseActivity(type: 'reads' | 'writes' | 'deletes', amount: nu
     } else {
         globalQuota = { ...globalQuota, [type]: globalQuota[type] + amount };
     }
-    try {
-        localStorage.setItem('supabaseQuotaCounters', JSON.stringify(globalQuota));
-    } catch {
-        // ignore storage errors
-    }
 }
 
-// Helper to fetch collection data from Supabase or LocalStorage
+// Helper to fetch collection data directly from Supabase with full real-time live sync (no localStorage)
 function useCollection<T extends {id: string}>(
     collectionName: string, 
     mockData: T[], 
     options: { isProtected?: boolean } = {}
 ) {
-    const storageKey = `app_data_${collectionName}`;
-
-    const getStoredFallback = (): T[] => {
-        try {
-            const saved = localStorage.getItem(storageKey);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    return parsed;
-                }
-            }
-        } catch (e) {
-            console.warn(`Failed to read ${storageKey} from storage:`, e);
-        }
-        return mockData;
-    };
-
-    const [data, setData] = useState<T[]>(() => IS_LIVE_DATA ? [] : getStoredFallback());
+    const [data, setData] = useState<T[]>(() => IS_LIVE_DATA ? [] : (mockData || []));
     const [loading, setLoading] = useState(true);
     const auth = useContext(AuthContext);
     const isAuthenticated = auth?.isAuthenticated;
     const isProtected = !!options.isProtected;
 
-    // Wrapped setter that automatically mirrors to localStorage
-    const setCollectionData = useCallback((action: React.SetStateAction<T[]>) => {
-        setData(prev => {
-            const next = typeof action === 'function' ? (action as (p: T[]) => T[])(prev) : action;
-            try {
-                localStorage.setItem(storageKey, JSON.stringify(next));
-            } catch (err) {
-                console.warn(`Failed to persist ${storageKey} to storage:`, err);
-            }
-            return next;
-        });
-    }, [storageKey]);
-
     useEffect(() => {
-        if (IS_LIVE_DATA && supabase) {
-            if (isProtected && !isAuthenticated) {
-                setData([]); 
-                setLoading(false);
-                return; 
-            }
-
-            setLoading(true);
-            let isMounted = true;
-            
-            // Initial Fetch with error fallback to LocalStorage/Mock
-            supabase.from(collectionName).select('*')
-                .then(({ data: fetchedData, error }) => {
-                    if (!isMounted) return;
-                    if (error) {
-                        console.warn(`Could not fetch ${collectionName} from Supabase, using local fallback:`, error.message || error);
-                        setData(getStoredFallback());
-                    } else {
-                        if (fetchedData && fetchedData.length > 0) {
-                            recordDatabaseActivity('reads', fetchedData.length);
-                            setCollectionData(fetchedData as unknown as T[]);
-                        } else {
-                            setData(getStoredFallback());
-                        }
-                    }
-                    setLoading(false);
-                })
-                .catch(err => {
-                    if (!isMounted) return;
-                    console.warn(`Network error fetching ${collectionName}, using local fallback:`, err?.message || err);
-                    setData(getStoredFallback());
-                    setLoading(false);
-                });
-
-            // Realtime Subscription
-            let channel: any = null;
-            try {
-                channel = supabase.channel(`public:${collectionName}`)
-                    .on('postgres_changes', { event: '*', schema: 'public', table: collectionName }, (payload) => {
-                        recordDatabaseActivity('reads', 1);
-                        if (payload.eventType === 'INSERT') {
-                            setCollectionData(currentData => {
-                                const newDoc = payload.new as unknown as T;
-                                return [...currentData.filter(item => (item as any).id !== (newDoc as any).id), newDoc];
-                            });
-                        } else if (payload.eventType === 'UPDATE') {
-                            setCollectionData(currentData => currentData.map(item => {
-                                if ((item as any).id === (payload.new as any).id) {
-                                    const { id, ...rest } = payload.new as any;
-                                    const updated = { ...item };
-                                    for (const key in rest) {
-                                        if (rest[key] !== undefined) (updated as any)[key] = rest[key];
-                                    }
-                                    return updated;
-                                }
-                                return item;
-                            }));
-                        } else if (payload.eventType === 'DELETE') {
-                            setCollectionData(currentData => currentData.filter(item => item.id !== (payload.old as any).id));
-                        }
-                    })
-                    .subscribe();
-            } catch (subErr) {
-                console.warn(`Could not subscribe to realtime changes for ${collectionName}:`, subErr);
-            }
-
-            return () => {
-                isMounted = false;
-                if (channel) {
-                    try {
-                        supabase.removeChannel(channel);
-                    } catch {}
-                }
-            };
-        } else {
-            setData(getStoredFallback());
+        if (!IS_LIVE_DATA || !supabase) {
+            setData(mockData || []);
             setLoading(false);
+            return;
         }
+
+        if (isProtected && !isAuthenticated) {
+            setData([]); 
+            setLoading(false);
+            return; 
+        }
+
+        setLoading(true);
+        let isMounted = true;
+        
+        // Initial live fetch from Supabase
+        supabase.from(collectionName).select('*')
+            .then(({ data: fetchedData, error }) => {
+                if (!isMounted) return;
+                if (error) {
+                    console.error(`Live fetch error on ${collectionName}:`, error.message || error);
+                    setData([]);
+                } else {
+                    if (fetchedData && fetchedData.length > 0) {
+                        recordDatabaseActivity('reads', fetchedData.length);
+                        setData(fetchedData as unknown as T[]);
+                    } else {
+                        setData([]);
+                    }
+                }
+                setLoading(false);
+            })
+            .catch(err => {
+                if (!isMounted) return;
+                console.error(`Network error on ${collectionName}:`, err?.message || err);
+                setData([]);
+                setLoading(false);
+            });
+
+        // Realtime Subscription
+        let channel: any = null;
+        try {
+            channel = supabase.channel(`public:${collectionName}`)
+                .on('postgres_changes', { event: '*', schema: 'public', table: collectionName }, (payload) => {
+                    recordDatabaseActivity('reads', 1);
+                    if (payload.eventType === 'INSERT') {
+                        const newDoc = payload.new as unknown as T;
+                        setData(currentData => [
+                            ...currentData.filter(item => (item as any).id !== (newDoc as any).id), 
+                            newDoc
+                        ]);
+                    } else if (payload.eventType === 'UPDATE') {
+                        const updatedDoc = payload.new as unknown as T;
+                        setData(currentData => currentData.map(item => {
+                            if ((item as any).id === (updatedDoc as any).id) {
+                                return { ...item, ...updatedDoc };
+                            }
+                            return item;
+                        }));
+                    } else if (payload.eventType === 'DELETE') {
+                        const deletedId = (payload.old as any)?.id;
+                        setData(currentData => currentData.filter(item => (item as any).id !== deletedId));
+                    }
+                })
+                .subscribe();
+        } catch (subErr) {
+            console.warn(`Could not subscribe to realtime changes for ${collectionName}:`, subErr);
+        }
+
+        return () => {
+            isMounted = false;
+            if (channel) {
+                try {
+                    supabase.removeChannel(channel);
+                } catch {}
+            }
+        };
     }, [collectionName, isAuthenticated, isProtected]);
 
-    return [data, setCollectionData, loading] as const;
+    return [data, setData, loading] as const;
 }
 
-// Helper to fetch a single document from Supabase (mapped to a table row by ID)
-function useDocument<T>(collectionName: string, docId: string, mockData: T) {
-    const storageKey = `app_doc_${collectionName}_${docId}`;
+// Helper to safely extract field values matching camelCase, lower_case or lowercase from Supabase rows
+function extractDocumentField(rawRow: Record<string, any>, key: string, fallback: any) {
+    if (!rawRow) return fallback;
+    const lowerKey = key.toLowerCase();
+    const directVal = rawRow[key];
+    const lowerVal = rawRow[lowerKey];
 
-    const getStoredFallback = (): T => {
-        try {
-            const saved = localStorage.getItem(storageKey);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                return { ...mockData, ...parsed };
-            }
-        } catch (e) {
-            console.warn(`Failed to read document ${storageKey} from storage:`, e);
-        }
-        return mockData;
-    };
+    // Check direct key first
+    if (directVal !== undefined && directVal !== null && directVal !== '') return directVal;
+    // Check lowercase key
+    if (lowerVal !== undefined && lowerVal !== null && lowerVal !== '') return lowerVal;
+    // If either is explicitly non-undefined and non-null (even if 0 or false or empty string)
+    if (directVal !== undefined && directVal !== null) return directVal;
+    if (lowerVal !== undefined && lowerVal !== null) return lowerVal;
 
-    const [data, setData] = useState<T>(() => getStoredFallback());
+    return fallback;
+}
+
+// Helper to fetch a single document from Supabase live with real-time sync (no localStorage)
+function useDocument<T>(collectionName: string, docId: string, defaultShape: T) {
+    const [data, setData] = useState<T>(defaultShape);
     const [loading, setLoading] = useState(true);
 
-    const updateStoredDoc = useCallback((updated: T) => {
-        setData(updated);
-        try {
-            localStorage.setItem(storageKey, JSON.stringify(updated));
-        } catch (err) {
-            console.warn(`Failed to save document ${storageKey} to storage:`, err);
-        }
-    }, [storageKey]);
-
     useEffect(() => {
-        if (IS_LIVE_DATA && supabase) {
-            setLoading(true);
-            let isMounted = true;
-            
-            supabase.from(collectionName).select('*').eq('id', docId)
-                .then(({ data: fetchedRows, error }) => {
-                    if (!isMounted) return;
-                    if (fetchedRows && fetchedRows.length > 0) {
-                        recordDatabaseActivity('reads', 1);
-                        const { id, ...rawRest } = fetchedRows[0];
-                        const rest: any = {};
-                        for (const k in rawRest) {
-                            rest[k] = rawRest[k];
-                            if (k.toLowerCase() !== k) {
-                                rest[k.toLowerCase()] = rawRest[k];
-                            }
-                        }
-                        
-                        setData(prev => {
-                            const merged = { ...prev, ...mockData };
-                            for (const k in mockData) {
-                                // Try camelCase first, then lowercase
-                                let val = rest[k];
-                                if (val === undefined || val === null) val = rest[k.toLowerCase()];
-                                if (val !== null && val !== undefined) {
-                                    (merged as any)[k] = val;
-                                } else if ((prev as any)[k] !== undefined) {
-                                    (merged as any)[k] = (prev as any)[k];
-                                }
-                            }
-                            try {
-                                localStorage.setItem(storageKey, JSON.stringify(merged));
-                            } catch {}
-                            return merged;
-                        });
-                    } else if (error) {
-                        console.warn(`Could not fetch document ${collectionName}/${docId}:`, error.message || error);
-                        setData(getStoredFallback());
-                    }
-                    setLoading(false);
-                })
-                .catch(err => {
-                    if (!isMounted) return;
-                    console.warn(`Network error fetching document ${collectionName}/${docId}:`, err?.message || err);
-                    setData(getStoredFallback());
-                    setLoading(false);
-                });
-
-            // Subscription for this specific document/row
-            let channel: any = null;
-            try {
-                channel = supabase.channel(`public:${collectionName}:${docId}`)
-                    .on('postgres_changes', { event: '*', schema: 'public', table: collectionName, filter: `id=eq.${docId}` }, (payload) => {
-                         recordDatabaseActivity('reads', 1);
-                         if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-                             const rawRest = (payload.new as any) || {};
-                             setData(prev => {
-                                 const merged = { ...prev };
-                                 for (const key in mockData) {
-                                     let val = rawRest[key];
-                                     if (val === undefined || val === null) val = rawRest[key.toLowerCase()];
-                                     if (val !== undefined && val !== null) {
-                                         (merged as any)[key] = val;
-                                     }
-                                 }
-                                 try {
-                                     localStorage.setItem(storageKey, JSON.stringify(merged));
-                                 } catch {}
-                                 return merged;
-                             });
-                         }
-                    })
-                    .subscribe();
-            } catch (subErr) {
-                console.warn(`Could not subscribe to document changes for ${collectionName}/${docId}:`, subErr);
-            }
-
-            return () => {
-                isMounted = false;
-                if (channel) {
-                    try {
-                        supabase.removeChannel(channel);
-                    } catch {}
-                }
-            };
-        } else {
-            setData(getStoredFallback());
+        if (!IS_LIVE_DATA || !supabase) {
+            setData(defaultShape);
             setLoading(false);
+            return;
         }
-    }, [collectionName, docId, storageKey]);
 
-     const updateData = useCallback(async (newData: Partial<T>) => {
+        setLoading(true);
+        let isMounted = true;
+        
+        // Initial live fetch from Supabase
+        supabase.from(collectionName).select('*').eq('id', docId)
+            .then(({ data: fetchedRows, error }) => {
+                if (!isMounted) return;
+                if (fetchedRows && fetchedRows.length > 0) {
+                    recordDatabaseActivity('reads', 1);
+                    const rawRow = fetchedRows[0] || {};
+                    
+                    setData(prev => {
+                        const merged: any = { ...prev, ...defaultShape };
+                        for (const k in defaultShape) {
+                            merged[k] = extractDocumentField(rawRow, k, (defaultShape as any)[k]);
+                        }
+                        return merged;
+                    });
+                } else if (error) {
+                    console.error(`Live fetch error on ${collectionName}/${docId}:`, error.message || error);
+                }
+                setLoading(false);
+            })
+            .catch(err => {
+                if (!isMounted) return;
+                console.error(`Network error on ${collectionName}/${docId}:`, err?.message || err);
+                setLoading(false);
+            });
+
+        // Subscription for this specific document/row
+        let channel: any = null;
+        try {
+            channel = supabase.channel(`public:${collectionName}:${docId}`)
+                .on('postgres_changes', { event: '*', schema: 'public', table: collectionName, filter: `id=eq.${docId}` }, (payload) => {
+                     recordDatabaseActivity('reads', 1);
+                     if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+                         const rawRow = (payload.new as any) || {};
+                         setData(prev => {
+                             const merged: any = { ...prev };
+                             for (const key in defaultShape) {
+                                 merged[key] = extractDocumentField(rawRow, key, (prev as any)[key] ?? (defaultShape as any)[key]);
+                             }
+                             return merged;
+                         });
+                     }
+                })
+                .subscribe();
+        } catch (subErr) {
+            console.warn(`Could not subscribe to document changes for ${collectionName}/${docId}:`, subErr);
+        }
+
+        return () => {
+            isMounted = false;
+            if (channel) {
+                try {
+                    supabase.removeChannel(channel);
+                } catch {}
+            }
+        };
+    }, [collectionName, docId]);
+
+    const updateData = useCallback(async (newData: Partial<T>) => {
         if (!newData || Object.keys(newData).length === 0) return;
 
-        // Immediate optimistic state update
-        setData(prev => {
-            const updated = { ...prev, ...newData };
-            try {
-                localStorage.setItem(storageKey, JSON.stringify(updated));
-            } catch (err) {
-                console.warn(`Failed to persist document ${storageKey}:`, err);
-            }
-            return updated;
-        });
+        // Immediate optimistic in-memory update
+        setData(prev => ({ ...prev, ...newData }));
 
         if (IS_LIVE_DATA && supabase) {
             try {
-                const payload: any = { id: docId, ...newData };
-                // Also mirror lowercased fields for database schema compatibility
+                const payload: any = { id: docId };
                 for (const key in newData) {
+                    const val = (newData as any)[key];
+                    payload[key] = val;
                     if (key.toLowerCase() !== key) {
-                        payload[key.toLowerCase()] = (newData as any)[key];
+                        payload[key.toLowerCase()] = val;
                     }
                 }
 
                 const { error } = await supabase.from(collectionName).upsert(payload);
                 if (error) {
-                    console.warn(`Failed to update ${collectionName}/${docId}:`, error.message || error);
-                    alert(`Failed to save to database: ${error.message}`);
+                    console.error(`Supabase update failed for ${collectionName}/${docId}:`, error.message || error);
                 } else {
                     recordDatabaseActivity('writes', 1);
                 }
             } catch (error: any) {
-                console.warn(`Failed to save document ${collectionName}/${docId}:`, error?.message || error);
+                console.error(`Network error updating ${collectionName}/${docId}:`, error?.message || error);
             }
         }
-    }, [collectionName, docId, storageKey]);
+    }, [collectionName, docId]);
     
     return [data, updateData, loading] as const;
 }
@@ -947,12 +862,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     const resetFirestoreQuotaCounters = useCallback(() => {
-        globalQuota = INITIAL_QUOTA_COUNTERS;
-        try {
-            localStorage.setItem('supabaseQuotaCounters', JSON.stringify(globalQuota));
-        } catch {
-            // ignore
-        }
+        globalQuota = { ...INITIAL_QUOTA_COUNTERS };
     }, []);
 
     const value = useMemo<DataContextType>(() => ({

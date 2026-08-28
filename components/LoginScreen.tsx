@@ -53,7 +53,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
 
   const renderBackground = () => {
     const url = companyDetails.loginBackgroundUrl;
-    if (!url) return null;
+    if (!url || typeof url !== 'string' || url.trim() === '') return null;
 
     const isVideo = url.startsWith('data:video') || url.includes('.mp4') || url.includes('.webm');
 
@@ -105,7 +105,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
           </div>
         )}
 
-        {companyDetails.logoUrl && (
+        {companyDetails.logoUrl && companyDetails.logoUrl.trim() !== '' && (
           <img src={companyDetails.logoUrl} alt={`${companyDetails.name} Logo`} className="h-16 mx-auto mb-6" />
         )}
         <h1 

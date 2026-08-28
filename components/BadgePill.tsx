@@ -17,7 +17,7 @@ export const BadgePill: React.FC<BadgePillProps> = ({ children, color, className
 
   return (
     <span className={`inline-flex items-center rounded-md px-3 py-1 text-xs font-semibold ring-1 ring-inset ${colorClasses[color]} ${className} uppercase tracking-wider`}>
-      {iconUrl && <img src={iconUrl} alt="badge icon" className="w-5 h-5 mr-2" />}
+      {iconUrl && iconUrl.trim() !== '' && <img src={iconUrl} alt="badge icon" className="w-5 h-5 mr-2" />}
       {children}
     </span>
   );

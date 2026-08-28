@@ -728,9 +728,12 @@ const LiveRaffleDrawArena: React.FC<{
                                 </div>
                                 <div className="flex items-center justify-center gap-3">
                                     <img 
-                                        src={justWon.player?.avatarUrl || `https://api.dicebear.com/8.x/bottts/svg?seed=${justWon.player?.name}`} 
+                                        src={justWon.player?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(justWon.player?.callsign || justWon.player?.name || 'OP')}&background=18181b&color=ef4444&bold=true`} 
                                         alt={justWon.player?.name}
-                                        className="w-12 h-12 rounded-full border-2 border-amber-400 shadow-md"
+                                        onError={(e) => {
+                                            (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(justWon.player?.callsign || justWon.player?.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
+                                        }}
+                                        className="w-12 h-12 rounded-full border-2 border-amber-400 shadow-md object-cover"
                                     />
                                     <div className="text-left">
                                         <div className="text-xl font-black text-white">

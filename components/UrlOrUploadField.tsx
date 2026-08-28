@@ -86,23 +86,33 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
     };
 
     const previewContent = () => {
-        if (!fileUrl) return null;
-        if (previewType === 'audio') {
+        if (!fileUrl || typeof fileUrl !== 'string' || fileUrl.trim() === '') return null;
+        const trimmedUrl = fileUrl.trim();
+        if (previewType === 'audio' || trimmedUrl.toLowerCase().match(/\.(mp3|wav|ogg|aac|m4a)($|\?)/) || trimmedUrl.startsWith('data:audio')) {
             return (
-                <div className="w-16 h-16 flex items-center justify-center rounded-md bg-zinc-800 p-1">
-                    <MusicalNoteIcon className="w-8 h-8 text-gray-400" />
+                <div className="w-16 h-16 flex items-center justify-center rounded-md bg-zinc-800 p-1 flex-shrink-0">
+                    <MusicalNoteIcon className="w-8 h-8 text-red-500" />
                 </div>
             );
         }
 
-        const isVideo = previewType === 'video' || fileUrl.toLowerCase().includes('.mp4') || fileUrl.toLowerCase().includes('.webm') || fileUrl.startsWith('data:video');
+        const isVideo = trimmedUrl.toLowerCase().match(/\.(mp4|webm|mov|ogg|m4v)($|\?)/) || trimmedUrl.startsWith('data:video');
         
         if (isVideo) {
-            return <video src={fileUrl} muted loop playsInline autoPlay className="w-16 h-16 object-cover rounded-md bg-zinc-800" />;
+            return <video src={trimmedUrl} muted loop playsInline autoPlay className="w-16 h-16 object-cover rounded-md bg-zinc-800 flex-shrink-0" />;
         }
         
         // Default to image
-        return <img src={fileUrl} alt="preview" className="w-16 h-16 object-contain rounded-md bg-zinc-800 p-1" />;
+        return (
+            <img 
+                src={trimmedUrl} 
+                alt="preview" 
+                className="w-16 h-16 object-cover rounded-md bg-zinc-800 flex-shrink-0 border border-zinc-700/50" 
+                onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.opacity = '0.5';
+                }}
+            />
+        );
     };
 
     const handleRemove = () => {
@@ -119,7 +129,7 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
     return (
         <div>
             <label className="block text-sm font-medium text-gray-400 mb-1.5">{label}</label>
-            {fileUrl ? (
+            {fileUrl && typeof fileUrl === 'string' && fileUrl.trim() !== '' ? (
                 <div className="flex items-center gap-3 bg-zinc-900/50 p-2 rounded-lg border border-zinc-700/50">
                     {previewContent()}
                     <p className="text-xs text-gray-400 truncate flex-grow">File configured</p>

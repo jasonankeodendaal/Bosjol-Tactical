@@ -458,7 +458,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             onUrlSet={(url) => handleInstantUrlSet('playerDashboardBackgroundUrl', url)}
                             onRemove={() => handleInstantUrlRemove('playerDashboardBackgroundUrl')}
                             accept="image/*,video/*"
-                            previewType="video"
                             apiServerUrl={formData.apiServerUrl}
                             onUploadingChange={handleUploadingChange}
                         />
@@ -478,7 +477,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             onUrlSet={(url) => handleInstantUrlSet('adminDashboardBackgroundUrl', url)}
                             onRemove={() => handleInstantUrlRemove('adminDashboardBackgroundUrl')}
                             accept="image/*,video/*"
-                            previewType="video"
                             apiServerUrl={formData.apiServerUrl}
                             onUploadingChange={handleUploadingChange}
                         />

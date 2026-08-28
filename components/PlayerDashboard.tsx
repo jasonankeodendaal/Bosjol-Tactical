@@ -69,7 +69,11 @@ const SponsorModal: React.FC<{ sponsor: Sponsor, onClose: () => void, onImageCli
                     {/* Left Column: Logo & Info */}
                     <div className="flex flex-col items-center md:items-start max-w-sm w-full md:w-80 text-center md:text-left shrink-0 mx-auto mt-8 sm:mt-0">
                         <div className="sm:bg-white/5 p-4 sm:p-6 sm:rounded-3xl sm:backdrop-blur-md sm:border border-white/10 sm:shadow-xl mb-4 sm:mb-6 w-full flex justify-center items-center h-32 sm:h-40">
-                            <img src={sponsor.logoUrl} alt={sponsor.name} className="max-h-full max-w-full object-contain drop-shadow-2xl" />
+                            {sponsor.logoUrl ? (
+                                <img src={sponsor.logoUrl} alt={sponsor.name} className="max-h-full max-w-full object-contain drop-shadow-2xl" />
+                            ) : (
+                                <SparklesIcon className="w-12 h-12 text-amber-500" />
+                            )}
                         </div>
                         
                         <h2 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-400 tracking-tight mb-2 sm:mb-4">{sponsor.name}</h2>
@@ -347,7 +351,11 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
                                     if (!badge) return null;
                                     return (
                                         <div key={badgeId} className="bg-zinc-800/50 p-2 rounded-lg text-center border border-amber-700/50" title={badge.description}>
-                                            <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 mx-auto"/>
+                                            {badge.iconUrl ? (
+                                                <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 mx-auto"/>
+                                            ) : (
+                                                <TrophyIcon className="w-10 h-10 mx-auto text-amber-400" />
+                                            )}
                                             <p className="text-xs font-semibold text-amber-300 mt-1 truncate">{badge.name}</p>
                                         </div>
                                     )
@@ -591,7 +599,11 @@ const BadgeProgressCard: React.FC<{badge: Badge, player: Player, ranks: Rank[]}>
 
     return (
         <div className={`${baseClasses} ${progress.isEarned ? unlockedClasses : lockedClasses}`}>
-             <img src={badge.iconUrl} alt={badge.name} className={`w-12 h-12 flex-shrink-0 ${!progress.isEarned ? 'grayscale' : ''}`} />
+             {badge.iconUrl ? (
+                 <img src={badge.iconUrl} alt={badge.name} className={`w-12 h-12 flex-shrink-0 ${!progress.isEarned ? 'grayscale' : ''}`} />
+             ) : (
+                 <TrophyIcon className={`w-12 h-12 flex-shrink-0 ${progress.isEarned ? 'text-amber-400' : 'text-zinc-600'}`} />
+             )}
              <div className="flex-grow">
                 <h5 className={`font-bold ${progress.isEarned ? 'text-red-400' : 'text-gray-300'}`}>{badge.name}</h5>
                 <p className="text-xs text-gray-400 mb-1.5">{badge.description}</p>
@@ -728,12 +740,20 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                     <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-4 commendations-grid">
                         {(player.legendaryBadges || []).map(badge => (
                             <div key={badge.id} className="relative group flex justify-center items-center aspect-square legendary-badge-item !border-0" title={`${badge.name}: ${badge.description}`}>
-                                <img src={badge.iconUrl} alt={badge.name} className="w-12 h-12 object-contain" />
+                                {badge.iconUrl ? (
+                                    <img src={badge.iconUrl} alt={badge.name} className="w-12 h-12 object-contain" />
+                                ) : (
+                                    <SparklesIcon className="w-10 h-10 text-amber-400" />
+                                )}
                             </div>
                         ))}
                         {(player.badges || []).map(badge => (
                             <div key={badge.id} className="relative group flex justify-center items-center aspect-square" title={`${badge.name}: ${badge.description}`}>
-                                <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 object-contain"/>
+                                {badge.iconUrl ? (
+                                    <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 object-contain"/>
+                                ) : (
+                                    <TrophyIcon className="w-8 h-8 text-zinc-500" />
+                                )}
                             </div>
                         ))}
                     </div>
@@ -820,7 +840,11 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                     <div className="marquee-row animate-marquee">
                         {row1Sponsors.concat(row1Sponsors).map((sponsor, index) => (
                             <div key={`${sponsor.id}-${index}-1`} onClick={() => setSelectedSponsor(sponsor)} className="sponsor-item">
-                                <img src={sponsor.logoUrl} alt={sponsor.name} />
+                                {sponsor.logoUrl ? (
+                                    <img src={sponsor.logoUrl} alt={sponsor.name} />
+                                ) : (
+                                    <span className="text-xs font-bold text-amber-400 p-2">{sponsor.name}</span>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -828,7 +852,11 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                         <div className="marquee-row animate-marquee-reverse mt-4">
                             {row2Sponsors.concat(row2Sponsors).map((sponsor, index) => (
                                 <div key={`${sponsor.id}-${index}-2`} onClick={() => setSelectedSponsor(sponsor)} className="sponsor-item">
-                                    <img src={sponsor.logoUrl} alt={sponsor.name} />
+                                    {sponsor.logoUrl ? (
+                                        <img src={sponsor.logoUrl} alt={sponsor.name} />
+                                    ) : (
+                                        <span className="text-xs font-bold text-amber-400 p-2">{sponsor.name}</span>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -844,7 +872,15 @@ const PodiumPlayer: React.FC<{ player: Player, rank: 1 | 2 | 3, delay: number }>
     const animationVariants = { hidden: { opacity: 0, y: 50 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay } } };
     return (
         <motion.div className={`podium-item ${podiumClass}`} variants={animationVariants}>
-            <div className="podium-avatar-wrapper"><img src={player.avatarUrl} alt={player.name} className="podium-avatar" />
+            <div className="podium-avatar-wrapper">
+                <img 
+                    src={player.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`} 
+                    alt={player.name} 
+                    onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
+                    }}
+                    className="podium-avatar" 
+                />
                 <p className={`font-bold text-base mt-2 truncate max-w-full px-1 ${rank === 1 ? 'text-amber-300' : 'text-white'}`}>{player.callsign}</p>
                 <p className="text-xs text-zinc-300">{(player.stats?.xp ?? 0).toLocaleString()} RP</p>
             </div><div className="podium-base">{rank}</div>
@@ -1038,7 +1074,11 @@ const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendary
                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {(player.legendaryBadges || []).map(badge => (
                                 <div key={badge.id} className="bg-zinc-800/50 p-4 rounded-lg text-center border border-amber-700/50">
-                                    <img src={badge.iconUrl} alt={badge.name} className="w-16 h-16 mx-auto mb-2"/>
+                                    {badge.iconUrl ? (
+                                        <img src={badge.iconUrl} alt={badge.name} className="w-16 h-16 mx-auto mb-2"/>
+                                    ) : (
+                                        <SparklesIcon className="w-16 h-16 mx-auto mb-2 text-amber-400" />
+                                    )}
                                     <p className="font-bold text-amber-300">{badge.name}</p>
                                     <p className="text-xs text-gray-400 mt-1">{badge.description}</p>
                                 </div>
@@ -1183,7 +1223,14 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
         <div className="flex flex-col h-full">
             <header className="flex items-center justify-between p-3 sm:p-4 bg-zinc-950/70 backdrop-blur-sm border-b border-zinc-800 flex-shrink-0">
                  <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
-                    <img src={player.avatarUrl} alt={player.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-red-600 flex-shrink-0"/>
+                    <img 
+                        src={player.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`} 
+                        alt={player.name} 
+                        onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
+                        }}
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-red-600 flex-shrink-0"
+                    />
                     <div className="overflow-hidden">
                         <h1 className="text-base sm:text-xl font-bold text-white truncate">{player.name}</h1>
                         <p className="text-xs sm:text-sm text-red-400">"{player.callsign}"</p>

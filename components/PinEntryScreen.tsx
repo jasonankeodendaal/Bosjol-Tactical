@@ -93,7 +93,14 @@ export const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ player, companyD
         transition={{ duration: 0.7, ease: "easeInOut" }}
         className="relative z-10 w-full max-w-sm mx-auto text-center bg-zinc-950/60 backdrop-blur-sm border border-zinc-800/50 p-8 rounded-lg shadow-2xl shadow-black/50"
       >
-        <img src={player.avatarUrl} alt={player.name} className="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-red-500 object-cover" />
+        <img 
+          src={player.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`} 
+          alt={player.name} 
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
+          }}
+          className="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-red-500 object-cover" 
+        />
         <h2 className="text-xl font-bold text-white">Welcome back, {player.name}</h2>
         <p className="text-gray-400 mb-8">Enter your PIN to continue</p>
         

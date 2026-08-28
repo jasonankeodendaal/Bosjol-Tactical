@@ -81,7 +81,7 @@ const LocationEditorModal: React.FC<{
                 <div>
                     <label className="block text-xs font-medium text-gray-400 mb-1">Field Photo Gallery</label>
                     <div className="flex flex-wrap gap-2 mb-2">
-                        {imageUrls.map((url, index) => (
+                        {imageUrls.filter(u => u && typeof u === 'string' && u.trim() !== '').map((url, index) => (
                              <div key={index} className="relative w-16 h-12 rounded overflow-hidden border border-zinc-700">
                                 <img src={url} alt={`Preview ${index+1}`} className="w-full h-full object-cover"/>
                                 <button 
@@ -189,9 +189,9 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ locations, setLocati
                                 </div>
                             </div>
 
-                            {loc.imageUrls && loc.imageUrls.length > 0 && (
+                            {loc.imageUrls && loc.imageUrls.filter(u => u && typeof u === 'string' && u.trim() !== '').length > 0 && (
                                 <div className="flex space-x-1.5 overflow-x-auto mt-2 pb-1 scrollbar-none">
-                                    {loc.imageUrls.map((url, i) => (
+                                    {loc.imageUrls.filter(u => u && typeof u === 'string' && u.trim() !== '').map((url, i) => (
                                         <img key={i} src={url} alt={`${loc.name} ${i}`} className="w-16 h-12 object-cover rounded-lg flex-shrink-0 border border-zinc-800" />
                                     ))}
                                 </div>

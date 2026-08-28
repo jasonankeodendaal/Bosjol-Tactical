@@ -378,7 +378,7 @@ WHERE id = '${player.id}';`;
                     <ArrowLeftIcon className="w-5 h-5" />
                 </Button>
                 <img 
-                    src={player.avatarUrl} 
+                    src={player.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`} 
                     alt={player.name} 
                     onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
@@ -533,7 +533,11 @@ WHERE id = '${player.id}';`;
                             {(player.legendaryBadges || []).length > 0 ? (player.legendaryBadges || []).map(badge => (
                                 <div key={badge.id} className="flex items-center justify-between gap-3 bg-zinc-800/50 p-2 rounded-md">
                                     <div className="flex items-center gap-3">
-                                        <img src={badge.iconUrl} alt={badge.name} className="w-8 h-8"/>
+                                        {badge.iconUrl && badge.iconUrl.trim() !== '' ? (
+                                            <img src={badge.iconUrl} alt={badge.name} className="w-8 h-8"/>
+                                        ) : (
+                                            <TrophyIcon className="w-8 h-8 text-amber-400" />
+                                        )}
                                         <p className="font-semibold text-amber-300">{badge.name}</p>
                                     </div>
                                     <Button size="sm" variant="danger" className="!p-1.5" onClick={() => handleRevokeLegendaryBadge(badge.id)}><TrashIcon className="w-4 h-4" /></Button>
@@ -611,7 +615,11 @@ WHERE id = '${player.id}';`;
                                 return (
                                     <div key={badge.id} className="flex items-center justify-between gap-3 bg-zinc-800/50 p-2 rounded-md">
                                         <div className="flex items-center gap-3">
-                                            <img src={badge.iconUrl} alt={badge.name} className="w-8 h-8"/>
+                                            {badge.iconUrl && badge.iconUrl.trim() !== '' ? (
+                                                <img src={badge.iconUrl} alt={badge.name} className="w-8 h-8"/>
+                                            ) : (
+                                                <TrophyIcon className="w-8 h-8 text-zinc-400" />
+                                            )}
                                             <p className="font-semibold text-white">{badge.name}</p>
                                         </div>
                                         {hasBadge ? (

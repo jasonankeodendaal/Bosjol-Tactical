@@ -80,7 +80,7 @@ const SponsorEditorModal: React.FC<{
                  <div>
                     <label className="block text-xs font-medium text-gray-400 mb-1">Partner Photo Gallery</label>
                     <div className="flex flex-wrap gap-2 mb-2">
-                        {imageUrls.map((url, index) => (
+                        {imageUrls.filter(url => url && typeof url === 'string' && url.trim() !== '').map((url, index) => (
                              <div key={index} className="relative w-14 h-12 rounded overflow-hidden border border-zinc-700">
                                 <img src={url} alt={`Preview ${index+1}`} className="w-full h-full object-cover"/>
                                 <button 

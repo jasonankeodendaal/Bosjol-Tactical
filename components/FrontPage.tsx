@@ -204,7 +204,7 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
     return (
         <div className="relative min-h-screen flex flex-col items-center justify-center bg-black p-4 overflow-hidden">
             <AnimatePresence>
-                {currentMedia && (
+                {currentMedia && currentMedia.url && currentMedia.url.trim() !== '' && (
                     <motion.div
                         key={currentMedia.id}
                         initial={{ opacity: 0, scale: 1.1 }}
@@ -248,7 +248,7 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
                 transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
                 className="relative z-10 text-center"
             >
-                {companyDetails.logoUrl && (
+                {companyDetails.logoUrl && companyDetails.logoUrl.trim() !== '' && (
                     <img src={companyDetails.logoUrl} alt={`${companyDetails.name} Logo`} className="h-20 sm:h-24 mx-auto mb-4" />
                 )}
                 <h1 
@@ -279,7 +279,11 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
                     <div className="flex items-center justify-center gap-6 bg-black/30 backdrop-blur-sm px-6 py-3 rounded-full border border-zinc-800">
                         {socialLinks.map(link => (
                             <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:scale-110 transition-transform">
-                                <img src={link.iconUrl} alt={link.name} className="h-6 w-6 object-contain" title={link.name} />
+                                {link.iconUrl && link.iconUrl.trim() !== '' ? (
+                                    <img src={link.iconUrl} alt={link.name} className="h-6 w-6 object-contain" title={link.name} />
+                                ) : (
+                                    <span className="text-xs font-bold text-zinc-400">{link.name}</span>
+                                )}
                             </a>
                         ))}
                     </div>

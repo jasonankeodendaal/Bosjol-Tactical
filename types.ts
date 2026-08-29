@@ -334,6 +334,30 @@ export interface GamificationRule {
 
 export type GamificationSettings = GamificationRule[];
 
+export interface TacticalRuleItem {
+    id: string;
+    name: string;
+    description: string;
+    penalty?: string;
+    note?: string;
+    importance?: 'standard' | 'important' | 'critical';
+}
+
+export type TacticalRuleCategory = 'Specific Game Rules' | 'Safety Rules' | 'Chronograph & FPS' | 'Field Protocols' | 'CQB Standards' | 'Medic & Respawn' | 'General';
+
+export interface TacticalRuleSet {
+    id: string;
+    title: string;
+    category: TacticalRuleCategory;
+    shortDescription: string;
+    icon?: string;
+    badge?: string;
+    rules: TacticalRuleItem[];
+    lastUpdated?: string;
+    isActive: boolean;
+    prebuiltTemplate?: string;
+}
+
 export interface Sponsor {
     id: string;
     name: string;

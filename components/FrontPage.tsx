@@ -4,6 +4,7 @@ import type { CompanyDetails, CarouselMedia, SocialLink } from '../types';
 import { Button } from './Button';
 import { Modal } from './Modal';
 import { DocumentIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from './icons/Icons';
+import { RecruitSignUpForm } from './RecruitSignUpForm';
 
 const SignUpInfoModal: React.FC<{ companyDetails: CompanyDetails, onContinue: () => void }> = ({ companyDetails, onContinue }) => {
     const [copied, setCopied] = useState(false);
@@ -289,7 +290,11 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
             
             <AnimatePresence>
                 {showSignUpModal && (
-                    <SignUpInfoModal companyDetails={companyDetails} onContinue={handleEnter} />
+                    <RecruitSignUpForm 
+                        companyDetails={companyDetails} 
+                        onClose={() => setShowSignUpModal(false)}
+                        onSuccessLoginRedirect={handleEnter}
+                    />
                 )}
             </AnimatePresence>
             

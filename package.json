@@ -9,12 +9,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "framer-motion": "^12.23.24",
     "@phosphor-icons/react": "^2.1.10",
     "@supabase/supabase-js": "^2.39.7",
-    "date-fns": "^4.1.0"
+    "@types/qrcode": "^1.5.6",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.23.24",
+    "html5-qrcode": "^2.3.8",
+    "lucide-react": "^1.37.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

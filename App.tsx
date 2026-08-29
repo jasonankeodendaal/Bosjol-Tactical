@@ -24,6 +24,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import FrontPage from './components/FrontPage';
 import { CreatorDashboard } from './components/CreatorDashboard';
 import { ThemeInjector } from './components/ThemeInjector';
+import { RuleShowcaseModal } from './components/RuleShowcaseModal';
 
 
 // --- Creator Popup Component and Icons ---
@@ -31,27 +32,45 @@ const CreatorPopup: React.FC<{
     onClose: () => void;
     creatorDetails: CreatorDetails;
 }> = ({ onClose, creatorDetails }) => {
-    
-    const clientInquiryTemplate = `Hello JSTYP.me,
+    const creatorName = (creatorDetails?.name && creatorDetails.name.trim() !== '' && creatorDetails.name !== 'Creator')
+        ? creatorDetails.name
+        : "Jason's Solutions To Your Problems";
+
+    const creatorTagline = (creatorDetails?.tagline && creatorDetails.tagline.trim() !== '')
+        ? creatorDetails.tagline
+        : "You think it, I build it";
+
+    const creatorLogoUrl = (creatorDetails?.logoUrl && creatorDetails.logoUrl.trim() !== '')
+        ? creatorDetails.logoUrl
+        : "https://i.ibb.co/HfT2Qzz3/IMG-20260803-WA0029.jpg";
+
+    const creatorBio = (creatorDetails?.bio && creatorDetails.bio.trim() !== '')
+        ? creatorDetails.bio
+        : "We specialise in custom website design & development, strategic social media marketing, bespoke digital strategy, and scalable software applications engineered to help your business expand, engage clients, and achieve sustained growth.";
+
+    const creatorEmail = creatorDetails?.email || 'jstypme@gmail.com';
+    const rawWhatsapp = creatorDetails?.whatsapp || '+27821234567';
+
+    const clientInquiryTemplate = `Hello Jason's Solutions,
 
 I came across your work on the Bosjol Tactical Dashboard and I'm interested in discussing a potential project.
 
-Please see my details below for your convenience:
+Please see my details below:
 
 - Project Name/Idea: 
 - My Name: 
 - Company Name (if applicable): 
-- Brief Project Description: 
-- Estimated Budget (Optional): 
-- Best Contact Method (Email/Phone): 
+- Services Needed (Web Design / Social Marketing / App Development): 
+- Brief Description: 
+- Best Contact Method: 
 
-Thank you, I look forward to hearing from you.
+Thank you, I look forward to connecting.
 `;
 
     const emailSubject = "Project Inquiry via Bosjol Tactical Dashboard";
-    const emailHref = `mailto:${creatorDetails?.email || ''}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(clientInquiryTemplate)}`;
+    const emailHref = `mailto:${creatorEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(clientInquiryTemplate)}`;
     
-    const whatsappNumber = (creatorDetails?.whatsapp || '').replace(/\D/g, '');
+    const whatsappNumber = rawWhatsapp.replace(/\D/g, '') || '27821234567';
     const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(clientInquiryTemplate)}`;
 
     return (
@@ -60,7 +79,7 @@ Thank you, I look forward to hearing from you.
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[60]"
+            className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-[120]"
             aria-modal="true"
             role="dialog"
         >
@@ -70,59 +89,96 @@ Thank you, I look forward to hearing from you.
                 exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                className="relative bg-zinc-900 border border-zinc-700/50 rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
+                className="relative bg-zinc-950/95 border border-zinc-700/60 rounded-2xl shadow-[0_0_50px_rgba(220,38,38,0.25)] w-full max-w-md overflow-hidden text-white"
                 style={{
-                    backgroundImage: "linear-gradient(rgba(10, 10, 10, 0.85), rgba(10, 10, 10, 0.85)), url('https://i.ibb.co/dsh2c2hp/unnamed.jpg')",
+                    backgroundImage: "linear-gradient(rgba(10, 10, 10, 0.9), rgba(10, 10, 10, 0.92)), url('https://i.ibb.co/dsh2c2hp/unnamed.jpg')",
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}
             >
-                <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-white transition-colors z-10" aria-label="Close creator popup">
-                    <XIcon className="w-6 h-6" />
+                {/* Top Accent Bar */}
+                <div className="h-1.5 w-full bg-gradient-to-r from-red-600 via-amber-500 to-emerald-500" />
+
+                <button 
+                    onClick={onClose} 
+                    className="absolute top-3.5 right-3.5 p-1 rounded-full bg-zinc-800/60 hover:bg-zinc-700 border border-zinc-700 text-gray-400 hover:text-white transition-colors z-10" 
+                    aria-label="Close creator popup"
+                >
+                    <XIcon className="w-5 h-5" />
                 </button>
 
-                 <div className="p-5 sm:p-6">
-                    <div className="flex flex-col items-center text-center mb-4 sm:mb-5">
-                        {creatorDetails.logoUrl && creatorDetails.logoUrl.trim() !== '' && (
-                            <img src={creatorDetails.logoUrl} alt={`${creatorDetails.name} Logo`} className="h-14 sm:h-16 w-auto mb-2 object-contain" />
-                        )}
-                        <h3 className="text-xl sm:text-2xl font-bold text-white tracking-wider">{creatorDetails.name}</h3>
-                        <p className="text-xs sm:text-sm text-red-400 font-semibold italic mt-0.5">"{creatorDetails.tagline}"</p>
+                <div className="p-5 sm:p-6">
+                    <div className="flex flex-col items-center text-center mb-4">
+                        {/* Creator Logo Frame */}
+                        <div className="relative mb-3 group">
+                            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-red-600 to-amber-500 blur-sm opacity-70 group-hover:opacity-100 transition duration-300" />
+                            <img 
+                                src={creatorLogoUrl} 
+                                alt={`${creatorName} Logo`} 
+                                className="relative w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border-2 border-zinc-700/80 shadow-2xl bg-black" 
+                            />
+                        </div>
+
+                        <h3 className="text-lg sm:text-xl font-black text-white tracking-wide drop-shadow-md">
+                            {creatorName}
+                        </h3>
+
+                        {/* Slogan */}
+                        <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-red-600/30 via-amber-500/20 to-emerald-500/20 border border-red-500/40 text-red-400 text-xs font-bold tracking-wide shadow-sm">
+                            <span>✨ "{creatorTagline}" ✨</span>
+                        </div>
                     </div>
                     
-                    <p className="text-center text-gray-300 text-xs sm:text-sm mb-4 pb-4 border-b border-zinc-700/50">{creatorDetails.bio}</p>
+                    {/* Bio & Services */}
+                    <div className="mb-4 pb-4 border-b border-zinc-800/80 space-y-3">
+                        <p className="text-center text-zinc-300 text-xs sm:text-sm leading-relaxed font-medium">
+                            {creatorBio}
+                        </p>
 
-                    <div className="flex items-center justify-center gap-5 mb-4">
+                        {/* Services Badges */}
+                        <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+                            <span className="px-2.5 py-0.5 rounded-md bg-red-600/20 border border-red-500/30 text-[10.5px] font-semibold text-red-300">🌐 Website Design</span>
+                            <span className="px-2.5 py-0.5 rounded-md bg-amber-600/20 border border-amber-500/30 text-[10.5px] font-semibold text-amber-300">📱 Social Marketing</span>
+                            <span className="px-2.5 py-0.5 rounded-md bg-emerald-600/20 border border-emerald-500/30 text-[10.5px] font-semibold text-emerald-300">⚙️ Web Apps & Systems</span>
+                            <span className="px-2.5 py-0.5 rounded-md bg-blue-600/20 border border-blue-500/30 text-[10.5px] font-semibold text-blue-300">📈 Business Expansion</span>
+                        </div>
+                    </div>
+
+                    {/* Direct Contact Buttons */}
+                    <div className="flex items-center justify-center gap-4 mb-4">
                         <a 
                             href={emailHref} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="p-2.5 bg-zinc-800/80 border border-zinc-700 rounded-full hover:bg-zinc-700 hover:border-red-500/60 transition-all hover:scale-110 shadow-lg"
+                            className="p-3 bg-zinc-800/90 border border-zinc-700 rounded-full hover:bg-zinc-700 hover:border-red-500/60 transition-all hover:scale-110 shadow-lg"
                             title="Email Creator"
                             aria-label="Email Creator"
                         >
-                            <img src="https://i.ibb.co/r2HkbjLj/image-removebg-preview-2.png" alt="Email" className="w-7 h-7 object-contain"/>
+                            <img src="https://i.ibb.co/r2HkbjLj/image-removebg-preview-2.png" alt="Email" className="w-6 h-6 object-contain"/>
                         </a>
                         <a 
                             href={whatsappHref} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="p-2.5 bg-zinc-800/80 border border-zinc-700 rounded-full hover:bg-zinc-700 hover:border-emerald-500/60 transition-all hover:scale-110 shadow-lg"
+                            className="p-3 bg-zinc-800/90 border border-zinc-700 rounded-full hover:bg-zinc-700 hover:border-emerald-500/60 transition-all hover:scale-110 shadow-lg"
                             title="WhatsApp Creator"
                             aria-label="WhatsApp Creator"
                         >
-                            <img src="https://i.ibb.co/Z1YHvjgT/image-removebg-preview-1.png" alt="WhatsApp" className="w-7 h-7 object-contain"/>
+                            <img src="https://i.ibb.co/Z1YHvjgT/image-removebg-preview-1.png" alt="WhatsApp" className="w-6 h-6 object-contain"/>
                         </a>
                     </div>
-                    <p className="text-[10px] sm:text-xs text-center text-gray-500 uppercase tracking-wider font-semibold mb-3">Creator Access via Login Screen</p>
+
+                    <p className="text-[10px] sm:text-xs text-center text-zinc-400 uppercase tracking-wider font-semibold mb-3">
+                        Professional Digital Solutions & System Architecture
+                    </p>
 
                     <div className="pt-3 border-t border-zinc-800 flex justify-center">
                         <button
                             onClick={onClose}
-                            className="w-full py-2 px-4 bg-red-600/90 hover:bg-red-600 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm shadow-md active:scale-95"
+                            className="w-full py-2.5 px-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-xs sm:text-sm shadow-md active:scale-95"
                         >
                             <ArrowLeftIcon className="w-4 h-4" />
-                            <span>Back to Login Page</span>
+                            <span>Return to Arena</span>
                         </button>
                     </div>
                 </div>
@@ -132,23 +188,24 @@ Thank you, I look forward to hearing from you.
 };
 
 const PublicPageFloatingIcons: React.FC<{
-    onHelpClick: () => void,
+    onOpenRulesAndHelp: () => void,
     onCreatorClick: () => void,
-}> = ({ onHelpClick, onCreatorClick }) => (
+}> = ({ onOpenRulesAndHelp, onCreatorClick }) => (
     <>
-        {/* Help Icon */}
+        {/* Merged Help & Tactical Rules Icon Button */}
         <motion.button
-            onClick={onHelpClick}
+            onClick={onOpenRulesAndHelp}
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 1, type: 'spring' }}
             whileHover={{ scale: 1.1, rotate: -10 }}
             whileTap={{ scale: 0.9 }}
-            className="fixed bottom-4 left-4 z-20 bg-zinc-900/80 backdrop-blur-md p-1.5 sm:p-2 rounded-full shadow-lg border border-zinc-700/70 hover:border-zinc-500 transition-all"
-            title="Help"
-            aria-label="Open help menu"
+            className="fixed bottom-4 left-4 z-20 bg-zinc-900/80 backdrop-blur-md p-2 sm:p-2.5 rounded-full shadow-[0_0_20px_rgba(220,38,38,0.3)] border border-red-500/50 hover:border-red-400 transition-all flex items-center gap-2 group"
+            title="Tactical Protocols & System Help"
+            aria-label="Open rules and help"
         >
-            <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Help Icon" className="w-6 h-6 sm:w-7 sm:h-7 object-contain" />
+            <img src="https://i.ibb.co/70YnGRY/image-removebg-preview-5.png" alt="Rules and Help" className="w-6 h-6 sm:w-7 sm:h-7 object-contain group-hover:scale-110 transition-transform" />
+            <span className="hidden sm:inline-block pr-1 text-xs font-bold text-red-400 tracking-wide">Rules & Help</span>
         </motion.button>
 
         {/* Creator Icon */}
@@ -206,10 +263,21 @@ const PromotionModal: React.FC<{
                         </>}
                     </motion.div>
                     
-                    <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1, transition:{ delay: 0, type: 'spring', stiffness: 150 }}} className="rank-item current">
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0, rotate: -15 }} 
+                        animate={{ opacity: 1, scale: [0, 1.2, 1], rotate: 0 }} 
+                        transition={{ duration: 0.6, type: 'spring', stiffness: 220, damping: 14 }} 
+                        className="rank-item current"
+                    >
                        {newTier && <>
                             <div className="rank-item-hex">
-                               <img src={newTier.iconUrl} alt={newTier.name} />
+                               <motion.img 
+                                   initial={{ scale: 0.2, opacity: 0 }}
+                                   animate={{ scale: 1, opacity: 1 }}
+                                   transition={{ delay: 0.25, duration: 0.4, type: 'spring', stiffness: 260 }}
+                                   src={newTier.iconUrl} 
+                                   alt={newTier.name} 
+                               />
                             </div>
                             <p>{newTier.name}</p>
                         </>}
@@ -240,10 +308,16 @@ const PromotionModal: React.FC<{
                      <div className="promotion-rewards">
                         <h3 className="promotion-rewards__title">Tier Up Rewards</h3>
                         {rewards.map((reward, index) => (
-                             <div key={index} className="reward-item">
+                             <motion.div 
+                                key={index} 
+                                initial={{ opacity: 0, x: -20, scale: 0.9 }}
+                                animate={{ opacity: 1, x: 0, scale: 1 }}
+                                transition={{ delay: 0.4 + index * 0.12, duration: 0.3 }}
+                                className="reward-item"
+                            >
                                 <span>{reward}</span>
                                 <span className="reward-item__amount">+100 RP</span>
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
                 )}
@@ -253,14 +327,38 @@ const PromotionModal: React.FC<{
                     <div className="mt-4 w-full max-w-md">
                         <h3 className="font-semibold text-gray-300 mb-2">Achievements Unlocked</h3>
                         <div className="space-y-2">
-                            {promotion.newBadges.map(badge => (
-                                <div key={badge.id} className="bg-zinc-800/50 p-2 rounded-lg flex items-center gap-3 border border-zinc-700">
-                                    <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10" />
+                            {promotion.newBadges.map((badge, index) => (
+                                <motion.div 
+                                    key={badge.id} 
+                                    initial={{ opacity: 0, scale: 0.3, y: 25 }}
+                                    animate={{ opacity: 1, scale: [0.3, 1.1, 1], y: 0 }}
+                                    transition={{ 
+                                        duration: 0.5, 
+                                        delay: 0.45 + index * 0.15, 
+                                        type: 'spring', 
+                                        stiffness: 240, 
+                                        damping: 14 
+                                    }}
+                                    className="bg-zinc-800/80 p-2.5 rounded-xl flex items-center gap-3 border border-zinc-700/80 shadow-lg backdrop-blur-md"
+                                >
+                                    <motion.img 
+                                        initial={{ scale: 0, rotate: -20 }}
+                                        animate={{ scale: 1, rotate: 0 }}
+                                        transition={{ 
+                                            delay: 0.55 + index * 0.15, 
+                                            type: 'spring', 
+                                            stiffness: 300, 
+                                            damping: 12 
+                                        }}
+                                        src={badge.iconUrl} 
+                                        alt={badge.name} 
+                                        className="w-11 h-11 object-contain shrink-0 drop-shadow-md" 
+                                    />
                                     <div className="text-left">
-                                        <p className="font-bold text-white text-sm">{badge.name}</p>
+                                        <p className="font-bold text-white text-sm tracking-wide">{badge.name}</p>
                                         <p className="text-xs text-gray-400">{badge.description}</p>
                                     </div>
-                                </div>
+                                </motion.div>
                             ))}
                         </div>
                     </div>
@@ -293,6 +391,8 @@ const AppContent: React.FC = () => {
     const [showFrontPage, setShowFrontPage] = useState(true);
     const [showCreatorPopup, setShowCreatorPopup] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
+    const [showRuleShowcase, setShowRuleShowcase] = useState(false);
+    const [selectedRuleSetId, setSelectedRuleSetId] = useState<string | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [promotion, setPromotion] = useState<{ newTier?: Tier; oldTier?: Tier; newBadges: Badge[], xpGained: number, currentXp: number, bonusXp: number, rewards: string[], finalXp: number } | null>(null);
 
@@ -759,6 +859,12 @@ const AppContent: React.FC = () => {
                 {showCreatorPopup && creatorDetails && <CreatorPopup creatorDetails={creatorDetails} onClose={() => setShowCreatorPopup(false)} />}
             </AnimatePresence>
             
+            <RuleShowcaseModal 
+                isOpen={showRuleShowcase} 
+                onClose={() => setShowRuleShowcase(false)} 
+                initialRuleSetId={selectedRuleSetId} 
+            />
+
             <AnimatePresence>
               {promotion && <PromotionModal promotion={promotion} onDismiss={dismissPromotion} ranks={ranks} />}
             </AnimatePresence>
@@ -772,7 +878,10 @@ const AppContent: React.FC = () => {
                             carouselMedia={carouselMedia}
                             onEnter={handleEnterFrontPage}
                         />
-                         <PublicPageFloatingIcons onHelpClick={() => setShowHelp(true)} onCreatorClick={() => setShowCreatorPopup(true)} />
+                        <PublicPageFloatingIcons 
+                            onOpenRulesAndHelp={() => { setSelectedRuleSetId(null); setShowRuleShowcase(true); }} 
+                            onCreatorClick={() => setShowCreatorPopup(true)} 
+                        />
                     </motion.div>
                 ) : !isAuthenticated ? (
                     <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -781,7 +890,10 @@ const AppContent: React.FC = () => {
                             socialLinks={socialLinks} 
                             onBackToWelcome={() => setShowFrontPage(true)} 
                         />
-                        <PublicPageFloatingIcons onHelpClick={() => setShowHelp(true)} onCreatorClick={() => setShowCreatorPopup(true)} />
+                        <PublicPageFloatingIcons 
+                            onOpenRulesAndHelp={() => { setSelectedRuleSetId(null); setShowRuleShowcase(true); }} 
+                            onCreatorClick={() => setShowCreatorPopup(true)} 
+                        />
                     </motion.div>
                 ) : (
                     <motion.div
@@ -805,6 +917,7 @@ const AppContent: React.FC = () => {
                                     ranks={ranks}
                                     locations={data.locations}
                                     signups={signups}
+                                    onOpenInfoModal={(ruleSetId) => { setSelectedRuleSetId(ruleSetId || null); setShowRuleShowcase(true); }}
                                 />
                             )}
                             {user?.role === 'admin' && (
@@ -813,6 +926,7 @@ const AppContent: React.FC = () => {
                                     onDeleteAllData={data.deleteAllData}
                                     deleteAllPlayers={data.deleteAllPlayers}
                                     addPlayerDoc={(playerData) => addDoc('players', playerData)}
+                                    onOpenInfoModal={(ruleSetId) => { setSelectedRuleSetId(ruleSetId || null); setShowRuleShowcase(true); }}
                                 />
                             )}
                              {user?.role === 'creator' && (

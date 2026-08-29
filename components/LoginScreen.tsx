@@ -1,11 +1,13 @@
 
 import React, { useContext, useEffect, useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../auth/AuthContext';
 import { Button } from './Button';
 import { UserIcon, KeyIcon, ExclamationTriangleIcon, CloudArrowDownIcon, ArrowLeftIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from './icons/Icons';
 import { CompanyDetails, SocialLink } from '../types';
 import { Input } from './Input';
+import { RecruitSignUpForm } from './RecruitSignUpForm';
+import { UserPlus } from 'lucide-react';
 
 interface LoginScreenProps {
   companyDetails: CompanyDetails;
@@ -22,6 +24,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [showRecruitForm, setShowRecruitForm] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { login } = auth;
@@ -199,8 +202,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
             <p><span className="text-red-400 font-bold">ADMINS:</span> Use Email & Password</p>
         </div>
 
+        <div className="mt-3 pt-2.5 border-t border-zinc-800/50 flex flex-col gap-2">
+            <button
+                type="button"
+                onClick={() => setShowRecruitForm(true)}
+                className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-red-600/20 via-zinc-900 to-emerald-600/20 hover:from-red-600/30 hover:to-emerald-600/30 border border-zinc-700 hover:border-emerald-500/50 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-md"
+            >
+                <UserPlus className="w-4 h-4 text-emerald-400" />
+                <span>New Recruit? Fill Enlistment Form</span>
+            </button>
+        </div>
+
         {companyDetails.apkUrl && companyDetails.apkUrl.trim() !== '' && (
-          <div className="mt-3 pt-2.5 border-t border-zinc-800/50">
+          <div className="mt-2 pt-2 border-t border-zinc-800/50">
             <a 
               href={companyDetails.apkUrl} 
               download="BosjolTactical.apk"
@@ -230,6 +244,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
             </div>
         )}
       </motion.div>
+
+      <AnimatePresence>
+        {showRecruitForm && (
+            <RecruitSignUpForm 
+                companyDetails={companyDetails}
+                onClose={() => setShowRecruitForm(false)}
+            />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

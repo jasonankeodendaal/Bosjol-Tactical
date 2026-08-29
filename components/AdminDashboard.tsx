@@ -26,6 +26,7 @@ import { Leaderboard } from './Leaderboard';
 import { SettingsTab } from './SettingsTab';
 import { AboutTab } from './AboutTab';
 import { AdminNotificationsTab } from './AdminNotificationsTab';
+import { AdminRulesManager } from './AdminRulesManager';
 import { DataContext, DataContextType } from '../data/DataContext';
 import { AuthContext } from '../auth/AuthContext';
 import { SendCredentialsModal } from './SendCredentialsModal';
@@ -34,10 +35,11 @@ export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' 
     onDeleteAllData: () => void;
     deleteAllPlayers: () => Promise<void>;
     addPlayerDoc: (playerData: Omit<Player, 'id'>) => Promise<string>;
+    onOpenInfoModal?: (ruleSetId?: string) => void;
 };
 
 
-type Tab = 'Events' | 'Players' | 'Notifications' | 'Progression' | 'Ranks' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'About';
+type Tab = 'Events' | 'Players' | 'Notifications' | 'Rules' | 'Progression' | 'Ranks' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'About';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
 
 const NewPlayerModal: React.FC<{
@@ -232,6 +234,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Events', icon: <CalendarIcon className="w-5 h-5"/>},
         {name: 'Players', icon: <UsersIcon className="w-5 h-5"/>},
         {name: 'Notifications', icon: <BellIcon className="w-5 h-5"/>, badgeCount: unreadNotificationsCount},
+        {name: 'Rules', icon: <InformationCircleIcon className="w-5 h-5"/>},
         {name: 'Progression', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Ranks', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Inventory', icon: <ArchiveBoxIcon className="w-5 h-5"/>},
@@ -579,7 +582,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab') as Tab | null;
-        const validTabs: Tab[] = ['Events', 'Players', 'Notifications', 'Progression', 'Ranks', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'About'];
+        const validTabs: Tab[] = ['Events', 'Players', 'Notifications', 'Rules', 'Progression', 'Ranks', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'About'];
         if (tab && validTabs.includes(tab)) {
             setActiveTab(tab);
         }
@@ -734,6 +737,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         onViewPlayer={handleViewPlayer}
                         players={props.players}
                     />}
+                    {activeTab === 'Rules' && <AdminRulesManager onOpenInfoModal={props.onOpenInfoModal} />}
                     {activeTab === 'Progression' && <ProgressionTab 
                         ranks={props.ranks} setRanks={props.setRanks}
                         badges={props.badges} setBadges={props.setBadges}

@@ -18,8 +18,13 @@ import { DataContext } from '../data/DataContext';
 import { Loader } from './Loader';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { PlayerRankShowcase } from './PlayerRankShowcase';
+import { PlayerRulesView } from './PlayerRulesView';
 import { getRankForPlayer, getRankProgression, FALLBACK_RECRUIT_TIER } from '../utils/rankUtils';
 import { resolveRankIcon, getRankBadgeSvg } from '../utils/rankBadges';
+import { QrCode, Camera, ShieldCheck, LayoutGrid, CalendarDays } from 'lucide-react';
+import { EventQRScannerModal } from './EventQRScannerModal';
+import { EventCalendarView } from './EventCalendarView';
+import { EventCountdownNotification } from './EventCountdownNotification';
 
 const SponsorModal: React.FC<{ sponsor: Sponsor, onClose: () => void, onImageClick: (url: string) => void, backgroundUrl?: string }> = ({ sponsor, onClose, onImageClick, backgroundUrl }) => {
     const defaultBg = "https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png";
@@ -218,9 +223,10 @@ interface PlayerDashboardProps {
     ranks: Rank[];
     locations: Location[];
     signups: Signup[];
+    onOpenInfoModal?: (ruleSetId?: string) => void;
 }
 
-type Tab = 'Overview' | 'Events' | 'Raffles' | 'Ranks' | 'Stats' | 'Achievements' | 'Settings';
+type Tab = 'Overview' | 'Events' | 'Raffles' | 'Ranks' | 'Rules' | 'Stats' | 'Achievements' | 'Settings';
 
 const ProgressBar: React.FC<{ value: number; max: number; isThin?: boolean }> = ({ value, max, isThin=false }) => {
     const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -457,6 +463,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Events', icon: <CalendarIcon className="w-5 h-5"/>},
         {name: 'Raffles', icon: <TicketIcon className="w-5 h-5"/>},
         {name: 'Ranks', icon: <ShieldCheckIcon className="w-5 h-5"/>},
+        {name: 'Rules', icon: <InformationCircleIcon className="w-5 h-5"/>},
         {name: 'Stats', icon: <ChartBarIcon className="w-5 h-5"/>},
         {name: 'Achievements', icon: <TrophyIcon className="w-5 h-5"/>},
         {name: 'Settings', icon: <UserCircleIcon className="w-5 h-5"/>},
@@ -890,7 +897,8 @@ const PodiumPlayer: React.FC<{ player: Player, rank: 1 | 2 | 3, delay: number }>
 };
 
 
-const EventsTab: React.FC<Pick<PlayerDashboardProps, 'events' | 'player' | 'onEventSignUp' | 'locations' | 'signups'>> = ({ events, player, onEventSignUp, locations, signups }) => {
+const EventsTab: React.FC<Pick<PlayerDashboardProps, 'events' | 'player' | 'onEventSignUp' | 'locations' | 'signups'> & { onOpenQRScanner?: () => void }> = ({ events, player, onEventSignUp, locations, signups, onOpenQRScanner }) => {
+    const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
     const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');
     const [selectedEvent, setSelectedEvent] = useState<GameEvent | null>(null);
 
@@ -907,22 +915,77 @@ const EventsTab: React.FC<Pick<PlayerDashboardProps, 'events' | 'player' | 'onEv
     return (
         <DashboardCard title="Event Schedule" icon={<CalendarIcon className="w-6 h-6"/>}>
             {selectedEvent && <EventDetailsModal event={selectedEvent} player={player} onClose={() => setSelectedEvent(null)} onSignUp={onEventSignUp} locations={locations} signups={signups} />}
-            <div className="p-2 sm:p-4">
-                 <div className="flex justify-start mb-3 sm:mb-4">
-                    <div className="flex space-x-1 p-0.5 sm:p-1 bg-zinc-900 rounded-lg border border-zinc-700">
-                        <Button size="sm" className="!px-2 !py-1 !text-[10px] sm:!text-xs" variant={filter === 'upcoming' ? 'primary' : 'secondary'} onClick={() => setFilter('upcoming')}>Upcoming ({upcomingEvents.length})</Button>
-                        <Button size="sm" className="!px-2 !py-1 !text-[10px] sm:!text-xs" variant={filter === 'past' ? 'primary' : 'secondary'} onClick={() => setFilter('past')}>Past ({pastEvents.length})</Button>
-                    </div>
-                </div>
-                <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-4 max-h-[65vh] overflow-y-auto pr-1 sm:pr-2">
-                    {eventsToShow.length > 0 ? eventsToShow.map(event => (
-                        <div key={event.id} className="cursor-pointer h-full" onClick={() => setSelectedEvent(event)}>
-                            <EventCard event={event} />
+            <div className="p-2 sm:p-4 space-y-3">
+                 <div className="flex flex-wrap items-center justify-between mb-3 sm:mb-4 gap-2">
+                    {/* Filter & View Mode Switcher */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        {/* Upcoming / Past Filter */}
+                        <div className="flex space-x-1 p-0.5 sm:p-1 bg-zinc-900 rounded-lg border border-zinc-700">
+                            <Button size="sm" className="!px-2 !py-1 !text-[10px] sm:!text-xs" variant={filter === 'upcoming' ? 'primary' : 'secondary'} onClick={() => setFilter('upcoming')}>Upcoming ({upcomingEvents.length})</Button>
+                            <Button size="sm" className="!px-2 !py-1 !text-[10px] sm:!text-xs" variant={filter === 'past' ? 'primary' : 'secondary'} onClick={() => setFilter('past')}>Past ({pastEvents.length})</Button>
                         </div>
-                    )) : (
-                         <p className="text-center text-gray-500 py-8 col-span-full text-xs sm:text-base">No {filter} events found.</p>
+
+                        {/* Grid / Monthly Calendar Toggle */}
+                        <div className="flex space-x-1 p-0.5 sm:p-1 bg-zinc-950 rounded-lg border border-zinc-800">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`px-2 py-1 rounded-md text-[10px] sm:text-xs font-semibold flex items-center gap-1 transition-all ${
+                                    viewMode === 'grid'
+                                        ? 'bg-red-600 text-white shadow-sm'
+                                        : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                                }`}
+                                title="Grid Layout"
+                            >
+                                <LayoutGrid className="w-3.5 h-3.5" />
+                                <span className="hidden xs:inline">Grid List</span>
+                            </button>
+                            <button
+                                onClick={() => setViewMode('calendar')}
+                                className={`px-2 py-1 rounded-md text-[10px] sm:text-xs font-semibold flex items-center gap-1 transition-all ${
+                                    viewMode === 'calendar'
+                                        ? 'bg-red-600 text-white shadow-sm'
+                                        : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                                }`}
+                                title="Monthly Calendar Layout"
+                            >
+                                <CalendarDays className="w-3.5 h-3.5" />
+                                <span className="hidden xs:inline">Monthly Calendar</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {onOpenQRScanner && (
+                        <button
+                            onClick={onOpenQRScanner}
+                            className="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold text-[10px] sm:text-xs shadow-[0_0_12px_rgba(220,38,38,0.3)] transition flex items-center gap-1.5"
+                        >
+                            <QrCode className="w-3.5 h-3.5" />
+                            <span>QR Check-In Scanner</span>
+                        </button>
                     )}
                 </div>
+
+                {/* View Content */}
+                {viewMode === 'calendar' ? (
+                    <EventCalendarView
+                        events={events}
+                        onSelectEvent={(ev) => setSelectedEvent(ev)}
+                        activeFilter={filter}
+                    />
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-4 max-h-[65vh] overflow-y-auto pr-1 sm:pr-2">
+                        {eventsToShow.length > 0 ? eventsToShow.map(event => (
+                            <div key={event.id} className="cursor-pointer h-full" onClick={() => setSelectedEvent(event)}>
+                                <EventCard 
+                                    event={event} 
+                                    signupsCount={signups ? signups.filter(s => s.eventId === event.id).length : undefined} 
+                                />
+                            </div>
+                        )) : (
+                             <p className="text-center text-gray-500 py-8 col-span-full text-xs sm:text-base">No {filter} events found.</p>
+                        )}
+                    </div>
+                )}
             </div>
         </DashboardCard>
     );
@@ -1203,8 +1266,9 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
 
 
 export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
-    const { player, players, sponsors, events, onEventSignUp, legendaryBadges, raffles, ranks, locations, signups, onPlayerUpdate } = props;
+    const { player, players, sponsors, events, onEventSignUp, legendaryBadges, raffles, ranks, locations, signups, onPlayerUpdate, onOpenInfoModal } = props;
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
+    const [showQRScanner, setShowQRScanner] = useState<boolean>(false);
     const auth = useContext(AuthContext);
     const data = useContext(DataContext);
     
@@ -1222,7 +1286,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
 
     return (
         <div className="flex flex-col h-full">
-            <header className="flex items-center justify-between p-3 sm:p-4 bg-zinc-950/70 backdrop-blur-sm border-b border-zinc-800 flex-shrink-0">
+            <header className="flex items-center justify-between p-3 sm:p-4 bg-zinc-950/70 backdrop-blur-sm border-b border-zinc-800 flex-shrink-0 gap-2">
                  <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
                     <img 
                         src={player.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`} 
@@ -1237,10 +1301,29 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                         <p className="text-xs sm:text-sm text-red-400">"{player.callsign}"</p>
                     </div>
                 </div>
-                <Button onClick={auth?.logout} variant="secondary" size="sm" className="flex-shrink-0">Logout</Button>
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                        onClick={() => setShowQRScanner(true)}
+                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold text-xs shadow-[0_0_15px_rgba(220,38,38,0.3)] transition flex items-center gap-1.5 border border-red-500/30"
+                        title="Scan Event QR Code for Check-In"
+                    >
+                        <QrCode className="w-4 h-4 text-white" />
+                        <span className="hidden sm:inline">QR Check-In</span>
+                    </button>
+                    <Button onClick={auth?.logout} variant="secondary" size="sm" className="flex-shrink-0">Logout</Button>
+                </div>
             </header>
             <main className="flex-grow overflow-y-auto">
-                <div className="p-4 sm:p-6 lg:p-8">
+                <div className="p-4 sm:p-6 lg:p-8 space-y-4">
+                    <EventCountdownNotification 
+                        player={player} 
+                        events={events} 
+                        signups={signups} 
+                        onSelectEvent={(event) => {
+                            setActiveTab('Events');
+                        }} 
+                    />
                     <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
                     <AnimatePresence mode="wait">
                         <motion.div
@@ -1251,9 +1334,19 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                             transition={{ duration: 0.2 }}
                         >
                             {activeTab === 'Overview' && <OverviewTab player={player} players={players} events={events} sponsors={sponsors} ranks={ranks} />}
-                            {activeTab === 'Events' && <EventsTab events={events} player={player} onEventSignUp={onEventSignUp} locations={locations} signups={signups} />}
+                            {activeTab === 'Events' && (
+                                <EventsTab 
+                                    events={events} 
+                                    player={player} 
+                                    onEventSignUp={onEventSignUp} 
+                                    locations={locations} 
+                                    signups={signups} 
+                                    onOpenQRScanner={() => setShowQRScanner(true)}
+                                />
+                            )}
                             {activeTab === 'Raffles' && <RafflesTab raffles={raffles} player={player} players={players} />}
                             {activeTab === 'Ranks' && <RankAndLeaderboardTab ranks={ranks} player={player} players={players} events={events} onNavigateTab={(t) => setActiveTab(t as Tab)} />}
+                            {activeTab === 'Rules' && <PlayerRulesView onOpenInfoModal={onOpenInfoModal} />}
                             {activeTab === 'Stats' && <StatsTab player={player} events={events} />}
                             {activeTab === 'Achievements' && <AchievementsTab player={player} legendaryBadges={legendaryBadges} ranks={ranks}/>}
                             {activeTab === 'Settings' && <SettingsTab player={player} onPlayerUpdate={onPlayerUpdate} />}
@@ -1261,6 +1354,18 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                     </AnimatePresence>
                 </div>
             </main>
+
+            {showQRScanner && data && (
+                <EventQRScannerModal
+                    player={player}
+                    events={events}
+                    signups={signups}
+                    onClose={() => setShowQRScanner(false)}
+                    updateDoc={data.updateDoc}
+                    deleteDoc={data.deleteDoc}
+                    setDoc={data.setDoc}
+                />
+            )}
         </div>
     );
 };

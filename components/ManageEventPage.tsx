@@ -9,6 +9,8 @@ import { BadgePill } from './BadgePill';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
+import { QrCode } from 'lucide-react';
+import { EventQRCodeModal } from './EventQRCodeModal';
 
 interface ManageEventPageProps {
     event?: GameEvent;
@@ -57,6 +59,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
         return ctxLocs.length > 0 ? ctxLocs : MOCK_LOCATIONS;
     }, [dataContext?.locations]);
 
+    const [showQRModal, setShowQRModal] = useState(false);
     const [formData, setFormData] = useState<Omit<GameEvent, 'id'>>(() => {
         if (!event) return defaultEvent;
         // Ensure date is in 'YYYY-MM-DD' format for the input
@@ -437,11 +440,23 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
-            <header className="flex items-center mb-6">
-                <Button onClick={onBack} variant="secondary" size="sm" className="mr-4">
-                    <ArrowLeftIcon className="w-5 h-5" />
-                </Button>
-                <h1 className="text-2xl font-bold text-white">{event ? 'Manage Event' : 'Create New Event'}</h1>
+            <header className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                    <Button onClick={onBack} variant="secondary" size="sm" className="mr-4">
+                        <ArrowLeftIcon className="w-5 h-5" />
+                    </Button>
+                    <h1 className="text-2xl font-bold text-white">{event ? 'Manage Event' : 'Create New Event'}</h1>
+                </div>
+                {event && (
+                    <Button
+                        onClick={() => setShowQRModal(true)}
+                        size="sm"
+                        className="!bg-zinc-900 hover:!bg-red-900/60 !border !border-red-500/40 text-red-400 font-bold flex items-center gap-2"
+                    >
+                        <QrCode className="w-4 h-4 text-red-400" />
+                        <span>Enlarge Event QR Pass</span>
+                    </Button>
+                )}
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -702,6 +717,14 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                     </div>
                 </div>
             </div>
+
+            {showQRModal && event && (
+                <EventQRCodeModal
+                    event={event}
+                    signups={signups}
+                    onClose={() => setShowQRModal(false)}
+                />
+            )}
         </div>
     );
 };

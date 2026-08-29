@@ -151,6 +151,38 @@ export const THEME_PRESETS = [
         }
     },
     {
+        id: 'marine-camo-pattern',
+        name: 'Marine Camo Pattern',
+        colors: {
+            primary: '#2d6a4f',
+            primaryHover: '#40916c',
+            secondary: '#74c69d',
+            darkBg: '#081c15',
+            cardBg: '#1b4332',
+            textHighlight: '#95d5b2',
+            borderGlow: '#1b4332',
+            gradientStyle: 'linear-glow' as const,
+            glassOpacity: 'subtle' as const,
+            borderRadius: 'standard' as const,
+        }
+    },
+    {
+        id: 'marine-olive-drab',
+        name: 'Marine Olive Pattern',
+        colors: {
+            primary: '#4d5d36',
+            primaryHover: '#607344',
+            secondary: '#a3b18a',
+            darkBg: '#11170d',
+            cardBg: '#1f2918',
+            textHighlight: '#dad7cd',
+            borderGlow: '#3a4a28',
+            gradientStyle: 'solid' as const,
+            glassOpacity: 'subtle' as const,
+            borderRadius: 'sharp' as const,
+        }
+    },
+    {
         id: 'deep-sea-marine',
         name: 'Deep Sea Marine Teal',
         colors: {
@@ -212,6 +244,22 @@ export const THEME_PRESETS = [
             gradientStyle: 'linear-glow' as const,
             glassOpacity: 'heavy' as const,
             borderRadius: 'rounded' as const,
+        }
+    },
+    {
+        id: 'urban-charcoal-grey',
+        name: 'Urban Charcoal Grey',
+        colors: {
+            primary: '#52525b',
+            primaryHover: '#71717a',
+            secondary: '#e4e4e7',
+            darkBg: '#121215',
+            cardBg: '#202024',
+            textHighlight: '#f4f4f5',
+            borderGlow: '#3f3f46',
+            gradientStyle: 'solid' as const,
+            glassOpacity: 'subtle' as const,
+            borderRadius: 'standard' as const,
         }
     },
     {

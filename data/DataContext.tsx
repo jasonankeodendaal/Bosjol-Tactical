@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import { extractAndCleanStorageUrlsFromDoc } from '../utils/storageCleaner';
 import * as mock from '../constants';
 import { getRankForPlayer } from '../utils/rankUtils';
-import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters, AdminNotification, PlayerHonor } from '../types';
+import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters, AdminNotification, PlayerHonor, TacticalRuleSet } from '../types';
 import { AuthContext } from '../auth/AuthContext';
 
 export const IS_LIVE_DATA = isSupabaseConfigured();
@@ -35,7 +35,7 @@ function useCollection<T extends {id: string}>(
     mockData: T[], 
     options: { isProtected?: boolean } = {}
 ) {
-    const [data, setData] = useState<T[]>(() => IS_LIVE_DATA ? [] : (mockData || []));
+    const [data, setData] = useState<T[]>(() => mockData || []);
     const [loading, setLoading] = useState(true);
     const auth = useContext(AuthContext);
     const isAuthenticated = auth?.isAuthenticated;
@@ -62,22 +62,22 @@ function useCollection<T extends {id: string}>(
             .then(({ data: fetchedData, error }) => {
                 if (!isMounted) return;
                 if (error) {
-                    console.error(`Live fetch error on ${collectionName}:`, error.message || error);
-                    setData([]);
+                    console.warn(`Live fetch notice on ${collectionName}:`, error.message || error);
+                    setData(mockData || []);
                 } else {
                     if (fetchedData && fetchedData.length > 0) {
                         recordDatabaseActivity('reads', fetchedData.length);
                         setData(fetchedData as unknown as T[]);
                     } else {
-                        setData([]);
+                        setData(mockData || []);
                     }
                 }
                 setLoading(false);
             })
             .catch(err => {
                 if (!isMounted) return;
-                console.error(`Network error on ${collectionName}:`, err?.message || err);
-                setData([]);
+                console.warn(`Network notice on ${collectionName}:`, err?.message || err);
+                setData(mockData || []);
                 setLoading(false);
             });
 
@@ -316,6 +316,7 @@ const MOCK_DATA_MAP = {
     carouselMedia: mock.MOCK_CAROUSEL_MEDIA,
     apiSetupGuide: mock.MOCK_API_GUIDE,
     notifications: mock.MOCK_NOTIFICATIONS,
+    tacticalRules: mock.MOCK_TACTICAL_RULE_SETS,
 };
 type SeedableCollection = keyof typeof MOCK_DATA_MAP;
 
@@ -326,6 +327,7 @@ export interface DataContextType {
     badges: Badge[]; setBadges: (d: Badge[] | ((p: Badge[]) => Badge[])) => void;
     legendaryBadges: LegendaryBadge[]; setLegendaryBadges: (d: LegendaryBadge[] | ((p: LegendaryBadge[]) => LegendaryBadge[])) => void;
     gamificationSettings: GamificationSettings; setGamificationSettings: (d: GamificationSettings | ((p: GamificationSettings) => GamificationSettings)) => void;
+    tacticalRules: TacticalRuleSet[]; setTacticalRules: (d: TacticalRuleSet[] | ((p: TacticalRuleSet[]) => TacticalRuleSet[])) => void;
     sponsors: Sponsor[]; setSponsors: (d: Sponsor[] | ((p: Sponsor[]) => Sponsor[])) => void;
     companyDetails: CompanyDetails; setCompanyDetails: (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => Promise<void>;
     creatorDetails: CreatorDetails & { apiSetupGuide: ApiGuideStep[] }; setCreatorDetails: (d: (CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) | ((p: CreatorDetails & { apiSetupGuide: ApiGuideStep[] }) => CreatorDetails & { apiSetupGuide: ApiGuideStep[] })) => Promise<void>;
@@ -421,11 +423,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Public collections
     const [socialLinks, setSocialLinks, loadingSocialLinks] = useCollection<SocialLink>('socialLinks', MOCK_DATA_MAP.socialLinks);
     const [carouselMedia, setCarouselMedia, loadingCarouselMedia] = useCollection<CarouselMedia>('carouselMedia', MOCK_DATA_MAP.carouselMedia);
+    const [tacticalRules, setTacticalRules, loadingTacticalRules] = useCollection<TacticalRuleSet>('tacticalRules', MOCK_DATA_MAP.tacticalRules);
     
     const [isSeeding, setIsSeeding] = useState(false);
     const hasCheckedSeedRef = useRef(false);
 
-    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingSponsors || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia || loadingSignups || loadingCompanyCore || loadingBranding || loadingContent || loadingCreatorCore || loadingApiGuide || loadingSessions || loadingActivityLog || loadingNotifications;
+    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingTacticalRules || loadingSponsors || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia || loadingSignups || loadingCompanyCore || loadingBranding || loadingContent || loadingCreatorCore || loadingApiGuide || loadingSessions || loadingActivityLog || loadingNotifications;
     
     // Composite Objects
     const companyDetails = useMemo(() => ({
@@ -488,6 +491,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         badges: setBadges,
         legendaryBadges: setLegendaryBadges,
         gamificationSettings: setGamificationSettings,
+        tacticalRules: setTacticalRules,
         sponsors: setSponsors,
         vouchers: setVouchers,
         inventory: setInventory,
@@ -924,6 +928,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         badges, setBadges,
         legendaryBadges, setLegendaryBadges,
         gamificationSettings, setGamificationSettings,
+        tacticalRules, setTacticalRules,
         sponsors, setSponsors,
         companyDetails, setCompanyDetails,
         creatorDetails, setCreatorDetails,
@@ -967,6 +972,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         badges, setBadges,
         legendaryBadges, setLegendaryBadges,
         gamificationSettings, setGamificationSettings,
+        tacticalRules, setTacticalRules,
         sponsors, setSponsors,
         companyDetails, setCompanyDetails,
         creatorDetails, setCreatorDetails,

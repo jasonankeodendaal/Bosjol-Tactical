@@ -47,19 +47,17 @@
       input[type=number] {
         -moz-appearance: textfield;
       }
-      /* Custom scrollbar for a more tactical feel */
+      /* Globally hide scrollbars while retaining full scroll functionality */
+      *::-webkit-scrollbar,
       ::-webkit-scrollbar {
-        width: 8px;
+        display: none !important;
+        width: 0px !important;
+        height: 0px !important;
+        background: transparent !important;
       }
-      ::-webkit-scrollbar-track {
-        background: #18181b; /* zinc-900 */
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #b91c1c; /* red-700 */
-        border-radius: 2px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #dc2626; /* red-600 */
+      * {
+        -ms-overflow-style: none !important;  /* IE and Edge */
+        scrollbar-width: none !important;  /* Firefox */
       }
       .glitch-text {
         position: relative;

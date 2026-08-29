@@ -6,6 +6,7 @@ import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon
 import { Modal } from './Modal';
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
+import { SocialLinksManager } from './SocialLinksManager';
 import { AuthContext } from '../auth/AuthContext';
 import { deleteFromSupabaseStorage } from '../utils/storageCleaner';
 import { THEME_PRESETS } from './ThemeInjector';
@@ -779,24 +780,16 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         />
                     </div>
 
-                    <div className="pt-2 border-t border-zinc-800/70">
-                        <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-xs font-bold text-white uppercase tracking-wider">Social Links</h4>
-                            <Button variant="secondary" size="sm" className="!py-0.5 !px-2 text-xs" onClick={handleAddSocialLink}>
-                                <PlusIcon className="w-3 h-3 mr-1"/>Add Link
-                            </Button>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {socialLinksData.map(link => (
-                                <div key={link.id} className="flex items-center gap-2 bg-zinc-950/60 p-2 rounded-lg border border-zinc-800">
-                                    <Input value={link.name} onChange={(e) => handleSocialLinkChange(link.id, 'name', e.target.value)} placeholder="Network" className="!text-xs" />
-                                    <Input value={link.url} onChange={(e) => handleSocialLinkChange(link.id, 'url', e.target.value)} placeholder="URL" className="!text-xs" />
-                                    <button onClick={() => handleRemoveSocialLink(link.id)} className="p-1 text-zinc-500 hover:text-red-400">
-                                        <TrashIcon className="w-4 h-4"/>
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
+                    <div className="pt-3 border-t border-zinc-800/70">
+                        <SocialLinksManager 
+                            socialLinks={socialLinksData}
+                            onChange={(updatedLinks) => {
+                                setSocialLinksData(updatedLinks);
+                                setIsDirty(true);
+                            }}
+                            apiServerUrl={formData.apiServerUrl}
+                            onUploadingChange={handleUploadingChange}
+                        />
                     </div>
                 </div>
             )}

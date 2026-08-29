@@ -327,21 +327,39 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
 
              {socialLinks.length > 0 && (
                 <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.8, duration: 1 }}
-                    className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10"
+                    className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 max-w-[90vw]"
                 >
-                    <div className="flex items-center justify-center gap-5 bg-black/40 backdrop-blur-md px-5 py-2.5 rounded-full border border-zinc-800/60 shadow-lg">
-                        {socialLinks.map(link => (
-                            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:scale-110 transition-transform">
-                                {link.iconUrl && link.iconUrl.trim() !== '' ? (
-                                    <img src={link.iconUrl} alt={link.name} className="h-5 w-5 object-contain" title={link.name} />
-                                ) : (
-                                    <span className="text-xs font-bold text-zinc-400">{link.name}</span>
-                                )}
-                            </a>
-                        ))}
+                    <div className="flex items-center justify-center gap-4 sm:gap-5 bg-black/60 backdrop-blur-md px-5 py-2.5 rounded-full border border-zinc-800/80 shadow-2xl">
+                        {socialLinks.map(link => {
+                            const formattedUrl = link.url ? (link.url.startsWith('http') ? link.url : `https://${link.url}`) : '#';
+                            return (
+                                <a 
+                                    key={link.id} 
+                                    href={formattedUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="text-zinc-400 hover:text-white hover:scale-115 transition-all duration-200 flex items-center justify-center"
+                                    title={link.name || 'Social Link'}
+                                >
+                                    {link.iconUrl && link.iconUrl.trim() !== '' ? (
+                                        <img 
+                                            src={link.iconUrl} 
+                                            alt={link.name || 'Social Icon'} 
+                                            referrerPolicy="no-referrer"
+                                            className="h-5 w-5 sm:h-6 sm:w-6 object-contain rounded drop-shadow hover:brightness-110 transition-all" 
+                                            title={link.name} 
+                                        />
+                                    ) : (
+                                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white">
+                                            {link.name || 'Link'}
+                                        </span>
+                                    )}
+                                </a>
+                            );
+                        })}
                     </div>
                 </motion.div>
             )}

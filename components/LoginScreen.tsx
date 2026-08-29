@@ -230,16 +230,32 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
 
          {socialLinks.length > 0 && (
             <div className="mt-3 pt-2.5 border-t border-zinc-800/50">
-                <div className="flex items-center justify-center gap-4">
-                    {socialLinks.map(link => (
-                         <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:scale-110 transition-transform">
+                <div className="flex items-center justify-center gap-3.5">
+                    {socialLinks.map(link => {
+                      const formattedUrl = link.url ? (link.url.startsWith('http') ? link.url : `https://${link.url}`) : '#';
+                      return (
+                         <a 
+                            key={link.id} 
+                            href={formattedUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-gray-400 hover:text-white hover:scale-110 transition-transform flex items-center justify-center"
+                            title={link.name || 'Social Link'}
+                          >
                             {link.iconUrl && link.iconUrl.trim() !== '' ? (
-                              <img src={link.iconUrl} alt={link.name} className="h-5 w-5 object-contain" title={link.name} />
+                              <img 
+                                src={link.iconUrl} 
+                                alt={link.name || 'Social Icon'} 
+                                referrerPolicy="no-referrer"
+                                className="h-5 w-5 object-contain rounded hover:brightness-110 drop-shadow" 
+                                title={link.name} 
+                              />
                             ) : (
-                              <span className="text-[10px] font-bold text-zinc-400">{link.name}</span>
+                              <span className="text-[10px] font-bold text-zinc-400 hover:text-zinc-200">{link.name || 'Link'}</span>
                             )}
                         </a>
-                    ))}
+                      );
+                    })}
                 </div>
             </div>
         )}

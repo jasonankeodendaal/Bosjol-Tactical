@@ -21,6 +21,7 @@ import { PlayerRankShowcase } from './PlayerRankShowcase';
 import { PlayerRulesView } from './PlayerRulesView';
 import { getRankForPlayer, getRankProgression, FALLBACK_RECRUIT_TIER } from '../utils/rankUtils';
 import { resolveRankIcon, getRankBadgeSvg } from '../utils/rankBadges';
+import { calculatePlayerPerformance } from '../utils/playerPerformanceUtils';
 import { QrCode, Camera, ShieldCheck, LayoutGrid, CalendarDays } from 'lucide-react';
 import { EventQRScannerModal } from './EventQRScannerModal';
 import { EventCalendarView } from './EventCalendarView';
@@ -649,9 +650,14 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
     const sortedPlayers = useMemo(() => [...players].sort((a, b) => (b.stats?.xp ?? 0) - (a.stats?.xp ?? 0)), [players]);
     const topThree = sortedPlayers.slice(0, 3);
     
-    const kills = player.stats?.kills ?? 0;
-    const deaths = player.stats?.deaths ?? 0;
-    const kdr = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
+    // Live calculated player performance incorporating match combat, badges, honors, and XP adjustments
+    const perf = useMemo(() => {
+        return calculatePlayerPerformance(player, dataContext?.honors, dataContext?.badges, dataContext?.legendaryBadges);
+    }, [player, dataContext?.honors, dataContext?.badges, dataContext?.legendaryBadges]);
+
+    const kills = perf.kills;
+    const deaths = perf.deaths;
+    const kdr = perf.kdr;
 
     const sponsorContainerStyle: React.CSSProperties = sponsorsBackgroundUrl ? {
         backgroundImage: `url('${sponsorsBackgroundUrl}')`,
@@ -729,10 +735,53 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div className="overview-card stats-summary-card">
-                    <h3 className="overview-section-title">Summary</h3>
-                    <ul className="text-gray-300 space-y-1"><li className="flex justify-between"><span>Kills:</span> <span className="font-bold text-white">{kills}</span></li><li className="flex justify-between"><span>Deaths:</span> <span className="font-bold text-white">{deaths}</span></li><li className="flex justify-between"><span>K/D:</span> <span className="font-bold text-white">{kdr}</span></li></ul>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="overview-card stats-summary-card flex flex-col justify-between">
+                    <div>
+                        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2 mb-3">
+                            <h3 className="overview-section-title !mb-0 flex items-center gap-2">
+                                <CrosshairsIcon className="w-4 h-4 text-red-500" /> Live Summary
+                            </h3>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider border ${
+                                perf.combatRating >= 80 ? 'bg-amber-950/60 text-amber-300 border-amber-500/40' :
+                                perf.combatRating >= 60 ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40' :
+                                'bg-zinc-800/80 text-zinc-300 border-zinc-700/50'
+                            }`}>
+                                Index: {perf.combatRating} ({perf.combatGrade})
+                            </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                            <div className="p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800/60 flex items-center justify-between">
+                                <span className="text-zinc-400">Total RP:</span>
+                                <span className="font-bold text-amber-300 font-mono">
+                                    {perf.totalLifetimeXp.toLocaleString()} RP
+                                </span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800/60 flex items-center justify-between">
+                                <span className="text-zinc-400">Badges Earned:</span>
+                                <span className="font-bold text-white font-mono">{perf.totalBadgesEarned}</span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800/60 flex items-center justify-between">
+                                <span className="text-zinc-400">Matches:</span>
+                                <span className="font-bold text-white font-mono">{perf.matchesPlayed}</span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800/60 flex items-center justify-between">
+                                <span className="text-zinc-400">Avg RP/Match:</span>
+                                <span className="font-bold text-red-400 font-mono">+{perf.avgXpPerMatch} RP</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-zinc-800/60 space-y-1">
+                        <div className="flex justify-between items-center text-[10px]">
+                            <span className="text-zinc-400 flex items-center gap-1 font-mono uppercase tracking-wider">
+                                <TrophyIcon className="w-3 h-3 text-amber-400" />
+                                {perf.honorsCount} Official Honors • +{perf.badgeRewardsXp} Badge RP
+                            </span>
+                            <span className="font-mono text-emerald-400 font-bold">Grade: {perf.combatGrade}</span>
+                        </div>
+                    </div>
                 </div>
                 <div className="overview-card next-event-card">
                     <h3 className="overview-section-title">Next Up</h3>
@@ -741,13 +790,18 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
             </div>
             
             <div className="overview-card commendations-card">
-                <h3 className="overview-section-title">Commendations</h3>
+                <div className="flex items-center justify-between mb-3 border-b border-zinc-800/60 pb-2">
+                    <h3 className="overview-section-title !mb-0">Commendations & Badges</h3>
+                    <span className="text-xs text-amber-400 font-mono font-bold">
+                        +{perf.badgeRewardsXp.toLocaleString()} Bonus RP
+                    </span>
+                </div>
                 {((player.badges || []).length === 0 && (player.legendaryBadges || []).length === 0) ? (
                     <p className="text-center text-gray-500 py-4">No commendations earned yet.</p>
                 ) : (
                     <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-4 commendations-grid">
                         {(player.legendaryBadges || []).map(badge => (
-                            <div key={badge.id} className="relative group flex justify-center items-center aspect-square legendary-badge-item !border-0" title={`${badge.name}: ${badge.description}`}>
+                            <div key={badge.id} className="relative group flex justify-center items-center aspect-square legendary-badge-item !border-0" title={`${badge.name}: ${badge.description} (+250 RP)`}>
                                 {badge.iconUrl ? (
                                     <img src={badge.iconUrl} alt={badge.name} className="w-12 h-12 object-contain" />
                                 ) : (
@@ -756,7 +810,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                             </div>
                         ))}
                         {(player.badges || []).map(badge => (
-                            <div key={badge.id} className="relative group flex justify-center items-center aspect-square" title={`${badge.name}: ${badge.description}`}>
+                            <div key={badge.id} className="relative group flex justify-center items-center aspect-square" title={`${badge.name}: ${badge.description} (+75 RP)`}>
                                 {badge.iconUrl ? (
                                     <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 object-contain"/>
                                 ) : (
@@ -774,7 +828,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                     <h3 className="overview-section-title !mb-0 text-amber-400 flex items-center gap-2">
                         <TrophyIcon className="w-5 h-5 text-amber-400" /> My Hall of Fame Honors ({dataContext?.honors?.filter(h => h.playerId === player.id).length || 0})
                     </h3>
-                    <span className="text-[11px] text-amber-500/80 font-mono uppercase tracking-wider">Official Awards</span>
+                    <span className="text-[11px] text-amber-500/80 font-mono uppercase tracking-wider">+{perf.honorsXp} Honor RP</span>
                 </div>
                 {(() => {
                     const playerHonors = dataContext?.honors?.filter(h => h.playerId === player.id) || [];
@@ -819,15 +873,90 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                 })()}
             </div>
             
-            <div className="overview-card lifetime-stats-card">
-                <h3 className="overview-section-title">Lifetime Performance</h3>
-                 <div className="p-2 sm:p-6 grid grid-cols-2 md:grid-cols-3 gap-y-6 lifetime-stats-grid">
-                    <StatDisplay value={kdr} label="K/D Ratio" tooltip="Kill/Death Ratio" />
-                    <StatDisplay value={(player.stats?.kills ?? 0).toLocaleString()} label="Total Kills" />
-                    <StatDisplay value={(player.stats?.deaths ?? 0).toLocaleString()} label="Total Deaths" />
-                    <StatDisplay value={(player.stats?.headshots ?? 0).toLocaleString()} label="Total Headshots" />
-                    <StatDisplay value={(player.stats?.gamesPlayed ?? 0).toLocaleString()} label="Matches" />
-                    <StatDisplay value={(player.stats?.xp ?? 0).toLocaleString()} label="Total RP" />
+            <div className="overview-card lifetime-stats-card space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
+                    <div>
+                        <h3 className="overview-section-title !mb-0 flex items-center gap-2">
+                            <ChartBarIcon className="w-5 h-5 text-red-500" /> Lifetime Performance
+                        </h3>
+                        <p className="text-xs text-zinc-400 mt-0.5">
+                            Real-time dynamic career metrics based on matches, XP earned, badges rewarded, and official honors.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300 flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            Live Synced
+                        </span>
+                    </div>
+                </div>
+
+                <div className="p-2 sm:p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 lifetime-stats-grid">
+                    <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                            <span>Total RP (XP)</span>
+                            <InfoTooltip text="Total lifetime Rank Points earned across combat matches, badge rewards, honors, and XP bonuses." />
+                        </div>
+                        <p className="text-2xl sm:text-3xl font-black font-mono text-amber-300">
+                            {perf.totalLifetimeXp.toLocaleString()}
+                        </p>
+                        <p className="text-[10px] text-red-400 font-mono mt-1">+{perf.avgXpPerMatch} RP / match avg</p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                            <span>Matches Deployed</span>
+                            <span className="text-[10px] font-mono text-zinc-500">Events</span>
+                        </div>
+                        <p className="text-2xl sm:text-3xl font-black font-mono text-white">
+                            {perf.matchesPlayed.toLocaleString()}
+                        </p>
+                        <p className="text-[10px] text-zinc-400 font-mono mt-1">Career matches</p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                            <span>Badges Earned</span>
+                            <span className="text-[10px] font-mono text-amber-400">{perf.legendaryBadgesCount} Mythic</span>
+                        </div>
+                        <p className="text-2xl sm:text-3xl font-black font-mono text-white">
+                            {perf.totalBadgesEarned}
+                        </p>
+                        <p className="text-[10px] text-zinc-400 font-mono mt-1">{perf.standardBadgesCount} Combat Badges</p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                            <span>Badge Rewards RP</span>
+                            <InfoTooltip text="Bonus Rank Points awarded from unlocking combat ribbons and legendary commendations." />
+                        </div>
+                        <p className="text-2xl sm:text-3xl font-black font-mono text-amber-400">
+                            +{perf.badgeRewardsXp.toLocaleString()}
+                        </p>
+                        <p className="text-[10px] text-zinc-500 font-mono mt-1">Earned badge bonuses</p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                            <span>Official Honors</span>
+                            <span className="text-[10px] font-mono text-purple-400">Hall of Fame</span>
+                        </div>
+                        <p className="text-2xl sm:text-3xl font-black font-mono text-white">
+                            {perf.honorsCount}
+                        </p>
+                        <p className="text-[10px] text-zinc-400 font-mono mt-1">{perf.motmCount} MotM • {perf.motmthCount} MotMth</p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                            <span>Combat Rating</span>
+                            <span className="text-[10px] font-mono text-emerald-400">Grade {perf.combatGrade}</span>
+                        </div>
+                        <p className="text-2xl sm:text-3xl font-black font-mono text-emerald-400">
+                            {perf.combatRating}<span className="text-xs text-zinc-500 font-normal">/100</span>
+                        </p>
+                        <p className="text-[10px] text-zinc-400 font-mono mt-1">Overall Tactical Index</p>
+                    </div>
                 </div>
             </div>
 
@@ -1056,56 +1185,82 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
 
 // FIX: Added missing StatsTab component
 const StatsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'events'>> = ({ player, events }) => {
-    const { stats, matchHistory } = player;
-    const kills = stats?.kills ?? 0;
-    const deaths = stats?.deaths ?? 0;
-    const kdr = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
+    const dataContext = useContext(DataContext);
+    const perf = useMemo(() => {
+        return calculatePlayerPerformance(player, dataContext?.honors, dataContext?.badges, dataContext?.legendaryBadges);
+    }, [player, dataContext?.honors, dataContext?.badges, dataContext?.legendaryBadges]);
 
-    const bestMatch = useMemo(() => {
-        if (!matchHistory || matchHistory.length === 0) return null;
-        return [...matchHistory].sort((a, b) => b.playerStats.kills - a.playerStats.kills)[0];
-    }, [matchHistory]);
-
-    const bestEvent = bestMatch ? events.find(e => e.id === bestMatch.eventId) : null;
+    const { matchHistory } = player;
 
     return (
         <div className="space-y-6">
             <DashboardCard title="Lifetime Performance" icon={<ChartBarIcon className="w-6 h-6" />}>
-                <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-y-6">
-                    <StatDisplay value={kdr} label="K/D Ratio" tooltip="Kill/Death Ratio" />
-                    <StatDisplay value={(stats?.kills ?? 0).toLocaleString()} label="Total Kills" />
-                    <StatDisplay value={(stats?.deaths ?? 0).toLocaleString()} label="Total Deaths" />
-                    <StatDisplay value={(stats?.headshots ?? 0).toLocaleString()} label="Total Headshots" />
-                    <StatDisplay value={(stats?.gamesPlayed ?? 0).toLocaleString()} label="Matches Played" />
-                    <StatDisplay value={(stats?.xp ?? 0).toLocaleString()} label="Total RP" />
-                </div>
-            </DashboardCard>
-            {bestMatch && bestEvent && (
-                <DashboardCard title="Best Match Performance" icon={<SparklesIcon className="w-6 h-6" />}>
-                    <div className="p-4">
-                        <EventCard event={bestEvent} />
-                        <div className="grid grid-cols-3 gap-2 text-center p-3 mt-2 bg-zinc-900/50 rounded-lg">
-                            <StatDisplay value={bestMatch.playerStats.kills} label="Kills" />
-                            <StatDisplay value={bestMatch.playerStats.deaths} label="Deaths" />
-                            <StatDisplay value={bestMatch.playerStats.headshots} label="Headshots" />
+                <div className="p-4 sm:p-6 space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                        <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
+                            <p className="text-xs text-zinc-400">Total Rank Points</p>
+                            <p className="text-2xl sm:text-3xl font-black font-mono text-amber-300 mt-1">
+                                {perf.totalLifetimeXp.toLocaleString()}
+                            </p>
+                            <p className="text-[10px] text-red-400 font-mono mt-0.5">+{perf.avgXpPerMatch} RP/match</p>
+                        </div>
+                        <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
+                            <p className="text-xs text-zinc-400">Matches Deployed</p>
+                            <p className="text-2xl sm:text-3xl font-black font-mono text-white mt-1">
+                                {perf.matchesPlayed.toLocaleString()}
+                            </p>
+                            <p className="text-[10px] text-zinc-400 font-mono mt-0.5">Career events</p>
+                        </div>
+                        <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
+                            <p className="text-xs text-zinc-400">Badges Rewarded RP</p>
+                            <p className="text-2xl sm:text-3xl font-black font-mono text-amber-400 mt-1">
+                                +{perf.badgeRewardsXp.toLocaleString()}
+                            </p>
+                            <p className="text-[10px] text-zinc-400 font-mono mt-0.5">{perf.totalBadgesEarned} Badges Unlocked</p>
+                        </div>
+                        <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
+                            <p className="text-xs text-zinc-400">Official Honors</p>
+                            <p className="text-2xl sm:text-3xl font-black font-mono text-purple-300 mt-1">
+                                {perf.honorsCount}
+                            </p>
+                            <p className="text-[10px] text-zinc-400 font-mono mt-0.5">+{perf.honorsXp} Honor RP</p>
                         </div>
                     </div>
-                </DashboardCard>
-            )}
-            <DashboardCard title="Match History" icon={<CalendarIcon className="w-6 h-6" />}>
-                <div className="p-4 space-y-4 max-h-[40rem] overflow-y-auto">
+
+                    <div className="p-4 bg-zinc-900/40 rounded-xl border border-zinc-800/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2">
+                            <span className="font-mono text-zinc-400">Tactical Grade:</span>
+                            <span className="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-500/40 font-mono">
+                                {perf.combatGrade} ({perf.combatRating}/100)
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-zinc-400 font-mono">
+                            <span>Badges: <strong className="text-white">{perf.totalBadgesEarned}</strong></span>
+                            <span>•</span>
+                            <span>Honors: <strong className="text-purple-300">{perf.honorsCount}</strong></span>
+                            <span>•</span>
+                            <span>Avg RP/Event: <strong className="text-amber-300">+{perf.avgXpPerMatch} RP</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </DashboardCard>
+            <DashboardCard title="Match & Event History" icon={<CalendarIcon className="w-6 h-6" />}>
+                <div className="p-4 space-y-3 max-h-[40rem] overflow-y-auto">
                     {matchHistory && matchHistory.length > 0 ? (
                         matchHistory
                             .map(record => ({ ...record, event: events.find(e => e.id === record.eventId) }))
                             .filter(record => record.event)
                             .sort((a, b) => new Date(b.event!.date).getTime() - new Date(a.event!.date).getTime())
-                            .map(({ event, playerStats }, index) => (
-                                <div key={index} className="bg-zinc-900/50 p-1 rounded-lg">
-                                    <EventCard event={event!} />
-                                    <div className="grid grid-cols-3 gap-2 text-center p-3">
-                                        <StatDisplay value={playerStats.kills} label="Kills" />
-                                        <StatDisplay value={playerStats.deaths} label="Deaths" />
-                                        <StatDisplay value={playerStats.headshots} label="Headshots" />
+                            .map(({ event }, index) => (
+                                <div key={index} className="bg-zinc-900/60 p-3.5 rounded-xl border border-zinc-800/80 flex items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <h4 className="font-bold text-white text-sm truncate">{event!.title}</h4>
+                                        <p className="text-xs text-zinc-400 font-mono mt-0.5">{new Date(event!.date).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <span className="px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-xs font-bold font-mono">
+                                            Attended
+                                        </span>
                                     </div>
                                 </div>
                             ))

@@ -832,7 +832,7 @@ const AppContent: React.FC = () => {
     };
 
     if (loading) {
-        return <Loader />;
+        return <Loader logoUrl={companyDetails?.logoUrl} />;
     }
     
     return (
@@ -840,15 +840,11 @@ const AppContent: React.FC = () => {
             <ThemeInjector themeColors={companyDetails?.themeColors} />
             <AnimatePresence>
                 {isSeeding && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-[100]"
-                    >
-                        <Loader />
-                        <p className="text-lg font-semibold text-gray-300 tracking-wider">Seeding initial database configuration...</p>
-                    </motion.div>
+                    <Loader 
+                        logoUrl={companyDetails?.logoUrl}
+                        text="SEEDING TACTICAL DATABASE" 
+                        subText="DEPLOYING INITIAL OPERATIONAL ASSETS & RANKS" 
+                    />
                 )}
             </AnimatePresence>
 

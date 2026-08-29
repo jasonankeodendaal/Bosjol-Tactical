@@ -340,10 +340,9 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
 };
 
 const PlayerListItem = React.memo(({ player, rank, onViewPlayer, onDeletePlayer }: { player: Player; rank: Tier; onViewPlayer: (id: string) => void; onDeletePlayer: (id: string) => void }) => {
-    const kills = player.stats?.kills || 0;
-    const deaths = player.stats?.deaths || 0;
     const xp = player.stats?.xp || 0;
-    const kdr = deaths > 0 ? kills / deaths : kills;
+    const matchesCount = player.stats?.gamesPlayed ?? (player.matchHistory?.length || 0);
+    const badgesCount = (player.badges?.length || 0) + (player.legendaryBadges?.length || 0);
     const resolvedIcon = resolveRankIcon(rank.iconUrl, rank.name);
 
     return (
@@ -383,7 +382,7 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer, onDeletePlayer 
             <div className="flex items-center gap-2 flex-shrink-0">
                 <div className="text-right">
                     <p className="font-bold text-amber-400 text-xs sm:text-sm">{xp.toLocaleString()} RP</p>
-                    <p className="text-[9px] text-zinc-500">K/D {kdr.toFixed(1)}</p>
+                    <p className="text-[9px] text-zinc-500">{matchesCount} {matchesCount === 1 ? 'event' : 'events'} &bull; {badgesCount} {badgesCount === 1 ? 'badge' : 'badges'}</p>
                 </div>
                 <button
                     type="button"

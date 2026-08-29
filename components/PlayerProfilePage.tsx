@@ -14,6 +14,7 @@ import { UrlOrUploadField } from './UrlOrUploadField';
 import { SendCredentialsModal } from './SendCredentialsModal';
 import { motion } from 'framer-motion';
 import { getRankForPlayer, getRankProgression as computeRankProgression, FALLBACK_RECRUIT_TIER, resolveRankIcon, getRankBadgeSvg } from '../utils/rankUtils';
+import { calculatePlayerPerformance } from '../utils/playerPerformanceUtils';
 
 const getTierForPlayer = (player: Player, ranks: Rank[]): Tier => {
     return getRankForPlayer(player, ranks);
@@ -110,10 +111,16 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
 
     const playerTier = getTierForPlayer(player, ranks);
     const playerRank = ranks.find(rank => (rank.tiers || []).some(t => t.id === playerTier.id));
+    
+    // Dynamically calculate career performance from XP earned, badges rewarded, match history, and honors
+    const perf = useMemo(() => {
+        return calculatePlayerPerformance(player, dataContext?.honors, dataContext?.badges, legendaryBadges);
+    }, [player, dataContext?.honors, dataContext?.badges, legendaryBadges]);
+
     const { stats, matchHistory } = player;
-    const kills = stats?.kills ?? 0;
-    const deaths = stats?.deaths ?? 0;
-    const kdr = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
+    const kills = perf.kills;
+    const deaths = perf.deaths;
+    const kdr = perf.kdr;
 
     const handleSave = () => {
         let dataToSave = { ...formData, age: Number(formData.age) };
@@ -706,29 +713,79 @@ WHERE id = '${player.id}';`;
                         </div>
                     </DashboardCard>
                     <DashboardCard title="Lifetime Performance" icon={<ChartBarIcon className="w-6 h-6"/>}>
-                        <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-y-6">
-                            <StatDisplay value={kdr} label="K/D Ratio" tooltip="Kill/Death Ratio. Calculated as Total Kills divided by Total Deaths."/>
-                            <StatDisplay value={(stats?.kills ?? 0).toLocaleString()} label="Total Kills"/>
-                            <StatDisplay value={(stats?.deaths ?? 0).toLocaleString()} label="Total Deaths"/>
-                            <StatDisplay value={(stats?.headshots ?? 0).toLocaleString()} label="Total Headshots"/>
-                            <StatDisplay value={(stats?.gamesPlayed ?? 0).toLocaleString()} label="Matches Played"/>
-                            <StatDisplay value={(stats?.xp ?? 0).toLocaleString()} label="Total Rank Points"/>
+                        <div className="p-4 sm:p-6 space-y-4">
+                            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+                                <span className="text-xs text-zinc-400">
+                                    Career metrics dynamically computed from matches, XP adjustments, badges, and honors.
+                                </span>
+                                <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-zinc-300">
+                                    Grade: <strong className="text-emerald-400">{perf.combatGrade}</strong> ({perf.combatRating}/100)
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                                <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
+                                    <p className="text-xs text-zinc-400">Total Rank Points</p>
+                                    <p className="text-2xl sm:text-3xl font-black font-mono text-amber-300 mt-1">
+                                        {perf.totalLifetimeXp.toLocaleString()}
+                                    </p>
+                                    <p className="text-[10px] text-red-400 font-mono mt-0.5">+{perf.avgXpPerMatch} RP/match</p>
+                                </div>
+                                <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
+                                    <p className="text-xs text-zinc-400">Matches Played</p>
+                                    <p className="text-2xl sm:text-3xl font-black font-mono text-white mt-1">
+                                        {perf.matchesPlayed.toLocaleString()}
+                                    </p>
+                                    <p className="text-[10px] text-zinc-400 font-mono mt-0.5">Career events</p>
+                                </div>
+                                <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
+                                    <p className="text-xs text-zinc-400">Badges Earned</p>
+                                    <p className="text-2xl sm:text-3xl font-black font-mono text-white mt-1">
+                                        {perf.totalBadgesEarned}
+                                    </p>
+                                    <p className="text-[10px] text-amber-400 font-mono mt-0.5">{perf.legendaryBadgesCount} Mythic</p>
+                                </div>
+                                <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
+                                    <p className="text-xs text-zinc-400">Badge Bonus RP</p>
+                                    <p className="text-2xl sm:text-3xl font-black font-mono text-amber-400 mt-1">
+                                        +{perf.badgeRewardsXp.toLocaleString()}
+                                    </p>
+                                    <p className="text-[10px] text-zinc-400 font-mono mt-0.5">Commendation rewards</p>
+                                </div>
+                                <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
+                                    <p className="text-xs text-zinc-400">Official Honors</p>
+                                    <p className="text-2xl sm:text-3xl font-black font-mono text-purple-300 mt-1">
+                                        {perf.honorsCount}
+                                    </p>
+                                    <p className="text-[10px] text-zinc-400 font-mono mt-0.5">{perf.motmCount} MotM • {perf.motmthCount} MotMth</p>
+                                </div>
+                                <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
+                                    <p className="text-xs text-zinc-400">Combat Rating</p>
+                                    <p className="text-2xl sm:text-3xl font-black font-mono text-emerald-400 mt-1">
+                                        {perf.combatRating}<span className="text-xs text-zinc-500 font-normal">/100</span>
+                                    </p>
+                                    <p className="text-[10px] text-emerald-400 font-mono mt-0.5">Grade {perf.combatGrade}</p>
+                                </div>
+                            </div>
                         </div>
                     </DashboardCard>
-                     <DashboardCard title="Match History" icon={<CalendarIcon className="w-6 h-6" />}>
-                        <div className="p-6 space-y-4 max-h-[40rem] overflow-y-auto">
+                     <DashboardCard title="Match & Event History" icon={<CalendarIcon className="w-6 h-6" />}>
+                        <div className="p-4 space-y-3 max-h-[40rem] overflow-y-auto">
                             {player?.matchHistory && player.matchHistory.length > 0 ? (
                                 player.matchHistory
                                     .map(record => ({...record, event: (events || []).find(e => e.id === record?.eventId)}))
                                     .filter(record => record.event)
                                     .sort((a,b) => new Date(b.event!.date).getTime() - new Date(a.event!.date).getTime())
-                                    .map(({ event, playerStats }) => (
-                                        <div key={event!.id} className="bg-zinc-900/50 p-1 rounded-lg">
-                                            <EventCard event={event!} />
-                                            <div className="grid grid-cols-3 gap-2 text-center p-3">
-                                                <StatDisplay value={playerStats?.kills ?? 0} label="Kills" />
-                                                <StatDisplay value={playerStats?.deaths ?? 0} label="Deaths" />
-                                                <StatDisplay value={playerStats?.headshots ?? 0} label="Headshots" />
+                                    .map(({ event }, index) => (
+                                        <div key={index} className="bg-zinc-900/60 p-3.5 rounded-xl border border-zinc-800/80 flex items-center justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <h4 className="font-bold text-white text-sm truncate">{event!.title}</h4>
+                                                <p className="text-xs text-zinc-400 font-mono mt-0.5">{new Date(event!.date).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <span className="px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-xs font-bold font-mono">
+                                                    Attended
+                                                </span>
                                             </div>
                                         </div>
                                     ))

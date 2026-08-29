@@ -219,12 +219,12 @@ export const PlayerRankShowcase: React.FC<PlayerRankShowcaseProps> = ({
                                 <span className="text-yellow-400 font-bold text-sm">{mvpCount}</span>
                             </div>
                             <div className="flex justify-between items-center py-1 border-b border-zinc-800/60">
-                                <span className="text-zinc-400 tracking-wider">K/D RATIO</span>
-                                <span className="text-white font-bold text-sm">{kdr}</span>
+                                <span className="text-zinc-400 tracking-wider">BADGES</span>
+                                <span className="text-amber-400 font-bold text-sm">{(player.badges || []).length + (player.legendaryBadges || []).length}</span>
                             </div>
                             <div className="flex justify-between items-center py-1 border-b border-zinc-800/60">
-                                <span className="text-zinc-400 tracking-wider">HEADSHOTS</span>
-                                <span className="text-red-400 font-bold text-sm">{headshots}</span>
+                                <span className="text-zinc-400 tracking-wider">TOTAL XP</span>
+                                <span className="text-emerald-400 font-bold text-sm">{playerXp.toLocaleString()} RP</span>
                             </div>
                         </div>
 

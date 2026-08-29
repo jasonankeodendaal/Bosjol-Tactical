@@ -3,7 +3,7 @@ import type { GameEvent, Player, InventoryItem, GamificationSettings, PaymentSta
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
-import { ArrowLeftIcon, CalendarIcon, UserIcon, TrashIcon, CheckCircleIcon, CreditCardIcon, PlusIcon, ChartBarIcon, ExclamationTriangleIcon, TrophyIcon, MinusIcon, CurrencyDollarIcon, CogIcon } from './icons/Icons';
+import { ArrowLeftIcon, CalendarIcon, UserIcon, UsersIcon, TrashIcon, CheckCircleIcon, CreditCardIcon, PlusIcon, ChartBarIcon, ExclamationTriangleIcon, TrophyIcon, MinusIcon, CurrencyDollarIcon, CogIcon } from './icons/Icons';
 import { MOCK_EVENT_THEMES, EVENT_STATUSES, EVENT_TYPES, UNRANKED_TIER, MOCK_LOCATIONS } from '../constants';
 import { BadgePill } from './BadgePill';
 import { InfoTooltip } from './InfoTooltip';
@@ -238,15 +238,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             // Case 1: Player attended the event
             const attendeeInfo = formData.attendees.find(a => a.playerId === player.id);
             if (attendeeInfo) {
-                const playerLiveStats = liveStats[player.id] || {};
-                let xpGained = formData.participationXp || 0;
-    
-                const rules = new Map(gamificationSettings.map(r => [r.id, r.xp]));
-                const getXp = (ruleId: string) => formData.xpOverrides?.[ruleId] ?? rules.get(ruleId) ?? 0;
-    
-                xpGained += (playerLiveStats.kills || 0) * getXp('g_kill');
-                xpGained += (playerLiveStats.headshots || 0) * getXp('g_headshot');
-                xpGained += (playerLiveStats.deaths || 0) * getXp('g_death');
+                const xpGained = formData.participationXp || 500;
     
                 if (attendeeInfo.paymentStatus?.startsWith('Paid') && event?.id) {
                     newTransactions.push({
@@ -272,9 +264,9 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                 const newMatchRecord = {
                     eventId: event!.id,
                     playerStats: {
-                        kills: playerLiveStats.kills || 0,
-                        deaths: playerLiveStats.deaths || 0,
-                        headshots: playerLiveStats.headshots || 0,
+                        kills: 0,
+                        deaths: 0,
+                        headshots: 0,
                     }
                 };
     
@@ -291,9 +283,9 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                     stats: {
                         ...currentStats,
                         xp: currentStats.xp + xpGained,
-                        kills: currentStats.kills + (playerLiveStats.kills || 0),
-                        deaths: currentStats.deaths + (playerLiveStats.deaths || 0),
-                        headshots: currentStats.headshots + (playerLiveStats.headshots || 0),
+                        kills: currentStats.kills,
+                        deaths: currentStats.deaths,
+                        headshots: currentStats.headshots,
                         gamesPlayed: currentStats.gamesPlayed + 1,
                     },
                     badges: newBadgesForPlayer.length > 0 
@@ -624,35 +616,25 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             </div>
                         </div>
                     </DashboardCard>
-                    <DashboardCard title="Event Live Stats" icon={<ChartBarIcon className="w-6 h-6" />}>
+                    <DashboardCard title={`Attended Operators (${attendeesDetails.length})`} icon={<UsersIcon className="w-6 h-6" />}>
                         <div className="p-6">
-                            <ul className="space-y-3">
-                                {attendeesDetails.map(player => (
-                                    <li key={player.id} className="bg-zinc-900/50 p-3 rounded-lg">
-                                        <p className="font-bold text-white mb-2">{player.name}</p>
-                                        <div className="grid grid-cols-3 gap-3">
-                                            <Input 
-                                                label="Kills" type="number" 
-                                                value={liveStats[player.id]?.kills || 0}
-                                                onChange={e => handleStatChange(player.id, 'kills', Number(e.target.value))}
-                                                className="!py-1.5 text-center"
-                                            />
-                                            <Input 
-                                                label="Deaths" type="number"
-                                                value={liveStats[player.id]?.deaths || 0}
-                                                onChange={e => handleStatChange(player.id, 'deaths', Number(e.target.value))}
-                                                className="!py-1.5 text-center"
-                                            />
-                                            <Input 
-                                                label="Headshots" type="number"
-                                                value={liveStats[player.id]?.headshots || 0}
-                                                onChange={e => handleStatChange(player.id, 'headshots', Number(e.target.value))}
-                                                className="!py-1.5 text-center"
-                                            />
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                            {attendeesDetails.length > 0 ? (
+                                <ul className="space-y-3">
+                                    {attendeesDetails.map(player => (
+                                        <li key={player.id} className="bg-zinc-900/60 p-3 rounded-lg border border-zinc-800 flex items-center justify-between">
+                                            <div>
+                                                <p className="font-bold text-white text-sm">{player.name}</p>
+                                                <p className="text-xs text-zinc-400 font-mono">Callsign: {player.callsign || 'N/A'}</p>
+                                            </div>
+                                            <span className="px-2.5 py-1 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-xs font-mono font-bold">
+                                                +{formData.participationXp || 500} RP
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-zinc-500 text-sm text-center py-4">No operators checked in yet.</p>
+                            )}
                         </div>
                     </DashboardCard>
                 </div>

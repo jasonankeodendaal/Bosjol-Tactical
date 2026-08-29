@@ -39,7 +39,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
             id: 'faq-1',
             category: 'Event Operations',
             question: 'How does single-click Event Finalization cascade stats across operators?',
-            answer: 'When a Game Master clicks "Finalize Event" on the Manage Event page, the engine loops through all signed-up operators. It calculates earned XP from recorded kills (+100 XP), headshot bonuses (+50 XP), and event attendance (+500 XP), subtracts death penalties (-25 XP), updates their lifetime career stats, and automatically posts the event earnings to the Financial Ledger.'
+            answer: 'When a Game Master clicks "Finalize Event" on the Manage Event page, the engine loops through all signed-up operators. It awards earned event participation RP (+500 RP), applies any event badges and commendation bonuses, increments their career match attendance count, and automatically posts the event earnings to the Financial Ledger.'
         },
         {
             id: 'faq-2',
@@ -133,7 +133,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
                         >
                             <p className="text-xs text-zinc-300 mb-3">Comprehensive match planning, player signups, and automated attendance validation.</p>
                             <ul className="text-[11px] text-zinc-400 space-y-2 list-none">
-                                <li className="flex items-start gap-1.5"><CheckCircleIcon className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" /> <span><strong>Event Finalization:</strong> Single-click cascade updates kills, deaths, headshots, and XP across signed-up operators.</span></li>
+                                <li className="flex items-start gap-1.5"><CheckCircleIcon className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" /> <span><strong>Event Finalization:</strong> Single-click cascade updates event attendance, badges, and RP across signed-up operators.</span></li>
                                 <li className="flex items-start gap-1.5"><CheckCircleIcon className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" /> <span><strong>QR Code & Call-Sign Verification:</strong> Rapid player check-in at field entry points using embedded scanner codes.</span></li>
                                 <li className="flex items-start gap-1.5"><CheckCircleIcon className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" /> <span><strong>Rental Gear Allocator:</strong> Tracks rifle, mask, and battery rentals per operator with auto-inventory deduction.</span></li>
                             </ul>
@@ -146,8 +146,8 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
                         >
                             <p className="text-xs text-zinc-300 mb-3">Psychological retention loops keeping operators engaged across multi-match seasons.</p>
                             <ul className="text-[11px] text-zinc-400 space-y-2 list-none">
-                                <li className="flex items-start gap-1.5"><CheckCircleIcon className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" /> <span><strong>Precision XP Mathematics:</strong> Participation XP (+500), combat kills (+100 XP), and headshot precision multipliers (+50 XP).</span></li>
-                                <li className="flex items-start gap-1.5"><CheckCircleIcon className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" /> <span><strong>Milestone & Legendary Badges:</strong> Auto-unlocked based on permanent stats (e.g. "Sharpshooter", "1000 Kills").</span></li>
+                                <li className="flex items-start gap-1.5"><CheckCircleIcon className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" /> <span><strong>Precision RP Mathematics:</strong> Participation RP (+500), event completion bonuses, and official Marshal commendations.</span></li>
+                                <li className="flex items-start gap-1.5"><CheckCircleIcon className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" /> <span><strong>Milestone & Legendary Badges:</strong> Auto-unlocked based on career milestones (e.g. "Veteran Operator", "Century Club").</span></li>
                                 <li className="flex items-start gap-1.5"><CheckCircleIcon className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" /> <span><strong>Dynamic Rank Perks:</strong> Automated reward distribution (e.g. rental discounts, free raffle entries) upon promotion.</span></li>
                             </ul>
                         </FeatureCard>
@@ -159,7 +159,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
                         >
                             <p className="text-xs text-zinc-300 mb-3">Public operator standings fostering healthy rivalry and team recognition.</p>
                             <ul className="text-[11px] text-zinc-400 space-y-2 list-none">
-                                <li className="flex items-start gap-1.5"><CheckCircleIcon className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" /> <span><strong>Live Dynamic Standings:</strong> Sort operators by Total XP, Kill/Death ratio, headshots, or games attended.</span></li>
+                                <li className="flex items-start gap-1.5"><CheckCircleIcon className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" /> <span><strong>Live Dynamic Standings:</strong> Sort operators by Total RP, Badges Earned, Official Honors, or matches attended.</span></li>
                                 <li className="flex items-start gap-1.5"><CheckCircleIcon className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" /> <span><strong>Tactical Field Honors:</strong> Special commendations awarded by Game Masters for sportsmanship and leadership.</span></li>
                                 <li className="flex items-start gap-1.5"><CheckCircleIcon className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" /> <span><strong>Rivalry Matrix:</strong> Instant breakdown showing operators directly above and below your standing.</span></li>
                             </ul>
@@ -214,7 +214,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                             <FlowStep number="01" title="Match Scheduling" desc="Admin creates event with pricing, game rules, location maps, and rental caps." />
                             <FlowStep number="02" title="Operator Signups" desc="Players reserve spots, select rental bundles, and receive digital entry passes." />
-                            <FlowStep number="03" title="Field Execution" desc="Marshals verify QR codes, log combat performance (kills, headshots) in real time." />
+                            <FlowStep number="03" title="Field Execution" desc="Marshals verify QR codes and confirm operator match attendance in real time." />
                             <FlowStep number="04" title="Finalization & Sync" desc="Single-click cascade updates XP, ranks, financial ledger, and global leaderboard." />
                         </div>
                     </div>
@@ -284,10 +284,10 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
                     <div className="p-6 rounded-2xl bg-zinc-900/40 border border-amber-900/30 space-y-6">
                         <div>
                             <h3 className="text-lg font-black text-white uppercase tracking-wider mb-2 flex items-center gap-2">
-                                <SparklesIcon className="w-5 h-5 text-amber-500" /> Gamification & Combat XP Mathematics
+                                <SparklesIcon className="w-5 h-5 text-amber-500" /> Gamification & Combat RP Mathematics
                             </h3>
                             <p className="text-sm text-zinc-400">
-                                Every combat action, headshot multiplier, and attendance streak is converted into career progress.
+                                Every match attendance, badge commendation, and season streak is converted into career rank progression.
                             </p>
                         </div>
 
@@ -295,18 +295,18 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div className="p-4 border border-emerald-900/40 rounded-xl bg-emerald-950/20">
                                 <div className="text-xs font-mono text-emerald-400 font-bold uppercase mb-1">Participation Reward</div>
-                                <div className="text-2xl font-black text-white mb-1">+500 XP</div>
-                                <p className="text-xs text-zinc-400 leading-relaxed">Awarded per finalized event attended. Rewards operator consistency regardless of match outcome.</p>
+                                <div className="text-2xl font-black text-white mb-1">+500 RP</div>
+                                <p className="text-xs text-zinc-400 leading-relaxed">Awarded per finalized event attended. Rewards operator consistency and match deployment.</p>
                             </div>
-                            <div className="p-4 border border-blue-900/40 rounded-xl bg-blue-950/20">
-                                <div className="text-xs font-mono text-blue-400 font-bold uppercase mb-1">Combat Eliminator</div>
-                                <div className="text-2xl font-black text-white mb-1">+100 XP / Kill</div>
-                                <p className="text-xs text-zinc-400 leading-relaxed">Awarded for confirmed opponent eliminations. +50 XP bonus for logged headshot accuracy.</p>
+                            <div className="p-4 border border-amber-900/40 rounded-xl bg-amber-950/20">
+                                <div className="text-xs font-mono text-amber-400 font-bold uppercase mb-1">Badge & Commendations</div>
+                                <div className="text-2xl font-black text-white mb-1">+75 to +250 RP</div>
+                                <p className="text-xs text-zinc-400 leading-relaxed">Bonus Rank Points granted for unlocking milestone badges and tactical mission achievements.</p>
                             </div>
-                            <div className="p-4 border border-red-900/40 rounded-xl bg-red-950/20">
-                                <div className="text-xs font-mono text-red-400 font-bold uppercase mb-1">Combat Penalties</div>
-                                <div className="text-2xl font-black text-white mb-1">-25 XP / Death</div>
-                                <p className="text-xs text-zinc-400 leading-relaxed">-25 XP per tactical casualty. -200 XP penalty for unexcused event no-shows.</p>
+                            <div className="p-4 border border-purple-900/40 rounded-xl bg-purple-950/20">
+                                <div className="text-xs font-mono text-purple-400 font-bold uppercase mb-1">Official Hall of Fame</div>
+                                <div className="text-2xl font-black text-white mb-1">+150 to +1000 RP</div>
+                                <p className="text-xs text-zinc-400 leading-relaxed">Awarded for Man of the Match, Man of the Month, and Operator of the Year distinctions.</p>
                             </div>
                         </div>
 
@@ -360,7 +360,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
                                 num="01" 
                                 title="Event Finalization Cascade" 
                                 tag="Combat Engine"
-                                desc="When an admin finalizes an event, the system iterates over all signed-up operators, calculates net earned XP, updates lifetime kills/deaths/headshots, and stamps the match as finalized in single-transaction atomic speed."
+                                desc="When an admin finalizes an event, the system iterates over all signed-up operators, calculates net earned RP, records attendance, awards event badges, and stamps the match as finalized in single-transaction atomic speed."
                             />
                             <WorkflowStep 
                                 num="02" 

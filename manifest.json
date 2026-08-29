@@ -6,22 +6,28 @@
   "description": "A comprehensive dashboard for players and administrators of Bosjol Tactical. Players can track their progress, view events, and rent gear, while admins can manage events, pricing, and player progression.",
   "icons": [
     {
-      "src": "https://i.ibb.co/v6qtDrT4/maskable-icon.png",
-      "type": "image/png",
+      "src": "https://i.ibb.co/V02YVzGq/IMG-20260829-WA0056.jpg",
+      "type": "image/jpeg",
       "sizes": "192x192",
       "purpose": "any"
     },
     {
-      "src": "https://i.ibb.co/v6qtDrT4/maskable-icon.png",
-      "type": "image/png",
+      "src": "https://i.ibb.co/V02YVzGq/IMG-20260829-WA0056.jpg",
+      "type": "image/jpeg",
       "sizes": "192x192",
       "purpose": "maskable"
     },
     {
-      "src": "https://i.ibb.co/HL2Lc6Rz/file-0000000043b061f7b655a0077343e063.png",
-      "type": "image/png",
+      "src": "https://i.ibb.co/V02YVzGq/IMG-20260829-WA0056.jpg",
+      "type": "image/jpeg",
       "sizes": "512x512",
       "purpose": "any"
+    },
+    {
+      "src": "https://i.ibb.co/V02YVzGq/IMG-20260829-WA0056.jpg",
+      "type": "image/jpeg",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
   "start_url": "/",

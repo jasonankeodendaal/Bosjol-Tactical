@@ -26,7 +26,7 @@ export const MOCK_COMPANY_CORE = {
 };
 
 export const MOCK_BRANDING_DETAILS = {
-    logoUrl: '',
+    logoUrl: 'https://i.ibb.co/V02YVzGq/IMG-20260829-WA0056.jpg',
     loginBackgroundUrl: '',
     loginAudioUrl: '',
     playerDashboardBackgroundUrl: '',

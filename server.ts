@@ -25,7 +25,7 @@ app.post('/api/generate-poster', async (req, res) => {
       });
     }
 
-    const { prompt, title, theme, location } = req.body;
+    const { prompt, title, theme, type, location, description, rules, rentalInfo, bgImageUrl } = req.body;
 
     const ai = new GoogleGenAI({
       apiKey,
@@ -36,15 +36,36 @@ app.post('/api/generate-poster', async (req, res) => {
       }
     });
 
-    const fullPrompt = prompt || `High-end razor-sharp epic tactical airsoft promotional event poster background art for "Bosjol Tactical Airsoft Field". 
+    const fullPrompt = prompt || `High-end razor-sharp 3D airsoft promotional event poster background art for "Bosjol Tactical Airsoft Field". 
 Event Title: ${title || 'Tactical Skirmish Mission'}.
-Theme: ${theme || 'CQB Operations'}. Location: ${location || 'Pretoria Field'}.
-Style: Cinematic, high contrast, gritty tactical action, razor sharp detail, intense dramatic atmospheric lighting, professional promotional esports & mil-sim poster art. Aspect ratio portrait 3:4. Clean cinematic background art with no messy AI text overlays.`;
+Game Type: ${type || 'Airsoft Match'}.
+Operational Theme/Mode: ${theme || 'CQB Operations'}.
+Arena Field Location: ${location || 'Pretoria Field'}.
+Mission Details: ${description || 'Fast-paced tactical airsoft engagement with team objectives.'}.
+Equipment/Rentals: ${rentalInfo || 'AEG Rifles, Face Protection, Bio BBs'}.
+Style: Cinematic, high contrast, gritty 3D tactical airsoft action, razor sharp detail, intense dramatic atmospheric smoke lighting, professional promotional esports & mil-sim poster art. Aspect ratio portrait 3:4. Clean cinematic background artwork without text overlay.`;
+
+    const parts: any[] = [];
+    
+    // If user provided an existing uploaded image or background image, pass it to Gemini as inline data for image-to-image/reference!
+    if (bgImageUrl && typeof bgImageUrl === 'string' && bgImageUrl.startsWith('data:image/')) {
+      const matches = bgImageUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+      if (matches) {
+        parts.push({
+          inlineData: {
+            mimeType: matches[1],
+            data: matches[2]
+          }
+        });
+      }
+    }
+
+    parts.push({ text: fullPrompt });
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.1-flash-lite-image',
       contents: {
-        parts: [{ text: fullPrompt }]
+        parts
       },
       config: {
         imageConfig: {

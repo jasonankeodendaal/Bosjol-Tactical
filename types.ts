@@ -181,6 +181,7 @@ export interface Signup {
 // Core data stored in the `events` collection document
 export interface EventCore {
   id: string;
+  gameTypeId?: string;
   title: string;
   type: EventType;
   date: string;
@@ -533,4 +534,22 @@ export interface AdminNotification {
     eventTitle?: string;
     details?: Record<string, any>;
 }
+
+export interface GameType {
+    id: string;
+    name: string;
+    category: 'CQB' | 'Milsim' | 'Speedsoft' | 'Casual Skirmish' | 'Night Ops' | 'Tournament' | 'Scenario' | string;
+    description: string;
+    gameplayMechanics: string;
+    rules: string;
+    imageUrl?: string;
+    audioBriefingUrl?: string;
+    theme: string; // Poster / Accent Theme
+    participationXp: number;
+    gameDurationMinutes?: number;
+    suggestedGearIds?: string[];
+    createdAt?: string;
+    lastUpdated?: string;
+}
+
 

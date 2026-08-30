@@ -23,6 +23,7 @@ import { Leaderboard } from './Leaderboard';
 import { SettingsTab } from './SettingsTab';
 import { ApiSetupTab } from './ApiSetupTab';
 import { AboutTab } from './AboutTab';
+import { AdminGameTypesManager } from './components/AdminGameTypesManager';
 import { DataContext, DataContextType } from '../data/DataContext';
 import { AuthContext } from '../auth/AuthContext';
 import { SendCredentialsModal } from './SendCredentialsModal';
@@ -34,7 +35,7 @@ export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' 
 };
 
 
-type Tab = 'Events' | 'Players' | 'Progression' | 'Ranks' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'API Setup' | 'About';
+type Tab = 'Events' | 'Game Types' | 'Players' | 'Progression' | 'Ranks' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'API Setup' | 'About';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
 
 const NewPlayerModal: React.FC<{
@@ -195,6 +196,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     const [menuOpen, setMenuOpen] = useState(false);
     const tabs: {name: Tab, icon: React.ReactNode}[] = [
         {name: 'Events', icon: <CalendarIcon className="w-5 h-5"/>},
+        {name: 'Game Types', icon: <SparklesIcon className="w-5 h-5"/>},
         {name: 'Players', icon: <UsersIcon className="w-5 h-5"/>},
         {name: 'Progression', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Ranks', icon: <ShieldCheckIcon className="w-5 h-5"/>},
@@ -438,7 +440,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab') as Tab | null;
-        const validTabs: Tab[] = ['Events', 'Players', 'Progression', 'Ranks', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'API Setup', 'About'];
+        const validTabs: Tab[] = ['Events', 'Game Types', 'Players', 'Progression', 'Ranks', 'Inventory', 'Locations', 'Suppliers', 'Finance', 'Vouchers & Raffles', 'Sponsors', 'Leaderboard', 'Settings', 'API Setup', 'About'];
         if (tab && validTabs.includes(tab)) {
             setActiveTab(tab);
         }
@@ -557,6 +559,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 <div className="p-4 sm:p-6 lg:p-8">
                     <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
                     {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
+                    {activeTab === 'Game Types' && <AdminGameTypesManager />}
                     {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer}/>}
                     {activeTab === 'Progression' && <ProgressionTab 
                         ranks={props.ranks} setRanks={props.setRanks}

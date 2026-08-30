@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import { extractAndCleanStorageUrlsFromDoc } from '../utils/storageCleaner';
 import * as mock from '../constants';
 import { getRankForPlayer } from '../utils/rankUtils';
-import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters, AdminNotification, PlayerHonor, TacticalRuleSet } from '../types';
+import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters, AdminNotification, PlayerHonor, TacticalRuleSet, GameType } from '../types';
 import { AuthContext } from '../auth/AuthContext';
 
 export const IS_LIVE_DATA = isSupabaseConfigured();
@@ -304,6 +304,7 @@ const MOCK_DATA_MAP = {
     gamificationSettings: mock.MOCK_GAMIFICATION_SETTINGS,
     players: mock.MOCK_PLAYERS,
     events: mock.MOCK_EVENTS,
+    gameTypes: mock.MOCK_GAME_TYPES,
     signups: mock.MOCK_SIGNUPS,
     vouchers: mock.MOCK_VOUCHERS,
     inventory: mock.MOCK_INVENTORY,
@@ -323,6 +324,7 @@ type SeedableCollection = keyof typeof MOCK_DATA_MAP;
 export interface DataContextType {
     players: Player[]; setPlayers: (d: Player[] | ((p: Player[]) => Player[])) => void;
     events: GameEvent[]; setEvents: (d: GameEvent[] | ((p: GameEvent[]) => GameEvent[])) => void;
+    gameTypes: GameType[]; setGameTypes: (d: GameType[] | ((p: GameType[]) => GameType[])) => void;
     ranks: Rank[]; setRanks: (d: Rank[] | ((p: Rank[]) => Rank[])) => void;
     badges: Badge[]; setBadges: (d: Badge[] | ((p: Badge[]) => Badge[])) => void;
     legendaryBadges: LegendaryBadge[]; setLegendaryBadges: (d: LegendaryBadge[] | ((p: LegendaryBadge[]) => LegendaryBadge[])) => void;
@@ -384,8 +386,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [rawPlayers, setRawPlayers, loadingPlayers] = useCollection<Player>('players', MOCK_DATA_MAP.players, { isProtected: true });
     const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', MOCK_DATA_MAP.events, { isProtected: true });
 
-    // Public collections for ranks
+    // Public collections for ranks & game types
     const [rawRanks, setRawRanks, loadingRanks] = useCollection<Rank>('ranks', MOCK_DATA_MAP.ranks);
+    const [gameTypes, setGameTypes, loadingGameTypes] = useCollection<GameType>('gameTypes', MOCK_DATA_MAP.gameTypes);
 
     const ranks = useMemo(() => {
         if (!rawRanks || rawRanks.length === 0) {
@@ -438,7 +441,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [isSeeding, setIsSeeding] = useState(false);
     const hasCheckedSeedRef = useRef(false);
 
-    const loading = loadingPlayers || loadingEvents || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingTacticalRules || loadingSponsors || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia || loadingSignups || loadingCompanyCore || loadingBranding || loadingContent || loadingCreatorCore || loadingApiGuide || loadingSessions || loadingActivityLog || loadingNotifications;
+    const loading = loadingPlayers || loadingEvents || loadingGameTypes || loadingRanks || loadingBadges || loadingLegendary || loadingGamification || loadingTacticalRules || loadingSponsors || loadingVouchers || loadingInventory || loadingSuppliers || loadingTransactions || loadingLocations || loadingRaffles || loadingSocialLinks || loadingCarouselMedia || loadingSignups || loadingCompanyCore || loadingBranding || loadingContent || loadingCreatorCore || loadingApiGuide || loadingSessions || loadingActivityLog || loadingNotifications;
     
     // Composite Objects
     const companyDetails = useMemo(() => ({
@@ -497,6 +500,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     collectionSettersRef.current = {
         players: setPlayers,
         events: setEvents,
+        gameTypes: setGameTypes,
         ranks: setRanks,
         badges: setBadges,
         legendaryBadges: setLegendaryBadges,
@@ -934,6 +938,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const value = useMemo<DataContextType>(() => ({
         players, setPlayers,
         events, setEvents,
+        gameTypes, setGameTypes,
         ranks, setRanks,
         badges, setBadges,
         legendaryBadges, setLegendaryBadges,
@@ -978,6 +983,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }), [
         players, setPlayers,
         events, setEvents,
+        gameTypes, setGameTypes,
         ranks, setRanks,
         badges, setBadges,
         legendaryBadges, setLegendaryBadges,

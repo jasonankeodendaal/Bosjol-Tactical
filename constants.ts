@@ -1,4 +1,4 @@
-import { Player, Event, Signup, InventoryItem, Transaction, Rank, Badge, LegendaryBadge, Honor, CompanyDetails, SocialLink, Location, CarouselMedia, Notification, Voucher, Raffle, Sponsor, Supplier, Admin, TacticalRuleSet } from './types';
+import { Player, Event, Signup, InventoryItem, Transaction, Rank, Badge, LegendaryBadge, Honor, CompanyDetails, SocialLink, Location, CarouselMedia, Notification, Voucher, Raffle, Sponsor, Supplier, Admin, TacticalRuleSet, GameType } from './types';
 
 export const MOCK_COMPANY_CORE = {
     name: '',
@@ -234,6 +234,64 @@ export const MOCK_SOCIAL_LINKS: SocialLink[] = [];
 export const MOCK_CAROUSEL_MEDIA: CarouselMedia[] = [];
 export const MOCK_API_GUIDE: any[] = [];
 export const MOCK_NOTIFICATIONS: Notification[] = [];
+
+export const DEFAULT_GAME_TYPES: GameType[] = [
+    {
+        id: 'gt_capture_the_flag',
+        name: 'Capture the Flag (CTF)',
+        category: 'Scenario',
+        description: 'Two teams clash to infiltrate enemy territory, seize their tactical flag emblem, and safely carry it back to their home base while defending their own.',
+        gameplayMechanics: '• Each team has a designated Flag Post in their spawn zone.\n• Stealing enemy flag requires 2-handed contact.\n• Flag carrier cannot sprint or use primary weapons (sidearm only).\n• If flag carrier is hit, flag must be dropped immediately where hit.\n• Unlimited 3-man squad respawns every 5 minutes.',
+        rules: 'Standard FPS limits (1.5J AEGs / 2.3J Snipers). Full eye protection mandatory. Mid-cap and Hi-cap permitted.',
+        imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80',
+        theme: 'red_vs_blue',
+        participationXp: 75,
+        gameDurationMinutes: 45,
+        createdAt: '2026-08-30'
+    },
+    {
+        id: 'gt_zombie_juggernaut',
+        name: 'Zombie Juggernaut Infection',
+        category: 'CQB',
+        description: 'An asymmetrical survival battle! A heavily armored Juggernaut operator hunts down surviving airsoft squads. Hit survivors join the Juggernaut horde!',
+        gameplayMechanics: '• 1 Heavy Juggernaut starts with 500 Hit-Points (tracked via balloon or plate hit-bell).\n• Survivors must extract key codes across 3 objective sites.\n• When a survivor is hit, they return as an infected fast-runner zombie after 30s.\n• Last remaining human survivor receives bonus Rank Points.',
+        rules: 'Full face protection strictly required for all players under 18. Juggernaut strictly uses support weapon under 1.2J for close proximity safety.',
+        imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80',
+        theme: 'toxic_juggernaut',
+        participationXp: 100,
+        gameDurationMinutes: 60,
+        createdAt: '2026-08-30'
+    },
+    {
+        id: 'gt_search_destroy',
+        name: 'Search & Destroy (Demolition)',
+        category: 'Milsim',
+        description: 'Attacking forces must transport a simulated explosive payload to 1 of 2 bomb sites (Alpha or Bravo), while defenders hold choke points to defuse or eliminate attackers.',
+        gameplayMechanics: '• Single elimination per round (No respawns during active bomb round).\n• 45-second bomb fuse once planted.\n• Defenders need 10 seconds uninterrupted to defuse bomb code.\n• Teams switch sides after 5 rounds.',
+        rules: 'Semi-auto only inside all CQB structure perimeters. Dead players must immediately put on red dead-rag and remain silent.',
+        imageUrl: 'https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?auto=format&fit=crop&w=1200&q=80',
+        theme: 'crimson_warfare',
+        participationXp: 90,
+        gameDurationMinutes: 30,
+        createdAt: '2026-08-30'
+    },
+    {
+        id: 'gt_night_raid_flare',
+        name: 'Night Raid & Flare Warfare',
+        category: 'Night Ops',
+        description: 'Special forces night operation under low-light and tracer unit illumination. Navigate dark corridors and open fields under illumination flare drops.',
+        gameplayMechanics: '• Tracer units and illuminated BBs mandatory for night fire.\n• Flashlights allowed in max 10-second bursts.\n• Night Vision Goggles (NVG) permitted with helmet mount.\n• Capture 4 glowing radio beacons before midnight timer expires.',
+        rules: 'Red dead-lights mandatory when eliminated. No high-power lasers allowed on field.',
+        imageUrl: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80',
+        theme: 'cyber_cobalt',
+        participationXp: 120,
+        gameDurationMinutes: 90,
+        createdAt: '2026-08-30'
+    }
+];
+
+export const MOCK_GAME_TYPES: GameType[] = DEFAULT_GAME_TYPES;
+
 
 export const MOCK_PLAYER_ROLES = ['player', 'admin', 'marshal'];
 export const MOCK_EVENT_THEMES = ['Standard', 'CQB', 'MilSim', 'Night Ops'];

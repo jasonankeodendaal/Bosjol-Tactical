@@ -399,6 +399,46 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                 <div className="lg:col-span-2 space-y-3 sm:space-y-6">
                     <DashboardCard title="Event Configuration" icon={<CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6" />}>
                         <div className="p-3 sm:p-6 space-y-2.5 sm:space-y-4 text-xs sm:text-sm">
+                            {/* Game Type Selector */}
+                            <div className="bg-zinc-950 p-3.5 rounded-xl border border-red-900/40 space-y-2">
+                                <label className="block text-xs font-bold text-red-400 uppercase tracking-wider">
+                                    Load Pre-Created Game Type Template
+                                </label>
+                                <select
+                                    value={formData.gameTypeId || ''}
+                                    onChange={(e) => {
+                                        const selectedId = e.target.value;
+                                        const selectedType = dataContext?.gameTypes.find((gt) => gt.id === selectedId);
+                                        if (selectedType) {
+                                            setFormData((f) => ({
+                                                ...f,
+                                                gameTypeId: selectedType.id,
+                                                title: f.title || selectedType.name,
+                                                description: selectedType.description || f.description,
+                                                rules: selectedType.rules || f.rules,
+                                                theme: selectedType.theme || f.theme,
+                                                imageUrl: selectedType.imageUrl || f.imageUrl,
+                                                audioBriefingUrl: selectedType.audioBriefingUrl || f.audioBriefingUrl,
+                                                participationXp: selectedType.participationXp ?? f.participationXp,
+                                            }));
+                                        } else {
+                                            setFormData((f) => ({ ...f, gameTypeId: undefined }));
+                                        }
+                                    }}
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500 font-semibold"
+                                >
+                                    <option value="">-- Custom Event (No Template) --</option>
+                                    {(dataContext?.gameTypes || []).map((gt) => (
+                                        <option key={gt.id} value={gt.id}>
+                                            {gt.name} ({gt.category})
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-[11px] text-gray-400">
+                                    Selecting a game type auto-populates artwork, scenario lore, rules, fees, and briefing audio.
+                                </p>
+                            </div>
+
                             <Input label="Event Title" value={formData.title} onChange={e => setFormData(f => ({ ...f, title: e.target.value }))} />
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
                                 <Input label="Date" type="date" value={formData.date} onChange={e => setFormData(f => ({ ...f, date: e.target.value }))} />

@@ -83,33 +83,32 @@ export const EventPosterModal: React.FC<EventPosterModalProps> = ({
 
   // Dynamic Prompt generator derived directly from current event state
   const buildDynamicEventPrompt = (customStyleOverride?: string) => {
-    return `High-end razor-sharp 3D airsoft promotional event poster background art for "Bosjol Tactical Airsoft". 
+    return `Masterpiece, top class modern high-end professional 3D effect image design. Hyper-realistic photorealistic tactical airsoft promotional poster background art. Exceptional intricate detail, macro-level fabric textures, dirt and grime weathering on gear, custom decal stickers, combined with vibrant abstract color art splashes and dynamic paint splatters blending into the action. Unreal Engine 5 render aesthetic, 8k resolution.
 Event Title: "${posterTitle}".
 Game Mode / Type: ${posterType}.
 Theme Scenario: "${posterThemeName}".
 Field Location: "${posterLocation}".
 Mission Briefing: "${posterRules}".
-Featured Gear & Equipment: ${rentalGearNames}.
-Visual Style: ${customStyleOverride || 'Cinematic gritty 3D tactical airsoft operators in combat gear, intense atmospheric smoke lighting, vivid team neon glows, high contrast, 8k razor sharp detail'}. Aspect ratio 3:4 portrait. No text overlay.`;
+Visual Style: ${customStyleOverride || 'Cinematic, ultra-photorealistic rendering, tactical airsoft operators in combat gear, intense atmospheric lighting, flying white airsoft BBs, wet reflective ground, surrounded by energetic abstract color art splashes, masterpiece 3D design'}. Aspect ratio 3:4 portrait. NO text overlays, NO words, NO letters.`;
   };
 
   // Dynamically synthesized AI Presets matching current event details
   const promptPresets = [
     {
-      name: `🎯 Auto-Target: "${posterTitle}"`,
-      prompt: buildDynamicEventPrompt('Cinematic gritty 3D tactical airsoft operators in combat gear, intense atmospheric smoke lighting, vivid neon glows, high contrast, 8k razor sharp detail')
+      name: `🎯 Tactical Sniper (Abstract Splash)`,
+      prompt: buildDynamicEventPrompt('Hyper-photorealistic sniper operator in full detailed ghillie suit aiming a scoped rifle. Interwoven with vibrant neon green and yellow abstract color art splashes. White airsoft BBs flying through the air, wet muddy ground, cinematic lighting, high-end promotional sports aesthetic.')
     },
     {
-      name: `⚔️ ${posterType} Red vs Blue Dual Smoke`,
-      prompt: buildDynamicEventPrompt('Dual team split artwork with heavily equipped red and blue airsoft tactical operators facing off at ' + posterLocation + '. Red atmospheric smoke on left, vibrant blue atmospheric smoke on right')
+      name: `☣️ Heavy Juggernaut (Explosive Paint)`,
+      prompt: buildDynamicEventPrompt('Ultra-detailed photorealistic heavy airsoft juggernaut operator in full bomb suit armor wielding a minigun. Framed by explosive toxic green and black abstract paint splatters and art splashes. Dense glowing smoke, flying white BB pellets, wet reflective ground, masterpiece.')
     },
     {
-      name: `☣️ ${posterThemeName} Toxic Juggernaut`,
-      prompt: buildDynamicEventPrompt('Ultra-detailed heavy 3D airsoft juggernaut operator wearing full body armor and tactical helmet visor at ' + posterLocation + '. Dense glowing toxic green smoke particles, flying white BB pellets')
+      name: `⚔️ Team Deathmatch (Red/Blue Splash)`,
+      prompt: buildDynamicEventPrompt('Dual team split artwork. Hyper-realistic tactical airsoft operators facing off. Chaotic, highly energetic abstract color art splashes of vibrant crimson red and neon blue paint colliding in the center. Flying white airsoft BBs, epic showdown, 3D high-end render.')
     },
     {
-      name: `🔥 ${posterTitle} Crimson Flare Night Ops`,
-      prompt: buildDynamicEventPrompt('Gritty airsoft special forces operator in dark camouflage gear with red night vision goggles at ' + posterLocation + '. Intense red flares, atmospheric smoke, dark arena background')
+      name: `🔥 Dynamic CQB (Kinetic Colors)`,
+      prompt: buildDynamicEventPrompt('Dynamic high-action photorealistic airsoft combat scene. Operators in elite tactical gear breaching a room, accentuated by kinetic, vibrant abstract color art splashes trailing their movement. Muzzle flashes, flying white BBs, cinematic rim lighting, 8k resolution, ultra-detailed.')
     }
   ];
 

@@ -509,47 +509,69 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                 <div className="lg:col-span-2 space-y-6">
                     <DashboardCard title="Event Configuration" icon={<CalendarIcon className="w-6 h-6" />}>
                         <div className="p-6 space-y-4">
-                            {/* Game Type Selector */}
-                            <div className="bg-zinc-950 p-4 rounded-xl border border-red-900/40 space-y-2 mb-4">
-                                <label className="block text-xs font-bold text-red-400 uppercase tracking-wider">
-                                    Load Pre-Created Game Type Template
-                                </label>
-                                <select
-                                    value={formData.gameTypeId || ''}
-                                    onChange={(e) => {
-                                        const selectedId = e.target.value;
-                                        const selectedType = dataContext?.gameTypes?.find((gt) => gt.id === selectedId);
-                                        if (selectedType) {
-                                            setFormData((f) => ({
-                                                ...f,
-                                                gameTypeId: selectedType.id,
-                                                title: f.title || selectedType.name,
-                                                description: selectedType.description || f.description,
-                                                rules: selectedType.rules || f.rules,
-                                                theme: selectedType.theme || f.theme,
-                                                imageUrl: selectedType.imageUrl || f.imageUrl,
-                                                audioBriefingUrl: selectedType.audioBriefingUrl || f.audioBriefingUrl,
-                                                participationXp: selectedType.participationXp ?? f.participationXp,
-                                            }));
-                                        } else {
-                                            setFormData((f) => ({ ...f, gameTypeId: undefined }));
-                                        }
-                                    }}
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500 font-semibold"
-                                >
-                                    <option value="">-- Custom Event (No Template) --</option>
-                                    {(dataContext?.gameTypes || []).map((gt) => (
-                                        <option key={gt.id} value={gt.id}>
-                                            {gt.name} ({gt.category})
-                                        </option>
-                                    ))}
-                                </select>
-                                <p className="text-xs text-gray-400">
-                                    Selecting a game type auto-populates artwork, scenario lore, rules, and briefing audio.
-                                </p>
+                            <Input label="Event Title" value={formData.title} onChange={e => setFormData(f => ({ ...f, title: e.target.value }))} />
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {/* unified Game Type Selector */}
+                                <div className="bg-zinc-950 p-4 rounded-xl border border-red-900/40 space-y-2 flex flex-col justify-center">
+                                    <label className="block text-xs font-bold text-red-400 uppercase tracking-wider">
+                                        Load Game Type Template
+                                    </label>
+                                    <select
+                                        value={formData.gameTypeId || ''}
+                                        onChange={(e) => {
+                                            const selectedId = e.target.value;
+                                            const selectedType = dataContext?.gameTypes?.find((gt) => gt.id === selectedId);
+                                            if (selectedType) {
+                                                setFormData((f) => ({
+                                                    ...f,
+                                                    gameTypeId: selectedType.id,
+                                                    type: selectedType.category as EventType,
+                                                    title: f.title || selectedType.name,
+                                                    description: selectedType.description || f.description,
+                                                    rules: selectedType.rules || f.rules,
+                                                    theme: selectedType.theme || f.theme,
+                                                    imageUrl: selectedType.imageUrl || f.imageUrl,
+                                                    audioBriefingUrl: selectedType.audioBriefingUrl || f.audioBriefingUrl,
+                                                    participationXp: selectedType.participationXp ?? f.participationXp,
+                                                }));
+                                            } else {
+                                                setFormData((f) => ({ ...f, gameTypeId: undefined }));
+                                            }
+                                        }}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500 font-semibold"
+                                    >
+                                        <option value="">-- Custom Event (No Template) --</option>
+                                        {(dataContext?.gameTypes || []).map((gt) => (
+                                            <option key={gt.id} value={gt.id}>
+                                                {gt.name} ({gt.category})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="text-[10px] text-gray-400 leading-tight">
+                                        Selecting a template auto-populates scenario info, artwork, and categories below.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {/* Only show Event Type if NO template is selected, otherwise it's inherited from the template */}
+                                    {!formData.gameTypeId && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Custom Event Type</label>
+                                            <select value={formData.type} onChange={e => setFormData(f => ({ ...f, type: e.target.value as EventType }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                                {EVENT_TYPES.map(type => <option key={type}>{type}</option>)}
+                                            </select>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Theme (Poster Artwork)</label>
+                                        <select value={formData.theme} onChange={e => setFormData(f => ({ ...f, theme: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                            {MOCK_EVENT_THEMES.map(theme => <option key={theme}>{theme}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
 
-                            <Input label="Event Title" value={formData.title} onChange={e => setFormData(f => ({ ...f, title: e.target.value }))} />
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <Input label="Date" type="date" value={formData.date} onChange={e => setFormData(f => ({ ...f, date: e.target.value }))} />
                                 <Input label="Start Time" type="time" value={formData.startTime} onChange={e => setFormData(f => ({ ...f, startTime: e.target.value }))} />
@@ -569,20 +591,6 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                         {formData.location && !availableLocations.some(l => l.name === formData.location) && (
                                             <option value={formData.location}>{formData.location}</option>
                                         )}
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Event Type</label>
-                                    <select value={formData.type} onChange={e => setFormData(f => ({ ...f, type: e.target.value as EventType }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                                        {EVENT_TYPES.map(type => <option key={type}>{type}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Theme</label>
-                                    <select value={formData.theme} onChange={e => setFormData(f => ({ ...f, theme: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                                        {MOCK_EVENT_THEMES.map(theme => <option key={theme}>{theme}</option>)}
                                     </select>
                                 </div>
                             </div>

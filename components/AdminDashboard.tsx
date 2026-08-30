@@ -775,6 +775,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                     />}
                     {activeTab === 'Sponsors' && <SponsorsTab 
                         sponsors={props.sponsors} setSponsors={props.setSponsors}
+                        companyDetails={props.companyDetails} setCompanyDetails={props.setCompanyDetails}
                         addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
                     />}
                     {activeTab === 'Leaderboard' && <LeaderboardTab players={props.players} />}
@@ -790,7 +791,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
                         restoreFromBackup={restoreFromBackup}
                     />}
-                    {activeTab === 'About' && <AboutTab />}
+                    {activeTab === 'About' && <AboutTab companyDetails={props.companyDetails} />}
                 </div>
             </main>
         </div>

@@ -593,7 +593,7 @@ WHERE id = '${player.id}';`;
                                     return (
                                         <div key={h.id} className="p-3 bg-zinc-800/60 rounded-lg border border-amber-500/30 flex items-start gap-3">
                                             {h.badgeImageUrl ? (
-                                                <img src={h.badgeImageUrl} alt={h.title} className="w-10 h-10 object-contain rounded-lg bg-zinc-950/80 p-1 border border-amber-500/40 flex-shrink-0" />
+                                                <img src={h.badgeImageUrl} alt={h.title} className="w-10 h-10 object-contain drop-shadow flex-shrink-0" />
                                             ) : (
                                                 <div className="w-10 h-10 rounded-lg bg-zinc-950/80 border border-amber-500/40 flex items-center justify-center text-xl flex-shrink-0">
                                                     {icon}

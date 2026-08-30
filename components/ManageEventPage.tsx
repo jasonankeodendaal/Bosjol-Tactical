@@ -9,7 +9,7 @@ import { BadgePill } from './BadgePill';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
-import { QrCode } from 'lucide-react';
+import { QrCode, Ban, RotateCcw, Database } from 'lucide-react';
 import { EventQRCodeModal } from './EventQRCodeModal';
 
 interface ManageEventPageProps {
@@ -430,6 +430,47 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
         onSave(eventData);
     };
 
+    const handleCancelEvent = async () => {
+        if (!event) return;
+        if (!confirm(`Are you sure you want to cancel "${formData.title || event.title}"? The event will be marked as Cancelled and players will be notified.`)) {
+            return;
+        }
+
+        const cancelledEventData: GameEvent = {
+            ...(event || {}),
+            ...formData,
+            id: event.id,
+            status: 'Cancelled',
+            liveStats: liveStats,
+        };
+
+        setFormData(prev => ({ ...prev, status: 'Cancelled' }));
+        onSave(cancelledEventData);
+        dataContext?.logActivity(`Cancelled event: ${cancelledEventData.title}`, { eventId: cancelledEventData.id });
+        dataContext?.createNotification?.({
+            title: `Event Cancelled: ${cancelledEventData.title}`,
+            message: `The event "${cancelledEventData.title}" scheduled for ${cancelledEventData.date} has been officially cancelled.`,
+            type: 'system',
+            eventId: cancelledEventData.id,
+            eventTitle: cancelledEventData.title,
+        });
+    };
+
+    const handleReactivateEvent = () => {
+        if (!event) return;
+        const reactivatedEventData: GameEvent = {
+            ...(event || {}),
+            ...formData,
+            id: event.id,
+            status: 'Upcoming',
+            liveStats: liveStats,
+        };
+
+        setFormData(prev => ({ ...prev, status: 'Upcoming' }));
+        onSave(reactivatedEventData);
+        dataContext?.logActivity(`Reactivated event: ${reactivatedEventData.title}`, { eventId: reactivatedEventData.id });
+    };
+
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             <header className="flex items-center justify-between mb-6">
@@ -681,7 +722,14 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                 <p className="text-xs text-green-400">RP and stats have been awarded.</p>
                             </div>
                         )}
-                        {event && formData.status !== 'Completed' && (
+                        {event && formData.status === 'Cancelled' && (
+                            <div className="bg-red-950/60 border border-red-700/70 p-3 rounded-lg text-center">
+                                <Ban className="w-7 h-7 mx-auto text-red-400 mb-1.5" />
+                                <p className="font-bold text-red-300 text-sm">Event is currently Cancelled</p>
+                                <p className="text-xs text-red-400/80">Hidden from player countdowns & marked cancelled.</p>
+                            </div>
+                        )}
+                        {event && formData.status !== 'Completed' && formData.status !== 'Cancelled' && (
                             <Button onClick={handleFinalizeEvent} variant="primary" className="w-full !bg-green-600 hover:!bg-green-500">
                                 <CheckCircleIcon className="w-5 h-5 mr-2" />
                                 Finalize Event & Award RP
@@ -690,10 +738,30 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                         <Button onClick={handleSaveClick} variant="secondary" className="w-full">
                             Save Changes
                         </Button>
+                        {event && formData.status !== 'Cancelled' && (
+                            <Button 
+                                onClick={handleCancelEvent} 
+                                variant="secondary" 
+                                className="w-full !border-red-600/50 !text-red-400 hover:!bg-red-950/50"
+                            >
+                                <Ban className="w-4 h-4 mr-2 text-red-400" />
+                                Cancel Event
+                            </Button>
+                        )}
+                        {event && formData.status === 'Cancelled' && (
+                            <Button 
+                                onClick={handleReactivateEvent} 
+                                variant="secondary" 
+                                className="w-full !border-emerald-500/50 !text-emerald-400 hover:!bg-emerald-950/50"
+                            >
+                                <RotateCcw className="w-4 h-4 mr-2 text-emerald-400" />
+                                Reactivate Event
+                            </Button>
+                        )}
                         {event && (
                             <Button onClick={() => onDelete(event.id)} variant="danger" className="w-full">
                                 <TrashIcon className="w-5 h-5 mr-2" />
-                                Delete Event
+                                Delete Event Permanently
                             </Button>
                         )}
                     </div>

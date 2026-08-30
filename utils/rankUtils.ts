@@ -1,10 +1,13 @@
 import type { Rank, Tier, Player } from '../types';
 import {
     ROOKIE_BADGE_SVG,
+    ROOKIE_2_BADGE_SVG,
+    ROOKIE_3_BADGE_SVG,
     VETERAN_BADGE_SVG,
     ELITE_BADGE_SVG,
     PRO_BADGE_SVG,
     MASTER_BADGE_SVG,
+    GRANDMASTER_BADGE_SVG,
     LEGENDARY_BADGE_SVG,
     resolveRankIcon,
     getRankBadgeSvg,
@@ -14,84 +17,179 @@ export { resolveRankIcon, getRankBadgeSvg };
 
 export const DEFAULT_RANKS: Rank[] = [
     {
-        id: 'rank_rookie',
-        name: 'Rookie',
-        description: 'Initial operational rank for new recruits entering the field.',
+        id: 'rank_rookie_1',
+        name: 'Rookie I',
+        description: 'First steps in tactical combat operations.',
         rankBadgeUrl: ROOKIE_BADGE_SVG,
         tiers: [
-            { id: 'r_1', name: 'Rookie I', minXp: 0, perks: ['Recruit Calling Card', 'Basic Loadout Access'], iconUrl: ROOKIE_BADGE_SVG },
-            { id: 'r_2', name: 'Rookie II', minXp: 100, perks: ['5% Gear Rental Discount', 'Weapon XP Boost'], iconUrl: ROOKIE_BADGE_SVG },
-            { id: 'r_3', name: 'Rookie III', minXp: 200, perks: ['Custom Field Patch', 'Tactical Calling Card'], iconUrl: ROOKIE_BADGE_SVG },
-            { id: 'r_4', name: 'Rookie IV', minXp: 300, perks: ['Weapon XP Card (100 Bonus RP)', 'Priority Briefing'], iconUrl: ROOKIE_BADGE_SVG },
-            { id: 'r_5', name: 'Rookie V', minXp: 400, perks: ['Rookie Master Ribbon', 'Special Event Entry'], iconUrl: ROOKIE_BADGE_SVG },
+            { id: 'r1_1', name: 'Training', minXp: 0, perks: ['Recruit Calling Card', 'Basic Loadout Access'], iconUrl: ROOKIE_BADGE_SVG },
+            { id: 'r1_2', name: 'Field Ready', minXp: 150, perks: ['5% Gear Rental Discount', 'Weapon XP Boost'], iconUrl: ROOKIE_BADGE_SVG },
         ]
     },
     {
-        id: 'rank_veteran',
-        name: 'Veteran',
-        description: 'Seasoned battlefield operators with proven combat performance.',
+        id: 'rank_rookie_2',
+        name: 'Rookie II',
+        description: 'Demonstrating solid fundamentals and match readiness.',
+        rankBadgeUrl: ROOKIE_2_BADGE_SVG,
+        tiers: [
+            { id: 'r2_1', name: 'Rookie Level 2', minXp: 300, perks: ['Custom Field Patch', 'Tactical Calling Card'], iconUrl: ROOKIE_2_BADGE_SVG },
+            { id: 'r2_2', name: 'Marksman Trainee', minXp: 450, perks: ['Weapon XP Card (+100 RP)', 'Priority Briefing'], iconUrl: ROOKIE_2_BADGE_SVG },
+        ]
+    },
+    {
+        id: 'rank_rookie_3',
+        name: 'Rookie III',
+        description: 'Advanced rookie transitioning to veteran qualification.',
+        rankBadgeUrl: ROOKIE_3_BADGE_SVG,
+        tiers: [
+            { id: 'r3_1', name: 'Field Qualified', minXp: 600, perks: ['Rookie Master Ribbon', 'Special Event Entry'], iconUrl: ROOKIE_3_BADGE_SVG },
+            { id: 'r3_2', name: 'Veteran Aspirant', minXp: 750, perks: ['Squad Comms Clearance', 'Extra Magazine Token'], iconUrl: ROOKIE_3_BADGE_SVG },
+        ]
+    },
+    {
+        id: 'rank_veteran_1',
+        name: 'Veteran I',
+        description: 'Seasoned battlefield operator with proven combat discipline.',
         rankBadgeUrl: VETERAN_BADGE_SVG,
         tiers: [
-            { id: 'v_1', name: 'Veteran I', minXp: 500, perks: ['Veteran Bronze Insignia', 'Weapon XP Card'], iconUrl: VETERAN_BADGE_SVG },
-            { id: 'v_2', name: 'Veteran II', minXp: 750, perks: ['10% Ammo Discount', 'Custom Camo Token'], iconUrl: VETERAN_BADGE_SVG },
-            { id: 'v_3', name: 'Veteran III', minXp: 1000, perks: ['Squad Leader Eligible', 'Free Smoke Grenade Tag'], iconUrl: VETERAN_BADGE_SVG },
-            { id: 'v_4', name: 'Veteran IV', minXp: 1250, perks: ['Weapon XP Card (100 Bonus RP)', 'Veteran Frame'], iconUrl: VETERAN_BADGE_SVG },
-            { id: 'v_5', name: 'Veteran V', minXp: 1500, perks: ['Elite Tournament Access', 'Exclusive Veteran Patch'], iconUrl: VETERAN_BADGE_SVG },
+            { id: 'v1_1', name: 'Field Operative', minXp: 900, perks: ['Veteran Bronze Insignia', 'Weapon XP Card'], iconUrl: VETERAN_BADGE_SVG },
+            { id: 'v1_2', name: 'Combat Specialist', minXp: 1150, perks: ['10% Ammo Discount', 'Custom Camo Token'], iconUrl: VETERAN_BADGE_SVG },
         ]
     },
     {
-        id: 'rank_elite',
-        name: 'Elite',
-        description: 'High-tier combat specialists demonstrating tactical excellence.',
+        id: 'rank_veteran_2',
+        name: 'Veteran II',
+        description: 'Battle-hardened operator commanding tactical skirmishes.',
+        rankBadgeUrl: VETERAN_BADGE_SVG,
+        tiers: [
+            { id: 'v2_1', name: 'Squad Leader Eligible', minXp: 1400, perks: ['Squad Leader Authority', 'Free Smoke Grenade Tag'], iconUrl: VETERAN_BADGE_SVG },
+            { id: 'v2_2', name: 'Tactical Veteran', minXp: 1650, perks: ['Weapon XP Card (100 Bonus RP)', 'Veteran Frame'], iconUrl: VETERAN_BADGE_SVG },
+        ]
+    },
+    {
+        id: 'rank_veteran_3',
+        name: 'Veteran III',
+        description: 'Peak veteran mastery ready for elite squad induction.',
+        rankBadgeUrl: VETERAN_BADGE_SVG,
+        tiers: [
+            { id: 'v3_1', name: 'Combat Veteran', minXp: 1900, perks: ['Elite Tournament Access', 'Exclusive Veteran Patch'], iconUrl: VETERAN_BADGE_SVG },
+            { id: 'v3_2', name: 'Senior Operative', minXp: 2200, perks: ['Priority Queue Access', 'Tactical Radio Badge'], iconUrl: VETERAN_BADGE_SVG },
+        ]
+    },
+    {
+        id: 'rank_elite_1',
+        name: 'Elite I',
+        description: 'High-tier combat specialist demonstrating tactical excellence.',
         rankBadgeUrl: ELITE_BADGE_SVG,
         tiers: [
-            { id: 'e_1', name: 'Elite I', minXp: 1750, perks: ['Silver Tactical Wings', '15% Rental Discount'], iconUrl: ELITE_BADGE_SVG },
-            { id: 'e_2', name: 'Elite II', minXp: 2000, perks: ['Elite Weapon Skin Card', 'Custom Callsign Plaque'], iconUrl: ELITE_BADGE_SVG },
-            { id: 'e_3', name: 'Elite III', minXp: 2300, perks: ['VIP Staging Zone Access', 'Exclusive Event Pass'], iconUrl: ELITE_BADGE_SVG },
-            { id: 'e_4', name: 'Elite IV', minXp: 2600, perks: ['Weapon XP Card (100 Bonus RP)', 'Tactical Recon Badge'], iconUrl: ELITE_BADGE_SVG },
-            { id: 'e_5', name: 'Elite V', minXp: 3000, perks: ['Elite Vanguard Frame', 'Pro League Qualifier'], iconUrl: ELITE_BADGE_SVG },
+            { id: 'e1_1', name: 'Specialist Training', minXp: 2500, perks: ['Silver Tactical Wings', '15% Rental Discount'], iconUrl: ELITE_BADGE_SVG },
+            { id: 'e1_2', name: 'Recon Specialist', minXp: 2850, perks: ['Elite Weapon Skin Card', 'Custom Callsign Plaque'], iconUrl: ELITE_BADGE_SVG },
         ]
     },
     {
-        id: 'rank_pro',
-        name: 'Pro',
-        description: 'Top-bracket competitive warriors with exceptional precision and leadership.',
+        id: 'rank_elite_2',
+        name: 'Elite II',
+        description: 'Master of recon, precision assaults, and mission dominance.',
+        rankBadgeUrl: ELITE_BADGE_SVG,
+        tiers: [
+            { id: 'e2_1', name: 'Tactical Specialist', minXp: 3200, perks: ['VIP Staging Zone Access', 'Exclusive Event Pass'], iconUrl: ELITE_BADGE_SVG },
+            { id: 'e2_2', name: 'Apex Specialist', minXp: 3550, perks: ['Weapon XP Card (100 Bonus RP)', 'Tactical Recon Badge'], iconUrl: ELITE_BADGE_SVG },
+        ]
+    },
+    {
+        id: 'rank_elite_3',
+        name: 'Elite III',
+        description: 'Apex elite vanguard preparing for professional tournament tier.',
+        rankBadgeUrl: ELITE_BADGE_SVG,
+        tiers: [
+            { id: 'e3_1', name: 'Elite Vanguard', minXp: 3900, perks: ['Elite Vanguard Frame', 'Pro League Qualifier'], iconUrl: ELITE_BADGE_SVG },
+            { id: 'e3_2', name: 'Elite Commando', minXp: 4300, perks: ['Commando Crest', 'Custom Weapon Sling Token'], iconUrl: ELITE_BADGE_SVG },
+        ]
+    },
+    {
+        id: 'rank_pro_1',
+        name: 'Pro I',
+        description: 'Top-bracket competitive warrior with exceptional precision.',
         rankBadgeUrl: PRO_BADGE_SVG,
         tiers: [
-            { id: 'p_1', name: 'Pro I', minXp: 3500, perks: ['Gold Star Insignia', 'Tournament Seeding Boost'], iconUrl: PRO_BADGE_SVG },
-            { id: 'p_2', name: 'Pro II', minXp: 4000, perks: ['20% Store & Rental Discount', 'Weapon Master Voucher'], iconUrl: PRO_BADGE_SVG },
-            { id: 'p_3', name: 'Pro III', minXp: 4500, perks: ['Exclusive Neon Callsign Glow', 'Priority Slot in CQB'], iconUrl: PRO_BADGE_SVG },
-            { id: 'p_4', name: 'Pro IV', minXp: 5000, perks: ['Weapon XP Card (100 Bonus RP)', 'Pro Combat Ribbon'], iconUrl: PRO_BADGE_SVG },
-            { id: 'p_5', name: 'Pro V', minXp: 5500, perks: ['Pro Master Trophy Badge', 'Free Event Pass'], iconUrl: PRO_BADGE_SVG },
+            { id: 'p1_1', name: 'Pro Cadet', minXp: 4700, perks: ['Gold Star Insignia', 'Tournament Seeding Boost'], iconUrl: PRO_BADGE_SVG },
+            { id: 'p1_2', name: 'Tournament Seeding', minXp: 5100, perks: ['20% Store & Rental Discount', 'Weapon Master Voucher'], iconUrl: PRO_BADGE_SVG },
         ]
     },
     {
-        id: 'rank_master',
-        name: 'Master',
-        description: 'Supreme echelon operators dominating arena scoreboards.',
+        id: 'rank_pro_2',
+        name: 'Pro II',
+        description: 'Competitive arena expert with lethal CQB and strategic reflexes.',
+        rankBadgeUrl: PRO_BADGE_SVG,
+        tiers: [
+            { id: 'p2_1', name: 'CQB Master', minXp: 5500, perks: ['Exclusive Neon Callsign Glow', 'Priority Slot in CQB'], iconUrl: PRO_BADGE_SVG },
+            { id: 'p2_2', name: 'Pro Strategist', minXp: 5900, perks: ['Weapon XP Card (100 Bonus RP)', 'Pro Combat Ribbon'], iconUrl: PRO_BADGE_SVG },
+        ]
+    },
+    {
+        id: 'rank_pro_3',
+        name: 'Pro III',
+        description: 'Elite professional champion nearing supreme master rank.',
+        rankBadgeUrl: PRO_BADGE_SVG,
+        tiers: [
+            { id: 'p3_1', name: 'Pro Master', minXp: 6300, perks: ['Pro Master Trophy Badge', 'Free Event Pass'], iconUrl: PRO_BADGE_SVG },
+            { id: 'p3_2', name: 'Pro Vanguard', minXp: 6750, perks: ['Champion Banner', 'Lifetime 20% Field Discount'], iconUrl: PRO_BADGE_SVG },
+        ]
+    },
+    {
+        id: 'rank_master_1',
+        name: 'Master I',
+        description: 'Supreme echelon operator dominating arena scoreboards.',
         rankBadgeUrl: MASTER_BADGE_SVG,
         tiers: [
-            { id: 'm_1', name: 'Master I', minXp: 6000, perks: ['Ruby Master Crest', '25% All-Access Pass'], iconUrl: MASTER_BADGE_SVG },
-            { id: 'm_2', name: 'Master II', minXp: 7000, perks: ['Custom 3D Animated Profile Banner', 'Golden Frame'], iconUrl: MASTER_BADGE_SVG },
-            { id: 'm_3', name: 'Master III', minXp: 8000, perks: ['Lifetime Arena VIP Perks', 'Exclusive Raffle Multiplier'], iconUrl: MASTER_BADGE_SVG },
-            { id: 'm_4', name: 'Master IV', minXp: 9000, perks: ['Weapon XP Card (100 Bonus RP)', 'Master Marksman Badge'], iconUrl: MASTER_BADGE_SVG },
-            { id: 'm_5', name: 'Master V', minXp: 10000, perks: ['Master Hall of Fame Entry', 'Grandmaster Challenger Title'], iconUrl: MASTER_BADGE_SVG },
+            { id: 'm1_1', name: 'Master Initiate', minXp: 7200, perks: ['Ruby Master Crest', '25% All-Access Pass'], iconUrl: MASTER_BADGE_SVG },
+            { id: 'm1_2', name: 'Ruby Marksman', minXp: 7700, perks: ['Custom 3D Profile Frame', 'Ruby Inlay Patch'], iconUrl: MASTER_BADGE_SVG },
+        ]
+    },
+    {
+        id: 'rank_master_2',
+        name: 'Master II',
+        description: 'Feared battlefield strategist with flawless record.',
+        rankBadgeUrl: MASTER_BADGE_SVG,
+        tiers: [
+            { id: 'm2_1', name: 'Tactical Master', minXp: 8200, perks: ['Lifetime Arena VIP Perks', 'Exclusive Raffle Multiplier'], iconUrl: MASTER_BADGE_SVG },
+            { id: 'm2_2', name: 'Supreme Master', minXp: 8750, perks: ['Weapon XP Card (100 Bonus RP)', 'Master Marksman Badge'], iconUrl: MASTER_BADGE_SVG },
+        ]
+    },
+    {
+        id: 'rank_master_3',
+        name: 'Master III',
+        description: 'Apex master tier standing on the threshold of Grandmaster.',
+        rankBadgeUrl: MASTER_BADGE_SVG,
+        tiers: [
+            { id: 'm3_1', name: 'Senior Master', minXp: 9300, perks: ['Master Hall of Fame Entry', 'Golden Calling Card'], iconUrl: MASTER_BADGE_SVG },
+            { id: 'm3_2', name: 'Master Apex', minXp: 9900, perks: ['Supreme Master Crown', 'Challenger Title'], iconUrl: MASTER_BADGE_SVG },
+        ]
+    },
+    {
+        id: 'rank_grandmaster',
+        name: 'Grandmaster',
+        description: 'Legendary commander and grandmaster of the entire tactical league.',
+        rankBadgeUrl: GRANDMASTER_BADGE_SVG,
+        tiers: [
+            { id: 'gm_1', name: 'Grandmaster Initiate', minXp: 10500, perks: ['Royal Grandmaster Crest', 'Crown Callsign Halo', 'Permanent 30% Pass'], iconUrl: GRANDMASTER_BADGE_SVG },
+            { id: 'gm_2', name: 'Grandmaster Vanguard', minXp: 11250, perks: ['Grandmaster Crown', 'Hall of Fame Golden Plaque'], iconUrl: GRANDMASTER_BADGE_SVG },
         ]
     },
     {
         id: 'rank_legendary',
         name: 'Legendary',
-        description: 'The pinnacle of tactical mastery. The absolute best operators in the league.',
+        description: 'The pinnacle of tactical mastery. The absolute greatest operator.',
         rankBadgeUrl: LEGENDARY_BADGE_SVG,
         tiers: [
-            { id: 'leg_1', name: 'Legendary', minXp: 12000, perks: ['Legendary Mythic Insignia', 'Golden Avatar Frame', 'Arena Hall of Legends Plaque', 'VIP Free Season Pass'], iconUrl: LEGENDARY_BADGE_SVG }
+            { id: 'leg_1', name: 'Apex Legend', minXp: 12000, perks: ['Legendary Mythic Insignia', 'Golden Avatar Frame', 'Arena Hall of Legends Plaque', 'VIP Free Lifetime Season Pass'], iconUrl: LEGENDARY_BADGE_SVG }
         ]
     }
 ];
 
 export const FALLBACK_RECRUIT_TIER: Tier = {
     id: 'tier_recruit',
-    name: 'Rookie I',
+    name: 'Training',
     minXp: 0,
     perks: ['Recruit Calling Card', 'Basic Loadout Access'],
     iconUrl: ROOKIE_BADGE_SVG

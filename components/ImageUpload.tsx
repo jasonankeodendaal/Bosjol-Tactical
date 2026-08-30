@@ -24,17 +24,19 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
   const performUpload = useCallback(async (fileToUpload: File): Promise<string> => {
     setStatus('uploading');
     onUploadingChange?.(true);
-    setMessage(`Uploading ${fileToUpload.name} to Supabase...`);
+
+    const targetFile = fileToUpload;
+    setMessage(`Uploading ${targetFile.name} to Supabase...`);
 
     // Direct push to Supabase Storage if configured
     if (isSupabaseConfigured() && supabase) {
-      const sanitizedName = fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const sanitizedName = targetFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const filePath = `uploads/${Date.now()}_${sanitizedName}`;
       const bucketsToTry = ['media', 'public', 'uploads', 'settings'];
 
       for (const bucket of bucketsToTry) {
         try {
-          const { data, error } = await supabase.storage.from(bucket).upload(filePath, fileToUpload, {
+          const { data, error } = await supabase.storage.from(bucket).upload(filePath, targetFile, {
             cacheControl: '3600',
             upsert: true
           });
@@ -53,7 +55,7 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
     if (apiServerUrl) {
         // Upload to external server
         const formData = new FormData();
-        formData.append('file', fileToUpload);
+        formData.append('file', targetFile);
 
         try {
             const response = await fetch(`${apiServerUrl}/upload`, {
@@ -79,10 +81,10 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
             reader.onerror = (error) => {
                 reject(new Error(`Failed to read file: ${error}`));
             };
-            reader.readAsDataURL(fileToUpload);
+            reader.readAsDataURL(targetFile);
         });
     }
-  }, [apiServerUrl]);
+  }, [apiServerUrl, onUploadingChange]);
 
 
   const resetState = (delay: number) => {

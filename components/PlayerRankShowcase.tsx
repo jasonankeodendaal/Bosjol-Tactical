@@ -244,14 +244,14 @@ export const PlayerRankShowcase: React.FC<PlayerRankShowcaseProps> = ({
 
                             <div className="mt-3 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 hover:border-amber-500/40 transition-colors">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-lg bg-zinc-950/80 border border-amber-500/30 flex items-center justify-center p-1.5 flex-shrink-0 shadow-inner">
+                                    <div className="w-12 h-12 flex items-center justify-center p-0.5 flex-shrink-0">
                                         <img
                                             src={resolveRankIcon(selectedTier.iconUrl || selectedTier.rankBadgeUrl, selectedTier.rankName, selectedTier.name)}
                                             alt={selectedTier.name}
                                             onError={(e) => {
                                                 (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(selectedTier.name || selectedTier.rankName);
                                             }}
-                                            className="w-full h-full object-contain"
+                                            className="w-full h-full object-contain drop-shadow-md"
                                         />
                                     </div>
                                     <div className="overflow-hidden">
@@ -478,12 +478,12 @@ export const PlayerRankShowcase: React.FC<PlayerRankShowcaseProps> = ({
                                             <button
                                                 key={t.id || idx}
                                                 onClick={() => setSelectedTierId(t.id)}
-                                                className={`relative flex-shrink-0 p-1 rounded-lg transition-all ${
+                                                className={`relative flex-shrink-0 p-1.5 rounded-lg transition-all ${
                                                     isSel
-                                                        ? 'bg-amber-400/20 border-2 border-amber-400 scale-110 shadow-[0_0_10px_rgba(251,191,36,0.4)]'
+                                                        ? 'bg-amber-400/20 ring-2 ring-amber-400 scale-110 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]'
                                                         : isCur
-                                                            ? 'border border-amber-500/50 bg-zinc-900/80'
-                                                            : 'border border-zinc-800 hover:border-zinc-700 bg-zinc-950/60'
+                                                            ? 'ring-1 ring-amber-500/50 hover:scale-105'
+                                                            : 'hover:scale-105 opacity-80 hover:opacity-100'
                                                 }`}
                                                 title={`${t.name} (${t.minXp} RP)`}
                                             >

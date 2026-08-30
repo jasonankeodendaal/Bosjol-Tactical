@@ -612,7 +612,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         restoreFromBackup={restoreFromBackup}
                     />}
                     {activeTab === 'API Setup' && <ApiSetupTab creatorDetails={props.creatorDetails} />}
-                    {activeTab === 'About' && <AboutTab />}
+                    {activeTab === 'About' && <AboutTab companyDetails={props.companyDetails} />}
                 </div>
             </main>
         </div>

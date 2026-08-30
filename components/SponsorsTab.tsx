@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import type { Sponsor } from '../types';
+import React, { useState, useContext } from 'react';
+import type { Sponsor, CompanyDetails } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
 import { SparklesIcon, PlusIcon, PencilIcon, TrashIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon } from './icons/Icons';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { deleteFromSupabaseStorage } from '../utils/storageCleaner';
+import { DataContext } from '../data/DataContext';
+import { ImageIcon } from 'lucide-react';
 
 interface SponsorsTabProps {
     sponsors: Sponsor[];
@@ -13,6 +15,8 @@ interface SponsorsTabProps {
     addDoc: <T extends {}>(collectionName: string, data: T) => Promise<void>;
     updateDoc: <T extends { id: string; }>(collectionName: string, doc: T) => Promise<void>;
     deleteDoc: (collectionName: string, docId: string) => Promise<void>;
+    companyDetails?: CompanyDetails;
+    setCompanyDetails?: (d: CompanyDetails | ((p: CompanyDetails) => CompanyDetails)) => Promise<void>;
 }
 
 const SponsorEditorModal: React.FC<{ 
@@ -108,9 +112,38 @@ const SponsorEditorModal: React.FC<{
     );
 };
 
-export const SponsorsTab: React.FC<SponsorsTabProps> = ({ sponsors, setSponsors, addDoc, updateDoc, deleteDoc }) => {
+export const SponsorsTab: React.FC<SponsorsTabProps> = ({ sponsors, setSponsors, addDoc, updateDoc, deleteDoc, companyDetails: propsCompanyDetails, setCompanyDetails: propsSetCompanyDetails }) => {
     const [isEditing, setIsEditing] = useState<Partial<Sponsor> | null>(null);
     const [deletingSponsor, setDeletingSponsor] = useState<Sponsor | null>(null);
+    const dataContext = useContext(DataContext);
+
+    const activeCompanyDetails = propsCompanyDetails || dataContext?.companyDetails;
+    const updateCompanyDetails = propsSetCompanyDetails || dataContext?.setCompanyDetails;
+
+    const sponsorsBg = activeCompanyDetails?.sponsorsBackgroundUrl || '';
+
+    const handleBackgroundSet = async (url: string) => {
+        if (updateCompanyDetails) {
+            await updateCompanyDetails((prev: any) => ({
+                ...prev,
+                sponsorsBackgroundUrl: url
+            }));
+        }
+    };
+
+    const handleBackgroundRemove = async () => {
+        if (sponsorsBg) {
+            deleteFromSupabaseStorage(sponsorsBg).catch(err => {
+                console.warn('[SponsorsTab] Error deleting background from storage:', err);
+            });
+        }
+        if (updateCompanyDetails) {
+            await updateCompanyDetails((prev: any) => ({
+                ...prev,
+                sponsorsBackgroundUrl: ''
+            }));
+        }
+    };
 
     const handleSave = (sponsor: Sponsor | Omit<Sponsor, 'id'>) => {
         if ('id' in sponsor) {
@@ -158,6 +191,34 @@ export const SponsorsTab: React.FC<SponsorsTabProps> = ({ sponsors, setSponsors,
                     <Button onClick={() => setIsEditing({})} size="sm" className="!py-1 !px-2.5 text-xs">
                         <PlusIcon className="w-4 h-4 mr-1"/>Add Sponsor
                     </Button>
+                </div>
+            </div>
+
+            {/* Sponsorship Carousel Background Image Banner Setting */}
+            <div className="p-3 sm:p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 relative overflow-hidden">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div className="space-y-1 max-w-xl">
+                        <div className="flex items-center gap-2">
+                            <ImageIcon className="w-4 h-4 text-red-400" />
+                            <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wide">
+                                Sponsors Section Background Banner
+                            </h3>
+                        </div>
+                        <p className="text-[11px] text-zinc-400 leading-relaxed">
+                            Upload a custom high-res backdrop image displayed behind the official sponsors carousel and partner modals on player dashboards.
+                        </p>
+                    </div>
+
+                    <div className="w-full md:w-80">
+                        <UrlOrUploadField
+                            label="Sponsorship Background"
+                            fileUrl={sponsorsBg}
+                            onUrlSet={handleBackgroundSet}
+                            onRemove={handleBackgroundRemove}
+                            accept="image/*"
+                            apiServerUrl={activeCompanyDetails?.apiServerUrl}
+                        />
+                    </div>
                 </div>
             </div>
 

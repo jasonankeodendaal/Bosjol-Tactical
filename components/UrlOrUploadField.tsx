@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import React, { useState, useCallback } from 'react';
 import { ImageUpload } from './ImageUpload';
 import { Input } from './Input';
@@ -75,7 +74,7 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
             case 'validating':
                 return <div className="flex items-center gap-2 text-xs text-blue-400"><ArrowPathIcon className="w-4 h-4 animate-spin"/> Testing URL...</div>;
             case 'valid':
-                 return <div className="flex items-center gap-2 text-xs text-green-400"><CheckCircleIcon className="w-4 h-4"/> URL is valid and reachable.</div>;
+                return <div className="flex items-center gap-2 text-xs text-green-400"><CheckCircleIcon className="w-4 h-4"/> URL is valid and reachable.</div>;
             case 'invalid_cors':
                 return <div className="flex items-center gap-2 text-xs text-amber-400"><ExclamationTriangleIcon className="w-4 h-4"/> This URL may be blocked by security policies (CORS). Services like Google Drive or Dropbox often block direct streaming. Please download the file and use the 'Upload' tab instead.</div>;
             case 'invalid_unreachable':
@@ -102,16 +101,18 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
             return <video src={trimmedUrl} muted loop playsInline autoPlay className="w-16 h-16 object-cover rounded-md bg-zinc-800 flex-shrink-0" />;
         }
         
-        // Default to image
+        // Default to image with transparent checkerboard background preview
         return (
-            <img 
-                src={trimmedUrl} 
-                alt="preview" 
-                className="w-16 h-16 object-cover rounded-md bg-zinc-800 flex-shrink-0 border border-zinc-700/50" 
-                onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.opacity = '0.5';
-                }}
-            />
+            <div className="w-16 h-16 rounded-md bg-[radial-gradient(#3f3f46_1px,transparent_1px)] [background-size:6px_6px] bg-zinc-900 border border-zinc-700/50 flex items-center justify-center p-1 overflow-hidden shrink-0">
+                <img 
+                    src={trimmedUrl} 
+                    alt="preview" 
+                    className="max-w-full max-h-full object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" 
+                    onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.opacity = '0.5';
+                    }}
+                />
+            </div>
         );
     };
 
@@ -128,18 +129,28 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
 
     return (
         <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1.5">{label}</label>
+            <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium text-gray-400">{label}</label>
+            </div>
             {fileUrl && typeof fileUrl === 'string' && fileUrl.trim() !== '' ? (
                 <div className="flex items-center gap-3 bg-zinc-900/50 p-2 rounded-lg border border-zinc-700/50">
                     {previewContent()}
-                    <p className="text-xs text-gray-400 truncate flex-grow">File configured</p>
+                    <div className="flex-grow min-w-0">
+                        <p className="text-xs text-gray-300 font-medium truncate">Uploaded Asset</p>
+                        <p className="text-[10px] text-zinc-500 truncate">{fileUrl.slice(0, 40)}...</p>
+                    </div>
                     <Button variant="danger" size="sm" onClick={handleRemove} className="!p-2 flex-shrink-0">
                         <TrashIcon className="w-4 h-4" />
                     </Button>
                 </div>
             ) : (
                 <div className="space-y-2">
-                    <ImageUpload onUpload={(urls) => { if(urls.length > 0) onUrlSet(urls[0]); }} accept={accept} apiServerUrl={apiServerUrl} onUploadingChange={onUploadingChange} />
+                    <ImageUpload 
+                        onUpload={(urls) => { if(urls.length > 0) onUrlSet(urls[0]); }} 
+                        accept={accept} 
+                        apiServerUrl={apiServerUrl} 
+                        onUploadingChange={onUploadingChange} 
+                    />
                 </div>
             )}
         </div>

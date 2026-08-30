@@ -219,14 +219,23 @@ const RankEditorModal: React.FC<{
         if (tiers.length === 0 && formData.autoGenerateTiers) {
             const count = Math.max(1, Math.min(10, formData.tierCount));
             const step = Math.max(10, formData.xpPerTier);
-            const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
             
             tiers = Array.from({ length: count }, (_, idx) => {
-                const tierMinXp = formData.minXp + (idx === 0 ? 0 : 1 + (idx * step));
+                let tierName = `${formData.name} Level ${idx + 1}`;
+                if (count === 1) {
+                    tierName = formData.name;
+                } else if (idx === 0) {
+                    tierName = formData.minXp === 0 ? 'Training' : `${formData.name} Operative`;
+                } else if (idx === count - 1) {
+                    tierName = `${formData.name} Master`;
+                } else {
+                    tierName = `${formData.name} Level ${idx}`;
+                }
+
                 return {
                     id: `tier_${Date.now()}_${idx}`,
-                    name: count === 1 ? formData.name : `${formData.name} ${romanNumerals[idx] || (idx + 1)}`,
-                    minXp: idx === 0 ? formData.minXp : (formData.minXp + (idx * step) + (idx > 0 && formData.minXp === 0 && idx === 1 ? 1 : 1)),
+                    name: tierName,
+                    minXp: idx === 0 ? formData.minXp : (formData.minXp + (idx * step)),
                     perks: [idx === count - 1 ? 'Exclusive Rank Title' : 'Standard Badge'],
                     iconUrl: formData.rankBadgeUrl || '',
                 };
@@ -375,7 +384,7 @@ const TierEditorModal: React.FC<{
                     label="Tier Name" 
                     value={formData.name} 
                     onChange={e => setFormData(f => ({...f, name: e.target.value}))} 
-                    placeholder="e.g. Rookie I, Rookie II, Level 1" 
+                    placeholder="e.g. Training, Rookie Level 1, Field Qualified" 
                 />
                 
                 <div className="bg-zinc-800/50 p-3 rounded-lg border border-zinc-700/60 space-y-3">

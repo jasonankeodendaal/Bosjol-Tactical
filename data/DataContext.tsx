@@ -383,7 +383,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Protected collections (require auth)
     const [rawPlayers, setRawPlayers, loadingPlayers] = useCollection<Player>('players', MOCK_DATA_MAP.players, { isProtected: true });
     const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', MOCK_DATA_MAP.events, { isProtected: true });
-    const [ranks, setRanks, loadingRanks] = useCollection<Rank>('ranks', MOCK_DATA_MAP.ranks, { isProtected: true });
+
+    // Public collections for ranks
+    const [rawRanks, setRawRanks, loadingRanks] = useCollection<Rank>('ranks', MOCK_DATA_MAP.ranks);
+
+    const ranks = useMemo(() => {
+        if (!rawRanks || rawRanks.length === 0) {
+            return MOCK_DATA_MAP.ranks;
+        }
+        return rawRanks;
+    }, [rawRanks]);
+    const setRanks = setRawRanks;
 
     // Auto-calculate and ensure every player's rank strictly matches their current XP total
     const players = useMemo(() => {

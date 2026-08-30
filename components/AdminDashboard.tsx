@@ -468,6 +468,7 @@ const LeaderboardTab: React.FC<{ players: Player[] }> = ({ players }) => {
 };
 
 const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
+    const activeRanks = ranks && ranks.length > 0 ? ranks : DEFAULT_RANKS;
 
     const getRangeForTier = (tier: Tier, rank: Rank, rankIndex: number) => {
         const sortedTiersInRank = [...(rank.tiers || [])].sort((a,b) => a.minXp - b.minXp);
@@ -478,7 +479,7 @@ const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
             return `${tier.minXp.toLocaleString()} - ${(nextTierInRank.minXp - 1).toLocaleString()} RP`;
         }
         
-        const nextRank = ranks[rankIndex + 1];
+        const nextRank = activeRanks[rankIndex + 1];
         if(nextRank && nextRank.tiers && nextRank.tiers.length > 0) {
             const nextRankFirstTier = [...nextRank.tiers].sort((a,b) => a.minXp - b.minXp)[0];
             return `${tier.minXp.toLocaleString()} - ${(nextRankFirstTier.minXp - 1).toLocaleString()} RP`;
@@ -501,7 +502,7 @@ const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
             </div>
 
             <div className="space-y-4 sm:space-y-6">
-                {ranks.map((rank, rankIndex) => {
+                {activeRanks.map((rank, rankIndex) => {
                     const resolvedRankBadge = resolveRankIcon(rank.rankBadgeUrl, rank.name);
                     return (
                         <div key={rank.id} className="p-3 sm:p-4 rounded-xl border border-zinc-800/80 bg-zinc-900/20 space-y-3">

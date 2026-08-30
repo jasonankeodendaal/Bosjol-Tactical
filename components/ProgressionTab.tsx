@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import type { Rank, Tier, Badge, LegendaryBadge, GamificationRule, GamificationSettings, CompanyDetails } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
-import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, PlusIcon, InformationCircleIcon, ArrowPathIcon, CodeBracketIcon, CheckCircleIcon, SparklesIcon, ChevronDownIcon } from './icons/Icons';
+import { ShieldCheckIcon, TrophyIcon, PlusCircleIcon, PencilIcon, TrashIcon, PlusIcon, InformationCircleIcon, ArrowPathIcon, CodeBracketIcon, CheckCircleIcon, SparklesIcon, ChevronDownIcon, ChevronUpIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { DashboardCard } from './DashboardCard';
 import { DataContext } from '../data/DataContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { resolveRankIcon, getRankBadgeSvg } from '../utils/rankUtils';
+import { resolveRankIcon, getRankBadgeSvg, DEFAULT_RANKS } from '../utils/rankUtils';
 
 
 interface ProgressionTabProps {
@@ -438,13 +438,16 @@ const TierEditorModal: React.FC<{
 
 const RankCard: React.FC<{
     rank: Rank;
+    rankIndex: number;
+    totalRanks: number;
     allTiers: Tier[];
     onEditRank: () => void;
     onDeleteRank: () => void;
     onEditTier: (tier: Tier) => void;
     onDeleteTier: (tier: Tier) => void;
     onAddTier: (suggestedXp?: number) => void;
-}> = ({ rank, allTiers, onEditRank, onDeleteRank, onEditTier, onDeleteTier, onAddTier }) => {
+    onMoveRank?: (direction: 'up' | 'down') => void;
+}> = ({ rank, rankIndex, totalRanks, allTiers, onEditRank, onDeleteRank, onEditTier, onDeleteTier, onAddTier, onMoveRank }) => {
     const [isOpen, setIsOpen] = useState(false);
     const sortedTiers = (rank.tiers || []).slice().sort((a,b) => a.minXp - b.minXp);
     const lowestXp = sortedTiers.length > 0 ? sortedTiers[0].minXp : (rank.minXp ?? 0);
@@ -484,6 +487,16 @@ const RankCard: React.FC<{
                 </div>
 
                 <div className="flex gap-1 items-center flex-shrink-0">
+                    {onMoveRank && rankIndex > 0 && (
+                        <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onMoveRank('up'); }} className="!p-1 sm:!p-1.5" title="Move Rank Up">
+                            <ChevronUpIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-300"/>
+                        </Button>
+                    )}
+                    {onMoveRank && rankIndex < totalRanks - 1 && (
+                        <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onMoveRank('down'); }} className="!p-1 sm:!p-1.5" title="Move Rank Down">
+                            <ChevronDownIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-300"/>
+                        </Button>
+                    )}
                     <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onEditRank(); }} className="!p-1 sm:!p-1.5" title="Edit Rank">
                         <PencilIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-300"/>
                     </Button>
@@ -692,12 +705,63 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
         setDeletingTier(null);
     };
     
-    const allTiers = ranks.flatMap(r => r.tiers || []).sort((a,b) => a.minXp - b.minXp);
-    const sortedRanks = [...ranks].sort((a, b) => {
+    const [isSyncingRanks, setIsSyncingRanks] = useState(false);
+
+    const handleLoadDefaultRanks = async () => {
+        if (!confirm("This will overwrite existing rank entries in your database with the complete 15-rank hierarchy (Rookie I to Legendary, with 150 sub-tiers). Do you want to load and update all pre-loaded ranks now?")) {
+            return;
+        }
+        setIsSyncingRanks(true);
+        try {
+            // Delete current ranks in remote DB to prevent stale duplicate ranks
+            if (ranks && ranks.length > 0) {
+                for (const oldRank of ranks) {
+                    await deleteDoc('ranks', oldRank.id);
+                }
+            }
+            // Add all 15 default ranks
+            for (const newRank of DEFAULT_RANKS) {
+                await addDoc('ranks', newRank);
+            }
+            setRanks(DEFAULT_RANKS);
+            alert("Success! Pre-loaded 15 rank divisions and 150 sub-tiers into your database.");
+        } catch (err: any) {
+            console.error("Error loading default ranks:", err);
+            setRanks(DEFAULT_RANKS);
+            alert(`Ranks loaded in app state. Database sync note: ${err?.message || err}`);
+        } finally {
+            setIsSyncingRanks(false);
+        }
+    };
+
+    const handleMoveRank = async (rank: Rank, direction: 'up' | 'down') => {
+        const currentIndex = sortedRanks.findIndex(r => r.id === rank.id);
+        if (currentIndex === -1) return;
+        const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+        if (targetIndex < 0 || targetIndex >= sortedRanks.length) return;
+
+        const updatedSorted = [...sortedRanks];
+        const temp = updatedSorted[currentIndex];
+        updatedSorted[currentIndex] = updatedSorted[targetIndex];
+        updatedSorted[targetIndex] = temp;
+
+        setRanks(updatedSorted);
+
+        try {
+            await updateDoc('ranks', updatedSorted[currentIndex]);
+            await updateDoc('ranks', updatedSorted[targetIndex]);
+        } catch (e) {
+            console.warn('Reorder save notice:', e);
+        }
+    };
+
+    const activeRanks = ranks && ranks.length > 0 ? ranks : DEFAULT_RANKS;
+    const allTiers = activeRanks.flatMap(r => r.tiers || []).sort((a,b) => a.minXp - b.minXp);
+    const sortedRanks = [...activeRanks].sort((a, b) => {
         const tiersA = a.tiers || [];
         const tiersB = b.tiers || [];
-        const minXpA = tiersA.length > 0 ? Math.min(...tiersA.map(t => t.minXp)) : Infinity;
-        const minXpB = tiersB.length > 0 ? Math.min(...tiersB.map(t => t.minXp)) : Infinity;
+        const minXpA = tiersA.length > 0 ? Math.min(...tiersA.map(t => t.minXp)) : (a.minXp ?? 0);
+        const minXpB = tiersB.length > 0 ? Math.min(...tiersB.map(t => t.minXp)) : (b.minXp ?? 0);
         return minXpA - minXpB;
     });
 
@@ -707,7 +771,7 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     const [showSqlGuide, setShowSqlGuide] = useState(false);
     const [copiedSql, setCopiedSql] = useState(false);
 
-    const rankSqlSnippet = `-- 1. Ensure ranks table has all required columns including updated_at, created_at, and tiers jsonb
+    const rankSqlSnippet = `-- SQL Seed Script for all 15 Rank Divisions & 150 Sub-Tiers
 CREATE TABLE IF NOT EXISTS public.ranks (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -718,41 +782,20 @@ CREATE TABLE IF NOT EXISTS public.ranks (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Ensure existing ranks tables have the updated_at & created_at columns if they were created earlier without them
+-- Ensure columns exist
 ALTER TABLE public.ranks ADD COLUMN IF NOT EXISTS "rankBadgeUrl" TEXT;
 ALTER TABLE public.ranks ADD COLUMN IF NOT EXISTS tiers JSONB DEFAULT '[]'::jsonb;
-ALTER TABLE public.ranks ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
-ALTER TABLE public.ranks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
--- 2. Insert or update Ranks with custom XP brackets
+-- Insert or Update All 15 Preloaded Rank Divisions
 INSERT INTO public.ranks (id, name, description, "rankBadgeUrl", tiers)
 VALUES
-(
-    'rank_rookie', 
-    'Rookie', 
-    'Introductory rank for new operators (0 to 100 XP).',
-    '',
-    '[
-        {"id": "r_i", "name": "Rookie I", "minXp": 0, "perks": ["Basic Calling Card"], "iconUrl": ""},
-        {"id": "r_ii", "name": "Rookie II", "minXp": 25, "perks": ["Calling Card"], "iconUrl": ""},
-        {"id": "r_iii", "name": "Rookie III", "minXp": 50, "perks": ["Custom Banner"], "iconUrl": ""},
-        {"id": "r_iv", "name": "Rookie IV", "minXp": 75, "perks": ["Weapon XP Card"], "iconUrl": ""},
-        {"id": "r_v", "name": "Rookie V", "minXp": 100, "perks": ["Credits Reward"], "iconUrl": ""}
-    ]'::jsonb
-),
-(
-    'rank_vet', 
-    'Veteran', 
-    'Experienced operators with proven battlefield record (101 to 500 XP).',
-    '',
-    '[
-        {"id": "v_i", "name": "Veteran I", "minXp": 101, "perks": ["Weapon XP Card"], "iconUrl": ""},
-        {"id": "v_ii", "name": "Veteran II", "minXp": 200, "perks": ["Custom Banner"], "iconUrl": ""},
-        {"id": "v_iii", "name": "Veteran III", "minXp": 300, "perks": ["Credits Reward"], "iconUrl": ""},
-        {"id": "v_iv", "name": "Veteran IV", "minXp": 400, "perks": ["Weapon XP Card"], "iconUrl": ""},
-        {"id": "v_v", "name": "Veteran V", "minXp": 500, "perks": ["Exclusive Skin"], "iconUrl": ""}
-    ]'::jsonb
-)
+${DEFAULT_RANKS.map(r => `(
+    '${r.id}',
+    '${r.name.replace(/'/g, "''")}',
+    '${(r.description || '').replace(/'/g, "''")}',
+    '${r.rankBadgeUrl || ''}',
+    '${JSON.stringify(r.tiers).replace(/'/g, "''")}'::jsonb
+)`).join(',\n')}
 ON CONFLICT (id) DO UPDATE 
 SET name = EXCLUDED.name,
     description = EXCLUDED.description,
@@ -907,11 +950,7 @@ SET name = EXCLUDED.name,
                                 Clean, free view of operator progression badges and tier brackets.
                             </p>
                         </div>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <Button size="sm" variant="secondary" onClick={() => setShowSqlGuide(!showSqlGuide)} className="!px-2.5 !py-1 text-[11px]">
-                                <CodeBracketIcon className="w-3.5 h-3.5 mr-1" />
-                                <span>{showSqlGuide ? 'Hide SQL' : 'SQL'}</span>
-                            </Button>
+                        <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap">
                             <Button size="sm" onClick={() => setEditingRank({})} className="!px-3 !py-1 text-[11px]">
                                 <PlusIcon className="w-3.5 h-3.5 mr-1" /> 
                                 <span>Add Rank</span>
@@ -919,33 +958,21 @@ SET name = EXCLUDED.name,
                         </div>
                     </div>
 
-                    {/* SQL Guide Dropdown */}
-                    {showSqlGuide && (
-                        <div className="p-3 bg-zinc-950/90 rounded-xl border border-zinc-800 space-y-2 shadow-xl">
-                            <div className="flex justify-between items-center pb-2 border-b border-zinc-800">
-                                <span className="text-xs font-bold text-white">Database Seed Script</span>
-                                <Button size="sm" variant="secondary" onClick={handleCopySql} className="!py-0.5 !px-2 text-[10px]">
-                                    {copiedSql ? 'Copied!' : 'Copy SQL'}
-                                </Button>
-                            </div>
-                            <pre className="text-[10px] font-mono text-zinc-300 overflow-x-auto p-2 bg-black/60 rounded border border-zinc-800/70">
-                                <code>{rankSqlSnippet}</code>
-                            </pre>
-                        </div>
-                    )}
-
                     {/* Free View Ranks List - Shrink to fit mobile without rigid containers */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                        {sortedRanks.map(rank => (
+                        {sortedRanks.map((rank, rankIdx) => (
                             <RankCard 
                                 key={rank.id}
                                 rank={rank}
+                                rankIndex={rankIdx}
+                                totalRanks={sortedRanks.length}
                                 allTiers={allTiers}
                                 onEditRank={() => setEditingRank(rank)}
                                 onDeleteRank={() => setDeletingRank(rank)}
                                 onEditTier={(tier) => setEditingTier({ ...tier, rankId: rank.id })}
                                 onDeleteTier={(tier) => setDeletingTier({ ...tier, rankId: rank.id })}
                                 onAddTier={(suggestedXp) => setEditingTier({ rankId: rank.id, minXp: suggestedXp ?? 0 })}
+                                onMoveRank={(dir) => handleMoveRank(rank, dir)}
                             />
                         ))}
                     </div>

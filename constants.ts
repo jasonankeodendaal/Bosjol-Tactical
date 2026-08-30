@@ -88,214 +88,133 @@ export const MOCK_BADGES: Badge[] = [];
 export const MOCK_LEGENDARY_BADGES: LegendaryBadge[] = [];
 export const DEFAULT_TACTICAL_RULE_SETS: TacticalRuleSet[] = [
     {
-        id: 'rule_set_safety',
+        id: 'rule_set_safety_eyewear',
         title: 'Safety & Eyewear Protocol',
         category: 'Safety Rules',
-        shortDescription: 'Mandatory eye protection, face mesh, dead rag signals, and barrel safety standards.',
+        shortDescription: 'ANSI Z87.1 mandatory eye protection, blind man emergency freeze, and Code Red real-world injury protocol.',
         icon: 'shield',
         badge: 'MANDATORY',
         isActive: true,
-        lastUpdated: '2026-08-29',
+        lastUpdated: '2026-08-30',
         rules: [
             {
-                id: 'r_safe_1',
-                name: 'Full-Seal Eyewear Standard',
-                description: 'ANSI Z87.1 rated full-seal goggles with retention straps must be worn at all times while on field boundaries or staging areas.',
-                penalty: 'Immediate Game Ejection',
-                importance: 'critical',
-                note: 'Mesh goggles are strictly forbidden unless accompanied by shatterproof poly-lenses.'
+                id: 'r_airsoft_eye',
+                name: 'Eye of the Beholder (ANSI Z87.1 Required)',
+                description: 'Always wear eye protection in the form of goggles, mask, shooting glasses or safety glasses meeting ANSI Z87.1 standards. Never remove eye protection on the battlefield. Regular prescription glasses are NOT acceptable as safety eyewear.',
+                penalty: 'Immediate Expulsion',
+                importance: 'critical'
             },
             {
-                id: 'r_safe_2',
-                name: 'Lower Face Mesh & Mouth Protection',
-                description: 'Players under 18 must wear full rigid face protection. Adult players are strongly advised to wear steel mesh lower masks.',
-                penalty: 'Warning / No-Entry',
-                importance: 'important'
+                id: 'r_airsoft_blindman',
+                name: 'Blind Man – Emergency Freeze Callout',
+                description: 'Blind man will be called if anyone enters the field without eye protection. When "BLIND MAN" is called, the game stops immediately, and only continues when the marshal calls "Game On".',
+                penalty: 'Mandatory Field Hold',
+                importance: 'critical'
             },
             {
-                id: 'r_safe_3',
-                name: 'Red Dead Rag & Signal Marker',
-                description: 'All operators must carry a bright red dead rag (min 30x30cm) or red LED light for night operations to signal hit confirmation.',
-                penalty: '-100 XP Penalty',
-                importance: 'important'
+                id: 'r_airsoft_codered',
+                name: 'Code Red – Real World Injury Protocol',
+                description: 'The term "CODE RED" will be used for any real world injury. Once "CODE RED" has been shouted, all players will holster their replicas, put them on safe, and remove the magazine. Proceed to make the area as safe as possible to assist the injured player.',
+                importance: 'critical'
             },
             {
-                id: 'r_safe_4',
-                name: 'Barrel Cover / Sock in Staging Zone',
-                description: 'Muzzles must be capped with approved barrel socks and weapons put on SAFE with magazines removed inside safe zones.',
-                penalty: 'Match Disqualification',
+                id: 'r_airsoft_codeblue',
+                name: 'Code Blue – Law Enforcement / Blue Presence',
+                description: 'Potentially dangerous situation treated as if law enforcement does not know we are playing a game. All players must walk to the "Safe Zone" in plain sight, with guns over their head or leaving guns in the field. At the Safe Zone, place replicas with gear and gather in a group at least 20 feet away from gear.',
                 importance: 'critical'
             }
         ]
     },
     {
-        id: 'rule_set_chrono',
-        title: 'Chronograph & Joule Limits',
-        category: 'Chronograph & FPS',
-        shortDescription: 'Velocity thresholds, BB weight standards, tournament locks, and Minimum Engagement Distances (MED).',
-        icon: 'crosshair',
-        badge: 'FPS SPEC',
-        isActive: true,
-        lastUpdated: '2026-08-29',
-        rules: [
-            {
-                id: 'r_chrono_1',
-                name: 'Standard Rifle & Sidearm Limit (1.20 Joules)',
-                description: 'Max 1.20 Joules (~360 FPS with 0.20g BBs). No Minimum Engagement Distance required. Full-auto permitted outdoors.',
-                penalty: 'Weapon Rejection',
-                importance: 'important'
-            },
-            {
-                id: 'r_chrono_2',
-                name: 'DMR Heavy Rifle Limit (1.88 Joules)',
-                description: 'Max 1.88 Joules (~450 FPS with 0.20g BBs). 20-Meter Minimum Engagement Distance. Must be mechanically semi-auto only.',
-                penalty: 'Match Disqualification',
-                importance: 'critical'
-            },
-            {
-                id: 'r_chrono_3',
-                name: 'Bolt-Action Sniper Limit (2.31 Joules)',
-                description: 'Max 2.31 Joules (~500 FPS with 0.20g BBs). 30-Meter Minimum Engagement Distance. Sidearm mandatory for close quarters.',
-                penalty: 'Match Disqualification',
-                importance: 'critical'
-            },
-            {
-                id: 'r_chrono_4',
-                name: 'HPA Regulator Tournament Zip Lock',
-                description: 'All High Pressure Air (HPA) systems must be chronographed with event weight BBs and tournament locked prior to deployment.',
-                penalty: 'Instant Ejection',
-                importance: 'critical'
-            }
-        ]
-    },
-    {
-        id: 'rule_set_game_domination',
-        title: 'Game Mode: Domination & Control Points',
-        category: 'Specific Game Rules',
-        shortDescription: 'Tactical objectives, flag capture timers, ticket depletion rates, and Mobile HQ respawn points.',
-        icon: 'target',
-        badge: 'GAME MODE',
-        isActive: true,
-        lastUpdated: '2026-08-29',
-        rules: [
-            {
-                id: 'r_dom_1',
-                name: 'Electronic Flag Capture',
-                description: 'To capture a sector flag prop, hold team button continuously for 5 seconds until beacon flashes your team color.',
-                penalty: 'Invalid Capture',
-                importance: 'standard'
-            },
-            {
-                id: 'r_dom_2',
-                name: 'Ticket Drain Mechanics',
-                description: 'Holding 2 of 3 sectors drains opposing team tickets by 10 points per minute. Holding all 3 triggers 2x drain rate.',
-                importance: 'important'
-            },
-            {
-                id: 'r_dom_3',
-                name: 'Forward Spawn Point Rule',
-                description: 'Secured alpha or beta flags serve as forward respawn sites unless the sector is actively contested by enemy fire.',
-                importance: 'standard'
-            }
-        ]
-    },
-    {
-        id: 'rule_set_game_search_destroy',
-        title: 'Game Mode: Search & Destroy / Demolition',
-        category: 'Specific Game Rules',
-        shortDescription: 'Bomb arming, defusal sightlines, round timers, and single-life elimination parameters.',
-        icon: 'alert-triangle',
-        badge: 'GAME MODE',
-        isActive: true,
-        lastUpdated: '2026-08-29',
-        rules: [
-            {
-                id: 'r_sd_1',
-                name: 'Bomb Arming Protocol',
-                description: 'Attacking operator must stay in contact with bomb terminal for 10 uninterrupted seconds to arm timer.',
-                importance: 'important'
-            },
-            {
-                id: 'r_sd_2',
-                name: 'Defusal Physical Contact',
-                description: 'Defusal requires 15 continuous seconds of physical contact on terminal. Firing weapon during defusal cancels timer.',
-                importance: 'important'
-            },
-            {
-                id: 'r_sd_3',
-                name: 'Single Life per Round',
-                description: 'No medic revives or respawns allowed during active S&D rounds. Once hit, player immediately exits to dead zone.',
-                penalty: 'Round Loss',
-                importance: 'critical'
-            }
-        ]
-    },
-    {
-        id: 'rule_set_cqb',
-        title: 'CQB & Indoor Clearing Code',
-        category: 'CQB Standards',
-        shortDescription: 'Semi-auto restrictions inside structures, surrender callouts, and pyrotechnic blast radii.',
+        id: 'rule_set_field_engagement',
+        title: 'Engagement & Conduct Rules',
+        category: 'Field Protocols',
+        shortDescription: 'Bang kill range, pyrotechnics ban, no physical contact, blind firing expulsion, and hit calling honor code.',
         icon: 'zap',
-        badge: 'CQB SPEC',
+        badge: 'CONDUCT',
         isActive: true,
-        lastUpdated: '2026-08-29',
+        lastUpdated: '2026-08-30',
         rules: [
             {
-                id: 'r_cqb_1',
-                name: 'Strict Semi-Auto Indoors',
-                description: 'Full-auto fire is strictly forbidden inside all buildings, rooms, and enclosed corridors regardless of weapon classification.',
-                penalty: '-250 XP & Warning',
-                importance: 'critical'
-            },
-            {
-                id: 'r_cqb_2',
-                name: 'Courtesy Surrender Offer',
-                description: 'If within 2 meters of an unaware enemy operator, verbally declare "SURRENDER!" to spare them point-blank hit.',
-                importance: 'standard'
-            },
-            {
-                id: 'r_cqb_3',
-                name: 'Grenade & Pyro Blast Radius',
-                description: 'Spring or pyro grenades detonating inside a room eliminate all occupants within 5 meters who lack hard cover.',
+                id: 'r_airsoft_pyro',
+                name: 'No Big Bangs / Crackers Ban',
+                description: 'No crackers or explosive pyrotechnics are allowed to be played with on the field at any time.',
+                penalty: 'Confiscation & Warning',
                 importance: 'important'
             },
             {
-                id: 'r_cqb_4',
-                name: 'No Blind Firing',
-                description: 'Barrels must not be fired around corners or over barricades without line-of-sight visual sighting.',
-                penalty: 'Match Disqualification',
+                id: 'r_airsoft_bang',
+                name: 'Bang, You Dead! (5m Safety Kill Range)',
+                description: 'A 5 meter "bang kill range" will be observed for all weapons, or whenever there is a safety issue with taking a shot. Pull out a sidearm or point weapon at target and shout "BANG". Cannot be called on multiple people at once. Must always honor a safety kill and return to re-spawn.',
+                penalty: 'Field Ejection if Abused',
+                importance: 'important',
+                note: 'Abusing safety kills will result in removal from the field. You are ultimately responsible for anyone or anything injured by your projectiles.'
+            },
+            {
+                id: 'r_airsoft_blindfire',
+                name: 'Blind Firing Prohibition',
+                description: 'Blind firing is never permitted. Always look through your sights when engaging targets.',
+                penalty: 'Immediate Expulsion from Game',
+                importance: 'critical'
+            },
+            {
+                id: 'r_airsoft_notouchy',
+                name: 'No Touchy! (Zero Physical Contact)',
+                description: 'Absolutely no physical contact at any point between players or moderators is permitted.',
+                penalty: 'Immediate Removal & Permanent Ban',
+                importance: 'critical'
+            },
+            {
+                id: 'r_airsoft_hits',
+                name: 'Hit Calling Integrity & Honor Code',
+                description: 'All integrity violations and non-calling of "hits" will be dealt with swiftly and severely.',
+                penalty: 'Immediate Ejection from Day Event',
                 importance: 'critical'
             }
         ]
     },
     {
-        id: 'rule_set_medic',
-        title: 'Field Medic & Hit Call Honor Code',
-        category: 'Medic & Respawn',
-        shortDescription: 'Honor code callouts, touch revives, bleed-out timers, and dead man radio silence.',
-        icon: 'scale',
-        badge: 'HONOR CODE',
+        id: 'rule_set_mags_weapons',
+        title: 'Weapons, Magazines & Safe Zone Standards',
+        category: 'CQB Standards',
+        shortDescription: 'High cap semi-auto restriction, mid cap burst fire allowance, chronograph checks, and Safe Zone weapon discipline.',
+        icon: 'crosshair',
+        badge: 'WEAPONS',
         isActive: true,
-        lastUpdated: '2026-08-29',
+        lastUpdated: '2026-08-30',
         rules: [
             {
-                id: 'r_med_1',
-                name: 'Loud Hit Call & Hand Raised',
-                description: 'When struck by BB or ricochet, shout "HIT!" loudly, raise arm, and deploy red dead rag immediately.',
-                penalty: '-500 XP Honor Penalty',
+                id: 'r_airsoft_mag_rule',
+                name: 'Mid Cap & High Cap Firing Rule',
+                description: 'High Cap magazines (winding wheel at bottom) can ONLY fire semi-auto. Players using Mid Cap magazines are allowed burst fire. Heavy support gunners receive role priority. (Exceptions can be made for exotic/rare replicas by asking the organizer).',
+                importance: 'important',
+                note: 'You may carry high caps with mid caps, but you must strictly fire semi-auto when feeding from high cap magazines.'
+            },
+            {
+                id: 'r_airsoft_safezone',
+                name: 'Safe Zone Security Rules',
+                description: 'The "Safe Zone" is the area on the playing field where no weapons will be fired at any time. Keep magazines out of rifles and switch selector switches to SAFE at all times in the Safe Zone.',
+                penalty: 'Severe Warning / Disqualification',
                 importance: 'critical'
             },
             {
-                id: 'r_med_2',
-                name: 'Touch Medic Revive',
-                description: 'Designated field medics must maintain continuous two-hand physical contact on downed player for 30 seconds.',
-                importance: 'standard'
+                id: 'r_airsoft_chrono_check',
+                name: 'Mandatory Chronograph & Weapons Check',
+                description: 'All airsoft weapons will be checked by Game Moderators and tested via chronograph prior to every game.',
+                penalty: 'Weapon Disqualification',
+                importance: 'critical'
             },
             {
-                id: 'r_med_3',
-                name: 'Dead Men Tell No Tales',
-                description: 'Eliminated operators must maintain strict radio and vocal silence. Pointing or giving callouts to live teammates is banned.',
-                penalty: 'Team XP Penalty',
+                id: 'r_airsoft_real_firearms',
+                name: 'Strict Prohibition of Real Firearms',
+                description: 'No real firearms, live ammunition, or other non-airsoft weapons are allowed on the property or field at any time.',
+                penalty: 'Immediate Permanent Ban & Law Enforcement Call',
+                importance: 'critical'
+            },
+            {
+                id: 'r_airsoft_game_boss',
+                name: 'Game Moderator Authority',
+                description: 'The "Game Moderator" holds final approval for all field decisions, game calls, conflict resolutions, and safety items on the field.',
                 importance: 'critical'
             }
         ]

@@ -4,7 +4,7 @@ import { motion, Variants } from 'framer-motion';
 import { GameEvent, EventType, EventStatus } from '../types';
 import { BadgePill } from './BadgePill';
 import { CalendarIcon } from './icons/Icons';
-import { QrCode } from 'lucide-react';
+import { QrCode, Users } from 'lucide-react';
 
 interface EventCardProps {
   event: GameEvent;

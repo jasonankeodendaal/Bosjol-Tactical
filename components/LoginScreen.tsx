@@ -81,7 +81,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
           loop
           muted={isMuted}
           playsInline
-          className="absolute inset-0 w-full h-full object-cover z-0 opacity-80"
+          className="absolute inset-0 w-full h-full object-cover z-0 opacity-100"
           key={url}
         >
           <source src={url} />
@@ -92,7 +92,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
 
     return (
       <div
-        className="absolute inset-0 w-full h-full bg-cover bg-center z-0 opacity-80"
+        className="absolute inset-0 w-full h-full bg-cover bg-center z-0 opacity-100"
         style={{ backgroundImage: `url("${url}")` }}
       />
     );
@@ -101,7 +101,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-black p-3 sm:p-4 overflow-hidden">
        {renderBackground()}
-       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/60 z-1 pointer-events-none" />
+       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/30 z-1 pointer-events-none" />
 
        {/* Background Audio */}
        {audioUrl && audioUrl.trim() !== '' && (

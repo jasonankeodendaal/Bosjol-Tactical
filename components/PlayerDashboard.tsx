@@ -970,10 +970,10 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                 {sponsorsBackgroundUrl && (
                     <>
                         <div 
-                            className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-40 sm:opacity-50 transition-opacity"
+                            className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-80 sm:opacity-90 transition-opacity"
                             style={{ backgroundImage: `url('${sponsorsBackgroundUrl}')` }}
                         />
-                        <div className="absolute inset-0 z-0 bg-gradient-to-t from-zinc-950 via-zinc-950/75 to-zinc-950/85 pointer-events-none" />
+                        <div className="absolute inset-0 z-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/40 to-zinc-950/50 pointer-events-none" />
                     </>
                 )}
 

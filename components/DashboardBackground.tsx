@@ -40,7 +40,7 @@ export const DashboardBackground: React.FC<{ url?: string }> = ({ url }) => {
                     }}
                 />
             )}
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px]" />
+            <div className="absolute inset-0 bg-black/20 bg-gradient-to-t from-zinc-950/70 via-transparent to-zinc-950/30" />
         </div>
     );
 };

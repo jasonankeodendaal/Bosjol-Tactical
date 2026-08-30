@@ -4,21 +4,26 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "tsx server.ts",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "start": "node dist/server.cjs"
   },
   "dependencies": {
+    "@google/genai": "^2.19.0",
     "@phosphor-icons/react": "^2.1.10",
     "@supabase/supabase-js": "^2.39.7",
     "@types/qrcode": "^1.5.6",
+    "cors": "^2.8.6",
     "date-fns": "^4.1.0",
+    "esbuild": "^0.28.2",
+    "express": "^5.2.1",
     "framer-motion": "^12.23.24",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.37.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "tsx": "^4.23.13"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

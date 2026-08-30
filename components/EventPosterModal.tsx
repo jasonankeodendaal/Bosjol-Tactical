@@ -659,9 +659,16 @@ Visual Style: ${customStyleOverride || 'Cinematic, ultra-photorealistic renderin
         })
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        console.error('Invalid JSON response:', text.substring(0, 200));
+        throw new Error(`Server returned an invalid response (${res.status}). Please try a smaller image or shorter prompt.`);
+      }
 
-      if (!res.ok || data.error) {
+      if (!res.ok || data.success === false || data.error) {
         throw new Error(data.error || 'Failed to generate AI poster artwork');
       }
 

@@ -31,6 +31,8 @@ import { DataContext, DataContextType } from '../data/DataContext';
 import { AuthContext } from '../auth/AuthContext';
 import { SendCredentialsModal } from './SendCredentialsModal';
 
+import { AdminGameTypesManager } from './AdminGameTypesManager';
+
 export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' | 'seedInitialData' | 'updatePlayerDoc' | 'addEventDoc' | 'deleteEventDoc' | 'updateEventDoc'> & {
     onDeleteAllData: () => void;
     deleteAllPlayers: () => Promise<void>;
@@ -39,7 +41,7 @@ export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' 
 };
 
 
-type Tab = 'Events' | 'Players' | 'Notifications' | 'Rules' | 'Progression' | 'Ranks' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'About';
+type Tab = 'Events' | 'Game Types' | 'Players' | 'Notifications' | 'Rules' | 'Progression' | 'Ranks' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'About';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
 
 const NewPlayerModal: React.FC<{
@@ -232,6 +234,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
 
     const tabs: {name: Tab, icon: React.ReactNode, badgeCount?: number}[] = [
         {name: 'Events', icon: <CalendarIcon className="w-5 h-5"/>},
+        {name: 'Game Types', icon: <SparklesIcon className="w-5 h-5 text-red-500"/>},
         {name: 'Players', icon: <UsersIcon className="w-5 h-5"/>},
         {name: 'Notifications', icon: <BellIcon className="w-5 h-5"/>, badgeCount: unreadNotificationsCount},
         {name: 'Rules', icon: <InformationCircleIcon className="w-5 h-5"/>},
@@ -727,6 +730,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 <div className="p-4 sm:p-6 lg:p-8">
                     <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
                     {activeTab === 'Events' && <EventsTab events={events} onManageEvent={handleManageEvent} />}
+                    {activeTab === 'Game Types' && <AdminGameTypesManager />}
                     {activeTab === 'Players' && <PlayersTab players={props.players} addPlayerDoc={props.addPlayerDoc} ranks={props.ranks} companyDetails={props.companyDetails} onViewPlayer={handleViewPlayer} onDeletePlayer={handleDeletePlayer}/>}
                     {activeTab === 'Notifications' && <AdminNotificationsTab 
                         notifications={dataContext.notifications || []}

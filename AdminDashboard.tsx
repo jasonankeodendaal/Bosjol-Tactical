@@ -194,9 +194,9 @@ const NewPlayerModal: React.FC<{
 
 const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({ activeTab, setActiveTab }) => {
     const [menuOpen, setMenuOpen] = useState(false);
-    const tabs: {name: Tab, icon: React.ReactNode}[] = [
+    const tabs: {name: Tab, icon: React.ReactNode, isNew?: boolean}[] = [
         {name: 'Events', icon: <CalendarIcon className="w-5 h-5"/>},
-        {name: 'Game Types', icon: <SparklesIcon className="w-5 h-5"/>},
+        {name: 'Game Types', icon: <SparklesIcon className="w-5 h-5 text-red-500"/>, isNew: true},
         {name: 'Players', icon: <UsersIcon className="w-5 h-5"/>},
         {name: 'Progression', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Ranks', icon: <ShieldCheckIcon className="w-5 h-5"/>},
@@ -215,57 +215,56 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     const activeTabInfo = tabs.find(t => t.name === activeTab);
 
     return (
-        <div className="border-b border-zinc-800 mb-6">
-             {/* Mobile Menu Button */}
-            <div className="lg:hidden relative">
-                 <button 
-                    onClick={() => setMenuOpen(!menuOpen)}
-                    className="flex items-center justify-between w-full px-4 py-3 text-left text-gray-200 bg-zinc-900/50 rounded-md border border-zinc-700"
-                >
-                    <div className="flex items-center gap-3">
-                        {activeTabInfo?.icon}
-                        <span className="font-semibold">{activeTab}</span>
-                    </div>
-                    <Bars3Icon className="w-6 h-6"/>
-                </button>
-                <AnimatePresence>
-                {menuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 mt-2 w-full bg-zinc-900 border border-zinc-700 rounded-md shadow-lg z-50 p-2"
+        <div className="border-b border-zinc-800 mb-6 space-y-4">
+            {/* Quick Navigation Dropdown Menu (Visible on all devices/screen sizes) */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-950/80 p-3 rounded-xl border border-zinc-800">
+                <div className="flex items-center gap-2">
+                    <span className="p-1.5 bg-red-600/20 text-red-500 rounded-md border border-red-500/30">
+                        <SparklesIcon className="w-4 h-4" />
+                    </span>
+                    <label htmlFor="admin-tab-dropdown" className="text-xs font-bold text-gray-300 uppercase tracking-wider">
+                        Admin Navigation Menu:
+                    </label>
+                </div>
+                
+                <div className="relative flex-grow max-w-md">
+                    <select
+                        id="admin-tab-dropdown"
+                        value={activeTab}
+                        onChange={(e) => setActiveTab(e.target.value as Tab)}
+                        className="w-full bg-zinc-900 border-2 border-red-600/70 hover:border-red-500 text-white font-bold text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500 appearance-none cursor-pointer shadow-md pr-10"
                     >
-                        {tabs.map(tab => (
-                            <button
-                                key={tab.name}
-                                onClick={() => {
-                                    setActiveTab(tab.name);
-                                    setMenuOpen(false);
-                                }}
-                                className={`w-full text-left flex items-center gap-3 p-3 rounded-md text-sm font-medium ${activeTab === tab.name ? 'bg-red-600/20 text-red-400' : 'text-gray-300 hover:bg-zinc-800'}`}
-                            >
-                                {tab.icon} {tab.name}
-                            </button>
+                        {tabs.map((t) => (
+                            <option key={t.name} value={t.name} className="bg-zinc-900 text-white py-2 font-bold">
+                                {t.name === 'Game Types' ? '✨ GAME TYPES & SCENARIOS (NEW TEMPLATES)' : t.name}
+                            </option>
                         ))}
-                    </motion.div>
-                )}
-                </AnimatePresence>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-red-500">
+                        <Bars3Icon className="w-5 h-5" />
+                    </div>
+                </div>
             </div>
-            {/* Desktop Tabs */}
-            <nav className="hidden lg:flex -mb-px space-x-6 overflow-x-auto" aria-label="Tabs">
+
+            {/* Horizontal Tabs Bar */}
+            <nav className="flex -mb-px space-x-2 overflow-x-auto pb-1 scrollbar-thin" aria-label="Tabs">
                 {tabs.map((tab) => (
                     <button
                         key={tab.name}
                         onClick={() => setActiveTab(tab.name)}
                         className={`${
                             activeTab === tab.name
-                                ? 'border-red-500 text-red-400'
-                                : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'
-                        } flex items-center gap-2 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors uppercase tracking-wider`}
+                                ? 'border-red-500 text-red-400 bg-red-950/40 font-bold'
+                                : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500 bg-zinc-900/40'
+                        } flex items-center gap-2 whitespace-nowrap py-2.5 px-3.5 rounded-t-lg border-b-2 font-medium text-xs sm:text-sm transition-colors uppercase tracking-wider`}
                     >
                         {tab.icon}
-                        {tab.name}
+                        <span>{tab.name}</span>
+                        {tab.isNew && (
+                            <span className="px-1.5 py-0.5 text-[9px] font-black bg-red-600 text-white rounded uppercase tracking-widest shadow-sm">
+                                NEW
+                            </span>
+                        )}
                     </button>
                 ))}
             </nav>

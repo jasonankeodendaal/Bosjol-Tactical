@@ -126,7 +126,7 @@ export interface AuthContextType {
 
 export type EventType = 'Training' | 'Mission' | 'Briefing' | 'Maintenance';
 export type EventStatus = 'Upcoming' | 'In Progress' | 'Completed' | 'Cancelled';
-export type PaymentStatus = 'Paid (Card)' | 'Paid (Cash)' | 'Unpaid';
+export type PaymentStatus = 'Paid (Card)' | 'Paid (Cash)' | 'Paid (EFT)' | 'Unpaid';
 
 export interface EventAttendee {
     playerId: string;

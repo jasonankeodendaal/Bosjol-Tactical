@@ -3,7 +3,8 @@ import type { InventoryItem, Supplier } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
-import { ArchiveBoxIcon, PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon } from './icons/Icons';
+import { ArchiveBoxIcon, PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, InformationCircleIcon } from './icons/Icons';
+import { HelpCircle, Sparkles, ChevronRight, Copy, Check, ShieldCheck, Tag, Layers, RefreshCw, Cpu } from 'lucide-react';
 import { INVENTORY_CATEGORIES, INVENTORY_CONDITIONS } from '../constants';
 import { BadgePill } from './BadgePill';
 
@@ -175,6 +176,27 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInvent
     const [isEditing, setIsEditing] = useState<Partial<InventoryItem> | null>(null);
     const [deletingItem, setDeletingItem] = useState<InventoryItem | null>(null);
     const [filter, setFilter] = useState<'all' | 'rental' | 'sale' | 'inspection'>('all');
+    const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
+    const [copiedSql, setCopiedSql] = useState<boolean>(false);
+
+    const sampleSqlSnippet = `-- Sample SQL to bulk upload or seed inventory in Supabase
+INSERT INTO inventory (id, name, description, "salePrice", stock, type, "isRental", category, condition)
+VALUES
+  ('weapon_rental_1', 'Rental 1 - G&G Raider M4 AEG', 'Primary rental rifle package with high-cap magazine', 250.00, 1, 'Weapon', true, 'AEG Rifle', 'Good'),
+  ('weapon_rental_2', 'Rental 2 - G&G Raider M4 AEG', 'Primary rental rifle package with high-cap magazine', 250.00, 1, 'Weapon', true, 'AEG Rifle', 'Good'),
+  ('extra_rental_gloves', 'Tactical Full-Finger Gloves', 'Impact knuckle protection gloves', 50.00, 20, 'Gear', true, 'Gloves', 'New'),
+  ('extra_rental_vest', 'Chest Rig / Tactical Vest', 'Viper elite rig with pre-fitted mag pouches', 80.00, 15, 'Gear', true, 'Vest', 'Good')
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  "isRental" = EXCLUDED."isRental",
+  "salePrice" = EXCLUDED."salePrice",
+  stock = EXCLUDED.stock;`;
+
+    const handleCopySql = () => {
+        navigator.clipboard.writeText(sampleSqlSnippet);
+        setCopiedSql(true);
+        setTimeout(() => setCopiedSql(false), 2000);
+    };
 
     const filteredInventory = useMemo(() => {
         if (filter === 'rental') return inventory.filter(i => i.isRental);
@@ -217,6 +239,139 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInvent
                     </div>
                 </Modal>
             )}
+
+            {/* Enlarged Guide & Setup Modal */}
+            {showGuideModal && (
+                <Modal isOpen={true} onClose={() => setShowGuideModal(false)} title="Inventory Setup & Management Guide">
+                    <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1 text-xs text-zinc-300 custom-scrollbar">
+                        {/* Summary Header */}
+                        <div className="p-3.5 rounded-xl bg-gradient-to-r from-red-950/40 via-zinc-900 to-zinc-900 border border-red-500/20 flex items-start gap-3">
+                            <div className="p-2 rounded-lg bg-red-500/10 text-red-400 shrink-0 mt-0.5">
+                                <Cpu className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-white mb-0.5">Smart Armory & Rental Allocation System</h4>
+                                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                                    Learn how to configure weapons, gear, pricing, and how the automatic <strong className="text-zinc-200">"Rental 1, Rental 2"</strong> sequential auto-detection works for event signups.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Guide Steps */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                            {/* Step 1 */}
+                            <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-1.5">
+                                <div className="flex items-center gap-1.5 text-red-400 font-bold text-[11px] uppercase tracking-wider">
+                                    <Tag className="w-3.5 h-3.5" />
+                                    <span>1. Adding Weapons vs Gear</span>
+                                </div>
+                                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                                    Click <strong className="text-white">+ Add Item</strong>. Set the item type to <strong className="text-white">Weapon</strong> for AEGs/Rifles or <strong className="text-white">Gear / Consumable</strong> for vests, gloves, BBs, etc.
+                                </p>
+                            </div>
+
+                            {/* Step 2 */}
+                            <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-1.5">
+                                <div className="flex items-center gap-1.5 text-blue-400 font-bold text-[11px] uppercase tracking-wider">
+                                    <RefreshCw className="w-3.5 h-3.5" />
+                                    <span>2. Rental Packages ("Rental 1, 2...")</span>
+                                </div>
+                                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                                    Check <strong className="text-white">"Available for Rental Gear Hires"</strong>. When named with sequential signatures (e.g. <em className="text-zinc-200">Rental 1, Rental 2</em>), the event signup engine auto-assigns the next available primary rifle sequentially.
+                                </p>
+                            </div>
+
+                            {/* Step 3 */}
+                            <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-1.5">
+                                <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px] uppercase tracking-wider">
+                                    <Layers className="w-3.5 h-3.5" />
+                                    <span>3. Extra Accessories & Add-ons</span>
+                                </div>
+                                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                                    Non-primary items (Gloves, Masks, Chest Rigs) marked as rentals appear in the player signup modal as an optional <strong className="text-white">Extra Add-ons grid</strong> with real-time stock counters.
+                                </p>
+                            </div>
+
+                            {/* Step 4 */}
+                            <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-1.5">
+                                <div className="flex items-center gap-1.5 text-amber-400 font-bold text-[11px] uppercase tracking-wider">
+                                    <ShieldCheck className="w-3.5 h-3.5" />
+                                    <span>4. Stock & Condition Auditing</span>
+                                </div>
+                                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                                    Set reorder thresholds to receive low-stock alerts. If equipment is damaged, switch condition to <strong className="text-white">"Needs Inspection"</strong> to flag it for field servicing.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* SQL Quick-Upload Helper */}
+                        <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800/90 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 text-zinc-300 font-bold text-[11px]">
+                                    <Sparkles className="w-3.5 h-3.5 text-red-400" />
+                                    <span>Bulk Database Upload (Supabase SQL)</span>
+                                </div>
+                                <button
+                                    onClick={handleCopySql}
+                                    className="flex items-center gap-1 px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] text-zinc-300 transition"
+                                >
+                                    {copiedSql ? (
+                                        <>
+                                            <Check className="w-3 h-3 text-emerald-400" />
+                                            <span className="text-emerald-400 font-bold">Copied!</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Copy className="w-3 h-3 text-zinc-400" />
+                                            <span>Copy SQL</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                            <pre className="p-2.5 rounded-lg bg-zinc-900/90 border border-zinc-800 font-mono text-[10px] text-zinc-300 overflow-x-auto custom-scrollbar leading-relaxed">
+                                {sampleSqlSnippet}
+                            </pre>
+                        </div>
+
+                        <div className="pt-2 flex justify-end">
+                            <Button size="sm" variant="primary" onClick={() => setShowGuideModal(false)}>
+                                Got it
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* Tiny Clickable Explanation Banner */}
+            <div 
+                onClick={() => setShowGuideModal(true)}
+                className="group relative cursor-pointer overflow-hidden rounded-xl border border-red-500/20 bg-gradient-to-r from-red-950/20 via-zinc-900/60 to-zinc-900/40 p-2 sm:p-2.5 transition-all duration-200 hover:border-red-500/40 hover:bg-zinc-900/80 shadow-sm"
+            >
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 group-hover:scale-105 transition-transform">
+                            <InformationCircleIcon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-bold text-white group-hover:text-red-400 transition-colors">
+                                    How to load & configure inventory
+                                </span>
+                                <span className="rounded bg-red-500/20 px-1 py-0.2 text-[9px] font-bold text-red-300">
+                                    Guide
+                                </span>
+                            </div>
+                            <p className="truncate text-[10px] text-zinc-400">
+                                Click to enlarge instructions on setup, "Rental 1, 2" weapons & database upload snippet
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1 text-[10px] font-medium text-red-400 group-hover:text-red-300">
+                        <span className="hidden sm:inline">Read Guide</span>
+                        <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </div>
+                </div>
+            </div>
 
             {/* Free View Top Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-zinc-800/80">

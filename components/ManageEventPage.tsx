@@ -423,6 +423,17 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     };
 
     const handleSaveClick = () => {
+        if (formData.status === 'Active') {
+            const unpaid = formData.attendees.filter(a => a.paymentStatus === 'Unpaid');
+            if (unpaid.length > 0) {
+                const unpaidNames = unpaid.map(a => {
+                    const p = players.find(player => player.id === a.playerId);
+                    return p ? (p.callsign || p.name) : 'Unknown Player';
+                }).join(', ');
+                alert(`Cannot save as Active! The following checked-in players must have a payment method chosen first: ${unpaidNames}.`);
+                return;
+            }
+        }
         const eventData = {
              ...(event || {}),
             ...formData,
@@ -664,7 +675,25 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                 <Input label="Participation RP" type="number" value={formData.participationXp} onChange={e => setFormData(f => ({ ...f, participationXp: Number(e.target.value) }))} />
                                  <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1.5">Event Status</label>
-                                    <select value={formData.status} onChange={e => setFormData(f => ({ ...f, status: e.target.value as EventStatus }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                    <select 
+                                        value={formData.status} 
+                                        onChange={e => {
+                                            const newStatus = e.target.value as EventStatus;
+                                            if (newStatus === 'Active') {
+                                                const unpaid = formData.attendees.filter(a => a.paymentStatus === 'Unpaid');
+                                                if (unpaid.length > 0) {
+                                                    const unpaidNames = unpaid.map(a => {
+                                                        const p = players.find(player => player.id === a.playerId);
+                                                        return p ? (p.callsign || p.name) : 'Unknown Player';
+                                                    }).join(', ');
+                                                    alert(`Cannot set status to Active! The following checked-in players must have a payment method chosen first: ${unpaidNames}.`);
+                                                    return;
+                                                }
+                                            }
+                                            setFormData(f => ({ ...f, status: newStatus }));
+                                        }} 
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    >
                                         {EVENT_STATUSES.map(s => <option key={s}>{s}</option>)}
                                     </select>
                                 </div>
@@ -764,9 +793,10 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                             <MinusIcon className="w-4 h-4" />
                                         </Button>
                                     </div>
-                                    <div className="flex gap-2 items-center mt-2">
+                                    <div className="flex flex-wrap gap-1.5 items-center mt-2">
                                         <Button size="sm" variant={attendee.paymentStatus === 'Paid (Card)' ? 'primary' : 'secondary'} onClick={() => handlePaymentStatus(player.id, 'Paid (Card)')}>Card</Button>
                                         <Button size="sm" variant={attendee.paymentStatus === 'Paid (Cash)' ? 'primary' : 'secondary'} onClick={() => handlePaymentStatus(player.id, 'Paid (Cash)')}>Cash</Button>
+                                        <Button size="sm" variant={attendee.paymentStatus === 'Paid (EFT)' ? 'primary' : 'secondary'} onClick={() => handlePaymentStatus(player.id, 'Paid (EFT)')}>EFT</Button>
                                         <Button size="sm" variant={attendee.paymentStatus === 'Unpaid' ? 'primary' : 'secondary'} onClick={() => handlePaymentStatus(player.id, 'Unpaid')}>Unpaid</Button>
                                     </div>
                                 </div>

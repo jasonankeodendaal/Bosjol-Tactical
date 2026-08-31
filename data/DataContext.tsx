@@ -67,7 +67,16 @@ function useCollection<T extends {id: string}>(
                 } else {
                     if (fetchedData && fetchedData.length > 0) {
                         recordDatabaseActivity('reads', fetchedData.length);
-                        setData(fetchedData as unknown as T[]);
+                        const merged = [...(mockData || [])];
+                        fetchedData.forEach(fetchedItem => {
+                            const idx = merged.findIndex(item => (item as any).id === (fetchedItem as any).id);
+                            if (idx > -1) {
+                                merged[idx] = fetchedItem as unknown as T;
+                            } else {
+                                merged.push(fetchedItem as unknown as T);
+                            }
+                        });
+                        setData(merged);
                     } else {
                         setData(mockData || []);
                     }
@@ -181,9 +190,11 @@ function useDocument<T>(collectionName: string, docId: string, defaultShape: T) 
     const storageKey = `doc_${collectionName}_${docId}`;
     const [data, setData] = useState<T>(() => {
         try {
-            const saved = localStorage.getItem(storageKey);
-            if (saved) {
-                return { ...defaultShape, ...JSON.parse(saved) };
+            if (!IS_LIVE_DATA) {
+                const saved = localStorage.getItem(storageKey);
+                if (saved) {
+                    return { ...defaultShape, ...JSON.parse(saved) };
+                }
             }
         } catch {}
         return defaultShape;
@@ -213,9 +224,11 @@ function useDocument<T>(collectionName: string, docId: string, defaultShape: T) 
                         for (const k in defaultShape) {
                             merged[k] = extractDocumentField(rawRow, k, (prev as any)[k] ?? (defaultShape as any)[k]);
                         }
-                        try {
-                            localStorage.setItem(storageKey, JSON.stringify(merged));
-                        } catch {}
+                        if (!IS_LIVE_DATA) {
+                            try {
+                                localStorage.setItem(storageKey, JSON.stringify(merged));
+                            } catch {}
+                        }
                         return merged;
                     });
                 } else if (error) {
@@ -242,9 +255,11 @@ function useDocument<T>(collectionName: string, docId: string, defaultShape: T) 
                              for (const key in defaultShape) {
                                  merged[key] = extractDocumentField(rawRow, key, (prev as any)[key] ?? (defaultShape as any)[key]);
                              }
-                             try {
-                                 localStorage.setItem(storageKey, JSON.stringify(merged));
-                             } catch {}
+                             if (!IS_LIVE_DATA) {
+                                 try {
+                                     localStorage.setItem(storageKey, JSON.stringify(merged));
+                                 } catch {}
+                             }
                              return merged;
                          });
                      }
@@ -270,9 +285,11 @@ function useDocument<T>(collectionName: string, docId: string, defaultShape: T) 
         // Immediate optimistic in-memory and local storage update
         setData(prev => {
             const updated = { ...prev, ...newData };
-            try {
-                localStorage.setItem(storageKey, JSON.stringify(updated));
-            } catch {}
+            if (!IS_LIVE_DATA) {
+                try {
+                    localStorage.setItem(storageKey, JSON.stringify(updated));
+                } catch {}
+            }
             return updated;
         });
 
@@ -596,8 +613,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (IS_LIVE_DATA && supabase) {
             try {
-                const { error } = await supabase.from(collectionName).update(newData).eq('id', id);
-                if (error) console.warn(`Supabase updateDoc error on ${collectionName}:`, error.message || error);
+                const { error } = await supabase.from(collectionName).upsert({ id, ...newData });
+                if (error) console.warn(`Supabase updateDoc upsert error on ${collectionName}:`, error.message || error);
                 else recordDatabaseActivity('writes', 1);
             } catch (err: any) {
                 console.warn(`Network error in updateDoc (${collectionName}):`, err?.message || err);

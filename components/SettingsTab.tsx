@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import type { CompanyDetails, SocialLink, CarouselMedia, Admin } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
-import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, KeyIcon, InformationCircleIcon, CloudArrowDownIcon, UploadCloudIcon, UserCircleIcon, CircleStackIcon, ArrowPathIcon, CheckCircleIcon, CodeBracketIcon } from './icons/Icons';
+import { BuildingOfficeIcon, AtSymbolIcon, SparklesIcon, CogIcon, CreditCardIcon, ExclamationTriangleIcon, TrashIcon, PlusIcon, XIcon, MusicalNoteIcon, KeyIcon, InformationCircleIcon, CloudArrowDownIcon, UploadCloudIcon, UserCircleIcon, CircleStackIcon, ArrowPathIcon, CheckCircleIcon } from './icons/Icons';
 import { Modal } from './Modal';
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
@@ -10,7 +10,6 @@ import { SocialLinksManager } from './SocialLinksManager';
 import { AuthContext } from '../auth/AuthContext';
 import { deleteFromSupabaseStorage } from '../utils/storageCleaner';
 import { THEME_PRESETS } from './ThemeInjector';
-import { COMPLETE_SUPABASE_SETUP_SQL } from '../utils/supabaseSchema';
 
 interface SettingsTabProps {
     companyDetails: CompanyDetails;
@@ -65,27 +64,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const [isDeletePlayersConfirmOpen, setIsDeletePlayersConfirmOpen] = useState(false);
     const [deletePlayersConfirmText, setDeletePlayersConfirmText] = useState('');
 
-    const [activeSection, setActiveSection] = useState<'profile' | 'company' | 'branding' | 'app' | 'database' | 'backup' | 'danger'>('profile');
-    const [sqlCopied, setSqlCopied] = useState(false);
+    const [activeSection, setActiveSection] = useState<'profile' | 'company' | 'branding' | 'app' | 'backup' | 'danger'>('profile');
     const [uploadingFieldsCount, setUploadingFieldsCount] = useState(0);
-
-    const handleCopySql = () => {
-        navigator.clipboard.writeText(COMPLETE_SUPABASE_SETUP_SQL);
-        setSqlCopied(true);
-        setTimeout(() => setSqlCopied(false), 2500);
-    };
-
-    const handleDownloadSql = () => {
-        const blob = new Blob([COMPLETE_SUPABASE_SETUP_SQL], { type: 'text/sql' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `bosjol-supabase-schema-${new Date().toISOString().split('T')[0]}.sql`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    };
 
     const handleUploadingChange = (uploading: boolean) => {
         setUploadingFieldsCount(prev => uploading ? prev + 1 : Math.max(0, prev - 1));
@@ -343,7 +323,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             <option value="company">🏢 Company & Banking</option>
                             <option value="branding">✨ Branding & Media</option>
                             <option value="app">⚙️ App & Content</option>
-                            <option value="database">🗄️ Live Supabase SQL Schema</option>
                             <option value="backup">☁️ Backup & Restore</option>
                             <option value="danger">⚠️ Danger Zone</option>
                         </select>
@@ -815,88 +794,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 </div>
             )}
 
-            {/* SECTION 5: LIVE SUPABASE DATABASE & SQL MIGRATION */}
-            {activeSection === 'database' && (
-                <div className="space-y-4 p-4 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800">
-                        <div>
-                            <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                                <CodeBracketIcon className="w-5 h-5 text-red-500" /> Complete Supabase SQL Setup & Real-time Script
-                            </h4>
-                            <p className="text-xs text-zinc-400 mt-0.5">
-                                Run this SQL migration in your Supabase SQL Editor to provision all tables, JSONB columns, RLS policies, and real-time publications.
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                            <Button 
-                                onClick={handleCopySql} 
-                                size="sm" 
-                                className={`text-xs font-bold ${sqlCopied ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-red-600 hover:bg-red-500 text-white'}`}
-                            >
-                                {sqlCopied ? (
-                                    <>
-                                        <CheckCircleIcon className="w-4 h-4 mr-1 text-white" /> Copied SQL!
-                                    </>
-                                ) : (
-                                    <>
-                                        <CodeBracketIcon className="w-4 h-4 mr-1" /> Copy SQL Snippet
-                                    </>
-                                )}
-                            </Button>
-                            <Button 
-                                onClick={handleDownloadSql} 
-                                size="sm" 
-                                variant="secondary" 
-                                className="text-xs"
-                            >
-                                <CloudArrowDownIcon className="w-4 h-4 mr-1 text-zinc-300" /> Download .sql
-                            </Button>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                        <div className="p-3 bg-zinc-950/80 rounded-lg border border-zinc-800/80">
-                            <p className="text-white font-bold mb-1 flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-                                Step 1: Open SQL Editor
-                            </p>
-                            <p className="text-zinc-400 text-[11px] leading-relaxed">
-                                Open your project in Supabase dashboard and go to the <strong>SQL Editor</strong> tab on the left navigation.
-                            </p>
-                        </div>
-                        <div className="p-3 bg-zinc-950/80 rounded-lg border border-zinc-800/80">
-                            <p className="text-white font-bold mb-1 flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
-                                Step 2: Paste & Run
-                            </p>
-                            <p className="text-zinc-400 text-[11px] leading-relaxed">
-                                Click <strong>New Query</strong>, paste this complete SQL script into the editor, and click <strong>Run</strong>.
-                            </p>
-                        </div>
-                        <div className="p-3 bg-zinc-950/80 rounded-lg border border-zinc-800/80">
-                            <p className="text-white font-bold mb-1 flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-purple-500 inline-block"></span>
-                                Step 3: 100% Live Persistence
-                            </p>
-                            <p className="text-zinc-400 text-[11px] leading-relaxed">
-                                All player XP, ranks, tiers, inventory, and badges will instantly persist live with zero localStorage.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="relative rounded-lg overflow-hidden border border-zinc-800 bg-black/90">
-                        <div className="flex items-center justify-between px-3 py-2 bg-zinc-950 border-b border-zinc-800 text-[11px] font-mono text-zinc-400">
-                            <span>bosjol-supabase-schema.sql</span>
-                            <span className="text-zinc-500">PostgreSQL 14+</span>
-                        </div>
-                        <pre className="p-3 text-[11px] font-mono text-emerald-400/90 overflow-x-auto max-h-72 select-all leading-relaxed whitespace-pre">
-                            {COMPLETE_SUPABASE_SETUP_SQL}
-                        </pre>
-                    </div>
-                </div>
-            )}
-
-            {/* SECTION 6: BACKUP & RESTORE */}
+            {/* SECTION 5: BACKUP & RESTORE */}
             {activeSection === 'backup' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80">
                     <div className="p-3 bg-zinc-950/60 rounded-lg border border-zinc-800 space-y-2">

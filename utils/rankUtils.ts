@@ -77,20 +77,39 @@ export function getAllTiersSorted(ranks?: Rank[]): FlatTierItem[] {
     const activeRanks = ranks && ranks.length > 0 ? ranks : DEFAULT_RANKS;
     const flat: FlatTierItem[] = [];
 
+    // Helper to safely extract tiers array
+    const extractTiers = (r: Rank): Tier[] => {
+        let rawTiers: any = r.tiers;
+        if (typeof rawTiers === 'string') {
+            try { rawTiers = JSON.parse(rawTiers); } catch { rawTiers = []; }
+        }
+        if (!Array.isArray(rawTiers)) return [];
+        return rawTiers.map((t: any) => ({
+            ...t,
+            minXp: Number(t.minXp ?? t.minxp ?? 0)
+        }));
+    };
+
     // Sort ranks by lowest tier minXp
     const sortedRanks = [...activeRanks].sort((a, b) => {
-        const minA = a.tiers && a.tiers.length > 0 ? Math.min(...a.tiers.map(t => t.minXp)) : 0;
-        const minB = b.tiers && b.tiers.length > 0 ? Math.min(...b.tiers.map(t => t.minXp)) : 0;
+        const tiersA = extractTiers(a);
+        const tiersB = extractTiers(b);
+        const minA = tiersA.length > 0 ? Math.min(...tiersA.map(t => t.minXp)) : Number(a.minXp ?? (a as any).minxp ?? 0);
+        const minB = tiersB.length > 0 ? Math.min(...tiersB.map(t => t.minXp)) : Number(b.minXp ?? (b as any).minxp ?? 0);
         return minA - minB;
     });
 
     sortedRanks.forEach(rank => {
-        const sortedTiers = [...(rank.tiers || [])].sort((a, b) => a.minXp - b.minXp);
+        const sortedTiers = extractTiers(rank).sort((a, b) => a.minXp - b.minXp);
+        const rankBadge = rank.rankBadgeUrl || (rank as any).rankbadgeurl || (rank as any).badge;
+        const resolvedRankBadge = resolveRankIcon(rankBadge, rank.name);
+
         sortedTiers.forEach((tier, index) => {
-            const resolvedRankBadge = resolveRankIcon(rank.rankBadgeUrl, rank.name);
-            const resolvedIcon = resolveRankIcon(tier.iconUrl, rank.name, tier.name, rank.rankBadgeUrl);
+            const tierIcon = tier.iconUrl || (tier as any).iconurl || rankBadge;
+            const resolvedIcon = resolveRankIcon(tierIcon, rank.name, tier.name, rankBadge);
             flat.push({
                 ...tier,
+                minXp: Number(tier.minXp || 0),
                 iconUrl: resolvedIcon,
                 rankId: rank.id,
                 rankName: rank.name,
@@ -115,8 +134,9 @@ export function getTierForXp(xp: number = 0, ranks?: Rank[]): Tier {
     const allTiers = getAllTiersSorted(ranks);
     if (allTiers.length === 0) return FALLBACK_RECRUIT_TIER;
 
+    const numericXp = Number(xp) || 0;
     // Filter tiers whose minXp <= xp, pick the one with the highest minXp
-    const eligible = allTiers.filter(t => xp >= t.minXp);
+    const eligible = allTiers.filter(t => numericXp >= Number(t.minXp || 0));
     if (eligible.length === 0) return allTiers[0];
     return eligible[eligible.length - 1];
 }

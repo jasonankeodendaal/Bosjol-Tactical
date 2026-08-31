@@ -29,13 +29,75 @@ function recordDatabaseActivity(type: 'reads' | 'writes' | 'deletes', amount: nu
     }
 }
 
+// Helper to normalize Supabase row fields (casing, numbers, JSON strings)
+function normalizeRow<T>(rawRow: any): T {
+    if (!rawRow || typeof rawRow !== 'object') return rawRow;
+    const normalized: any = { ...rawRow };
+    
+    // Auto-parse any stringified JSON fields (like tiers, stats, badges, loadout, etc.)
+    for (const key of Object.keys(rawRow)) {
+        const val = rawRow[key];
+        if (typeof val === 'string' && (val.trim().startsWith('[') || val.trim().startsWith('{'))) {
+            try {
+                normalized[key] = JSON.parse(val);
+            } catch {}
+        }
+    }
+
+    // Standardize Rank/Tier fields across lowercase or camelCase PostgreSQL schemas
+    if (normalized.rankbadgeurl && !normalized.rankBadgeUrl) {
+        normalized.rankBadgeUrl = normalized.rankbadgeurl;
+    }
+    if (normalized.minxp !== undefined && normalized.minXp === undefined) {
+        normalized.minXp = Number(normalized.minxp);
+    }
+    if (normalized.maxxp !== undefined && normalized.maxXp === undefined) {
+        normalized.maxXp = Number(normalized.maxxp);
+    }
+
+    // Standardize Tiers array
+    if (normalized.tiers) {
+        let rawTiers = normalized.tiers;
+        if (typeof rawTiers === 'string') {
+            try { rawTiers = JSON.parse(rawTiers); } catch { rawTiers = []; }
+        }
+        if (Array.isArray(rawTiers)) {
+            normalized.tiers = rawTiers.map((t: any) => ({
+                ...t,
+                minXp: Number(t.minXp ?? t.minxp ?? 0),
+                iconUrl: t.iconUrl || t.iconurl || ''
+            }));
+        }
+    }
+
+    // Standardize Player stats
+    if (normalized.stats) {
+        let rawStats = normalized.stats;
+        if (typeof rawStats === 'string') {
+            try { rawStats = JSON.parse(rawStats); } catch { rawStats = {}; }
+        }
+        if (typeof rawStats === 'object' && rawStats !== null) {
+            normalized.stats = {
+                ...rawStats,
+                xp: Number(rawStats.xp ?? rawStats.XP ?? 0),
+                kills: Number(rawStats.kills ?? 0),
+                deaths: Number(rawStats.deaths ?? 0),
+                headshots: Number(rawStats.headshots ?? 0),
+                gamesPlayed: Number(rawStats.gamesPlayed ?? rawStats.gamesplayed ?? 0),
+            };
+        }
+    }
+
+    return normalized as T;
+}
+
 // Helper to fetch collection data directly from Supabase with full real-time live sync (no localStorage)
 function useCollection<T extends {id: string}>(
     collectionName: string, 
     mockData: T[], 
     options: { isProtected?: boolean } = {}
 ) {
-    const [data, setData] = useState<T[]>(() => mockData || []);
+    const [data, setData] = useState<T[]>(() => (IS_LIVE_DATA ? [] : (mockData || [])));
     const [loading, setLoading] = useState(true);
     const auth = useContext(AuthContext);
     const isAuthenticated = auth?.isAuthenticated;
@@ -67,17 +129,10 @@ function useCollection<T extends {id: string}>(
                 } else {
                     if (fetchedData && fetchedData.length > 0) {
                         recordDatabaseActivity('reads', fetchedData.length);
-                        const merged = [...(mockData || [])];
-                        fetchedData.forEach(fetchedItem => {
-                            const idx = merged.findIndex(item => (item as any).id === (fetchedItem as any).id);
-                            if (idx > -1) {
-                                merged[idx] = fetchedItem as unknown as T;
-                            } else {
-                                merged.push(fetchedItem as unknown as T);
-                            }
-                        });
-                        setData(merged);
+                        const normalizedRows = fetchedData.map(r => normalizeRow<T>(r));
+                        setData(normalizedRows);
                     } else {
+                        // Empty table in Supabase
                         setData(mockData || []);
                     }
                 }
@@ -97,13 +152,13 @@ function useCollection<T extends {id: string}>(
                 .on('postgres_changes', { event: '*', schema: 'public', table: collectionName }, (payload) => {
                     recordDatabaseActivity('reads', 1);
                     if (payload.eventType === 'INSERT') {
-                        const newDoc = payload.new as unknown as T;
+                        const newDoc = normalizeRow<T>(payload.new);
                         setData(currentData => [
                             ...currentData.filter(item => (item as any).id !== (newDoc as any).id), 
                             newDoc
                         ]);
                     } else if (payload.eventType === 'UPDATE') {
-                        const updatedDoc = payload.new as unknown as T;
+                        const updatedDoc = normalizeRow<T>(payload.new);
                         setData(currentData => currentData.map(item => {
                             if ((item as any).id === (updatedDoc as any).id) {
                                 return { ...item, ...updatedDoc };
@@ -164,7 +219,9 @@ async function safeUpsertRow(table: string, initialPayload: any): Promise<boolea
             return true;
         }
         const msg = error.message || String(error);
-        const match = msg.match(/Could not find the '([^']+)' column/i) || msg.match(/column "([^"]+)" of relation/i);
+        const match = msg.match(/Could not find the '([^']+)' column/i) || 
+                      msg.match(/column "([^"]+)" of relation/i) ||
+                      msg.match(/column "([^"]+)" does not exist/i);
         if (match && match[1]) {
             const missingCol = match[1];
             let removed = false;
@@ -185,20 +242,9 @@ async function safeUpsertRow(table: string, initialPayload: any): Promise<boolea
     return false;
 }
 
-// Helper to fetch a single document from Supabase live with real-time sync
+// Helper to fetch a single document from Supabase live with real-time sync (100% memory + live Supabase, no localStorage)
 function useDocument<T>(collectionName: string, docId: string, defaultShape: T) {
-    const storageKey = `doc_${collectionName}_${docId}`;
-    const [data, setData] = useState<T>(() => {
-        try {
-            if (!IS_LIVE_DATA) {
-                const saved = localStorage.getItem(storageKey);
-                if (saved) {
-                    return { ...defaultShape, ...JSON.parse(saved) };
-                }
-            }
-        } catch {}
-        return defaultShape;
-    });
+    const [data, setData] = useState<T>(defaultShape);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -223,11 +269,6 @@ function useDocument<T>(collectionName: string, docId: string, defaultShape: T) 
                         const merged: any = { ...prev, ...defaultShape };
                         for (const k in defaultShape) {
                             merged[k] = extractDocumentField(rawRow, k, (prev as any)[k] ?? (defaultShape as any)[k]);
-                        }
-                        if (!IS_LIVE_DATA) {
-                            try {
-                                localStorage.setItem(storageKey, JSON.stringify(merged));
-                            } catch {}
                         }
                         return merged;
                     });
@@ -255,11 +296,6 @@ function useDocument<T>(collectionName: string, docId: string, defaultShape: T) 
                              for (const key in defaultShape) {
                                  merged[key] = extractDocumentField(rawRow, key, (prev as any)[key] ?? (defaultShape as any)[key]);
                              }
-                             if (!IS_LIVE_DATA) {
-                                 try {
-                                     localStorage.setItem(storageKey, JSON.stringify(merged));
-                                 } catch {}
-                             }
                              return merged;
                          });
                      }
@@ -277,21 +313,13 @@ function useDocument<T>(collectionName: string, docId: string, defaultShape: T) 
                 } catch {}
             }
         };
-    }, [collectionName, docId, storageKey]);
+    }, [collectionName, docId]);
 
     const updateData = useCallback(async (newData: Partial<T>) => {
         if (!newData || Object.keys(newData).length === 0) return;
 
-        // Immediate optimistic in-memory and local storage update
-        setData(prev => {
-            const updated = { ...prev, ...newData };
-            if (!IS_LIVE_DATA) {
-                try {
-                    localStorage.setItem(storageKey, JSON.stringify(updated));
-                } catch {}
-            }
-            return updated;
-        });
+        // Immediate optimistic in-memory update
+        setData(prev => ({ ...prev, ...newData }));
 
         if (IS_LIVE_DATA && supabase) {
             try {
@@ -309,7 +337,7 @@ function useDocument<T>(collectionName: string, docId: string, defaultShape: T) 
                 console.warn(`Network error updating ${collectionName}/${docId}:`, error?.message || error);
             }
         }
-    }, [collectionName, docId, storageKey]);
+    }, [collectionName, docId]);
     
     return [data, updateData, loading] as const;
 }
@@ -576,9 +604,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (IS_LIVE_DATA && supabase) {
             try {
-                const { error } = await supabase.from(collectionName).upsert(fullDoc);
-                if (error) console.warn(`Supabase setDoc error on ${collectionName}:`, error.message || error);
-                else recordDatabaseActivity('writes', 1);
+                await safeUpsertRow(collectionName, fullDoc);
             } catch (err: any) {
                 console.warn(`Network error in setDoc (${collectionName}):`, err?.message || err);
             }
@@ -587,12 +613,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const addDoc = useCallback(async <T extends {}>(collectionName: string, data: T): Promise<string> => {
         const generatedId = (data as any).id || `doc_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-        const payload = { id: generatedId, ...data };
+        const payload: any = { id: generatedId, ...data };
 
         if (collectionName === 'players') {
-            const rawPayload: any = payload;
-            if (rawPayload.stats?.xp !== undefined) {
-                rawPayload.rank = getRankForPlayer({ stats: rawPayload.stats }, ranks);
+            if (payload.stats?.xp !== undefined) {
+                payload.rank = getRankForPlayer({ stats: payload.stats }, ranks);
             }
         }
 
@@ -604,13 +629,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (IS_LIVE_DATA && supabase) {
             try {
-                const { data: insertedData, error } = await supabase.from(collectionName).insert(payload).select().single();
-                if (error) {
-                    console.warn(`Supabase addDoc error on ${collectionName}:`, error.message || error);
-                } else {
-                    recordDatabaseActivity('writes', 1);
-                }
-                return insertedData?.id || payload.id;
+                await safeUpsertRow(collectionName, payload);
+                return payload.id;
             } catch (err: any) {
                 console.warn(`Network error in addDoc (${collectionName}):`, err?.message || err);
                 return payload.id;
@@ -622,13 +642,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateDoc = useCallback(async <T extends {id: string}>(collectionName: string, doc: Partial<T> & {id: string}) => {
         const { id, ...newData } = doc;
+        const payload: any = { id, ...newData };
 
         if (collectionName === 'players') {
             const rawDoc: any = doc;
             if (rawDoc.stats?.xp !== undefined) {
                 const calculatedTier = getRankForPlayer({ stats: rawDoc.stats }, ranks);
                 rawDoc.rank = calculatedTier;
-                (newData as any).rank = calculatedTier;
+                payload.rank = calculatedTier;
             }
         }
 
@@ -640,9 +661,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (IS_LIVE_DATA && supabase) {
             try {
-                const { error } = await supabase.from(collectionName).upsert({ id, ...newData });
-                if (error) console.warn(`Supabase updateDoc upsert error on ${collectionName}:`, error.message || error);
-                else recordDatabaseActivity('writes', 1);
+                await safeUpsertRow(collectionName, payload);
             } catch (err: any) {
                 console.warn(`Network error in updateDoc (${collectionName}):`, err?.message || err);
             }

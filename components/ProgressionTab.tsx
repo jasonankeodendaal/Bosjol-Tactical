@@ -771,7 +771,7 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     const [showSqlGuide, setShowSqlGuide] = useState(false);
     const [copiedSql, setCopiedSql] = useState(false);
 
-    const rankSqlSnippet = `-- SQL Seed Script for Ranks, Badges, and XP Rules with RLS Permissions
+    const rankSqlSnippet = `-- SQL Seed Script for all 15 Rank Divisions & 150 Sub-Tiers
 CREATE TABLE IF NOT EXISTS public.ranks (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -785,11 +785,6 @@ CREATE TABLE IF NOT EXISTS public.ranks (
 -- Ensure columns exist
 ALTER TABLE public.ranks ADD COLUMN IF NOT EXISTS "rankBadgeUrl" TEXT;
 ALTER TABLE public.ranks ADD COLUMN IF NOT EXISTS tiers JSONB DEFAULT '[]'::jsonb;
-
--- Enable Row Level Security & Public Access
-ALTER TABLE public.ranks ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Allow full access to ranks" ON public.ranks;
-CREATE POLICY "Allow full access to ranks" ON public.ranks FOR ALL USING (true) WITH CHECK (true);
 
 -- Insert or Update All 15 Preloaded Rank Divisions
 INSERT INTO public.ranks (id, name, description, "rankBadgeUrl", tiers)

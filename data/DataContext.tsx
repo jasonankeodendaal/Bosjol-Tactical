@@ -3,6 +3,7 @@ import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import { extractAndCleanStorageUrlsFromDoc } from '../utils/storageCleaner';
 import * as mock from '../constants';
 import { getRankForPlayer } from '../utils/rankUtils';
+import { normalizePlayerRow, normalizeRankRow, prepareSupabasePayload } from '../utils/supabaseSchema';
 import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters, AdminNotification, PlayerHonor, TacticalRuleSet, GameType } from '../types';
 import { AuthContext } from '../auth/AuthContext';
 
@@ -29,75 +30,25 @@ function recordDatabaseActivity(type: 'reads' | 'writes' | 'deletes', amount: nu
     }
 }
 
-// Helper to normalize Supabase row fields (casing, numbers, JSON strings)
-function normalizeRow<T>(rawRow: any): T {
-    if (!rawRow || typeof rawRow !== 'object') return rawRow;
-    const normalized: any = { ...rawRow };
-    
-    // Auto-parse any stringified JSON fields (like tiers, stats, badges, loadout, etc.)
-    for (const key of Object.keys(rawRow)) {
-        const val = rawRow[key];
-        if (typeof val === 'string' && (val.trim().startsWith('[') || val.trim().startsWith('{'))) {
-            try {
-                normalized[key] = JSON.parse(val);
-            } catch {}
-        }
+// Normalizer dispatcher for collections
+function normalizeCollectionItem<T>(collectionName: string, item: any): T {
+    if (!item) return item;
+    if (collectionName === 'players') {
+        return normalizePlayerRow(item) as unknown as T;
     }
-
-    // Standardize Rank/Tier fields across lowercase or camelCase PostgreSQL schemas
-    if (normalized.rankbadgeurl && !normalized.rankBadgeUrl) {
-        normalized.rankBadgeUrl = normalized.rankbadgeurl;
+    if (collectionName === 'ranks') {
+        return normalizeRankRow(item) as unknown as T;
     }
-    if (normalized.minxp !== undefined && normalized.minXp === undefined) {
-        normalized.minXp = Number(normalized.minxp);
-    }
-    if (normalized.maxxp !== undefined && normalized.maxXp === undefined) {
-        normalized.maxXp = Number(normalized.maxxp);
-    }
-
-    // Standardize Tiers array
-    if (normalized.tiers) {
-        let rawTiers = normalized.tiers;
-        if (typeof rawTiers === 'string') {
-            try { rawTiers = JSON.parse(rawTiers); } catch { rawTiers = []; }
-        }
-        if (Array.isArray(rawTiers)) {
-            normalized.tiers = rawTiers.map((t: any) => ({
-                ...t,
-                minXp: Number(t.minXp ?? t.minxp ?? 0),
-                iconUrl: t.iconUrl || t.iconurl || ''
-            }));
-        }
-    }
-
-    // Standardize Player stats
-    if (normalized.stats) {
-        let rawStats = normalized.stats;
-        if (typeof rawStats === 'string') {
-            try { rawStats = JSON.parse(rawStats); } catch { rawStats = {}; }
-        }
-        if (typeof rawStats === 'object' && rawStats !== null) {
-            normalized.stats = {
-                ...rawStats,
-                xp: Number(rawStats.xp ?? rawStats.XP ?? 0),
-                kills: Number(rawStats.kills ?? 0),
-                deaths: Number(rawStats.deaths ?? 0),
-                headshots: Number(rawStats.headshots ?? 0),
-                gamesPlayed: Number(rawStats.gamesPlayed ?? rawStats.gamesplayed ?? 0),
-            };
-        }
-    }
-
-    return normalized as T;
+    return item as T;
 }
 
-// Helper to fetch collection data directly from Supabase with full real-time live sync (no localStorage)
+// Helper to fetch collection data directly from Supabase with 100% live real-time sync (zero localStorage)
 function useCollection<T extends {id: string}>(
     collectionName: string, 
     mockData: T[], 
     options: { isProtected?: boolean } = {}
 ) {
-    const [data, setData] = useState<T[]>(() => (IS_LIVE_DATA ? [] : (mockData || [])));
+    const [data, setData] = useState<T[]>(() => mockData || []);
     const [loading, setLoading] = useState(true);
     const auth = useContext(AuthContext);
     const isAuthenticated = auth?.isAuthenticated;
@@ -129,10 +80,18 @@ function useCollection<T extends {id: string}>(
                 } else {
                     if (fetchedData && fetchedData.length > 0) {
                         recordDatabaseActivity('reads', fetchedData.length);
-                        const normalizedRows = fetchedData.map(r => normalizeRow<T>(r));
-                        setData(normalizedRows);
+                        const normalizedFetched = fetchedData.map(row => normalizeCollectionItem<T>(collectionName, row));
+                        const merged = [...(mockData || [])];
+                        normalizedFetched.forEach(fetchedItem => {
+                            const idx = merged.findIndex(item => (item as any).id === (fetchedItem as any).id);
+                            if (idx > -1) {
+                                merged[idx] = fetchedItem;
+                            } else {
+                                merged.push(fetchedItem);
+                            }
+                        });
+                        setData(merged);
                     } else {
-                        // Empty table in Supabase
                         setData(mockData || []);
                     }
                 }
@@ -145,20 +104,20 @@ function useCollection<T extends {id: string}>(
                 setLoading(false);
             });
 
-        // Realtime Subscription
+        // Realtime Subscription directly from Supabase PostgreSQL
         let channel: any = null;
         try {
             channel = supabase.channel(`public:${collectionName}`)
                 .on('postgres_changes', { event: '*', schema: 'public', table: collectionName }, (payload) => {
                     recordDatabaseActivity('reads', 1);
                     if (payload.eventType === 'INSERT') {
-                        const newDoc = normalizeRow<T>(payload.new);
+                        const newDoc = normalizeCollectionItem<T>(collectionName, payload.new);
                         setData(currentData => [
                             ...currentData.filter(item => (item as any).id !== (newDoc as any).id), 
                             newDoc
                         ]);
                     } else if (payload.eventType === 'UPDATE') {
-                        const updatedDoc = normalizeRow<T>(payload.new);
+                        const updatedDoc = normalizeCollectionItem<T>(collectionName, payload.new);
                         setData(currentData => currentData.map(item => {
                             if ((item as any).id === (updatedDoc as any).id) {
                                 return { ...item, ...updatedDoc };
@@ -219,9 +178,7 @@ async function safeUpsertRow(table: string, initialPayload: any): Promise<boolea
             return true;
         }
         const msg = error.message || String(error);
-        const match = msg.match(/Could not find the '([^']+)' column/i) || 
-                      msg.match(/column "([^"]+)" of relation/i) ||
-                      msg.match(/column "([^"]+)" does not exist/i);
+        const match = msg.match(/Could not find the '([^']+)' column/i) || msg.match(/column "([^"]+)" of relation/i);
         if (match && match[1]) {
             const missingCol = match[1];
             let removed = false;
@@ -242,9 +199,9 @@ async function safeUpsertRow(table: string, initialPayload: any): Promise<boolea
     return false;
 }
 
-// Helper to fetch a single document from Supabase live with real-time sync (100% memory + live Supabase, no localStorage)
+// Helper to fetch a single document from Supabase live with real-time sync (no localStorage)
 function useDocument<T>(collectionName: string, docId: string, defaultShape: T) {
-    const [data, setData] = useState<T>(defaultShape);
+    const [data, setData] = useState<T>(() => defaultShape);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -604,20 +561,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (IS_LIVE_DATA && supabase) {
             try {
-                await safeUpsertRow(collectionName, fullDoc);
+                const preparedPayload = prepareSupabasePayload(collectionName, fullDoc, ranks);
+                await safeUpsertRow(collectionName, preparedPayload);
             } catch (err: any) {
                 console.warn(`Network error in setDoc (${collectionName}):`, err?.message || err);
             }
         }
-    }, []);
+    }, [ranks]);
 
     const addDoc = useCallback(async <T extends {}>(collectionName: string, data: T): Promise<string> => {
         const generatedId = (data as any).id || `doc_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-        const payload: any = { id: generatedId, ...data };
+        const payload = { id: generatedId, ...data };
 
         if (collectionName === 'players') {
-            if (payload.stats?.xp !== undefined) {
-                payload.rank = getRankForPlayer({ stats: payload.stats }, ranks);
+            const rawPayload: any = payload;
+            if (rawPayload.stats?.xp !== undefined) {
+                rawPayload.rank = getRankForPlayer({ stats: rawPayload.stats }, ranks);
             }
         }
 
@@ -629,7 +588,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (IS_LIVE_DATA && supabase) {
             try {
-                await safeUpsertRow(collectionName, payload);
+                const preparedPayload = prepareSupabasePayload(collectionName, payload, ranks);
+                const success = await safeUpsertRow(collectionName, preparedPayload);
+                if (success) {
+                    recordDatabaseActivity('writes', 1);
+                }
                 return payload.id;
             } catch (err: any) {
                 console.warn(`Network error in addDoc (${collectionName}):`, err?.message || err);
@@ -642,14 +605,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateDoc = useCallback(async <T extends {id: string}>(collectionName: string, doc: Partial<T> & {id: string}) => {
         const { id, ...newData } = doc;
-        const payload: any = { id, ...newData };
 
         if (collectionName === 'players') {
             const rawDoc: any = doc;
             if (rawDoc.stats?.xp !== undefined) {
                 const calculatedTier = getRankForPlayer({ stats: rawDoc.stats }, ranks);
                 rawDoc.rank = calculatedTier;
-                payload.rank = calculatedTier;
+                (newData as any).rank = calculatedTier;
             }
         }
 
@@ -661,7 +623,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (IS_LIVE_DATA && supabase) {
             try {
-                await safeUpsertRow(collectionName, payload);
+                const preparedPayload = prepareSupabasePayload(collectionName, { id, ...newData }, ranks);
+                await safeUpsertRow(collectionName, preparedPayload);
             } catch (err: any) {
                 console.warn(`Network error in updateDoc (${collectionName}):`, err?.message || err);
             }

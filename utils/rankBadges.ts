@@ -299,17 +299,38 @@ export function resolveRankIcon(
     tierName?: string,
     fallbackRankBadgeUrl?: string
 ): string {
-    // 1. If a custom tier icon is uploaded and valid (not empty and not the deprecated icons8 domain)
+    const isDefaultSvg = (url?: string) => {
+        if (!url || typeof url !== 'string') return false;
+        return url.startsWith('data:image/svg+xml') || url.includes('<svg') || url.includes('%3Csvg');
+    };
+
+    // 1. If a custom tier icon is uploaded and valid (not default SVG, and not empty, and not the deprecated icons8 domain)
+    if (iconUrl && typeof iconUrl === 'string' && iconUrl.trim() !== '') {
+        const trimmed = iconUrl.trim();
+        if (!trimmed.includes('icons8.com') && !isDefaultSvg(trimmed)) {
+            return trimmed;
+        }
+    }
+
+    // 2. If the parent rank has an uploaded custom badge, prioritize using that over any default tier SVG
+    if (fallbackRankBadgeUrl && typeof fallbackRankBadgeUrl === 'string' && fallbackRankBadgeUrl.trim() !== '') {
+        const trimmedFallback = fallbackRankBadgeUrl.trim();
+        if (!trimmedFallback.includes('icons8.com') && !isDefaultSvg(trimmedFallback)) {
+            return trimmedFallback;
+        }
+    }
+
+    // 3. Fallback: If neither is a custom uploaded asset, but we have a non-icons8 iconUrl, use that
     if (iconUrl && typeof iconUrl === 'string' && iconUrl.trim() !== '' && !iconUrl.includes('icons8.com')) {
         return iconUrl.trim();
     }
 
-    // 2. If the parent rank has an uploaded badge, use that as the tier icon
+    // 4. Fallback: parent rank badge if available and non-icons8
     if (fallbackRankBadgeUrl && typeof fallbackRankBadgeUrl === 'string' && fallbackRankBadgeUrl.trim() !== '' && !fallbackRankBadgeUrl.includes('icons8.com')) {
         return fallbackRankBadgeUrl.trim();
     }
 
-    // 3. Fallback to vector SVG insignia based on tier/rank name
+    // 5. Hard fallback to vector SVG insignia based on tier/rank name
     return getRankBadgeSvg(tierName || rankNameOrId || 'rookie');
 }
 

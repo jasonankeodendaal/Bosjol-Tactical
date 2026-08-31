@@ -415,20 +415,47 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [rawRanks]);
     const setRanks = setRawRanks;
 
+    const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', MOCK_DATA_MAP.badges, { isProtected: true });
+    const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', MOCK_DATA_MAP.legendaryBadges, { isProtected: true });
+
     // Auto-calculate and ensure every player's rank strictly matches their current XP total
+    // and dynamically resolve all earned badges and legendary badges to use the latest live database configurations.
     const players = useMemo(() => {
         return (rawPlayers || []).map(p => {
             if (!p) return p;
+
+            // Map and resolve standard badges to their latest database definitions by ID
+            const updatedBadges = (p.badges || []).map(pb => {
+                const liveBadge = badges?.find(b => b.id === pb.id);
+                return liveBadge ? { ...pb, ...liveBadge } : pb;
+            });
+
+            // Map and resolve legendary badges to their latest database definitions by ID
+            const updatedLegendaryBadges = (p.legendaryBadges || []).map(lb => {
+                const liveBadge = legendaryBadges?.find(b => b.id === lb.id);
+                return liveBadge ? { ...lb, ...liveBadge } : lb;
+            });
+
             const correctTier = getRankForPlayer(p, ranks);
-            if (!p.rank || p.rank.id !== correctTier.id || p.rank.minXp !== correctTier.minXp || p.rank.name !== correctTier.name) {
-                return { ...p, rank: correctTier };
+
+            let rankUpdated = !p.rank || p.rank.id !== correctTier.id || p.rank.minXp !== correctTier.minXp || p.rank.name !== correctTier.name;
+            
+            // Check if nested badges are structurally different from the resolved live versions
+            let badgesUpdated = JSON.stringify(p.badges) !== JSON.stringify(updatedBadges) || 
+                                JSON.stringify(p.legendaryBadges) !== JSON.stringify(updatedLegendaryBadges);
+
+            if (rankUpdated || badgesUpdated) {
+                return { 
+                    ...p, 
+                    rank: correctTier,
+                    badges: updatedBadges,
+                    legendaryBadges: updatedLegendaryBadges
+                };
             }
             return p;
         });
-    }, [rawPlayers, ranks]);
+    }, [rawPlayers, ranks, badges, legendaryBadges]);
     const setPlayers = setRawPlayers;
-    const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', MOCK_DATA_MAP.badges, { isProtected: true });
-    const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', MOCK_DATA_MAP.legendaryBadges, { isProtected: true });
     const [gamificationSettings, setGamificationSettings, loadingGamification] = useCollection<GamificationRule>('gamificationSettings', MOCK_DATA_MAP.gamificationSettings, { isProtected: true });
     const [sponsors, setSponsors, loadingSponsors] = useCollection<Sponsor>('sponsors', MOCK_DATA_MAP.sponsors, { isProtected: true });
     const [vouchers, setVouchers, loadingVouchers] = useCollection<Voucher>('vouchers', MOCK_DATA_MAP.vouchers, { isProtected: true });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useContext } from 'react';
+import React, { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // FIX: Changed RankTier and SubRank to Rank and Tier respectively.
 import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, Rank, Tier, PlayerRole } from '../types';
@@ -254,7 +254,29 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
     const isSignedUp = useMemo(() => signups.some(s => s.eventId === event.id && s.playerId === player.id), [signups, event.id, player.id]);
     const [selectedGear, setSelectedGear] = useState<string[]>([]);
     const [note, setNote] = useState('');
+    const [wantsWeaponRental, setWantsWeaponRental] = useState(false);
     const dataContext = useContext(DataContext);
+    const hasInitialized = useRef(false);
+
+    const isGunOrRifle = (item: InventoryItem) => {
+        const nameLower = item.name.toLowerCase();
+        const category = item.category || '';
+        const type = item.type || '';
+        return (
+            category.includes('Rifle') ||
+            category === 'SMG' ||
+            category === 'Weapon' ||
+            type === 'Weapon' ||
+            nameLower.includes('rental') ||
+            nameLower.includes('rentl') ||
+            nameLower.includes('rifle') ||
+            nameLower.includes('gun') ||
+            nameLower.includes('aeg') ||
+            nameLower.includes('gbb') ||
+            nameLower.includes('pistol') ||
+            nameLower.includes('shotgun')
+        );
+    };
 
     const availableGear = useMemo(() => {
         if (!dataContext) return [];
@@ -265,7 +287,6 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
             return { ...item, salePrice: price }; // Return item with a potentially overridden price
         }).filter((item): item is InventoryItem => item !== null);
     }, [dataContext, event]);
-
 
     const alreadyRentedCount = useMemo(() => {
         const counts: Record<string, number> = {};
@@ -288,6 +309,42 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
         return counts;
     }, [event.attendees, event.id, player.id, isSignedUp, signups]);
 
+    const weaponRentals = useMemo(() => {
+        return availableGear.filter(isGunOrRifle).sort((a, b) => {
+            return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+        });
+    }, [availableGear]);
+
+    const extraRentals = useMemo(() => {
+        return availableGear.filter(item => !isGunOrRifle(item));
+    }, [availableGear]);
+
+    // Initialize state exactly once when modal mounts
+    useEffect(() => {
+        if (hasInitialized.current) return;
+        if (isSignedUp) {
+            const signup = signups.find(s => s.eventId === event.id && s.playerId === player.id);
+            if (signup) {
+                const gearIds = signup.requestedGearIds || [];
+                setSelectedGear(gearIds);
+                const hasWeapon = gearIds.some(id => {
+                    const item = availableGear.find(g => g.id === id);
+                    return item ? isGunOrRifle(item) : false;
+                });
+                setWantsWeaponRental(hasWeapon);
+                if (signup.note) {
+                    setNote(signup.note);
+                }
+                hasInitialized.current = true;
+            }
+        } else {
+            setSelectedGear([]);
+            setWantsWeaponRental(false);
+            setNote('');
+            hasInitialized.current = true;
+        }
+    }, [isSignedUp, event.id, player.id, signups, availableGear]);
+
     const totalCost = useMemo(() => {
         const gearCost = selectedGear.reduce((sum, gearId) => {
             const item = availableGear.find(g => g.id === gearId);
@@ -298,13 +355,43 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
     
     const locationDetails = useMemo(() => locations.find(l => l.name === event.location), [locations, event.location]);
 
-
     const handleGearToggle = (itemId: string) => {
         setSelectedGear(prev => 
             prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
         );
     };
 
+    const handleWeaponRentalToggle = (checked: boolean) => {
+        setWantsWeaponRental(checked);
+        if (checked) {
+            // Find next available weapon
+            const nextAvailableWeapon = weaponRentals.find(item => {
+                const availableStock = item.stock - (alreadyRentedCount[item.id] || 0);
+                return availableStock > 0;
+            });
+            if (nextAvailableWeapon) {
+                setSelectedGear(prev => {
+                    // Remove any existing weapons first to prevent duplicate gun selections
+                    const filtered = prev.filter(id => {
+                        const item = availableGear.find(g => g.id === id);
+                        return item ? !isGunOrRifle(item) : true;
+                    });
+                    return [...filtered, nextAvailableWeapon.id];
+                });
+            } else {
+                setWantsWeaponRental(false);
+                alert("All primary rental weapons are currently out of stock!");
+            }
+        } else {
+            // Remove all weapons
+            setSelectedGear(prev => 
+                prev.filter(id => {
+                    const item = availableGear.find(g => g.id === id);
+                    return item ? !isGunOrRifle(item) : true;
+                })
+            );
+        }
+    };
 
     return (
         <Modal isOpen={true} onClose={onClose} title={event.title}>
@@ -313,151 +400,219 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
                 <div className="flex justify-between items-center mb-4">
                      <BadgePill color="amber">{event.theme}</BadgePill>
                      <p className="text-sm font-semibold text-gray-300">{new Date(event.date).toLocaleDateString()} @ {event.startTime}</p>
-                </div>
-                <div className="space-y-4 text-gray-300">
-                    <div>
-                        <h3 className="font-bold text-lg text-white mb-2">Location</h3>
-                        {locationDetails ? (
-                            <div className="bg-zinc-800/50 p-3 rounded-lg border border-zinc-700/50">
-                                <p className="font-semibold text-gray-200">{locationDetails.name}</p>
-                                <p className="text-xs text-gray-400">{locationDetails.address}</p>
-                                {locationDetails.pinLocationUrl && (
-                                    <a href={locationDetails.pinLocationUrl} target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline text-xs flex items-center gap-1 mt-1">
-                                        <MapPinIcon className="w-3 h-3"/> Open in Maps
-                                    </a>
-                                )}
-                                {locationDetails.imageUrls.length > 0 && (
-                                    <div className="flex space-x-2 overflow-x-auto mt-2 pb-1">
-                                        {locationDetails.imageUrls.map((url, i) => (
-                                            <img key={i} src={url} alt={`Location view ${i+1}`} className="w-24 h-16 object-cover rounded-md flex-shrink-0" />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ) : <p>{event.location}</p>}
-                    </div>
-                     {event.audioBriefingUrl && (
-                        <div>
-                            <h3 className="font-bold text-lg text-white mb-2">Audio Briefing</h3>
-                            <audio controls src={event.audioBriefingUrl} className="w-full">
-                                Your browser does not support the audio element.
-                            </audio>
-                        </div>
-                    )}
-                    <div>
-                        <h3 className="font-bold text-lg text-white mb-1">Briefing</h3>
-                        <p>{event.description}</p>
-                    </div>
+                 </div>
+                 <div className="space-y-4 text-gray-300">
                      <div>
-                        <h3 className="font-bold text-lg text-white mb-1">Rules of Engagement</h3>
-                        <p>{event.rules}</p>
-                    </div>
-                    {event.eventBadges && event.eventBadges.length > 0 && dataContext?.legendaryBadges && (
+                         <h3 className="font-bold text-lg text-white mb-2">Location</h3>
+                         {locationDetails ? (
+                             <div className="bg-zinc-800/50 p-3 rounded-lg border border-zinc-700/50">
+                                 <p className="font-semibold text-gray-200">{locationDetails.name}</p>
+                                 <p className="text-xs text-gray-400">{locationDetails.address}</p>
+                                 {locationDetails.pinLocationUrl && (
+                                     <a href={locationDetails.pinLocationUrl} target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline text-xs flex items-center gap-1 mt-1">
+                                         <MapPinIcon className="w-3 h-3"/> Open in Maps
+                                     </a>
+                                 )}
+                                 {locationDetails.imageUrls.length > 0 && (
+                                     <div className="flex space-x-2 overflow-x-auto mt-2 pb-1">
+                                         {locationDetails.imageUrls.map((url, i) => (
+                                             <img key={i} src={url} alt={`Location view ${i+1}`} className="w-24 h-16 object-cover rounded-md flex-shrink-0" />
+                                         ))}
+                                     </div>
+                                 )}
+                             </div>
+                         ) : <p>{event.location}</p>}
+                     </div>
+                      {event.audioBriefingUrl && (
                          <div>
-                            <h3 className="font-bold text-lg text-white mb-2">Event Commendations</h3>
-                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {event.eventBadges.map(badgeId => {
-                                    const badge = dataContext.legendaryBadges.find(b => b.id === badgeId);
-                                    if (!badge) return null;
-                                    return (
-                                        <div key={badgeId} className="bg-zinc-800/50 p-2 rounded-lg text-center border border-amber-700/50" title={badge.description}>
-                                            {badge.iconUrl ? (
-                                                <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 mx-auto"/>
-                                            ) : (
-                                                <TrophyIcon className="w-10 h-10 mx-auto text-amber-400" />
-                                            )}
-                                            <p className="text-xs font-semibold text-amber-300 mt-1 truncate">{badge.name}</p>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    )}
-                     
-                    {!isSignedUp && (
-                        <div className="pt-4 border-t border-zinc-700/50">
-                            <h3 className="font-bold text-lg text-white mb-2">Registration & Fees</h3>
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center text-gray-300 text-sm">
-                                    <span>Game Fee:</span>
-                                    <span className="font-semibold text-white">R{event.gameFee.toFixed(2)} (Payable on-site)</span>
-                                </div>
-                                {availableGear.length > 0 && (
-                                    <div>
-                                        <h4 className="font-semibold text-gray-200 mb-2">Rent Gear</h4>
-                                        <div className="space-y-2">
-                                            {availableGear.map(item => {
-                                                const availableStock = item.stock - (alreadyRentedCount[item.id] || 0);
-                                                const isAvailable = availableStock > 0;
-                                                return (
-                                                    <label key={item.id} className={`flex justify-between items-center bg-zinc-800/50 p-2 rounded-md text-sm ${isAvailable ? 'cursor-pointer hover:bg-zinc-800' : 'opacity-50 grayscale'} transition-all`}>
-                                                        <div className="flex items-center">
-                                                            <input
-                                                                type="checkbox"
-                                                                disabled={!isAvailable}
-                                                                checked={selectedGear.includes(item.id)}
-                                                                onChange={() => handleGearToggle(item.id)}
-                                                                className="h-4 w-4 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500 mr-3 disabled:cursor-not-allowed"
-                                                            />
-                                                            <span>{item.name}</span>
-                                                        </div>
-                                                        <div className="flex flex-col items-end">
-                                                            <span className="font-semibold">R{item.salePrice.toFixed(2)}</span>
-                                                            <span className={`text-xs ${isAvailable ? 'text-gray-400' : 'text-red-400 font-bold'}`}>
-                                                                {isAvailable ? `${availableStock} available` : 'Out of Stock'}
-                                                            </span>
-                                                        </div>
-                                                    </label>
-                                                )
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-                                <div>
-                                    <h4 className="font-semibold text-gray-200 mb-2">Note to Admin (Optional)</h4>
-                                    <textarea 
-                                        value={note}
-                                        onChange={e => setNote(e.target.value)}
-                                        rows={2} 
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" 
-                                        placeholder="e.g., I will be arriving 30 mins late." 
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-            <div className="mt-6 pt-4 border-t border-zinc-700/50">
-                 {!isSignedUp && (
-                    <div className="space-y-1 text-sm mb-4">
-                        <div className="flex justify-between items-center text-gray-300">
-                            <span>Game Fee:</span>
-                            <span className="font-semibold">R{event.gameFee.toFixed(2)}</span>
-                        </div>
-                        
-                            <div className="flex justify-between items-center text-gray-300">
-                                <span>Rental Gear:</span>
-                                <span className="font-semibold">R{(totalCost - event.gameFee).toFixed(2)}</span>
-                            </div>
-                        
-                        <div className="flex justify-between items-center text-lg font-bold text-white pt-1 border-t border-zinc-700/50 mt-1">
-                            <span>Total Due:</span>
-                            <span className="text-green-400">R{totalCost.toFixed(2)}</span>
-                        </div>
-                    </div>
-                )}
-                <Button 
-                    onClick={() => onSignUp(event.id, isSignedUp ? [] : selectedGear, note)}
-                    variant={isSignedUp ? 'danger' : 'primary'}
-                    className="w-full"
-                >
-                     {isSignedUp ? 'Withdraw Registration' : 'Confirm Registration'}
-                </Button>
-            </div>
-        </Modal>
-    )
-}
+                             <h3 className="font-bold text-lg text-white mb-2">Audio Briefing</h3>
+                             <audio controls src={event.audioBriefingUrl} className="w-full">
+                                 Your browser does not support the audio element.
+                             </audio>
+                         </div>
+                     )}
+                     <div>
+                         <h3 className="font-bold text-lg text-white mb-1">Briefing</h3>
+                         <p>{event.description}</p>
+                     </div>
+                      <div>
+                         <h3 className="font-bold text-lg text-white mb-1">Rules of Engagement</h3>
+                         <p>{event.rules}</p>
+                     </div>
+                     {event.eventBadges && event.eventBadges.length > 0 && dataContext?.legendaryBadges && (
+                          <div>
+                             <h3 className="font-bold text-lg text-white mb-2">Event Commendations</h3>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                 {event.eventBadges.map(badgeId => {
+                                     const badge = dataContext.legendaryBadges.find(b => b.id === badgeId);
+                                     if (!badge) return null;
+                                     return (
+                                         <div key={badgeId} className="bg-zinc-800/50 p-2 rounded-lg text-center border border-amber-700/50" title={badge.description}>
+                                             {badge.iconUrl ? (
+                                                 <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 mx-auto"/>
+                                             ) : (
+                                                 <TrophyIcon className="w-10 h-10 mx-auto text-amber-400" />
+                                             )}
+                                             <p className="text-xs font-semibold text-amber-300 mt-1 truncate">{badge.name}</p>
+                                         </div>
+                                     )
+                                 })}
+                             </div>
+                         </div>
+                     )}
+                      
+                     {!isSignedUp && (
+                         <div className="pt-4 border-t border-zinc-700/50">
+                             <h3 className="font-bold text-lg text-white mb-2">Registration & Fees</h3>
+                             <div className="space-y-4">
+                                 <div className="flex justify-between items-center text-gray-300 text-sm">
+                                     <span>Game Fee:</span>
+                                     <span className="font-semibold text-white">R{event.gameFee.toFixed(2)} (Payable on-site)</span>
+                                 </div>
+                                 {availableGear.length > 0 && (
+                                     <div>
+                                         <h4 className="font-semibold text-gray-200 mb-2">Rental Equipment</h4>
+                                         
+                                         {/* 1. Base Weapon Rental Package */}
+                                         {weaponRentals.length > 0 && (
+                                             <div className="bg-zinc-800/40 p-3.5 rounded-xl border border-zinc-700/50 mb-4">
+                                                 <div className="flex justify-between items-center">
+                                                     <div>
+                                                         <h5 className="font-bold text-white text-sm">Base Gun / Rifle Rental</h5>
+                                                         <p className="text-[11px] text-gray-400">Pre-selects next available armory replica (Rental 1, Rental 2 etc.)</p>
+                                                     </div>
+                                                     <label className="relative inline-flex items-center cursor-pointer">
+                                                         <input 
+                                                             type="checkbox" 
+                                                             checked={wantsWeaponRental}
+                                                             onChange={(e) => handleWeaponRentalToggle(e.target.checked)}
+                                                             className="sr-only peer"
+                                                         />
+                                                         <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                                                     </label>
+                                                 </div>
+
+                                                 {wantsWeaponRental && (
+                                                     <div className="mt-3 bg-zinc-900/80 p-2.5 rounded-lg border border-zinc-800 flex justify-between items-center">
+                                                         <div className="flex items-center gap-2">
+                                                             <span className="text-lg">⚙️</span>
+                                                             <div>
+                                                                 <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Assigned Armory Unit</p>
+                                                                 <p className="text-xs font-bold text-red-400">
+                                                                     {(() => {
+                                                                         const assignedId = selectedGear.find(id => {
+                                                                             const item = availableGear.find(g => g.id === id);
+                                                                             return item ? isGunOrRifle(item) : false;
+                                                                         });
+                                                                         const item = availableGear.find(g => g.id === assignedId);
+                                                                         return item ? item.name : 'Allocating replica...';
+                                                                     })()}
+                                                                 </p>
+                                                             </div>
+                                                         </div>
+                                                         <span className="font-bold text-white text-sm font-mono">
+                                                             {(() => {
+                                                                 const assignedId = selectedGear.find(id => {
+                                                                     const item = availableGear.find(g => g.id === id);
+                                                                     return item ? isGunOrRifle(item) : false;
+                                                                 });
+                                                                 const item = availableGear.find(g => g.id === assignedId);
+                                                                 return item ? `R${item.salePrice.toFixed(2)}` : '';
+                                                             })()}
+                                                         </span>
+                                                     </div>
+                                                 )}
+                                             </div>
+                                         )}
+
+                                         {/* 2. Extra Accessories & Add-on Gear */}
+                                         {extraRentals.length > 0 && (
+                                             <div className="space-y-2 mt-4">
+                                                 <h5 className="font-semibold text-gray-300 text-xs">Extra Gear (Tactical gloves, vests, masks, etc.)</h5>
+                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                     {extraRentals.map(item => {
+                                                         const availableStock = item.stock - (alreadyRentedCount[item.id] || 0);
+                                                         const isAvailable = availableStock > 0;
+                                                         const isSelected = selectedGear.includes(item.id);
+                                                         return (
+                                                             <button
+                                                                 key={item.id}
+                                                                 type="button"
+                                                                 disabled={!isAvailable}
+                                                                 onClick={() => handleGearToggle(item.id)}
+                                                                 className={`flex justify-between items-center p-2.5 rounded-lg text-left border transition-all text-xs ${
+                                                                     isSelected 
+                                                                         ? 'bg-red-950/20 border-red-500 text-white font-semibold' 
+                                                                         : isAvailable 
+                                                                             ? 'bg-zinc-800/40 border-zinc-700/60 hover:bg-zinc-800 text-gray-300' 
+                                                                             : 'bg-zinc-900 border-zinc-800 text-gray-600 cursor-not-allowed opacity-40'
+                                                                 }`}
+                                                             >
+                                                                 <div className="flex items-center gap-2">
+                                                                     <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${isSelected ? 'border-red-500 bg-red-600' : 'border-zinc-500 bg-transparent'}`}>
+                                                                         {isSelected && <span className="text-[10px] text-white">✓</span>}
+                                                                     </div>
+                                                                     <span className="truncate max-w-[120px]">{item.name}</span>
+                                                                 </div>
+                                                                 <div className="text-right">
+                                                                     <span className="font-bold text-white font-mono">R{item.salePrice.toFixed(2)}</span>
+                                                                     <span className="block text-[9px] text-zinc-400">
+                                                                         {isAvailable ? `${availableStock} left` : 'Out of stock'}
+                                                                     </span>
+                                                                 </div>
+                                                             </button>
+                                                         )
+                                                     })}
+                                                 </div>
+                                             </div>
+                                         )}
+                                     </div>
+                                 )}
+                                 <div>
+                                     <h4 className="font-semibold text-gray-200 mb-2">Note to Admin (Optional)</h4>
+                                     <textarea 
+                                         value={note}
+                                         onChange={e => setNote(e.target.value)}
+                                         rows={2} 
+                                         className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" 
+                                         placeholder="e.g., I will be arriving 30 mins late." 
+                                     />
+                                 </div>
+                             </div>
+                         </div>
+                     )}
+                 </div>
+             </div>
+             <div className="mt-6 pt-4 border-t border-zinc-700/50">
+                  {!isSignedUp && (
+                     <div className="space-y-1 text-sm mb-4">
+                         <div className="flex justify-between items-center text-gray-300">
+                             <span>Game Fee:</span>
+                             <span className="font-semibold">R{event.gameFee.toFixed(2)}</span>
+                         </div>
+                         
+                             <div className="flex justify-between items-center text-gray-300">
+                                 <span>Rental Gear:</span>
+                                 <span className="font-semibold">R{(totalCost - event.gameFee).toFixed(2)}</span>
+                             </div>
+                         
+                         <div className="flex justify-between items-center text-lg font-bold text-white pt-1 border-t border-zinc-700/50 mt-1">
+                             <span>Total Due:</span>
+                             <span className="text-green-400">R{totalCost.toFixed(2)}</span>
+                         </div>
+                     </div>
+                 )}
+                 <Button 
+                     onClick={() => onSignUp(event.id, isSignedUp ? [] : selectedGear, note)}
+                     variant={isSignedUp ? 'danger' : 'primary'}
+                     className="w-full"
+                 >
+                      {isSignedUp ? 'Withdraw Registration' : 'Confirm Registration'}
+                 </Button>
+             </div>
+         </Modal>
+     )
+ }
 
 const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({ activeTab, setActiveTab }) => {
     const [menuOpen, setMenuOpen] = useState(false);

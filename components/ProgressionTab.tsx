@@ -213,6 +213,7 @@ const RankEditorModal: React.FC<{
             return;
         }
 
+        const newMinXp = Math.max(0, Number(formData.minXp) || 0);
         let tiers: Tier[] = rank?.tiers ? [...rank.tiers] : [];
 
         // Auto-generate starting tiers if creating a new rank and option selected
@@ -225,7 +226,7 @@ const RankEditorModal: React.FC<{
                 if (count === 1) {
                     tierName = formData.name;
                 } else if (idx === 0) {
-                    tierName = formData.minXp === 0 ? 'Training' : `${formData.name} Operative`;
+                    tierName = newMinXp === 0 ? 'Training' : `${formData.name} Operative`;
                 } else if (idx === count - 1) {
                     tierName = `${formData.name} Master`;
                 } else {
@@ -235,7 +236,7 @@ const RankEditorModal: React.FC<{
                 return {
                     id: `tier_${Date.now()}_${idx}`,
                     name: tierName,
-                    minXp: idx === 0 ? formData.minXp : (formData.minXp + (idx * step)),
+                    minXp: idx === 0 ? newMinXp : (newMinXp + (idx * step)),
                     perks: [idx === count - 1 ? 'Exclusive Rank Title' : 'Standard Badge'],
                     iconUrl: formData.rankBadgeUrl || '',
                 };
@@ -245,10 +246,40 @@ const RankEditorModal: React.FC<{
             tiers = [{
                 id: `tier_${Date.now()}_0`,
                 name: formData.name,
-                minXp: Number(formData.minXp) || 0,
+                minXp: newMinXp,
                 perks: ['Base Operator Access'],
                 iconUrl: formData.rankBadgeUrl || ''
             }];
+        } else {
+            // Update existing tiers with the new base minXp and shift sub-tiers accordingly
+            const sorted = [...tiers].sort((a, b) => a.minXp - b.minXp);
+            const oldLowest = sorted.length > 0 ? sorted[0].minXp : 0;
+            const diff = newMinXp - oldLowest;
+
+            if (sorted.length === 1) {
+                sorted[0] = {
+                    ...sorted[0],
+                    name: sorted[0].name || formData.name.trim(),
+                    minXp: newMinXp,
+                    iconUrl: formData.rankBadgeUrl || sorted[0].iconUrl || '',
+                };
+            } else {
+                sorted[0] = {
+                    ...sorted[0],
+                    minXp: newMinXp,
+                    iconUrl: formData.rankBadgeUrl || sorted[0].iconUrl || '',
+                };
+                if (diff !== 0) {
+                    for (let i = 1; i < sorted.length; i++) {
+                        sorted[i] = {
+                            ...sorted[i],
+                            minXp: Math.max(newMinXp + i, sorted[i].minXp + diff),
+                            iconUrl: sorted[i].iconUrl || formData.rankBadgeUrl || '',
+                        };
+                    }
+                }
+            }
+            tiers = sorted;
         }
 
         const finalRank: Omit<Rank, 'id'> | Rank = {
@@ -256,7 +287,7 @@ const RankEditorModal: React.FC<{
             name: formData.name.trim(),
             description: formData.description.trim(),
             rankBadgeUrl: formData.rankBadgeUrl || '',
-            minXp: Number(formData.minXp) || 0,
+            minXp: newMinXp,
             tiers: tiers
         };
 
@@ -673,15 +704,17 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
             return;
         }
         
-        let updatedTiers;
+        let updatedTiers: Tier[];
         if ('id' in tierData && tierData.id) { // Editing existing tier
-            updatedTiers = rankToUpdate.tiers.map(t => t.id === tierData.id ? (tierData as Tier) : t);
+            updatedTiers = (rankToUpdate.tiers || []).map(t => t.id === tierData.id ? (tierData as Tier) : t);
         } else { // Adding new tier
             const newTier = { ...tierData, id: `t_${Date.now()}` } as Tier;
             updatedTiers = [...(rankToUpdate.tiers || []), newTier];
         }
 
-        const updatedRank = { ...rankToUpdate, tiers: updatedTiers };
+        const sorted = [...updatedTiers].sort((a,b) => a.minXp - b.minXp);
+        const minRankXp = sorted.length > 0 ? sorted[0].minXp : (rankToUpdate.minXp ?? 0);
+        const updatedRank = { ...rankToUpdate, minXp: minRankXp, tiers: sorted };
         await updateDoc('ranks', updatedRank);
     };
 
@@ -696,9 +729,12 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
             return;
         }
 
+        const remainingTiers = (rankToUpdate.tiers || []).filter(t => t.id !== tierId).sort((a,b) => a.minXp - b.minXp);
+        const minRankXp = remainingTiers.length > 0 ? remainingTiers[0].minXp : (rankToUpdate.minXp ?? 0);
         const updatedRank = {
             ...rankToUpdate,
-            tiers: rankToUpdate.tiers.filter(t => t.id !== tierId)
+            minXp: minRankXp,
+            tiers: remainingTiers
         };
         
         await updateDoc('ranks', updatedRank);

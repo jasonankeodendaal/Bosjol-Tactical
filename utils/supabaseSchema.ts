@@ -287,7 +287,10 @@ BEGIN
     ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS "participationXp" NUMERIC DEFAULT 50;
     ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS participationxp NUMERIC DEFAULT 50;
 
-    -- Add team and winner columns to events
+    -- Add team, winner, and gameTypeId columns to events
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "gameTypeId" TEXT DEFAULT '';
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS gametypeid TEXT DEFAULT '';
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS game_type_id TEXT DEFAULT '';
     ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "teamCount" NUMERIC DEFAULT 2;
     ALTER TABLE public.events ADD COLUMN IF NOT EXISTS teamcount NUMERIC DEFAULT 2;
     ALTER TABLE public.events ADD COLUMN IF NOT EXISTS team_count NUMERIC DEFAULT 2;

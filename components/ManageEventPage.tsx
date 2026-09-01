@@ -9,7 +9,7 @@ import { BadgePill } from './BadgePill';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
-import { QrCode, Ban, RotateCcw, Database, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { QrCode, Ban, RotateCcw, Database, Sparkles, Image as ImageIcon, Palette } from 'lucide-react';
 import { EventQRCodeModal } from './EventQRCodeModal';
 import { EventPosterModal } from './EventPosterModal';
 
@@ -593,63 +593,112 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             <Input label="Event Title" value={formData.title} onChange={e => setFormData(f => ({ ...f, title: e.target.value }))} />
                             
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {/* unified Game Type Selector */}
-                                <div className="bg-zinc-950 p-4 rounded-xl border border-red-900/40 space-y-2 flex flex-col justify-center">
-                                    <label className="block text-xs font-bold text-red-400 uppercase tracking-wider">
-                                        Load Game Type Template
-                                    </label>
+                                <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
+                                            <Sparkles className="w-4 h-4 text-red-500 shrink-0" />
+                                            <span>Game Type / Scenario Setup</span>
+                                        </label>
+                                        {formData.gameTypeId && (
+                                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800/60 font-semibold tracking-wider uppercase flex items-center gap-1 shrink-0">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                                LINKED
+                                            </span>
+                                        )}
+                                    </div>
                                     <select
                                         value={formData.gameTypeId || ''}
                                         onChange={(e) => {
                                             const selectedId = e.target.value;
-                                            const selectedType = dataContext?.gameTypes?.find((gt) => gt.id === selectedId);
-                                            if (selectedType) {
-                                                setFormData((f) => ({
-                                                    ...f,
-                                                    gameTypeId: selectedType.id,
-                                                    type: selectedType.category as EventType,
-                                                    title: f.title || selectedType.name,
-                                                    description: selectedType.description || f.description,
-                                                    rules: selectedType.rules || f.rules,
-                                                    theme: selectedType.theme || f.theme,
-                                                    imageUrl: selectedType.imageUrl || f.imageUrl,
-                                                    audioBriefingUrl: selectedType.audioBriefingUrl || f.audioBriefingUrl,
-                                                    participationXp: selectedType.participationXp ?? f.participationXp,
-                                                }));
-                                            } else {
+                                            if (!selectedId) {
                                                 setFormData((f) => ({ ...f, gameTypeId: undefined }));
+                                            } else {
+                                                const selectedType = dataContext?.gameTypes?.find((gt) => gt.id === selectedId);
+                                                if (selectedType) {
+                                                    setFormData((f) => ({
+                                                        ...f,
+                                                        gameTypeId: selectedType.id,
+                                                        type: (selectedType.category || 'Scenario') as EventType,
+                                                        title: f.title || selectedType.name,
+                                                        description: selectedType.description || f.description,
+                                                        rules: selectedType.rules || f.rules,
+                                                        theme: selectedType.theme || f.theme,
+                                                        imageUrl: selectedType.imageUrl || f.imageUrl,
+                                                        audioBriefingUrl: selectedType.audioBriefingUrl || f.audioBriefingUrl,
+                                                        participationXp: selectedType.participationXp ?? f.participationXp,
+                                                    }));
+                                                }
                                             }
                                         }}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500 font-semibold"
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500 font-medium truncate"
                                     >
-                                        <option value="">-- Custom Event (No Template) --</option>
-                                        {(dataContext?.gameTypes || []).map((gt) => (
-                                            <option key={gt.id} value={gt.id}>
-                                                {gt.name} ({gt.category})
+                                        <option value="">-- Select Game Type / Scenario --</option>
+                                        {dataContext?.gameTypes && dataContext.gameTypes.length > 0 ? (
+                                            Object.entries(
+                                                dataContext.gameTypes.reduce((acc, gt) => {
+                                                    const cat = gt.category || 'Scenario';
+                                                    if (!acc[cat]) acc[cat] = [];
+                                                    acc[cat].push(gt);
+                                                    return acc;
+                                                }, {} as Record<string, GameType[]>)
+                                            ).map(([cat, gts]) => (
+                                                <optgroup key={cat} label={cat}>
+                                                    {gts.map((gt) => (
+                                                        <option key={gt.id} value={gt.id}>
+                                                            {gt.name} (+{gt.participationXp ?? 50} XP)
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
+                                            ))
+                                        ) : (
+                                            <option value="" disabled>
+                                                No Game Types configured in Admin Setup
                                             </option>
-                                        ))}
+                                        )}
                                     </select>
-                                    <p className="text-[10px] text-gray-400 leading-tight">
-                                        Selecting a template auto-populates scenario info, artwork, and categories below.
-                                    </p>
+                                    {formData.gameTypeId ? (
+                                        (() => {
+                                            const linkedGt = dataContext?.gameTypes?.find(g => g.id === formData.gameTypeId);
+                                            return (
+                                                <div className="mt-1.5 flex items-center justify-between gap-2 px-2.5 py-1.5 bg-zinc-950/80 border border-red-900/40 rounded-md text-[11px] text-zinc-300">
+                                                    <div className="flex items-center gap-2 truncate">
+                                                        <span className="font-semibold text-white truncate">{linkedGt?.name || 'Scenario'}</span>
+                                                        <span className="text-amber-400 font-mono font-bold shrink-0">+{linkedGt?.participationXp ?? 50} XP</span>
+                                                        {linkedGt?.rules && <span className="text-emerald-400 text-[10px] hidden md:inline">✓ Rules</span>}
+                                                        {linkedGt?.imageUrl && <span className="text-blue-400 text-[10px] hidden md:inline">✓ Media</span>}
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFormData((f) => ({ ...f, gameTypeId: undefined }))}
+                                                        className="text-[10px] font-bold text-red-400 hover:text-red-300 uppercase tracking-wider hover:underline shrink-0"
+                                                    >
+                                                        Unlink
+                                                    </button>
+                                                </div>
+                                            );
+                                        })()
+                                    ) : (
+                                        <p className="text-[11px] text-zinc-500 mt-1 leading-tight">
+                                            Loads rules, media & XP configured under Game Types Setup in Admin.
+                                        </p>
+                                    )}
                                 </div>
 
-                                <div className="space-y-4">
-                                    {/* Only show Event Type if NO template is selected, otherwise it's inherited from the template */}
-                                    {!formData.gameTypeId && (
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Custom Event Type</label>
-                                            <select value={formData.type} onChange={e => setFormData(f => ({ ...f, type: e.target.value as EventType }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                                                {EVENT_TYPES.map(type => <option key={type}>{type}</option>)}
-                                            </select>
-                                        </div>
-                                    )}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Theme (Poster Artwork)</label>
-                                        <select value={formData.theme} onChange={e => setFormData(f => ({ ...f, theme: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                                            {MOCK_EVENT_THEMES.map(theme => <option key={theme}>{theme}</option>)}
-                                        </select>
-                                    </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
+                                        <Palette className="w-4 h-4 text-red-500 shrink-0" />
+                                        <span>Theme (Poster Artwork Concept)</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.theme || ''}
+                                        onChange={(e) => setFormData((f) => ({ ...f, theme: e.target.value }))}
+                                        placeholder="e.g. Tactical Night Raid with red neon accents, dark fog"
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500 placeholder:text-zinc-600 font-medium"
+                                    />
+                                    <p className="text-[11px] text-zinc-500 mt-1 leading-tight">
+                                        Enter a custom theme prompt or visual poster artwork idea.
+                                    </p>
                                 </div>
                             </div>
 

@@ -459,7 +459,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [gamificationSettings, setGamificationSettings, loadingGamification] = useCollection<GamificationRule>('gamificationSettings', MOCK_DATA_MAP.gamificationSettings, { isProtected: true });
     const [sponsors, setSponsors, loadingSponsors] = useCollection<Sponsor>('sponsors', MOCK_DATA_MAP.sponsors, { isProtected: true });
     const [vouchers, setVouchers, loadingVouchers] = useCollection<Voucher>('vouchers', MOCK_DATA_MAP.vouchers, { isProtected: true });
-    const [inventory, setInventory, loadingInventory] = useCollection<InventoryItem>('inventory', MOCK_DATA_MAP.inventory, { isProtected: true });
+    const [rawInventory, setInventory, loadingInventory] = useCollection<InventoryItem>('inventory', MOCK_DATA_MAP.inventory, { isProtected: true });
+
+    const inventory = useMemo(() => {
+        return rawInventory.map(item => {
+            const isRentalAuto = item.isRental || (item.name ? /rental/i.test(item.name.trim()) : false);
+            if (isRentalAuto !== item.isRental) {
+                return { ...item, isRental: isRentalAuto };
+            }
+            return item;
+        });
+    }, [rawInventory]);
     const [suppliers, setSuppliers, loadingSuppliers] = useCollection<Supplier>('suppliers', MOCK_DATA_MAP.suppliers, { isProtected: true });
     const [transactions, setTransactions, loadingTransactions] = useCollection<Transaction>('transactions', MOCK_DATA_MAP.transactions, { isProtected: true });
     const [locations, setLocations, loadingLocations] = useCollection<Location>('locations', MOCK_DATA_MAP.locations, { isProtected: true });

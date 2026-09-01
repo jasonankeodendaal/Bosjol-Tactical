@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import type { GameType } from '../types';
 import { useData } from '../data/DataContext';
+import { DEFAULT_TACTICAL_RULE_SETS } from '../constants';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { Button } from './Button';
 import { DashboardCard } from './DashboardCard';
@@ -673,20 +674,170 @@ export const AdminGameTypesManager: React.FC = () => {
                 />
               </div>
 
-              {/* Row 6: Safety Rules */}
-              <div>
-                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
-                  Safety Protocols & Chrono Limits
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Eye protection, magazine restrictions, chrono limits..."
-                  value={editingGameType.rules || ''}
-                  onChange={(e) =>
-                    setEditingGameType((prev) => ({ ...prev, rules: e.target.value }))
-                  }
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-red-500"
-                />
+              {/* Row 6: Rules Setup (1-by-1 Manual Entry or Linked Rules Setup) */}
+              <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <ShieldCheckIcon className="w-4 h-4 text-red-500" />
+                    <span>Scenario Rules Setup</span>
+                  </label>
+                  <span className="text-[10px] text-zinc-400 font-mono">
+                    Add 1-by-1 or link from Rules Setup
+                  </span>
+                </div>
+
+                {/* Quick Link from Rules Setup */}
+                <div className="bg-zinc-900/90 p-3 rounded-lg border border-zinc-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-zinc-300">
+                      ⚡ Quick Link from Field Rules Setup:
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <select
+                      onChange={(e) => {
+                        const setId = e.target.value;
+                        if (!setId) return;
+                        const targetSet = DEFAULT_TACTICAL_RULE_SETS.find(s => s.id === setId);
+                        if (targetSet) {
+                          const formattedRules = targetSet.rules
+                            .map(r => `[${targetSet.category}] ${r.name}: ${r.description}`)
+                            .join('\n');
+                          setEditingGameType(prev => {
+                            const existing = prev.rules?.trim() || '';
+                            const updated = existing ? `${existing}\n${formattedRules}` : formattedRules;
+                            return { ...prev, rules: updated };
+                          });
+                        }
+                        e.target.value = '';
+                      }}
+                      className="bg-zinc-950 border border-zinc-700 text-xs text-white rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-red-500 font-medium"
+                    >
+                      <option value="">-- Link Full Rule Set --</option>
+                      {DEFAULT_TACTICAL_RULE_SETS.map(set => (
+                        <option key={set.id} value={set.id}>
+                          {set.title} ({set.rules.length} rules)
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      onChange={(e) => {
+                        const ruleId = e.target.value;
+                        if (!ruleId) return;
+                        for (const set of DEFAULT_TACTICAL_RULE_SETS) {
+                          const foundRule = set.rules.find(r => r.id === ruleId);
+                          if (foundRule) {
+                            const formatted = `${foundRule.name}: ${foundRule.description}`;
+                            setEditingGameType(prev => {
+                              const existing = prev.rules?.trim() || '';
+                              const updated = existing ? `${existing}\n${formatted}` : formatted;
+                              return { ...prev, rules: updated };
+                            });
+                            break;
+                          }
+                        }
+                        e.target.value = '';
+                      }}
+                      className="bg-zinc-950 border border-zinc-700 text-xs text-white rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-red-500 font-medium"
+                    >
+                      <option value="">-- Link Individual Rule Preset --</option>
+                      {DEFAULT_TACTICAL_RULE_SETS.map(set => (
+                        <optgroup key={set.id} label={set.title}>
+                          {set.rules.map(r => (
+                            <option key={r.id} value={r.id}>
+                              {r.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* 1-by-1 Manual Rules Editor */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-300">
+                      Active Rules List (Added 1-by-1)
+                    </span>
+                    {(editingGameType.rules?.trim() || '') && (
+                      <button
+                        type="button"
+                        onClick={() => setEditingGameType(prev => ({ ...prev, rules: '' }))}
+                        className="text-[10px] text-red-400 hover:text-red-300 uppercase tracking-wider font-bold"
+                      >
+                        Clear All Rules
+                      </button>
+                    )}
+                  </div>
+
+                  {(() => {
+                    const ruleLines = (editingGameType.rules || '')
+                      .split('\n')
+                      .map(line => line.trim())
+                      .filter(line => line.length > 0);
+
+                    return (
+                      <div className="space-y-2">
+                        {ruleLines.length === 0 ? (
+                          <div className="text-center py-3 px-4 bg-zinc-900/50 border border-dashed border-zinc-800 rounded-lg text-xs text-zinc-500">
+                            No rules added yet. Add rules 1-by-1 below or link from field rules setup above.
+                          </div>
+                        ) : (
+                          ruleLines.map((line, idx) => (
+                            <div key={idx} className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg p-1.5 pr-2">
+                              <span className="w-5 h-5 rounded bg-zinc-950 text-[10px] font-mono font-bold text-red-400 flex items-center justify-center shrink-0 border border-zinc-800">
+                                {idx + 1}
+                              </span>
+                              <input
+                                type="text"
+                                value={line}
+                                onChange={(e) => {
+                                  const updatedLines = [...ruleLines];
+                                  updatedLines[idx] = e.target.value;
+                                  setEditingGameType(prev => ({
+                                    ...prev,
+                                    rules: updatedLines.join('\n')
+                                  }));
+                                }}
+                                className="flex-1 bg-transparent text-xs text-white focus:outline-none focus:ring-1 focus:ring-red-500 rounded px-1.5 py-1"
+                              />
+                              <button
+                                type="button"
+                                title="Delete Rule"
+                                onClick={() => {
+                                  const updatedLines = ruleLines.filter((_, i) => i !== idx);
+                                  setEditingGameType(prev => ({
+                                    ...prev,
+                                    rules: updatedLines.join('\n')
+                                  }));
+                                }}
+                                className="p-1 text-zinc-500 hover:text-red-400 rounded hover:bg-zinc-800 transition-colors shrink-0"
+                              >
+                                <TrashIcon className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const current = editingGameType.rules?.trim() || '';
+                            const newRule = 'New scenario rule item';
+                            const updated = current ? `${current}\n${newRule}` : newRule;
+                            setEditingGameType(prev => ({ ...prev, rules: updated }));
+                          }}
+                          className="w-full py-2 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 rounded-lg text-xs font-semibold text-red-400 hover:text-red-300 flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          <PlusIcon className="w-3.5 h-3.5" />
+                          <span>Add Rule Item (1-by-1)</span>
+                        </button>
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
 
               {/* Row 7: XP & Duration */}

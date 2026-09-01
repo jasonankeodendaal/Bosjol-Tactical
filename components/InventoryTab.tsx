@@ -17,19 +17,27 @@ interface InventoryTabProps {
     deleteDoc: (collectionName: string, docId: string) => Promise<void>;
 }
 
+const isRentalName = (name?: string) => {
+    if (!name) return false;
+    return /rental/i.test(name.trim());
+};
+
 const InventoryEditorModal: React.FC<{ 
     item: Partial<InventoryItem>, 
     onClose: () => void, 
     onSave: (item: InventoryItem | Omit<InventoryItem, 'id'>) => void, 
     suppliers: Supplier[] 
 }> = ({ item, onClose, onSave, suppliers }) => {
+    const initialName = item.name || '';
+    const initialIsRental = item.isRental || isRentalName(initialName);
+
     const [formData, setFormData] = useState<Omit<InventoryItem, 'id'>>({
-        name: item.name || '',
+        name: initialName,
         description: item.description || '',
         salePrice: item.salePrice || 0,
         stock: item.stock || 0,
         type: item.type || 'Weapon',
-        isRental: item.isRental || false,
+        isRental: initialIsRental,
         category: item.category || 'AEG Rifle',
         condition: item.condition || 'New',
         purchasePrice: item.purchasePrice || 0,
@@ -38,15 +46,32 @@ const InventoryEditorModal: React.FC<{
         sku: item.sku || '',
     });
 
+    const handleNameChange = (val: string) => {
+        setFormData(f => ({
+            ...f,
+            name: val,
+            isRental: isRentalName(val) ? true : f.isRental
+        }));
+    };
+
     const handleSaveClick = () => {
-        const finalItem = { ...item, ...formData };
+        const autoRental = formData.isRental || isRentalName(formData.name);
+        const finalItem = { ...item, ...formData, isRental: autoRental };
         onSave(finalItem);
     };
 
     return (
         <Modal isOpen={true} onClose={onClose} title={item.id ? 'Edit Inventory Item' : 'Add New Inventory Item'}>
             <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1 text-xs">
-                <Input label="Item Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
+                <div>
+                    <Input label="Item Name" value={formData.name} onChange={e => handleNameChange(e.target.value)} />
+                    {isRentalName(formData.name) && (
+                        <p className="text-[10px] text-blue-400 font-semibold mt-1 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 shrink-0" />
+                            <span>Rental name detected — automatically marked for rental availability</span>
+                        </p>
+                    )}
+                </div>
                 <div>
                     <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
                     <textarea 
@@ -206,10 +231,12 @@ ON CONFLICT (id) DO UPDATE SET
     }, [inventory, filter]);
 
     const handleSave = (item: InventoryItem | Omit<InventoryItem, 'id'>) => {
-        if ('id' in item) {
-            updateDoc('inventory', item);
+        const autoRental = item.isRental || (item.name ? isRentalName(item.name) : false);
+        const itemToSave = { ...item, isRental: autoRental };
+        if ('id' in itemToSave && itemToSave.id) {
+            updateDoc('inventory', itemToSave as InventoryItem);
         } else {
-            addDoc('inventory', item);
+            addDoc('inventory', itemToSave);
         }
         setIsEditing(null);
     };

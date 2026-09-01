@@ -193,16 +193,20 @@ export interface EventCore {
   rules: string;
   participationXp: number;
   winXpAward?: number;
-  winningTeamId?: 'alpha' | 'bravo' | 'tie' | null;
+  winningTeamId?: 'alpha' | 'bravo' | 'charlie' | 'delta' | 'tie' | string | null;
   status: EventStatus;
   imageUrl?: string;
   audioBriefingUrl?: string;
   gameFee: number;
   gearForRent: string[]; // Array of InventoryItem IDs
   rentalPriceOverrides?: { [itemId: string]: number };
+  teamCount?: number; // 2, 3, or 4 teams
   teams?: {
-    alpha: string[];
-    bravo: string[];
+    alpha?: string[];
+    bravo?: string[];
+    charlie?: string[];
+    delta?: string[];
+    [teamId: string]: string[] | undefined;
   };
   xpOverrides?: Partial<Record<string, number>>; // { [ruleId]: newXpValue }
   gameDurationSeconds?: number;

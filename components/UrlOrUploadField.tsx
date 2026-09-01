@@ -6,21 +6,42 @@ import { TrashIcon, MusicalNoteIcon, CheckCircleIcon, ExclamationTriangleIcon, A
 import { deleteFromSupabaseStorage } from '../utils/storageCleaner';
 
 interface UrlOrUploadFieldProps {
-    label: string;
-    fileUrl: string | undefined;
-    onUrlSet: (url: string) => void;
-    onRemove: () => void;
-    accept: string;
+    label?: string;
+    fileUrl?: string;
+    value?: string;
+    onUrlSet?: (url: string) => void;
+    onChange?: (url: string) => void;
+    onRemove?: () => void;
+    accept?: string;
     previewType?: 'image' | 'audio' | 'video';
     apiServerUrl?: string;
     onUploadingChange?: (uploading: boolean) => void;
+    placeholder?: string;
 }
 
 type ValidationStatus = 'idle' | 'validating' | 'valid' | 'invalid_cors' | 'invalid_format' | 'invalid_unreachable';
 
-export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileUrl, onUrlSet, onRemove, accept, previewType, apiServerUrl, onUploadingChange }) => {
+export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({
+    label,
+    fileUrl,
+    value,
+    onUrlSet,
+    onChange,
+    onRemove,
+    accept = 'image/*',
+    previewType,
+    apiServerUrl,
+    onUploadingChange,
+    placeholder
+}) => {
+    const effectiveUrl = fileUrl !== undefined ? fileUrl : (value || '');
     const [validationStatus, setValidationStatus] = useState<ValidationStatus>('idle');
-    const [urlInputValue, setUrlInputValue] = useState(fileUrl || '');
+    const [urlInputValue, setUrlInputValue] = useState(effectiveUrl || '');
+
+    const handleUrlSet = useCallback((url: string) => {
+        if (onUrlSet) onUrlSet(url);
+        if (onChange) onChange(url);
+    }, [onUrlSet, onChange]);
 
     const validateUrl = useCallback(async (url: string) => {
         if (!url) {
@@ -33,27 +54,22 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
         // Simple check for data URLs, which are always valid locally
         if (url.startsWith('data:')) {
             setValidationStatus('valid');
-            onUrlSet(url);
+            handleUrlSet(url);
             return;
         }
 
         try {
-            // We use 'no-cors' mode. We can't inspect the response, but it lets us check reachability
-            // without being blocked by CORS. A successful opaque response is a good sign.
-            // A TypeError indicates a likely CORS issue or network failure.
             await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-            // If we reach here, the URL is likely valid and reachable, though we can't be 100% sure due to 'no-cors'.
             setValidationStatus('valid');
-            onUrlSet(url);
+            handleUrlSet(url);
         } catch (error) {
-            // A TypeError is the most common result for a CORS-blocked request
             if (error instanceof TypeError) {
                  setValidationStatus('invalid_cors');
             } else {
                  setValidationStatus('invalid_unreachable');
             }
         }
-    }, [onUrlSet]);
+    }, [handleUrlSet]);
 
     const handleUrlInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
         const url = e.target.value.trim();
@@ -65,7 +81,7 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
         setUrlInputValue(val);
         setValidationStatus('idle'); // Reset validation status on change
         if (val.trim()) {
-            onUrlSet(val.trim());
+            handleUrlSet(val.trim());
         }
     };
 
@@ -85,8 +101,8 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
     };
 
     const previewContent = () => {
-        if (!fileUrl || typeof fileUrl !== 'string' || fileUrl.trim() === '') return null;
-        const trimmedUrl = fileUrl.trim();
+        if (!effectiveUrl || typeof effectiveUrl !== 'string' || effectiveUrl.trim() === '') return null;
+        const trimmedUrl = effectiveUrl.trim();
         if (previewType === 'audio' || trimmedUrl.toLowerCase().match(/\.(mp3|wav|ogg|aac|m4a)($|\?)/) || trimmedUrl.startsWith('data:audio')) {
             return (
                 <div className="w-16 h-16 flex items-center justify-center rounded-md bg-zinc-800 p-1 flex-shrink-0">
@@ -117,27 +133,30 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
     };
 
     const handleRemove = () => {
-        if (fileUrl) {
-            deleteFromSupabaseStorage(fileUrl).catch(err => {
+        if (effectiveUrl) {
+            deleteFromSupabaseStorage(effectiveUrl).catch(err => {
                 console.warn('[UrlOrUploadField] Error cleaning removed storage file:', err);
             });
         }
-        onRemove();
+        if (onRemove) onRemove();
+        if (onChange) onChange('');
         setUrlInputValue('');
         setValidationStatus('idle');
-    }
+    };
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-gray-400">{label}</label>
-            </div>
-            {fileUrl && typeof fileUrl === 'string' && fileUrl.trim() !== '' ? (
+            {label && (
+                <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-sm font-medium text-gray-400">{label}</label>
+                </div>
+            )}
+            {effectiveUrl && typeof effectiveUrl === 'string' && effectiveUrl.trim() !== '' ? (
                 <div className="flex items-center gap-3 bg-zinc-900/50 p-2 rounded-lg border border-zinc-700/50">
                     {previewContent()}
                     <div className="flex-grow min-w-0">
                         <p className="text-xs text-gray-300 font-medium truncate">Uploaded Asset</p>
-                        <p className="text-[10px] text-zinc-500 truncate">{fileUrl.slice(0, 40)}...</p>
+                        <p className="text-[10px] text-zinc-500 truncate">{effectiveUrl.slice(0, 40)}...</p>
                     </div>
                     <Button variant="danger" size="sm" onClick={handleRemove} className="!p-2 flex-shrink-0">
                         <TrashIcon className="w-4 h-4" />
@@ -146,7 +165,7 @@ export const UrlOrUploadField: React.FC<UrlOrUploadFieldProps> = ({ label, fileU
             ) : (
                 <div className="space-y-2">
                     <ImageUpload 
-                        onUpload={(urls) => { if(urls.length > 0) onUrlSet(urls[0]); }} 
+                        onUpload={(urls) => { if(urls.length > 0) handleUrlSet(urls[0]); }} 
                         accept={accept} 
                         apiServerUrl={apiServerUrl} 
                         onUploadingChange={onUploadingChange} 

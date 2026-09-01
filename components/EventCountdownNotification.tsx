@@ -372,9 +372,8 @@ export const EventCountdownNotification: React.FC<EventCountdownNotificationProp
         return events.filter(e => {
             const isSignedUp = playerSignupEventIds.has(e.id);
             const isAttendee = e.attendees?.some(a => a.playerId === player.id);
-            const isAlpha = e.teams?.alpha?.includes(player.id);
-            const isBravo = e.teams?.bravo?.includes(player.id);
-            return (isSignedUp || isAttendee || isAlpha || isBravo) && e.status !== 'Cancelled';
+            const isTeamMember = Object.values(e.teams || {}).some(list => Array.isArray(list) && list.includes(player.id));
+            return (isSignedUp || isAttendee || isTeamMember) && e.status !== 'Cancelled';
         });
     }, [events, signups, player.id]);
 

@@ -1,4 +1,4 @@
-import type { Player, Rank, Tier, Badge, LegendaryBadge, GameEvent, GamificationRule } from '../types';
+import type { Player, Rank, Tier, Badge, LegendaryBadge, GameEvent, GamificationRule, GameType } from '../types';
 import { getRankForPlayer } from './rankUtils';
 
 /**
@@ -270,6 +270,30 @@ BEGIN
     ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS theme TEXT DEFAULT 'Standard';
     ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS "participationXp" NUMERIC DEFAULT 50;
     ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS participationxp NUMERIC DEFAULT 50;
+
+    -- Add missing columns to "gameTypes"
+    ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'Scenario';
+    ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS "gameplayMechanics" TEXT DEFAULT '';
+    ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS gameplaymechanics TEXT DEFAULT '';
+    ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS gameplay_mechanics TEXT DEFAULT '';
+    ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS rules TEXT DEFAULT '';
+    ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS "rulesFileUrl" TEXT DEFAULT '';
+    ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS rulesfileurl TEXT DEFAULT '';
+    ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT DEFAULT '';
+    ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS imageurl TEXT DEFAULT '';
+    ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS "audioBriefingUrl" TEXT DEFAULT '';
+    ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS audiobriefingurl TEXT DEFAULT '';
+    ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS theme TEXT DEFAULT 'Standard';
+    ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS "participationXp" NUMERIC DEFAULT 50;
+    ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS participationxp NUMERIC DEFAULT 50;
+
+    -- Add team and winner columns to events
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "teamCount" NUMERIC DEFAULT 2;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS teamcount NUMERIC DEFAULT 2;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS team_count NUMERIC DEFAULT 2;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS teams JSONB DEFAULT '{}'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "winningTeamId" TEXT DEFAULT '';
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS winningteamid TEXT DEFAULT '';
 END $$;
 
 -- 6. SETTINGS & APP CONFIGURATION TABLE
@@ -768,12 +792,89 @@ export function normalizeRankRow(raw: any): Rank {
 }
 
 /**
+ * Normalizes a raw game type row from Supabase into a fully-typed GameType object.
+ */
+export function normalizeGameTypeRow(raw: any): GameType {
+    if (!raw) return raw;
+    const rulesVal = typeof raw.rules === 'string' ? raw.rules : (Array.isArray(raw.rules) ? raw.rules.join('\n') : '');
+    const imgUrl = raw.imageUrl || raw.imageurl || raw.iconUrl || raw.iconurl || '';
+    const audioUrl = raw.audioBriefingUrl || raw.audiobriefingurl || '';
+    const docUrl = raw.rulesFileUrl || raw.rulesfileurl || '';
+    const mechanics = raw.gameplayMechanics || raw.gameplaymechanics || raw.gameplay_mechanics || '';
+    const xp = Number(raw.participationXp ?? raw.participationxp ?? 50) || 50;
+    const duration = Number(raw.gameDurationMinutes ?? raw.gamedurationminutes ?? 45) || 45;
+
+    return {
+        id: String(raw.id),
+        name: raw.name || '',
+        category: raw.category || 'Scenario',
+        description: raw.description || '',
+        gameplayMechanics: mechanics,
+        rules: rulesVal,
+        rulesFileUrl: docUrl || undefined,
+        imageUrl: imgUrl || undefined,
+        audioBriefingUrl: audioUrl || undefined,
+        theme: raw.theme || 'Standard',
+        participationXp: xp,
+        gameDurationMinutes: duration,
+        createdAt: raw.createdAt || raw.createdat || raw.created_at || new Date().toISOString().split('T')[0],
+        lastUpdated: raw.lastUpdated || raw.lastupdated || raw.updated_at || new Date().toISOString().split('T')[0],
+    };
+}
+
+/**
  * Prepares a clean, Postgres/Supabase-compatible payload for writing to Supabase.
  * Supplies matching column aliases (camelCase and unquoted) and ensures JSON objects are formatted.
  */
 export function prepareSupabasePayload(collectionName: string, item: any, liveRanks?: Rank[]): any {
     if (!item) return item;
     const payload = { ...item };
+
+    if (collectionName === 'events') {
+        const tc = Number(item.teamCount ?? item.teamcount ?? item.team_count ?? 2) || 2;
+        const winner = item.winningTeamId || item.winningteamid || null;
+        return {
+            ...item,
+            id: String(item.id),
+            teamCount: tc,
+            teamcount: tc,
+            team_count: tc,
+            winningTeamId: winner,
+            winningteamid: winner,
+            teams: item.teams || { alpha: [], bravo: [] },
+        };
+    }
+
+    if (collectionName === 'gameTypes' || collectionName === 'game_types' || collectionName === 'gametypes') {
+        const imageUrl = item.imageUrl || item.imageurl || '';
+        const audioBriefingUrl = item.audioBriefingUrl || item.audiobriefingurl || '';
+        const rulesFileUrl = item.rulesFileUrl || item.rulesfileurl || '';
+        const gameplayMechanics = item.gameplayMechanics || item.gameplaymechanics || '';
+        const participationXp = Number(item.participationXp ?? item.participationxp ?? 50) || 50;
+        const gameDurationMinutes = Number(item.gameDurationMinutes ?? item.gamedurationminutes ?? 45) || 45;
+
+        return {
+            id: String(item.id),
+            name: item.name || '',
+            category: item.category || 'Scenario',
+            description: item.description || '',
+            rules: item.rules || '',
+            gameplayMechanics: gameplayMechanics,
+            gameplaymechanics: gameplayMechanics,
+            rulesFileUrl: rulesFileUrl,
+            rulesfileurl: rulesFileUrl,
+            imageUrl: imageUrl,
+            imageurl: imageUrl,
+            audioBriefingUrl: audioBriefingUrl,
+            audiobriefingurl: audioBriefingUrl,
+            theme: item.theme || 'Standard',
+            participationXp: participationXp,
+            participationxp: participationXp,
+            gameDurationMinutes: gameDurationMinutes,
+            gamedurationminutes: gameDurationMinutes,
+            lastUpdated: item.lastUpdated || new Date().toISOString().split('T')[0],
+        };
+    }
 
     if (collectionName === 'players') {
         const stats = item.stats ? {

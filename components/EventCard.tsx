@@ -38,7 +38,7 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, className = '', o
     ? signupsCount 
     : Math.max(
         event.attendees?.length || 0,
-        (event.teams?.alpha?.length || 0) + (event.teams?.bravo?.length || 0)
+        Object.values(event.teams || {}).reduce((sum, list) => sum + (Array.isArray(list) ? list.length : 0), 0)
       );
 
   // Fallback to a realistic count if no signups/attendees logged yet for demo items

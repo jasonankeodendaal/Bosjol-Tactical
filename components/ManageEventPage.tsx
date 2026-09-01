@@ -47,6 +47,8 @@ const defaultEvent: Omit<GameEvent, 'id'> = {
     gearForRent: [],
     eventBadges: [],
     liveStats: {},
+    teamCount: 2,
+    teams: { alpha: [], bravo: [] },
 };
 
 import { getRankForPlayer } from '../utils/rankUtils';
@@ -166,6 +168,54 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             }
         }));
     };
+
+    const handleAssignPlayerTeam = (playerId: string, teamKey: string | null) => {
+        setFormData(prev => {
+            const currentTeams = { ...(prev.teams || { alpha: [], bravo: [] }) };
+            Object.keys(currentTeams).forEach(key => {
+                currentTeams[key] = (currentTeams[key] || []).filter(id => id !== playerId);
+            });
+            if (teamKey) {
+                currentTeams[teamKey] = [...(currentTeams[teamKey] || []), playerId];
+            }
+            return { ...prev, teams: currentTeams };
+        });
+    };
+
+    const handleAutoBalanceTeams = () => {
+        const count = formData.teamCount || 2;
+        const activeTeams: string[] = ['alpha', 'bravo'];
+        if (count >= 3) activeTeams.push('charlie');
+        if (count === 4) activeTeams.push('delta');
+
+        const candidateIds = formData.attendees.length > 0 
+            ? formData.attendees.map(a => a.playerId) 
+            : signedUpPlayersDetails.map(p => p.id);
+
+        if (candidateIds.length === 0) {
+            alert("No checked-in operators or signed up players to balance into teams!");
+            return;
+        }
+
+        const shuffled = [...candidateIds].sort(() => Math.random() - 0.5);
+        const newTeams: Record<string, string[]> = {
+            alpha: [],
+            bravo: [],
+            charlie: [],
+            delta: []
+        };
+
+        shuffled.forEach((playerId, index) => {
+            const teamIndex = index % count;
+            const assignedTeamKey = activeTeams[teamIndex];
+            newTeams[assignedTeamKey].push(playerId);
+        });
+
+        setFormData(prev => ({
+            ...prev,
+            teams: newTeams
+        }));
+    };
     
     const handleCheckIn = async (playerId: string) => {
         if (!event) return;
@@ -245,22 +295,19 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                 let matchResult: "win" | "loss" | "draw" | undefined = undefined;
 
                 if (formData.winningTeamId) {
-                    const isAlpha = formData.teams?.alpha?.includes(player.id);
-                    const isBravo = formData.teams?.bravo?.includes(player.id);
+                    const playerTeam = Object.keys(formData.teams || {}).find(teamKey =>
+                        formData.teams?.[teamKey]?.includes(player.id)
+                    );
                     
                     if (formData.winningTeamId === "tie") {
                         matchResult = "draw";
-                    } else if (
-                        (formData.winningTeamId === "alpha" && isAlpha) || 
-                        (formData.winningTeamId === "bravo" && isBravo)
-                    ) {
-                        matchResult = "win";
-                        xpGained += (formData.winXpAward || 50);
-                    } else if (
-                        (formData.winningTeamId === "alpha" && isBravo) || 
-                        (formData.winningTeamId === "bravo" && isAlpha)
-                    ) {
-                        matchResult = "loss";
+                    } else if (playerTeam) {
+                        if (formData.winningTeamId === playerTeam) {
+                            matchResult = "win";
+                            xpGained += (formData.winXpAward || 50);
+                        } else {
+                            matchResult = "loss";
+                        }
                     }
                 }
     
@@ -693,6 +740,33 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                     ))}
                                 </div>
                             </div>
+                            <div className="bg-zinc-900/60 p-4 rounded-xl border border-zinc-800 space-y-2 mt-4">
+                                <label className="block text-sm font-bold text-white flex items-center gap-2">
+                                    <UsersIcon className="w-4 h-4 text-red-500" />
+                                    Teams Format (Optional Toggle: 2, 3, or 4 Teams)
+                                </label>
+                                <p className="text-xs text-zinc-400">Select how many teams participate in this scenario or skirmish event.</p>
+                                <div className="grid grid-cols-3 gap-2 pt-1">
+                                    {[2, 3, 4].map(num => (
+                                        <button
+                                            key={num}
+                                            type="button"
+                                            onClick={() => setFormData(f => ({ ...f, teamCount: num }))}
+                                            className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all flex flex-col items-center justify-center gap-1 ${
+                                                (formData.teamCount || 2) === num
+                                                    ? 'bg-red-600/90 text-white border-red-500 shadow-md shadow-red-950'
+                                                    : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-white'
+                                            }`}
+                                        >
+                                            <span className="text-sm font-black">{num} Teams</span>
+                                            <span className="text-[10px] font-mono opacity-80">
+                                                {num === 2 ? 'Alpha vs Bravo' : num === 3 ? 'Alpha / Bravo / Charlie' : '4-Way Battle'}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                 <Input label="Game Fee (R)" type="number" value={formData.gameFee} onChange={e => setFormData(f => ({ ...f, gameFee: Number(e.target.value) }))} />
                                 <Input label="Participation RP" type="number" value={formData.participationXp} onChange={e => setFormData(f => ({ ...f, participationXp: Number(e.target.value) }))} />
@@ -808,6 +882,111 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             </div>
                         </div>
                     </DashboardCard>
+                    <DashboardCard 
+                        title={`Team Rosters (${formData.teamCount || 2} Teams)`} 
+                        icon={<UsersIcon className="w-6 h-6 text-red-500" />}
+                        headerAction={
+                            <Button size="sm" onClick={handleAutoBalanceTeams} className="!bg-red-600 hover:!bg-red-500 text-xs">
+                                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                                Auto-Balance Teams
+                            </Button>
+                        }
+                    >
+                        <div className="p-6 space-y-6">
+                            {/* Active Team Grid */}
+                            <div className={`grid grid-cols-1 ${(formData.teamCount || 2) >= 3 ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'} gap-3`}>
+                                {[
+                                    { key: 'alpha', name: 'Alpha Team', border: 'border-red-500/40', bg: 'bg-red-950/40', text: 'text-red-400', badge: 'bg-red-900/60 text-red-200 border-red-700' },
+                                    { key: 'bravo', name: 'Bravo Team', border: 'border-blue-500/40', bg: 'bg-blue-950/40', text: 'text-blue-400', badge: 'bg-blue-900/60 text-blue-200 border-blue-700' },
+                                    ...((formData.teamCount || 2) >= 3 ? [{ key: 'charlie', name: 'Charlie Team', border: 'border-emerald-500/40', bg: 'bg-emerald-950/40', text: 'text-emerald-400', badge: 'bg-emerald-900/60 text-emerald-200 border-emerald-700' }] : []),
+                                    ...((formData.teamCount || 2) === 4 ? [{ key: 'delta', name: 'Delta Team', border: 'border-amber-500/40', bg: 'bg-amber-950/40', text: 'text-amber-400', badge: 'bg-amber-900/60 text-amber-200 border-amber-700' }] : []),
+                                ].map(team => {
+                                    const teamPlayerIds = formData.teams?.[team.key] || [];
+                                    const teamPlayers = players.filter(p => teamPlayerIds.includes(p.id));
+                                    return (
+                                        <div key={team.key} className={`p-3 rounded-xl border ${team.border} ${team.bg} space-y-2`}>
+                                            <div className="flex items-center justify-between pb-1 border-b border-white/10">
+                                                <span className={`font-black text-sm uppercase tracking-wider ${team.text}`}>
+                                                    {team.name}
+                                                </span>
+                                                <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded border ${team.badge}`}>
+                                                    {teamPlayers.length} Players
+                                                </span>
+                                            </div>
+                                            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                                {teamPlayers.length > 0 ? (
+                                                    teamPlayers.map(p => (
+                                                        <div key={p.id} className="text-xs bg-zinc-900/80 p-2 rounded flex items-center justify-between border border-zinc-800">
+                                                            <span className="font-semibold text-white truncate max-w-[120px]">{p.callsign || p.name}</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleAssignPlayerTeam(p.id, null)}
+                                                                className="text-[10px] text-zinc-500 hover:text-red-400 px-1"
+                                                                title="Remove from team"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <p className="text-[11px] text-zinc-500 italic py-2 text-center">No operators assigned</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Checked-in Operator Assignment Matrix */}
+                            <div className="space-y-3 pt-2 border-t border-zinc-800">
+                                <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+                                    Manual Team Assignment ({attendeesDetails.length} Checked-in Operators)
+                                </h4>
+                                {attendeesDetails.length > 0 ? (
+                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                        {attendeesDetails.map(player => {
+                                            const currentTeam = Object.keys(formData.teams || {}).find(k => 
+                                                formData.teams?.[k]?.includes(player.id)
+                                            );
+
+                                            return (
+                                                <div key={player.id} className="bg-zinc-900/80 p-2.5 rounded-lg border border-zinc-800 flex flex-wrap items-center justify-between gap-2">
+                                                    <div>
+                                                        <p className="text-xs font-bold text-white">{player.name}</p>
+                                                        <p className="text-[10px] text-zinc-400 font-mono">{player.callsign || 'No callsign'}</p>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-1">
+                                                        {[
+                                                            { key: 'alpha', label: 'Alpha', activeClass: 'bg-red-600 text-white border-red-500' },
+                                                            { key: 'bravo', label: 'Bravo', activeClass: 'bg-blue-600 text-white border-blue-500' },
+                                                            ...((formData.teamCount || 2) >= 3 ? [{ key: 'charlie', label: 'Charlie', activeClass: 'bg-emerald-600 text-white border-emerald-500' }] : []),
+                                                            ...((formData.teamCount || 2) === 4 ? [{ key: 'delta', label: 'Delta', activeClass: 'bg-amber-600 text-white border-amber-500' }] : []),
+                                                        ].map(t => (
+                                                            <button
+                                                                key={t.key}
+                                                                type="button"
+                                                                onClick={() => handleAssignPlayerTeam(player.id, currentTeam === t.key ? null : t.key)}
+                                                                className={`px-2 py-1 rounded text-[10px] font-bold border transition-colors ${
+                                                                    currentTeam === t.key
+                                                                        ? t.activeClass
+                                                                        : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700'
+                                                                }`}
+                                                            >
+                                                                {t.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-zinc-500 py-2 italic text-center">Check in operators on the right to assign them to teams.</p>
+                                )}
+                            </div>
+                        </div>
+                    </DashboardCard>
                     <DashboardCard title={`Attended Operators (${attendeesDetails.length})`} icon={<UsersIcon className="w-6 h-6" />}>
                         <div className="p-6">
                             {attendeesDetails.length > 0 ? (
@@ -893,6 +1072,8 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                         <option value="">-- No Winner Declared --</option>
                                         <option value="alpha">Alpha Team</option>
                                         <option value="bravo">Bravo Team</option>
+                                        {(formData.teamCount || 2) >= 3 && <option value="charlie">Charlie Team</option>}
+                                        {(formData.teamCount || 2) === 4 && <option value="delta">Delta Team</option>}
                                         <option value="tie">Draw / Tie</option>
                                     </select>
                                 </div>

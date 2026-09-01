@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import { extractAndCleanStorageUrlsFromDoc } from '../utils/storageCleaner';
 import * as mock from '../constants';
 import { getRankForPlayer } from '../utils/rankUtils';
-import { normalizePlayerRow, normalizeRankRow, prepareSupabasePayload } from '../utils/supabaseSchema';
+import { normalizePlayerRow, normalizeRankRow, normalizeGameTypeRow, prepareSupabasePayload } from '../utils/supabaseSchema';
 import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters, AdminNotification, PlayerHonor, TacticalRuleSet, GameType } from '../types';
 import { AuthContext } from '../auth/AuthContext';
 
@@ -38,6 +38,9 @@ function normalizeCollectionItem<T>(collectionName: string, item: any): T {
     }
     if (collectionName === 'ranks') {
         return normalizeRankRow(item) as unknown as T;
+    }
+    if (collectionName === 'gameTypes' || collectionName === 'game_types' || collectionName === 'gametypes') {
+        return normalizeGameTypeRow(item) as unknown as T;
     }
     return item as T;
 }

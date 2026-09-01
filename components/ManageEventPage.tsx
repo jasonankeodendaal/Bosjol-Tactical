@@ -40,6 +40,7 @@ const defaultEvent: Omit<GameEvent, 'id'> = {
     theme: MOCK_EVENT_THEMES[0],
     rules: '',
     participationXp: 50,
+    winXpAward: 50,
     attendees: [],
     status: 'Upcoming',
     gameFee: 0,
@@ -240,7 +241,28 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             // Case 1: Player attended the event
             const attendeeInfo = formData.attendees.find(a => a.playerId === player.id);
             if (attendeeInfo) {
-                const xpGained = formData.participationXp || 500;
+                let xpGained = formData.participationXp || 50;
+                let matchResult: "win" | "loss" | "draw" | undefined = undefined;
+
+                if (formData.winningTeamId) {
+                    const isAlpha = formData.teams?.alpha?.includes(player.id);
+                    const isBravo = formData.teams?.bravo?.includes(player.id);
+                    
+                    if (formData.winningTeamId === "tie") {
+                        matchResult = "draw";
+                    } else if (
+                        (formData.winningTeamId === "alpha" && isAlpha) || 
+                        (formData.winningTeamId === "bravo" && isBravo)
+                    ) {
+                        matchResult = "win";
+                        xpGained += (formData.winXpAward || 50);
+                    } else if (
+                        (formData.winningTeamId === "alpha" && isBravo) || 
+                        (formData.winningTeamId === "bravo" && isAlpha)
+                    ) {
+                        matchResult = "loss";
+                    }
+                }
     
                 if (attendeeInfo.paymentStatus?.startsWith('Paid') && event?.id) {
                     newTransactions.push({
@@ -265,6 +287,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     
                 const newMatchRecord = {
                     eventId: event!.id,
+                    result: matchResult,
                     playerStats: {
                         kills: 0,
                         deaths: 0,
@@ -670,10 +693,11 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                     ))}
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                 <Input label="Game Fee (R)" type="number" value={formData.gameFee} onChange={e => setFormData(f => ({ ...f, gameFee: Number(e.target.value) }))} />
                                 <Input label="Participation RP" type="number" value={formData.participationXp} onChange={e => setFormData(f => ({ ...f, participationXp: Number(e.target.value) }))} />
-                                 <div>
+                                <Input label="Win Bonus RP" type="number" value={formData.winXpAward ?? 50} onChange={e => setFormData(f => ({ ...f, winXpAward: Number(e.target.value) }))} />
+                                <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1.5">Event Status</label>
                                     <select 
                                         value={formData.status} 
@@ -697,6 +721,44 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                         {EVENT_STATUSES.map(s => <option key={s}>{s}</option>)}
                                     </select>
                                 </div>
+                            </div>
+                            
+                            <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-700/50 mt-4">
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={!!formData.votingEnabled}
+                                        onChange={(e) => setFormData(f => ({ ...f, votingEnabled: e.target.checked }))}
+                                        className="h-5 w-5 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"
+                                    />
+                                    <div>
+                                        <span className="text-white font-bold">Enable Game Type Voting</span>
+                                        <p className="text-xs text-gray-400">Allow players to vote for their preferred game type when signing up.</p>
+                                    </div>
+                                </label>
+                                
+                                {formData.votingEnabled && (
+                                    <div className="mt-3 text-sm text-zinc-300">
+                                        <h4 className="font-bold text-red-400 mb-2">Current Votes:</h4>
+                                        {Object.keys(formData.gameTypeVotes || {}).length > 0 ? (
+                                            <ul className="list-disc pl-5">
+                                                {Object.entries(
+                                                    Object.values(formData.gameTypeVotes || {}).reduce((acc, gameTypeId) => {
+                                                        acc[gameTypeId] = (acc[gameTypeId] || 0) + 1;
+                                                        return acc;
+                                                    }, {} as Record<string, number>)
+                                                ).map(([gameTypeId, count]) => {
+                                                    const gtName = dataContext?.gameTypes?.find(g => g.id === gameTypeId)?.name || gameTypeId;
+                                                    return (
+                                                        <li key={gameTypeId}>{gtName}: <span className="font-bold text-amber-400">{count} vote(s)</span></li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        ) : (
+                                            <p className="italic text-zinc-500">No votes yet.</p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <UrlOrUploadField
@@ -820,10 +882,25 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             </div>
                         )}
                         {event && formData.status !== 'Completed' && formData.status !== 'Cancelled' && (
-                            <Button onClick={handleFinalizeEvent} variant="primary" className="w-full !bg-green-600 hover:!bg-green-500">
-                                <CheckCircleIcon className="w-5 h-5 mr-2" />
-                                Finalize Event & Award RP
-                            </Button>
+                            <div className="space-y-3 bg-zinc-900/50 p-4 border border-zinc-800 rounded-lg">
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-400">Winning Team Declaration</label>
+                                    <select
+                                        value={formData.winningTeamId || ''}
+                                        onChange={e => setFormData(f => ({ ...f, winningTeamId: (e.target.value as any) || null }))}
+                                        className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    >
+                                        <option value="">-- No Winner Declared --</option>
+                                        <option value="alpha">Alpha Team</option>
+                                        <option value="bravo">Bravo Team</option>
+                                        <option value="tie">Draw / Tie</option>
+                                    </select>
+                                </div>
+                                <Button onClick={handleFinalizeEvent} variant="primary" className="w-full !bg-green-600 hover:!bg-green-500 mt-2">
+                                    <CheckCircleIcon className="w-5 h-5 mr-2" />
+                                    Finalize Event & Award RP
+                                </Button>
+                            </div>
                         )}
                         <Button onClick={handleSaveClick} variant="secondary" className="w-full">
                             Save Changes

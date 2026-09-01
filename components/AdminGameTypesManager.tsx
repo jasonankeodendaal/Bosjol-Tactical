@@ -109,6 +109,7 @@ export const AdminGameTypesManager: React.FC = () => {
       description: editingGameType.description || '',
       gameplayMechanics: editingGameType.gameplayMechanics || '',
       rules: editingGameType.rules || '',
+      rulesFileUrl: editingGameType.rulesFileUrl || undefined,
       imageUrl: editingGameType.imageUrl || '',
       audioBriefingUrl: editingGameType.audioBriefingUrl || '',
       theme: editingGameType.theme || 'red_vs_blue',
@@ -546,7 +547,6 @@ export const AdminGameTypesManager: React.FC = () => {
                     ))}
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
                     Cover Image Artwork
@@ -557,6 +557,24 @@ export const AdminGameTypesManager: React.FC = () => {
                       setEditingGameType((prev) => ({ ...prev, imageUrl: url }))
                     }
                     placeholder="Image URL or upload artwork..."
+                  />
+                </div>
+              </div>
+
+              {/* Rules Upload */}
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                    Rules Document URL
+                  </label>
+                  <input
+                    type="url"
+                    value={editingGameType.rulesFileUrl || ''}
+                    onChange={(e) =>
+                      setEditingGameType((prev) => ({ ...prev, rulesFileUrl: e.target.value }))
+                    }
+                    placeholder="Link to PDF or document containing full rules..."
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-red-500"
                   />
                 </div>
               </div>

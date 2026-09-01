@@ -175,7 +175,7 @@ const RankAndLeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'pla
     const dataContext = useContext(DataContext);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-5">
             {/* Free-View COD Mobile Style Rank Showcase */}
             <PlayerRankShowcase 
                 player={player} 
@@ -186,26 +186,28 @@ const RankAndLeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'pla
                 onNavigateTab={onNavigateTab}
             />
 
-            {/* Free-View Seamless Leaderboard Drawer/Section */}
-            <div className="pt-6 border-t border-zinc-800/80">
-                <div className="flex items-center justify-between mb-4">
+            {/* Free-View Seamless Leaderboard Drawer/Section with 3D Depth */}
+            <div className="pt-4 border-t border-zinc-800/80">
+                <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                        <TrophyIcon className="w-5 h-5 text-amber-400" />
-                        <h3 className="text-sm sm:text-base font-bold uppercase tracking-wider text-white font-mono">
+                        <TrophyIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
+                        <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white font-mono">
                             Global Ranked Standings
                         </h3>
                     </div>
                     <button
                         onClick={() => setShowLeaderboard(prev => !prev)}
-                        className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-mono text-amber-400 font-bold uppercase transition-colors flex items-center gap-1.5"
+                        className="px-2.5 py-1 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-mono text-amber-400 font-bold uppercase transition-colors flex items-center gap-1.5 shadow-md shadow-black/40"
                     >
                         <span>{showLeaderboard ? 'Hide Leaderboard' : 'Expand Leaderboard'}</span>
-                        <ChevronDownIcon className={`w-4 h-4 transform transition-transform ${showLeaderboard ? 'rotate-180' : ''}`} />
+                        <ChevronDownIcon className={`w-3.5 h-3.5 transform transition-transform ${showLeaderboard ? 'rotate-180' : ''}`} />
                     </button>
                 </div>
 
                 {showLeaderboard && (
-                    <div className="p-2 sm:p-4 rounded-xl bg-zinc-950/70 border border-zinc-800/80">
+                    <div className="relative p-2 sm:p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 shadow-[0_12px_32px_rgba(0,0,0,0.75)] backdrop-blur-md">
+                        {/* 3D Top Accent Line */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-amber-500/40 to-transparent pointer-events-none" />
                         <Leaderboard players={players} currentPlayerId={player.id} />
                     </div>
                 )}
@@ -250,11 +252,12 @@ const StatDisplay: React.FC<{ value: string | number, label: string, tooltip?: s
     </div>
 );
 
-const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: () => void, onSignUp: (id: string, requestedGearIds: string[], note: string) => void, locations: Location[], signups: Signup[] }> = ({ event, player, onClose, onSignUp, locations, signups }) => {
+const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: () => void, onSignUp: (id: string, requestedGearIds: string[], note: string, voteGameTypeId?: string) => void, locations: Location[], signups: Signup[] }> = ({ event, player, onClose, onSignUp, locations, signups }) => {
     const isSignedUp = useMemo(() => signups.some(s => s.eventId === event.id && s.playerId === player.id), [signups, event.id, player.id]);
     const [selectedGear, setSelectedGear] = useState<string[]>([]);
     const [note, setNote] = useState('');
     const [wantsWeaponRental, setWantsWeaponRental] = useState(false);
+    const [selectedVoteGameTypeId, setSelectedVoteGameTypeId] = useState<string>('');
     const dataContext = useContext(DataContext);
     const hasInitialized = useRef(false);
 
@@ -335,15 +338,27 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
                 if (signup.note) {
                     setNote(signup.note);
                 }
+                
+                // Load vote if any
+                if (event.gameTypeVotes?.[player.id]) {
+                    setSelectedVoteGameTypeId(event.gameTypeVotes[player.id]);
+                }
+                
                 hasInitialized.current = true;
             }
         } else {
             setSelectedGear([]);
             setWantsWeaponRental(false);
             setNote('');
+            
+            // Default to event's gameType if voting is enabled
+            if (event.votingEnabled && event.gameTypeId) {
+                setSelectedVoteGameTypeId(event.gameTypeId);
+            }
+            
             hasInitialized.current = true;
         }
-    }, [isSignedUp, event.id, player.id, signups, availableGear]);
+    }, [isSignedUp, event.id, player.id, signups, availableGear, event.votingEnabled, event.gameTypeId, event.gameTypeVotes]);
 
     const totalCost = useMemo(() => {
         const gearCost = selectedGear.reduce((sum, gearId) => {
@@ -584,6 +599,29 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
                  </div>
              </div>
              <div className="mt-6 pt-4 border-t border-zinc-700/50">
+                  {event.votingEnabled && !isSignedUp && (
+                     <div className="mb-4 space-y-2">
+                         <h4 className="font-semibold text-gray-200">Vote for Game Type</h4>
+                         <p className="text-xs text-gray-400">Cast your vote for which game type you'd like to play at this event.</p>
+                         <select 
+                             value={selectedVoteGameTypeId} 
+                             onChange={e => setSelectedVoteGameTypeId(e.target.value)} 
+                             className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                         >
+                             <option value="" disabled>Select a Game Type</option>
+                             {dataContext?.gameTypes?.map(gt => (
+                                 <option key={gt.id} value={gt.id}>{gt.name}</option>
+                             ))}
+                         </select>
+                     </div>
+                 )}
+                 {event.votingEnabled && isSignedUp && (
+                     <div className="mb-4">
+                         <p className="text-sm text-amber-400 font-semibold text-center border border-amber-500/20 bg-amber-950/20 p-2 rounded-lg">
+                             You voted for: {dataContext?.gameTypes?.find(g => g.id === event.gameTypeVotes?.[player.id])?.name || 'No vote cast'}
+                         </p>
+                     </div>
+                 )}
                   {!isSignedUp && (
                      <div className="space-y-1 text-sm mb-4">
                          <div className="flex justify-between items-center text-gray-300">
@@ -603,7 +641,7 @@ const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: (
                      </div>
                  )}
                  <Button 
-                     onClick={() => onSignUp(event.id, isSignedUp ? [] : selectedGear, note)}
+                     onClick={() => onSignUp(event.id, isSignedUp ? [] : selectedGear, note, selectedVoteGameTypeId)}
                      variant={isSignedUp ? 'danger' : 'primary'}
                      className="w-full"
                  >

@@ -486,62 +486,115 @@ const RankCard: React.FC<{
     const resolvedRankBadge = resolveRankIcon(rank.rankBadgeUrl, rank.name);
 
     return (
-        <div className="border-b border-zinc-800/70 pb-3 mb-2 transition-colors">
-            <div 
-                onClick={() => setIsOpen(!isOpen)} 
-                className="w-full flex items-center gap-2 sm:gap-4 p-1.5 sm:p-3 cursor-pointer hover:bg-zinc-900/40 rounded-xl transition-all group"
-            >
-                <div className="relative flex-shrink-0">
-                    <img 
-                        src={resolvedRankBadge} 
-                        alt={rank.name} 
-                        onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(rank.name);
-                        }}
-                        className="w-10 h-10 sm:w-16 sm:h-16 object-contain filter drop-shadow-[0_0_12px_rgba(239,68,68,0.35)] transition-transform group-hover:scale-105" 
-                    />
-                    <span className="absolute -bottom-1 -right-1 bg-red-600 text-[8px] sm:text-[10px] text-white font-mono font-bold px-1 py-0.2 rounded-full border border-red-400/60 shadow">
-                        {sortedTiers.length}
-                    </span>
-                </div>
+        <div className="relative group transition-all duration-300 flex flex-col justify-between p-2.5 sm:p-3 rounded-2xl bg-gradient-to-b from-zinc-900/40 via-zinc-950/70 to-zinc-950/90 hover:bg-zinc-900/80 border border-zinc-800/50 hover:border-red-500/50 shadow-[0_16px_40px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.06)] hover:shadow-[0_18px_44px_rgba(220,38,38,0.2)] backdrop-blur-xl">
+            {/* 3D Top Accent Glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4/5 h-[1px] bg-gradient-to-r from-transparent via-red-500/60 to-transparent pointer-events-none" />
 
-                <div className="flex-grow min-w-0">
-                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                        <h3 className="text-sm sm:text-lg font-black text-white uppercase tracking-wider group-hover:text-red-400 transition-colors truncate">
-                            {rank.name}
-                        </h3>
-                        <span className="bg-red-950/60 text-red-300 border border-red-800/40 text-[9px] sm:text-xs font-mono font-bold px-1.5 py-0.2 rounded truncate">
-                            {lowestXp.toLocaleString()} XP{sortedTiers.length > 1 ? ` – ${highestXp.toLocaleString()} XP` : '+'}
-                        </span>
+            <div>
+                {/* Header & Badges Row (Square & Space-Efficient Free View) */}
+                <div className="flex items-start justify-between gap-2 pb-2 border-b border-zinc-800/50">
+                    <div className="flex items-center gap-2 min-w-0">
+                        {/* 3D Square Badge Frame */}
+                        <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center rounded-xl bg-gradient-to-b from-zinc-800/60 to-zinc-950 border border-zinc-700/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_6px_14px_rgba(0,0,0,0.6)] group-hover:scale-105 transition-transform duration-300">
+                            <img 
+                                src={resolvedRankBadge} 
+                                alt={rank.name} 
+                                onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(rank.name);
+                                }}
+                                className="w-7 h-7 sm:w-9 sm:h-9 object-contain filter drop-shadow-[0_4px_8px_rgba(239,68,68,0.45)]" 
+                            />
+                            <span className="absolute -bottom-0.5 -right-0.5 bg-red-600 text-[8px] text-white font-mono font-black px-1 rounded-full border border-red-400 shadow-sm">
+                                {sortedTiers.length}
+                            </span>
+                        </div>
+
+                        <div className="min-w-0">
+                            <h3 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider group-hover:text-red-400 transition-colors truncate">
+                                {rank.name}
+                            </h3>
+                            <div className="mt-0.5">
+                                <span className="inline-block bg-red-950/80 text-red-300 border border-red-800/60 text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.2 rounded shadow-xs truncate">
+                                    {lowestXp.toLocaleString()} XP{sortedTiers.length > 1 ? ` – ${highestXp.toLocaleString()}` : '+'}
+                                </span>
+                            </div>
+                            <p className="text-[9px] sm:text-[10px] text-zinc-400 truncate mt-0.5 max-w-[140px] sm:max-w-none">
+                                {rank.description || 'Combat Division'}
+                            </p>
+                        </div>
                     </div>
-                    <p className="text-[10px] sm:text-xs text-zinc-400 truncate mt-0.5">{rank.description || 'No description'}</p>
+
+                    {/* Quick Tactical Action Buttons */}
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                        {onMoveRank && rankIndex > 0 && (
+                            <button onClick={e => { e.stopPropagation(); onMoveRank('up'); }} className="p-1 rounded-lg bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800/60 transition-colors" title="Move Up">
+                                <ChevronUpIcon className="w-3 h-3"/>
+                            </button>
+                        )}
+                        {onMoveRank && rankIndex < totalRanks - 1 && (
+                            <button onClick={e => { e.stopPropagation(); onMoveRank('down'); }} className="p-1 rounded-lg bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800/60 transition-colors" title="Move Down">
+                                <ChevronDownIcon className="w-3 h-3"/>
+                            </button>
+                        )}
+                        <button onClick={e => { e.stopPropagation(); onEditRank(); }} className="p-1 rounded-lg bg-zinc-900/60 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800/60 transition-colors" title="Edit Rank">
+                            <PencilIcon className="w-3 h-3"/>
+                        </button>
+                        <button onClick={e => { e.stopPropagation(); onDeleteRank(); }} className="p-1 rounded-lg bg-red-950/50 hover:bg-red-900 text-red-400 hover:text-red-200 border border-red-800/50 transition-colors" title="Delete Rank">
+                            <TrashIcon className="w-3 h-3"/>
+                        </button>
+                    </div>
                 </div>
 
-                <div className="flex gap-1 items-center flex-shrink-0">
-                    {onMoveRank && rankIndex > 0 && (
-                        <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onMoveRank('up'); }} className="!p-1 sm:!p-1.5" title="Move Rank Up">
-                            <ChevronUpIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-300"/>
-                        </Button>
-                    )}
-                    {onMoveRank && rankIndex < totalRanks - 1 && (
-                        <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onMoveRank('down'); }} className="!p-1 sm:!p-1.5" title="Move Rank Down">
-                            <ChevronDownIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-300"/>
-                        </Button>
-                    )}
-                    <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onEditRank(); }} className="!p-1 sm:!p-1.5" title="Edit Rank">
-                        <PencilIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-300"/>
-                    </Button>
-                    <Button size="sm" variant="danger" onClick={(e) => { e.stopPropagation(); onDeleteRank(); }} className="!p-1 sm:!p-1.5" title="Delete Rank">
-                        <TrashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/>
-                    </Button>
-                    <motion.div animate={{ rotate: isOpen ? 180 : 0 }} className="ml-1 text-zinc-500 group-hover:text-zinc-300">
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </motion.div>
+                {/* Sub-Tier Summary Pill Grid (Shrink to Fit) */}
+                <div className="mt-2 space-y-1">
+                    <div className="flex items-center justify-between text-[9px] font-mono text-zinc-400 px-0.5">
+                        <span className="uppercase tracking-wider font-semibold">Sub-Tiers ({sortedTiers.length})</span>
+                        <button 
+                            onClick={() => setIsOpen(!isOpen)}
+                            className="text-red-400 hover:text-red-300 transition-colors font-bold uppercase flex items-center gap-0.5"
+                        >
+                            <span>{isOpen ? 'Collapse' : 'Inspect'}</span>
+                            <ChevronDownIcon className={`w-2.5 h-2.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                    </div>
+
+                    {/* Preview Mini Badges */}
+                    <div className="flex items-center gap-1 overflow-x-auto py-0.5 scrollbar-none">
+                        {sortedTiers.map((tier) => {
+                            const resolvedTierIcon = resolveRankIcon(tier.iconUrl, rank.name, tier.name);
+                            return (
+                                <div 
+                                    key={tier.id} 
+                                    onClick={() => onEditTier(tier)}
+                                    title={`${tier.name} (${tier.minXp.toLocaleString()} XP)`}
+                                    className="w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0 flex items-center justify-center rounded-lg bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800/60 hover:border-red-500/60 transition-all cursor-pointer shadow-xs"
+                                >
+                                    <img 
+                                        src={resolvedTierIcon} 
+                                        alt={tier.name}
+                                        onError={(e) => {
+                                            (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(tier.name || rank.name);
+                                        }}
+                                        className="w-4.5 h-4.5 sm:w-5 sm:h-5 object-contain filter drop-shadow"
+                                    />
+                                </div>
+                            );
+                        })}
+                        <button 
+                            onClick={() => {
+                                const lastTierXp = sortedTiers.length > 0 ? sortedTiers[sortedTiers.length - 1].minXp : lowestXp;
+                                onAddTier(lastTierXp + 200);
+                            }}
+                            className="w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0 flex items-center justify-center rounded-lg bg-zinc-900/40 hover:bg-red-950/60 border border-dashed border-zinc-700/60 hover:border-red-500/80 text-zinc-400 hover:text-red-300 transition-all text-xs"
+                            title="Add Sub-Tier"
+                        >
+                            <PlusIcon className="w-3 h-3" />
+                        </button>
+                    </div>
                 </div>
             </div>
-            
+
+            {/* Expandable Free-View Detail Drawer */}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div 
@@ -550,15 +603,10 @@ const RankCard: React.FC<{
                         animate={{ height: 'auto', opacity: 1 }} 
                         exit={{ height: 0, opacity: 0 }} 
                         transition={{ duration: 0.2, ease: 'easeInOut' }}
-                        className="mt-2 pl-2 sm:pl-6 space-y-1.5"
+                        className="mt-2.5 pt-2 border-t border-zinc-800/60 space-y-1 overflow-hidden"
                     >
-                        <div className="flex justify-between items-center px-1 text-[10px] sm:text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                            <span>Sub-Tiers & Details</span>
-                            <span className="font-mono text-zinc-500">XP Thresholds</span>
-                        </div>
-
                         {sortedTiers.length === 0 ? (
-                            <p className="text-xs text-zinc-500 italic py-2 text-center">No sub-tiers configured. Click "Add Sub-Tier" below.</p>
+                            <p className="text-[10px] text-zinc-500 italic py-1 text-center">No sub-tiers yet.</p>
                         ) : (
                             sortedTiers.map((tier) => {
                                 const globalIndex = allTiers.findIndex(t => t.id === tier.id);
@@ -566,56 +614,48 @@ const RankCard: React.FC<{
                                 const resolvedTierIcon = resolveRankIcon(tier.iconUrl, rank.name, tier.name);
                                 
                                 return (
-                                    <div key={tier.id} className="flex items-center gap-2 sm:gap-3 bg-zinc-900/30 p-2 rounded-r-lg border-l-2 border-red-500/80 hover:bg-zinc-900/70 transition-all">
+                                    <div key={tier.id} className="flex items-center gap-1.5 p-1.5 rounded-xl bg-zinc-900/40 hover:bg-zinc-900/70 border border-zinc-800/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-colors">
                                         <img 
                                             src={resolvedTierIcon} 
                                             alt={tier.name} 
                                             onError={(e) => {
                                                 (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(tier.name || rank.name);
                                             }}
-                                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0 drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]"
+                                            className="w-4.5 h-4.5 sm:w-5 sm:h-5 object-contain flex-shrink-0"
                                         />
                                         <div className="flex-grow min-w-0">
-                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                                <p className="font-bold text-white text-xs sm:text-sm truncate">{tier.name}</p>
-                                                <span className="bg-zinc-800/90 text-green-400 font-mono text-[9px] sm:text-[11px] font-bold px-1.5 py-0.2 rounded border border-green-500/20">
+                                            <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-0.5 xl:gap-1">
+                                                <p className="font-bold text-white text-[9px] sm:text-[10px] xl:text-[11px] truncate leading-tight">{tier.name}</p>
+                                                <span className="font-mono text-green-400 font-bold text-[7.5px] sm:text-[8px] xl:text-[9px] bg-zinc-950 px-1 py-0.2 rounded border border-green-500/20 leading-tight w-fit">
                                                     {tier.minXp.toLocaleString()} XP
                                                 </span>
                                             </div>
-                                            <div className="text-[9px] sm:text-xs text-zinc-400 truncate mt-0.5">
-                                                <span>Range: {tier.minXp.toLocaleString()} – {nextTierInProgression ? `${(nextTierInProgression.minXp - 1).toLocaleString()} XP` : 'MAX'}</span>
-                                                {tier.perks && tier.perks.length > 0 && (
-                                                    <span className="text-zinc-500 ml-1.5 hidden sm:inline">• {tier.perks.join(', ')}</span>
-                                                )}
-                                            </div>
+                                            <p className="text-[7.5px] sm:text-[8px] xl:text-[9px] text-zinc-500 truncate leading-tight mt-0.5">
+                                                Range: {tier.minXp.toLocaleString()} – {nextTierInProgression ? `${(nextTierInProgression.minXp - 1).toLocaleString()}` : 'MAX'}
+                                            </p>
                                         </div>
-                                        <div className="flex gap-1 flex-shrink-0">
-                                            <Button size="sm" variant="secondary" onClick={() => onEditTier(tier)} className="!p-1 sm:!p-1.5" title="Edit Tier XP">
-                                                <PencilIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5"/>
-                                            </Button>
-                                            <Button size="sm" variant="danger" onClick={() => onDeleteTier(tier)} className="!p-1 sm:!p-1.5" title="Delete Tier">
-                                                <TrashIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5"/>
-                                            </Button>
+                                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                                            <button onClick={() => onEditTier(tier)} className="p-1 rounded bg-zinc-800/70 hover:bg-zinc-700 text-zinc-300 hover:text-white" title="Edit">
+                                                <PencilIcon className="w-2.5 h-2.5"/>
+                                            </button>
+                                            <button onClick={() => onDeleteTier(tier)} className="p-1 rounded bg-red-950/60 hover:bg-red-900 text-red-400" title="Delete">
+                                                <TrashIcon className="w-2.5 h-2.5"/>
+                                            </button>
                                         </div>
                                     </div>
                                 );
                             })
                         )}
-
-                        <div className="pt-1">
-                            <Button 
-                                size="sm" 
-                                variant="secondary" 
-                                className="w-full !py-1.5 text-[10px] sm:text-xs font-semibold" 
-                                onClick={() => {
-                                    const lastTierXp = sortedTiers.length > 0 ? sortedTiers[sortedTiers.length - 1].minXp : lowestXp;
-                                    onAddTier(lastTierXp + 200);
-                                }}
-                            >
-                                <PlusIcon className="w-3.5 h-3.5 mr-1" />
-                                Add Sub-Tier Threshold
-                            </Button>
-                        </div>
+                        <button 
+                            className="w-full mt-1 py-1 text-[9px] font-bold text-zinc-300 hover:text-white bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800/60 rounded-xl flex items-center justify-center gap-1 transition-colors"
+                            onClick={() => {
+                                const lastTierXp = sortedTiers.length > 0 ? sortedTiers[sortedTiers.length - 1].minXp : lowestXp;
+                                onAddTier(lastTierXp + 200);
+                            }}
+                        >
+                            <PlusIcon className="w-2.5 h-2.5" />
+                            <span>Add Sub-Tier</span>
+                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -994,8 +1034,8 @@ SET name = EXCLUDED.name,
                         </div>
                     </div>
 
-                    {/* Free View Ranks List - Shrink to fit mobile without rigid containers */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                    {/* Free View 3-Column Ranks List - Shrink to fit mobile, 3-column square cards on desktop */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5">
                         {sortedRanks.map((rank, rankIdx) => (
                             <RankCard 
                                 key={rank.id}

@@ -491,77 +491,85 @@ const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
     }
 
     return (
-        <div className="w-full space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+        <div className="w-full space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-800/60">
                 <div className="flex items-center gap-2">
-                    <ShieldCheckIcon className="w-5 h-5 text-red-500" />
-                    <h2 className="text-base sm:text-xl font-black text-white uppercase tracking-wider">Rank Structure & Hierarchy</h2>
+                    <ShieldCheckIcon className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
+                    <h2 className="text-sm sm:text-lg font-black text-white uppercase tracking-wider">Rank Structure &amp; Hierarchy</h2>
                 </div>
             </div>
 
-            <div className="bg-zinc-900/40 border border-zinc-800/80 p-2.5 sm:p-3 rounded-lg flex items-center gap-2.5 text-[11px] sm:text-xs text-zinc-300">
-                <InformationCircleIcon className="w-4 h-4 text-red-400 flex-shrink-0" />
-                <p>Read-only overview of rank badges and tiers. Manage progression rules in the <strong className="text-white">Progression</strong> tab.</p>
+            <div className="bg-zinc-950/60 border border-zinc-800/60 p-2 sm:p-2.5 rounded-xl flex items-center gap-2 text-[10px] sm:text-xs text-zinc-300 backdrop-blur-md shadow-[0_8px_20px_rgba(0,0,0,0.5)]">
+                <InformationCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400 flex-shrink-0" />
+                <p>3D Free-View overview of rank badges and tiers. Manage progression rules and live badge updates in the <strong className="text-white">Progression</strong> tab.</p>
             </div>
 
-            <div className="space-y-4 sm:space-y-6">
+            {/* 3-Column Square Layout Grid with 3D Background Shadowing & Depth */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5">
                 {activeRanks.map((rank, rankIndex) => {
                     const resolvedRankBadge = resolveRankIcon(rank.rankBadgeUrl, rank.name);
-                    return (
-                        <div key={rank.id} className="p-3 sm:p-4 rounded-xl border border-zinc-800/80 bg-zinc-900/20 space-y-3">
-                            <div className="flex items-center gap-3 sm:gap-4 pb-2 border-b border-zinc-800/60">
-                                <img 
-                                    src={resolvedRankBadge} 
-                                    alt={rank.name} 
-                                    onError={(e) => {
-                                        (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(rank.name);
-                                    }}
-                                    className="w-10 h-10 sm:w-16 sm:h-16 flex-shrink-0 object-contain drop-shadow-[0_0_12px_rgba(239,68,68,0.35)]"
-                                />
-                                <div className="min-w-0">
-                                    <h3 className="text-sm sm:text-xl font-black text-white uppercase tracking-wider">{rank.name}</h3>
-                                    <p className="text-[10px] sm:text-xs text-zinc-400 truncate mt-0.5">{rank.description || 'Standard tactical rank bracket'}</p>
-                                </div>
-                            </div>
+                    const sortedTiers = [...(rank.tiers || [])].sort((a,b) => a.minXp - b.minXp);
+                    const lowestXp = sortedTiers.length > 0 ? sortedTiers[0].minXp : (rank.minXp ?? 0);
+                    const highestXp = sortedTiers.length > 0 ? sortedTiers[sortedTiers.length - 1].minXp : lowestXp;
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                {(rank.tiers || []).sort((a,b) => a.minXp - b.minXp).map((sub) => {
-                                    const resolvedTierIcon = resolveRankIcon(sub.iconUrl, rank.name, sub.name);
-                                    return (
-                                        <div key={sub.id} className="p-2 sm:p-2.5 rounded-lg border border-zinc-800/60 bg-zinc-900/40 hover:bg-zinc-900/80 transition-all flex items-start gap-2.5">
-                                            <img 
-                                                src={resolvedTierIcon} 
-                                                alt={sub.name} 
-                                                onError={(e) => {
-                                                    (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(sub.name || rank.name);
-                                                }}
-                                                className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 object-contain drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]"
-                                            />
-                                            <div className="min-w-0 flex-grow">
-                                                <div className="flex items-center justify-between gap-1 flex-wrap">
-                                                    <h4 className="font-bold text-white text-xs sm:text-sm truncate">{sub.name}</h4>
-                                                    <span className="text-[9px] font-mono text-green-400 font-bold bg-zinc-800 px-1.5 py-0.2 rounded border border-green-500/20">{getRangeForTier(sub, rank, rankIndex)}</span>
+                    return (
+                        <div 
+                            key={rank.id} 
+                            className="relative flex flex-col justify-between p-3 sm:p-3.5 rounded-2xl bg-gradient-to-b from-zinc-900/40 via-zinc-950/70 to-zinc-950/90 hover:bg-zinc-900/80 border border-zinc-800/50 hover:border-red-500/50 shadow-[0_16px_40px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.06)] hover:shadow-[0_18px_44px_rgba(220,38,38,0.2)] backdrop-blur-xl transition-all duration-300 space-y-2.5 group"
+                        >
+                            {/* 3D Top Glow Accent */}
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4/5 h-[1px] bg-gradient-to-r from-transparent via-red-500/60 to-transparent pointer-events-none" />
+
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2.5 pb-2 border-b border-zinc-800/50">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center rounded-xl bg-gradient-to-b from-zinc-800/60 to-zinc-950 border border-zinc-700/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_12px_rgba(0,0,0,0.6)] group-hover:scale-105 transition-transform">
+                                        <img 
+                                            src={resolvedRankBadge} 
+                                            alt={rank.name} 
+                                            onError={(e) => {
+                                                (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(rank.name);
+                                            }}
+                                            className="w-7 h-7 sm:w-9 sm:h-9 object-contain drop-shadow-[0_4px_8px_rgba(239,68,68,0.4)]"
+                                        />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h3 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider group-hover:text-red-400 transition-colors truncate">{rank.name}</h3>
+                                        <span className="inline-block bg-red-950/80 text-red-300 border border-red-800/60 text-[9px] font-mono font-bold px-1.5 py-0.2 rounded mt-0.5 shadow-xs">
+                                            {lowestXp.toLocaleString()} XP{sortedTiers.length > 1 ? ` – ${highestXp.toLocaleString()}` : '+'}
+                                        </span>
+                                        <p className="text-[9px] sm:text-[10px] text-zinc-400 truncate mt-0.5">{rank.description || 'Tactical Combat Division'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1 max-h-52 overflow-y-auto pr-0.5 scrollbar-thin scrollbar-thumb-zinc-800">
+                                    {sortedTiers.map((sub) => {
+                                        const resolvedTierIcon = resolveRankIcon(sub.iconUrl, rank.name, sub.name);
+                                        return (
+                                            <div key={sub.id} className="p-1.5 rounded-xl border border-zinc-800/40 bg-zinc-900/30 hover:bg-zinc-800/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-all flex items-center gap-1.5">
+                                                <img 
+                                                    src={resolvedTierIcon} 
+                                                    alt={sub.name} 
+                                                    onError={(e) => {
+                                                        (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(sub.name || rank.name);
+                                                    }}
+                                                    className="w-4.5 h-4.5 sm:w-5 sm:h-5 flex-shrink-0 object-contain drop-shadow"
+                                                />
+                                                <div className="min-w-0 flex-grow">
+                                                    <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-0.5 xl:gap-1">
+                                                        <h4 className="font-bold text-white text-[9px] sm:text-[10px] xl:text-[11px] truncate leading-tight">{sub.name}</h4>
+                                                        <span className="text-[7.5px] sm:text-[8px] xl:text-[9px] font-mono text-green-400 font-bold bg-zinc-950 px-1 py-0.2 rounded border border-green-500/20 leading-tight w-fit">{getRangeForTier(sub, rank, rankIndex)}</span>
+                                                    </div>
                                                 </div>
-                                                {sub.perks && sub.perks.length > 0 && (
-                                                    <ul className="mt-1 text-[9px] sm:text-[11px] text-zinc-400 space-y-0.5">
-                                                        {sub.perks.map((p, i) => (
-                                                            <li key={i} className="flex items-center gap-1 truncate">
-                                                                <CheckCircleIcon className="w-2.5 h-2.5 text-red-400 flex-shrink-0" />
-                                                                <span className="truncate">{p}</span>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                )}
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     );
                 })}
                 {ranks.length === 0 && (
-                    <div className="text-center text-zinc-500 py-8 text-xs sm:text-base">No ranks have been configured. Go to the 'Progression' tab to set them up.</div>
+                    <div className="col-span-full text-center text-zinc-500 py-8 text-xs sm:text-base">No ranks have been configured. Go to the 'Progression' tab to set them up.</div>
                 )}
             </div>
         </div>

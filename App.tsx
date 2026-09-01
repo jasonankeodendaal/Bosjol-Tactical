@@ -25,6 +25,7 @@ import FrontPage from './components/FrontPage';
 import { CreatorDashboard } from './components/CreatorDashboard';
 import { ThemeInjector } from './components/ThemeInjector';
 import { RuleShowcaseModal } from './components/RuleShowcaseModal';
+import { PromotionCelebrationModal } from './components/PromotionCelebrationModal';
 
 
 // --- Creator Popup Component and Icons ---
@@ -227,149 +228,6 @@ const PublicPageFloatingIcons: React.FC<{
 
 
 // --- END Creator Popup ---
-
-const PromotionModal: React.FC<{
-    promotion: { newTier?: Tier; oldTier?: Tier; newBadges: Badge[], xpGained: number, currentXp: number, bonusXp: number, rewards: string[], finalXp: number },
-    onDismiss: () => void;
-    ranks: Rank[];
-}> = ({ promotion, onDismiss, ranks }) => {
-
-    const { oldTier, newTier, xpGained, bonusXp, rewards, finalXp } = promotion;
-    
-    // Recalculate progression for display based on the final XP (current + bonus)
-    const allTiers = ranks.flatMap(rank => rank.tiers || []).filter(Boolean).sort((a, b) => a.minXp - b.minXp);
-    const finalTierAfterBonus = [...allTiers].reverse().find(r => finalXp >= r.minXp);
-    const finalTierIndex = allTiers.findIndex(r => r.id === finalTierAfterBonus?.id);
-    const nextTierAfterBonus = finalTierIndex !== -1 && finalTierIndex < allTiers.length - 1 ? allTiers[finalTierIndex + 1] : null;
-
-    const startXp = oldTier?.minXp || 0;
-    const endXp = nextTierAfterBonus ? nextTierAfterBonus.minXp : finalXp;
-    const progressPercentage = endXp > startXp ? ((finalXp - startXp) / (endXp - startXp)) * 100 : 100;
-
-    return (
-        <div className="promotion-backdrop" onClick={onDismiss}>
-            <motion.div 
-                className="promotion-content"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, type: 'spring' }}
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="rank-display-grid">
-                    <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0, transition:{ delay: 0.2 }}} className="rank-item previous">
-                        {oldTier && <>
-                            <img src={oldTier.iconUrl} alt={oldTier.name} className="w-20 h-20" />
-                            <p>{oldTier.name}</p>
-                        </>}
-                    </motion.div>
-                    
-                    <motion.div 
-                        initial={{ opacity: 0, scale: 0, rotate: -15 }} 
-                        animate={{ opacity: 1, scale: [0, 1.2, 1], rotate: 0 }} 
-                        transition={{ duration: 0.6, type: 'spring', stiffness: 220, damping: 14 }} 
-                        className="rank-item current"
-                    >
-                       {newTier && <>
-                            <div className="rank-item-hex">
-                               <motion.img 
-                                   initial={{ scale: 0.2, opacity: 0 }}
-                                   animate={{ scale: 1, opacity: 1 }}
-                                   transition={{ delay: 0.25, duration: 0.4, type: 'spring', stiffness: 260 }}
-                                   src={newTier.iconUrl} 
-                                   alt={newTier.name} 
-                               />
-                            </div>
-                            <p>{newTier.name}</p>
-                        </>}
-                    </motion.div>
-
-                    <div className="rank-item next">{/* Placeholder for next rank if needed */}</div>
-                </div>
-
-                {newTier && <h2 className="rank-item-header">Tier Up</h2>}
-
-                <div className="xp-bar-container">
-                    <div className="xp-bar-info">
-                        <span className="xp-earned">Match RP +{xpGained}</span>
-                        {newTier && <span className="rank-up-tag">TIER UP</span>}
-                        <span className="xp-values">{finalXp.toLocaleString()} / {nextTierAfterBonus ? nextTierAfterBonus.minXp.toLocaleString() : 'MAX'}{!nextTierAfterBonus && '+'}</span>
-                    </div>
-                    <div className="xp-bar-track">
-                         <motion.div 
-                            className="xp-bar-fill" 
-                            initial={{ width: '0%'}}
-                            animate={{ width: `${progressPercentage}%`}}
-                            transition={{ duration: 1, delay: 0.5 }}
-                        />
-                    </div>
-                </div>
-                
-                {bonusXp > 0 && rewards.length > 0 && (
-                     <div className="promotion-rewards">
-                        <h3 className="promotion-rewards__title">Tier Up Rewards</h3>
-                        {rewards.map((reward, index) => (
-                             <motion.div 
-                                key={index} 
-                                initial={{ opacity: 0, x: -20, scale: 0.9 }}
-                                animate={{ opacity: 1, x: 0, scale: 1 }}
-                                transition={{ delay: 0.4 + index * 0.12, duration: 0.3 }}
-                                className="reward-item"
-                            >
-                                <span>{reward}</span>
-                                <span className="reward-item__amount">+100 RP</span>
-                            </motion.div>
-                        ))}
-                    </div>
-                )}
-
-
-                {promotion.newBadges.length > 0 && (
-                    <div className="mt-4 w-full max-w-md">
-                        <h3 className="font-semibold text-gray-300 mb-2">Achievements Unlocked</h3>
-                        <div className="space-y-2">
-                            {promotion.newBadges.map((badge, index) => (
-                                <motion.div 
-                                    key={badge.id} 
-                                    initial={{ opacity: 0, scale: 0.3, y: 25 }}
-                                    animate={{ opacity: 1, scale: [0.3, 1.1, 1], y: 0 }}
-                                    transition={{ 
-                                        duration: 0.5, 
-                                        delay: 0.45 + index * 0.15, 
-                                        type: 'spring', 
-                                        stiffness: 240, 
-                                        damping: 14 
-                                    }}
-                                    className="bg-zinc-800/80 p-2.5 rounded-xl flex items-center gap-3 border border-zinc-700/80 shadow-lg backdrop-blur-md"
-                                >
-                                    <motion.img 
-                                        initial={{ scale: 0, rotate: -20 }}
-                                        animate={{ scale: 1, rotate: 0 }}
-                                        transition={{ 
-                                            delay: 0.55 + index * 0.15, 
-                                            type: 'spring', 
-                                            stiffness: 300, 
-                                            damping: 12 
-                                        }}
-                                        src={badge.iconUrl} 
-                                        alt={badge.name} 
-                                        className="w-11 h-11 object-contain shrink-0 drop-shadow-md" 
-                                    />
-                                    <div className="text-left">
-                                        <p className="font-bold text-white text-sm tracking-wide">{badge.name}</p>
-                                        <p className="text-xs text-gray-400">{badge.description}</p>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </div>
-                 )}
-
-                <p className="tap-to-continue">Tap to continue</p>
-            </motion.div>
-        </div>
-    );
-};
-
 
 const Footer: React.FC<{ details: CompanyDetails, apiServerUrl?: string }> = ({ details, apiServerUrl }) => (
     <footer className="bg-zinc-950/80 backdrop-blur-sm border-t border-zinc-800 py-3 px-4 text-xs text-gray-500 z-40">
@@ -792,7 +650,7 @@ const AppContent: React.FC = () => {
         logActivity('Updated Own Profile');
     };
 
-    const onEventSignUp = async (eventId: string, requestedGearIds: string[], note: string) => {
+    const onEventSignUp = async (eventId: string, requestedGearIds: string[], note: string, voteGameTypeId?: string) => {
         if (!user || user.role !== 'player') return;
 
         const signupId = `${eventId}_${user.id}`;
@@ -802,6 +660,13 @@ const AppContent: React.FC = () => {
         if (existingSignup) {
             // Withdraw from event
             await deleteDoc('signups', signupId);
+            
+            // Also remove vote if voting was enabled
+            if (event?.votingEnabled && event.gameTypeVotes?.[user.id]) {
+                const newVotes = { ...event.gameTypeVotes };
+                delete newVotes[user.id];
+                await updateDoc('events', { id: event.id, gameTypeVotes: newVotes });
+            }
             logActivity(`Withdrew from event: ${event?.title}`);
         } else {
             // Sign up for event
@@ -812,6 +677,12 @@ const AppContent: React.FC = () => {
                 note,
             };
             await setDoc('signups', signupId, newSignupData);
+            
+            // Add vote
+            if (event?.votingEnabled && voteGameTypeId) {
+                const newVotes = { ...(event.gameTypeVotes || {}), [user.id]: voteGameTypeId };
+                await updateDoc('events', { id: event.id, gameTypeVotes: newVotes });
+            }
             logActivity(`Signed up for event: ${event?.title}`);
         }
     };
@@ -862,7 +733,7 @@ const AppContent: React.FC = () => {
             />
 
             <AnimatePresence>
-              {promotion && <PromotionModal promotion={promotion} onDismiss={dismissPromotion} ranks={ranks} />}
+              {promotion && <PromotionCelebrationModal promotion={promotion} onDismiss={dismissPromotion} ranks={ranks} />}
             </AnimatePresence>
 
             <AnimatePresence mode="wait">

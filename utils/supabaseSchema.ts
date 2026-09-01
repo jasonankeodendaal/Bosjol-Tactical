@@ -196,13 +196,81 @@ CREATE TABLE IF NOT EXISTS public."gameTypes" (
 CREATE TABLE IF NOT EXISTS public.gametypes (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
+    category TEXT DEFAULT 'Scenario',
     description TEXT DEFAULT '',
-    rules JSONB DEFAULT '[]'::jsonb,
-    scenarios JSONB DEFAULT '[]'::jsonb,
-    "iconUrl" TEXT DEFAULT '',
-    iconurl TEXT DEFAULT '',
+    "gameplayMechanics" TEXT DEFAULT '',
+    gameplaymechanics TEXT DEFAULT '',
+    gameplay_mechanics TEXT DEFAULT '',
+    rules TEXT DEFAULT '',
+    "rulesFileUrl" TEXT DEFAULT '',
+    rulesfileurl TEXT DEFAULT '',
+    "imageUrl" TEXT DEFAULT '',
+    imageurl TEXT DEFAULT '',
+    "audioBriefingUrl" TEXT DEFAULT '',
+    audiobriefingurl TEXT DEFAULT '',
+    theme TEXT DEFAULT 'Standard',
+    "participationXp" NUMERIC DEFAULT 50,
+    participationxp NUMERIC DEFAULT 50,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure all possible table variations and columns exist
+DO $$
+BEGIN
+    -- Create game_types table if it doesn't exist
+    CREATE TABLE IF NOT EXISTS public.game_types (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT DEFAULT 'Scenario',
+        description TEXT DEFAULT '',
+        "gameplayMechanics" TEXT DEFAULT '',
+        gameplaymechanics TEXT DEFAULT '',
+        gameplay_mechanics TEXT DEFAULT '',
+        rules TEXT DEFAULT '',
+        "rulesFileUrl" TEXT DEFAULT '',
+        rulesfileurl TEXT DEFAULT '',
+        "imageUrl" TEXT DEFAULT '',
+        imageurl TEXT DEFAULT '',
+        "audioBriefingUrl" TEXT DEFAULT '',
+        audiobriefingurl TEXT DEFAULT '',
+        theme TEXT DEFAULT 'Standard',
+        "participationXp" NUMERIC DEFAULT 50,
+        participationxp NUMERIC DEFAULT 50,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    -- Add missing columns to game_types
+    ALTER TABLE public.game_types ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'Scenario';
+    ALTER TABLE public.game_types ADD COLUMN IF NOT EXISTS "gameplayMechanics" TEXT DEFAULT '';
+    ALTER TABLE public.game_types ADD COLUMN IF NOT EXISTS gameplaymechanics TEXT DEFAULT '';
+    ALTER TABLE public.game_types ADD COLUMN IF NOT EXISTS gameplay_mechanics TEXT DEFAULT '';
+    ALTER TABLE public.game_types ADD COLUMN IF NOT EXISTS rules TEXT DEFAULT '';
+    ALTER TABLE public.game_types ADD COLUMN IF NOT EXISTS "rulesFileUrl" TEXT DEFAULT '';
+    ALTER TABLE public.game_types ADD COLUMN IF NOT EXISTS rulesfileurl TEXT DEFAULT '';
+    ALTER TABLE public.game_types ADD COLUMN IF NOT EXISTS "imageUrl" TEXT DEFAULT '';
+    ALTER TABLE public.game_types ADD COLUMN IF NOT EXISTS imageurl TEXT DEFAULT '';
+    ALTER TABLE public.game_types ADD COLUMN IF NOT EXISTS "audioBriefingUrl" TEXT DEFAULT '';
+    ALTER TABLE public.game_types ADD COLUMN IF NOT EXISTS audiobriefingurl TEXT DEFAULT '';
+    ALTER TABLE public.game_types ADD COLUMN IF NOT EXISTS theme TEXT DEFAULT 'Standard';
+    ALTER TABLE public.game_types ADD COLUMN IF NOT EXISTS "participationXp" NUMERIC DEFAULT 50;
+    ALTER TABLE public.game_types ADD COLUMN IF NOT EXISTS participationxp NUMERIC DEFAULT 50;
+
+    -- Add missing columns to gametypes
+    ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'Scenario';
+    ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS "gameplayMechanics" TEXT DEFAULT '';
+    ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS gameplaymechanics TEXT DEFAULT '';
+    ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS gameplay_mechanics TEXT DEFAULT '';
+    ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS rules TEXT DEFAULT '';
+    ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS "rulesFileUrl" TEXT DEFAULT '';
+    ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS rulesfileurl TEXT DEFAULT '';
+    ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS "imageUrl" TEXT DEFAULT '';
+    ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS imageurl TEXT DEFAULT '';
+    ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS "audioBriefingUrl" TEXT DEFAULT '';
+    ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS audiobriefingurl TEXT DEFAULT '';
+    ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS theme TEXT DEFAULT 'Standard';
+    ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS "participationXp" NUMERIC DEFAULT 50;
+    ALTER TABLE public.gametypes ADD COLUMN IF NOT EXISTS participationxp NUMERIC DEFAULT 50;
+END $$;
 
 -- 6. SETTINGS & APP CONFIGURATION TABLE
 CREATE TABLE IF NOT EXISTS public.settings (

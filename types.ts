@@ -39,6 +39,7 @@ export interface LegendaryBadge {
 
 export interface MatchRecord {
     eventId: string;
+    result?: 'win' | 'loss' | 'draw';
     playerStats: {
         kills: number;
         deaths: number;
@@ -191,6 +192,8 @@ export interface EventCore {
   theme: string;
   rules: string;
   participationXp: number;
+  winXpAward?: number;
+  winningTeamId?: 'alpha' | 'bravo' | 'tie' | null;
   status: EventStatus;
   imageUrl?: string;
   audioBriefingUrl?: string;
@@ -205,6 +208,8 @@ export interface EventCore {
   gameDurationSeconds?: number;
   eventBadges?: string[]; // Array of LegendaryBadge IDs
   awardedBadges?: { [playerId: string]: string[] }; // { 'p001': ['badgeId1'], 'p002': ['badgeId2'] }
+  votingEnabled?: boolean;
+  gameTypeVotes?: Record<string, string>; // playerId -> gameTypeId
 }
 
 // Composed type used by components
@@ -542,6 +547,7 @@ export interface GameType {
     description: string;
     gameplayMechanics: string;
     rules: string;
+    rulesFileUrl?: string; // NEW
     imageUrl?: string;
     audioBriefingUrl?: string;
     theme: string; // Poster / Accent Theme
@@ -551,5 +557,14 @@ export interface GameType {
     createdAt?: string;
     lastUpdated?: string;
 }
+
+export interface GameTypeVote {
+    id: string; // Event ID or independent voting session ID
+    eventId?: string; // Optional if tied to an event
+    active: boolean;
+    options: string[]; // Game type IDs
+    votes: Record<string, string>; // playerId -> gameTypeId
+}
+
 
 

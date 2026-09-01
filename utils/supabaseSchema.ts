@@ -686,11 +686,13 @@ export function normalizeRankRow(raw: any): Rank {
         }))
         : [];
 
+    const badgeUrl = raw.rankBadgeUrl || raw.rankbadgeurl || raw.badgeUrl || raw.badgeurl || '';
+
     return {
         id: String(raw.id),
         name: raw.name || '',
         description: raw.description || '',
-        rankBadgeUrl: raw.rankBadgeUrl || raw.rankbadgeurl || '',
+        rankBadgeUrl: badgeUrl,
         minXp: Number(raw.minXp ?? raw.minxp ?? 0) || 0,
         maxXp: raw.maxXp !== undefined ? Number(raw.maxXp) : (raw.maxxp !== undefined ? Number(raw.maxxp) : undefined),
         tiers: normalizedTiers,

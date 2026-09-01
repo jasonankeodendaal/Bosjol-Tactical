@@ -120,7 +120,19 @@ function useCollection<T extends {id: string}>(
                         const updatedDoc = normalizeCollectionItem<T>(collectionName, payload.new);
                         setData(currentData => currentData.map(item => {
                             if ((item as any).id === (updatedDoc as any).id) {
-                                return { ...item, ...updatedDoc };
+                                const mergedDoc: any = { ...item };
+                                Object.keys(updatedDoc as any).forEach(k => {
+                                    const val = (updatedDoc as any)[k];
+                                    // Only overwrite if incoming value is not null/undefined/empty string when existing item has a value
+                                    if (val !== undefined && val !== null && val !== '') {
+                                        mergedDoc[k] = val;
+                                    } else if (Array.isArray(val) && val.length > 0) {
+                                        mergedDoc[k] = val;
+                                    } else if (val === 0 || val === false) {
+                                        mergedDoc[k] = val;
+                                    }
+                                });
+                                return mergedDoc;
                             }
                             return item;
                         }));

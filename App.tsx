@@ -230,15 +230,17 @@ const PublicPageFloatingIcons: React.FC<{
 // --- END Creator Popup ---
 
 const Footer: React.FC<{ details: CompanyDetails, apiServerUrl?: string }> = ({ details, apiServerUrl }) => (
-    <footer className="bg-zinc-950/80 backdrop-blur-sm border-t border-zinc-800 py-3 px-4 text-xs text-gray-500 z-40">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-4">
-                <img src={details.logoUrl} alt={details.name} className="h-8 w-auto rounded"/>
-                <p className="hidden sm:block">© 2026 Bosjol Tactical Nelspruit Airsoft. All rights reserved.build by JSTYP.me</p>
+    <footer className="mt-auto pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] px-4 bg-zinc-950/90 border-t border-zinc-800/80 text-xs text-gray-500 relative z-0 shrink-0 w-full pointer-events-auto select-none">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+                <img src={details.logoUrl} alt={details.name} className="h-7 w-auto rounded object-contain shrink-0"/>
+                <p className="hidden sm:block truncate text-zinc-400">© 2026 Bosjol Tactical Nelspruit Airsoft. All rights reserved. • build by JSTYP.me</p>
             </div>
-            <StorageStatusIndicator apiServerUrl={apiServerUrl} />
+            <div className="shrink-0">
+                <StorageStatusIndicator apiServerUrl={apiServerUrl} />
+            </div>
         </div>
-        <p className="sm:hidden text-center mt-2">© 2026 Bosjol Tactical Nelspruit Airsoft. All rights reserved.build by JSTYP.me</p>
+        <p className="sm:hidden text-center mt-2 text-[11px] text-zinc-400">© 2026 Bosjol Tactical Nelspruit Airsoft. All rights reserved. • build by JSTYP.me</p>
     </footer>
 );
 

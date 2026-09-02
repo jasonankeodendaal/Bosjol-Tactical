@@ -381,7 +381,7 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
             </header>
 
             {/* Main Scrollable Content Body - Side-by-side Free View (Zero Heavy Box Containers) */}
-            <main className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6 lg:p-8 min-h-0 pb-28 lg:pb-8">
+            <main className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6 lg:p-8 min-h-0 pb-36 lg:pb-8">
                 <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8 items-start">
                     
                     {/* LEFT COLUMN: Tactical Intelligence, Location, Briefing, Rules (Free View Open Layout) */}
@@ -896,7 +896,7 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
             </main>
 
             {/* Mobile-Only Fixed Bottom Sticky Bar for Total & Primary Registration Action (Shrink-to-fit) */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 shadow-2xl z-30 flex items-center justify-between gap-3">
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 shadow-2xl z-50 flex items-center justify-between gap-3">
                 {!isSignedUp ? (
                     <>
                         <div className="min-w-0">

@@ -26,6 +26,8 @@ import { QrCode, Camera, ShieldCheck, LayoutGrid, CalendarDays } from 'lucide-re
 import { EventQRScannerModal } from './EventQRScannerModal';
 import { EventCalendarView } from './EventCalendarView';
 import { EventCountdownNotification } from './EventCountdownNotification';
+import { PlayerEventFullView } from './PlayerEventFullView';
+import { PlayerXpGrowthChart } from './PlayerXpGrowthChart';
 
 const SponsorModal: React.FC<{ sponsor: Sponsor, onClose: () => void, onImageClick: (url: string) => void, backgroundUrl?: string }> = ({ sponsor, onClose, onImageClick, backgroundUrl }) => {
     const defaultBg = "https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png";
@@ -252,405 +254,7 @@ const StatDisplay: React.FC<{ value: string | number, label: string, tooltip?: s
     </div>
 );
 
-const EventDetailsModal: React.FC<{ event: GameEvent, player: Player, onClose: () => void, onSignUp: (id: string, requestedGearIds: string[], note: string, voteGameTypeId?: string) => void, locations: Location[], signups: Signup[] }> = ({ event, player, onClose, onSignUp, locations, signups }) => {
-    const isSignedUp = useMemo(() => signups.some(s => s.eventId === event.id && s.playerId === player.id), [signups, event.id, player.id]);
-    const [selectedGear, setSelectedGear] = useState<string[]>([]);
-    const [note, setNote] = useState('');
-    const [wantsWeaponRental, setWantsWeaponRental] = useState(false);
-    const [selectedVoteGameTypeId, setSelectedVoteGameTypeId] = useState<string>('');
-    const dataContext = useContext(DataContext);
-    const hasInitialized = useRef(false);
-
-    const isGunOrRifle = (item: InventoryItem) => {
-        const nameLower = item.name.toLowerCase();
-        const category = item.category || '';
-        const type = item.type || '';
-        return (
-            category.includes('Rifle') ||
-            category === 'SMG' ||
-            category === 'Weapon' ||
-            type === 'Weapon' ||
-            nameLower.includes('rental') ||
-            nameLower.includes('rentl') ||
-            nameLower.includes('rifle') ||
-            nameLower.includes('gun') ||
-            nameLower.includes('aeg') ||
-            nameLower.includes('gbb') ||
-            nameLower.includes('pistol') ||
-            nameLower.includes('shotgun')
-        );
-    };
-
-    const availableGear = useMemo(() => {
-        if (!dataContext) return [];
-        return event.gearForRent.map(itemId => {
-            const item = dataContext.inventory.find(i => i.id === itemId);
-            if (!item) return null;
-            const price = event.rentalPriceOverrides?.[itemId] ?? item.salePrice;
-            return { ...item, salePrice: price }; // Return item with a potentially overridden price
-        }).filter((item): item is InventoryItem => item !== null);
-    }, [dataContext, event]);
-
-    const alreadyRentedCount = useMemo(() => {
-        const counts: Record<string, number> = {};
-        // Count from confirmed attendees
-        event.attendees.forEach(a => {
-            (a.rentedGearIds || []).forEach(id => {
-                counts[id] = (counts[id] || 0) + 1;
-            });
-        });
-        // Count from players signed up but not yet confirmed
-        const eventSignups = signups.filter(s => s.eventId === event.id);
-        eventSignups.forEach(s => {
-            // Exclude the current player from this count if they are already signed up, to allow them to "re-signup" without their own rentals blocking them.
-            if (s.playerId !== player.id || !isSignedUp) {
-                 (s.requestedGearIds || []).forEach(id => {
-                    counts[id] = (counts[id] || 0) + 1;
-                });
-            }
-        });
-        return counts;
-    }, [event.attendees, event.id, player.id, isSignedUp, signups]);
-
-    const weaponRentals = useMemo(() => {
-        return availableGear.filter(isGunOrRifle).sort((a, b) => {
-            return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
-        });
-    }, [availableGear]);
-
-    const extraRentals = useMemo(() => {
-        return availableGear.filter(item => !isGunOrRifle(item));
-    }, [availableGear]);
-
-    // Initialize state exactly once when modal mounts
-    useEffect(() => {
-        if (hasInitialized.current) return;
-        if (isSignedUp) {
-            const signup = signups.find(s => s.eventId === event.id && s.playerId === player.id);
-            if (signup) {
-                const gearIds = signup.requestedGearIds || [];
-                setSelectedGear(gearIds);
-                const hasWeapon = gearIds.some(id => {
-                    const item = availableGear.find(g => g.id === id);
-                    return item ? isGunOrRifle(item) : false;
-                });
-                setWantsWeaponRental(hasWeapon);
-                if (signup.note) {
-                    setNote(signup.note);
-                }
-                
-                // Load vote if any
-                if (event.gameTypeVotes?.[player.id]) {
-                    setSelectedVoteGameTypeId(event.gameTypeVotes[player.id]);
-                }
-                
-                hasInitialized.current = true;
-            }
-        } else {
-            setSelectedGear([]);
-            setWantsWeaponRental(false);
-            setNote('');
-            
-            // Default to event's gameType if voting is enabled
-            if (event.votingEnabled && event.gameTypeId) {
-                setSelectedVoteGameTypeId(event.gameTypeId);
-            }
-            
-            hasInitialized.current = true;
-        }
-    }, [isSignedUp, event.id, player.id, signups, availableGear, event.votingEnabled, event.gameTypeId, event.gameTypeVotes]);
-
-    const totalCost = useMemo(() => {
-        const gearCost = selectedGear.reduce((sum, gearId) => {
-            const item = availableGear.find(g => g.id === gearId);
-            return sum + (item?.salePrice || 0);
-        }, 0);
-        return event.gameFee + gearCost;
-    }, [selectedGear, availableGear, event.gameFee]);
-    
-    const locationDetails = useMemo(() => locations.find(l => l.name === event.location), [locations, event.location]);
-
-    const handleGearToggle = (itemId: string) => {
-        setSelectedGear(prev => 
-            prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
-        );
-    };
-
-    const handleWeaponRentalToggle = (checked: boolean) => {
-        setWantsWeaponRental(checked);
-        if (checked) {
-            // Find next available weapon
-            const nextAvailableWeapon = weaponRentals.find(item => {
-                const availableStock = item.stock - (alreadyRentedCount[item.id] || 0);
-                return availableStock > 0;
-            });
-            if (nextAvailableWeapon) {
-                setSelectedGear(prev => {
-                    // Remove any existing weapons first to prevent duplicate gun selections
-                    const filtered = prev.filter(id => {
-                        const item = availableGear.find(g => g.id === id);
-                        return item ? !isGunOrRifle(item) : true;
-                    });
-                    return [...filtered, nextAvailableWeapon.id];
-                });
-            } else {
-                setWantsWeaponRental(false);
-                alert("All primary rental weapons are currently out of stock!");
-            }
-        } else {
-            // Remove all weapons
-            setSelectedGear(prev => 
-                prev.filter(id => {
-                    const item = availableGear.find(g => g.id === id);
-                    return item ? !isGunOrRifle(item) : true;
-                })
-            );
-        }
-    };
-
-    return (
-        <Modal isOpen={true} onClose={onClose} title={event.title}>
-            <div className="max-h-[70vh] overflow-y-auto pr-2">
-                {event.imageUrl && <img src={event.imageUrl} alt={event.title} className="w-full h-48 object-cover rounded-lg mb-4" />}
-                <div className="flex justify-between items-center mb-4">
-                     <BadgePill color="amber">{event.theme}</BadgePill>
-                     <p className="text-sm font-semibold text-gray-300">{new Date(event.date).toLocaleDateString()} @ {event.startTime}</p>
-                 </div>
-                 <div className="space-y-4 text-gray-300">
-                     <div>
-                         <h3 className="font-bold text-lg text-white mb-2">Location</h3>
-                         {locationDetails ? (
-                             <div className="bg-zinc-800/50 p-3 rounded-lg border border-zinc-700/50">
-                                 <p className="font-semibold text-gray-200">{locationDetails.name}</p>
-                                 <p className="text-xs text-gray-400">{locationDetails.address}</p>
-                                 {locationDetails.pinLocationUrl && (
-                                     <a href={locationDetails.pinLocationUrl} target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline text-xs flex items-center gap-1 mt-1">
-                                         <MapPinIcon className="w-3 h-3"/> Open in Maps
-                                     </a>
-                                 )}
-                                 {locationDetails.imageUrls.length > 0 && (
-                                     <div className="flex space-x-2 overflow-x-auto mt-2 pb-1">
-                                         {locationDetails.imageUrls.map((url, i) => (
-                                             <img key={i} src={url} alt={`Location view ${i+1}`} className="w-24 h-16 object-cover rounded-md flex-shrink-0" />
-                                         ))}
-                                     </div>
-                                 )}
-                             </div>
-                         ) : <p>{event.location}</p>}
-                     </div>
-                      {event.audioBriefingUrl && (
-                         <div>
-                             <h3 className="font-bold text-lg text-white mb-2">Audio Briefing</h3>
-                             <audio controls src={event.audioBriefingUrl} className="w-full">
-                                 Your browser does not support the audio element.
-                             </audio>
-                         </div>
-                     )}
-                     <div>
-                         <h3 className="font-bold text-lg text-white mb-1">Briefing</h3>
-                         <p>{event.description}</p>
-                     </div>
-                      <div>
-                         <h3 className="font-bold text-lg text-white mb-1">Rules of Engagement</h3>
-                         <p>{event.rules}</p>
-                     </div>
-                     {event.eventBadges && event.eventBadges.length > 0 && dataContext?.legendaryBadges && (
-                          <div>
-                             <h3 className="font-bold text-lg text-white mb-2">Event Commendations</h3>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                 {event.eventBadges.map(badgeId => {
-                                     const badge = dataContext.legendaryBadges.find(b => b.id === badgeId);
-                                     if (!badge) return null;
-                                     return (
-                                         <div key={badgeId} className="bg-zinc-800/50 p-2 rounded-lg text-center border border-amber-700/50" title={badge.description}>
-                                             {badge.iconUrl ? (
-                                                 <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 mx-auto"/>
-                                             ) : (
-                                                 <TrophyIcon className="w-10 h-10 mx-auto text-amber-400" />
-                                             )}
-                                             <p className="text-xs font-semibold text-amber-300 mt-1 truncate">{badge.name}</p>
-                                         </div>
-                                     )
-                                 })}
-                             </div>
-                         </div>
-                     )}
-                      
-                     {!isSignedUp && (
-                         <div className="pt-4 border-t border-zinc-700/50">
-                             <h3 className="font-bold text-lg text-white mb-2">Registration & Fees</h3>
-                             <div className="space-y-4">
-                                 <div className="flex justify-between items-center text-gray-300 text-sm">
-                                     <span>Game Fee:</span>
-                                     <span className="font-semibold text-white">R{event.gameFee.toFixed(2)} (Payable on-site)</span>
-                                 </div>
-                                 {availableGear.length > 0 && (
-                                     <div>
-                                         <h4 className="font-semibold text-gray-200 mb-2">Rental Equipment</h4>
-                                         
-                                         {/* 1. Base Weapon Rental Package */}
-                                         {weaponRentals.length > 0 && (
-                                             <div className="bg-zinc-800/40 p-3.5 rounded-xl border border-zinc-700/50 mb-4">
-                                                 <div className="flex justify-between items-center">
-                                                     <div>
-                                                         <h5 className="font-bold text-white text-sm">Base Gun / Rifle Rental</h5>
-                                                         <p className="text-[11px] text-gray-400">Pre-selects next available armory replica (Rental 1, Rental 2 etc.)</p>
-                                                     </div>
-                                                     <label className="relative inline-flex items-center cursor-pointer">
-                                                         <input 
-                                                             type="checkbox" 
-                                                             checked={wantsWeaponRental}
-                                                             onChange={(e) => handleWeaponRentalToggle(e.target.checked)}
-                                                             className="sr-only peer"
-                                                         />
-                                                         <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
-                                                     </label>
-                                                 </div>
-
-                                                 {wantsWeaponRental && (
-                                                     <div className="mt-3 bg-zinc-900/80 p-2.5 rounded-lg border border-zinc-800 flex justify-between items-center">
-                                                         <div className="flex items-center gap-2">
-                                                             <span className="text-lg">⚙️</span>
-                                                             <div>
-                                                                 <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Assigned Armory Unit</p>
-                                                                 <p className="text-xs font-bold text-red-400">
-                                                                     {(() => {
-                                                                         const assignedId = selectedGear.find(id => {
-                                                                             const item = availableGear.find(g => g.id === id);
-                                                                             return item ? isGunOrRifle(item) : false;
-                                                                         });
-                                                                         const item = availableGear.find(g => g.id === assignedId);
-                                                                         return item ? item.name : 'Allocating replica...';
-                                                                     })()}
-                                                                 </p>
-                                                             </div>
-                                                         </div>
-                                                         <span className="font-bold text-white text-sm font-mono">
-                                                             {(() => {
-                                                                 const assignedId = selectedGear.find(id => {
-                                                                     const item = availableGear.find(g => g.id === id);
-                                                                     return item ? isGunOrRifle(item) : false;
-                                                                 });
-                                                                 const item = availableGear.find(g => g.id === assignedId);
-                                                                 return item ? `R${item.salePrice.toFixed(2)}` : '';
-                                                             })()}
-                                                         </span>
-                                                     </div>
-                                                 )}
-                                             </div>
-                                         )}
-
-                                         {/* 2. Extra Accessories & Add-on Gear */}
-                                         {extraRentals.length > 0 && (
-                                             <div className="space-y-2 mt-4">
-                                                 <h5 className="font-semibold text-gray-300 text-xs">Extra Gear (Tactical gloves, vests, masks, etc.)</h5>
-                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                     {extraRentals.map(item => {
-                                                         const availableStock = item.stock - (alreadyRentedCount[item.id] || 0);
-                                                         const isAvailable = availableStock > 0;
-                                                         const isSelected = selectedGear.includes(item.id);
-                                                         return (
-                                                             <button
-                                                                 key={item.id}
-                                                                 type="button"
-                                                                 disabled={!isAvailable}
-                                                                 onClick={() => handleGearToggle(item.id)}
-                                                                 className={`flex justify-between items-center p-2.5 rounded-lg text-left border transition-all text-xs ${
-                                                                     isSelected 
-                                                                         ? 'bg-red-950/20 border-red-500 text-white font-semibold' 
-                                                                         : isAvailable 
-                                                                             ? 'bg-zinc-800/40 border-zinc-700/60 hover:bg-zinc-800 text-gray-300' 
-                                                                             : 'bg-zinc-900 border-zinc-800 text-gray-600 cursor-not-allowed opacity-40'
-                                                                 }`}
-                                                             >
-                                                                 <div className="flex items-center gap-2">
-                                                                     <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${isSelected ? 'border-red-500 bg-red-600' : 'border-zinc-500 bg-transparent'}`}>
-                                                                         {isSelected && <span className="text-[10px] text-white">✓</span>}
-                                                                     </div>
-                                                                     <span className="truncate max-w-[120px]">{item.name}</span>
-                                                                 </div>
-                                                                 <div className="text-right">
-                                                                     <span className="font-bold text-white font-mono">R{item.salePrice.toFixed(2)}</span>
-                                                                     <span className="block text-[9px] text-zinc-400">
-                                                                         {isAvailable ? `${availableStock} left` : 'Out of stock'}
-                                                                     </span>
-                                                                 </div>
-                                                             </button>
-                                                         )
-                                                     })}
-                                                 </div>
-                                             </div>
-                                         )}
-                                     </div>
-                                 )}
-                                 <div>
-                                     <h4 className="font-semibold text-gray-200 mb-2">Note to Admin (Optional)</h4>
-                                     <textarea 
-                                         value={note}
-                                         onChange={e => setNote(e.target.value)}
-                                         rows={2} 
-                                         className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" 
-                                         placeholder="e.g., I will be arriving 30 mins late." 
-                                     />
-                                 </div>
-                             </div>
-                         </div>
-                     )}
-                 </div>
-             </div>
-             <div className="mt-6 pt-4 border-t border-zinc-700/50">
-                  {event.votingEnabled && !isSignedUp && (
-                     <div className="mb-4 space-y-2">
-                         <h4 className="font-semibold text-gray-200">Vote for Game Type</h4>
-                         <p className="text-xs text-gray-400">Cast your vote for which game type you'd like to play at this event.</p>
-                         <select 
-                             value={selectedVoteGameTypeId} 
-                             onChange={e => setSelectedVoteGameTypeId(e.target.value)} 
-                             className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-                         >
-                             <option value="" disabled>Select a Game Type</option>
-                             {dataContext?.gameTypes?.map(gt => (
-                                 <option key={gt.id} value={gt.id}>{gt.name}</option>
-                             ))}
-                         </select>
-                     </div>
-                 )}
-                 {event.votingEnabled && isSignedUp && (
-                     <div className="mb-4">
-                         <p className="text-sm text-amber-400 font-semibold text-center border border-amber-500/20 bg-amber-950/20 p-2 rounded-lg">
-                             You voted for: {dataContext?.gameTypes?.find(g => g.id === event.gameTypeVotes?.[player.id])?.name || 'No vote cast'}
-                         </p>
-                     </div>
-                 )}
-                  {!isSignedUp && (
-                     <div className="space-y-1 text-sm mb-4">
-                         <div className="flex justify-between items-center text-gray-300">
-                             <span>Game Fee:</span>
-                             <span className="font-semibold">R{event.gameFee.toFixed(2)}</span>
-                         </div>
-                         
-                             <div className="flex justify-between items-center text-gray-300">
-                                 <span>Rental Gear:</span>
-                                 <span className="font-semibold">R{(totalCost - event.gameFee).toFixed(2)}</span>
-                             </div>
-                         
-                         <div className="flex justify-between items-center text-lg font-bold text-white pt-1 border-t border-zinc-700/50 mt-1">
-                             <span>Total Due:</span>
-                             <span className="text-green-400">R{totalCost.toFixed(2)}</span>
-                         </div>
-                     </div>
-                 )}
-                 <Button 
-                     onClick={() => onSignUp(event.id, isSignedUp ? [] : selectedGear, note, selectedVoteGameTypeId)}
-                     variant={isSignedUp ? 'danger' : 'primary'}
-                     className="w-full"
-                 >
-                      {isSignedUp ? 'Withdraw Registration' : 'Confirm Registration'}
-                 </Button>
-             </div>
-         </Modal>
-     )
- }
+const EventDetailsModal = PlayerEventFullView;
 
 const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({ activeTab, setActiveTab }) => {
     const [menuOpen, setMenuOpen] = useState(false);
@@ -822,7 +426,7 @@ const BadgeProgressCard: React.FC<{badge: Badge, player: Player, ranks: Rank[]}>
     );
 }
 
-const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'events' | 'sponsors' | 'ranks'>> = ({ player, players, events, sponsors, ranks }) => {
+const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'events' | 'sponsors' | 'ranks'> & { onSelectEvent?: (e: GameEvent) => void }> = ({ player, players, events, sponsors, ranks, onSelectEvent }) => {
     const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
@@ -898,25 +502,60 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                         </div>
                     </div>
                     
-                    <div className="sm:ml-auto text-center sm:text-right bg-gradient-to-b from-zinc-900/80 to-zinc-950/80 p-4 rounded-xl border border-zinc-800/50 shadow-inner sm:w-auto w-full flex sm:flex-col justify-between sm:justify-center items-center">
+                    <div className="sm:ml-auto text-center sm:text-right bg-gradient-to-b from-zinc-900/80 to-zinc-950/80 p-3.5 sm:p-4 rounded-xl border border-zinc-800/50 shadow-inner sm:w-auto w-full flex flex-col justify-between sm:justify-center items-center sm:items-end gap-1.5">
                         <p className="text-xs sm:text-sm font-mono text-gray-400 uppercase tracking-widest">Percentile</p>
-                        <p className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-500 mt-1 sm:mt-2">Top {(100 - percentile).toFixed(1)}%</p>
+                        <p className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-500">Top {(100 - percentile).toFixed(1)}%</p>
+                        <div className="w-full sm:w-32 h-2 bg-zinc-950 rounded-full border border-zinc-800 overflow-hidden relative mt-0.5">
+                            <motion.div 
+                                key={`percentile-top-meter-${percentile}`}
+                                className="h-full rounded-full bg-gradient-to-r from-red-600 via-amber-500 to-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)] relative overflow-hidden"
+                                initial={{ width: '0%' }}
+                                animate={{ width: `${percentile}%` }}
+                                transition={{ 
+                                    type: 'spring', 
+                                    stiffness: 45, 
+                                    damping: 14, 
+                                    duration: 1.2,
+                                    delay: 0.1 
+                                }}
+                            >
+                                <motion.div 
+                                    animate={{ x: ['-100%', '200%'] }}
+                                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                                    className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12 pointer-events-none"
+                                />
+                            </motion.div>
+                        </div>
                     </div>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                     <div className="flex justify-between items-baseline text-xs sm:text-sm">
                         <p className="font-semibold text-gray-300">Progression</p>
-                        <p className="font-mono text-amber-300">{playerXP.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'} RP</p>
+                        <p className="font-mono text-amber-300 font-bold">{playerXP.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'} RP</p>
                     </div>
-                    <div className="w-full bg-zinc-900 rounded-full h-4 border border-zinc-800 shadow-inner">
+                    <div className="w-full bg-zinc-900 rounded-full h-4 border border-zinc-800 shadow-inner overflow-hidden relative p-0.5">
                         <motion.div 
-                            className="bg-gradient-to-r from-red-800 to-red-600 h-full rounded-full"
+                            key={`rank-prog-bar-${playerXP}`}
+                            className="bg-gradient-to-r from-red-600 via-amber-500 to-yellow-400 h-full rounded-full shadow-[0_0_12px_rgba(245,158,11,0.5)] relative overflow-hidden"
                             initial={{ width: '0%' }}
                             animate={{ width: `${progressPercentage}%` }}
-                            transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-                        />
+                            transition={{ 
+                                type: 'spring',
+                                stiffness: 50,
+                                damping: 15,
+                                duration: 1.1 
+                            }}
+                        >
+                            {/* Filling shimmer animation */}
+                            <motion.div 
+                                animate={{ x: ['-100%', '200%'] }}
+                                transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                                className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/35 to-transparent skew-x-12 pointer-events-none"
+                            />
+                            <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                        </motion.div>
                     </div>
-                     <p className="text-right text-xs text-gray-400">
+                     <p className="text-right text-xs text-gray-400 font-mono">
                         {next ? `${(next.minXp - playerXP > 0 ? next.minXp - playerXP : 0).toLocaleString()} RP to ${next.name}` : 'Maximum Rank Reached!'}
                     </p>
                 </div>
@@ -970,9 +609,26 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                         </div>
                     </div>
                 </div>
-                <div className="overview-card next-event-card">
-                    <h3 className="overview-section-title">Next Up</h3>
-                     {nextEvent ? (<div><h4 className="font-bold text-white truncate">{nextEvent.title}</h4><p className="text-xs text-gray-400">{new Date(nextEvent.date).toLocaleDateString()}</p></div>) : (<p className="text-center text-gray-500 text-xs">No upcoming events.</p>)}
+                <div 
+                    className={`overview-card next-event-card ${nextEvent ? 'cursor-pointer hover:border-red-500/60 transition-all group' : ''}`}
+                    onClick={() => nextEvent && onSelectEvent?.(nextEvent)}
+                >
+                    <div className="flex items-center justify-between">
+                        <h3 className="overview-section-title">Next Up</h3>
+                        {nextEvent && (
+                            <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider group-hover:underline">
+                                View Event →
+                            </span>
+                        )}
+                    </div>
+                     {nextEvent ? (
+                         <div>
+                             <h4 className="font-bold text-white truncate group-hover:text-red-400 transition-colors">{nextEvent.title}</h4>
+                             <p className="text-xs text-gray-400">{new Date(nextEvent.date).toLocaleDateString()}</p>
+                         </div>
+                     ) : (
+                         <p className="text-center text-gray-500 text-xs">No upcoming events.</p>
+                     )}
                 </div>
             </div>
             
@@ -1060,89 +716,91 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                 })()}
             </div>
             
-            <div className="overview-card lifetime-stats-card space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
-                    <div>
-                        <h3 className="overview-section-title !mb-0 flex items-center gap-2">
-                            <ChartBarIcon className="w-5 h-5 text-red-500" /> Lifetime Performance
-                        </h3>
-                        <p className="text-xs text-zinc-400 mt-0.5">
-                            Real-time dynamic career metrics based on matches, XP earned, badges rewarded, and official honors.
-                        </p>
-                    </div>
+            {/* D3.js Line Chart: XP Progression & Trajectory */}
+            <PlayerXpGrowthChart player={player} events={events} ranks={ranks} />
+
+            {/* Compact Lifetime Performance Strip */}
+            <div className="overview-card lifetime-stats-card !p-3.5 sm:!p-4 space-y-2.5">
+                <div className="flex flex-row items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
                     <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300 flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <ChartBarIcon className="w-4 h-4 text-red-500" />
+                        <h3 className="text-xs sm:text-sm font-black font-mono text-white uppercase tracking-wider !mb-0">
+                            Lifetime Performance
+                        </h3>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-zinc-300 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             Live Synced
                         </span>
                     </div>
                 </div>
 
-                <div className="p-2 sm:p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 lifetime-stats-grid">
-                    <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col justify-between">
-                        <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
-                            <span>Total RP (XP)</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 lifetime-stats-grid">
+                    <div className="p-2 sm:p-2.5 rounded-lg bg-zinc-950/70 border border-zinc-800/80 flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                            <span>Total RP</span>
                             <InfoTooltip text="Total lifetime Rank Points earned across combat matches, badge rewards, honors, and XP bonuses." />
                         </div>
-                        <p className="text-2xl sm:text-3xl font-black font-mono text-amber-300">
+                        <p className="text-lg sm:text-xl font-black font-mono text-amber-300 mt-0.5">
                             {perf.totalLifetimeXp.toLocaleString()}
                         </p>
-                        <p className="text-[10px] text-red-400 font-mono mt-1">+{perf.avgXpPerMatch} RP / match avg</p>
+                        <p className="text-[9px] text-red-400 font-mono">+{perf.avgXpPerMatch} / match</p>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col justify-between">
-                        <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
-                            <span>Matches Deployed</span>
-                            <span className="text-[10px] font-mono text-zinc-500">Events</span>
+                    <div className="p-2 sm:p-2.5 rounded-lg bg-zinc-950/70 border border-zinc-800/80 flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                            <span>Matches</span>
+                            <span className="text-[9px] font-mono text-zinc-500">Events</span>
                         </div>
-                        <p className="text-2xl sm:text-3xl font-black font-mono text-white">
+                        <p className="text-lg sm:text-xl font-black font-mono text-white mt-0.5">
                             {perf.matchesPlayed.toLocaleString()}
                         </p>
-                        <p className="text-[10px] text-zinc-400 font-mono mt-1">Career matches</p>
+                        <p className="text-[9px] text-zinc-400 font-mono">Career ops</p>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col justify-between">
-                        <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
-                            <span>Badges Earned</span>
-                            <span className="text-[10px] font-mono text-amber-400">{perf.legendaryBadgesCount} Mythic</span>
+                    <div className="p-2 sm:p-2.5 rounded-lg bg-zinc-950/70 border border-zinc-800/80 flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                            <span>Badges</span>
+                            <span className="text-[9px] font-mono text-amber-400">{perf.legendaryBadgesCount} Mythic</span>
                         </div>
-                        <p className="text-2xl sm:text-3xl font-black font-mono text-white">
+                        <p className="text-lg sm:text-xl font-black font-mono text-white mt-0.5">
                             {perf.totalBadgesEarned}
                         </p>
-                        <p className="text-[10px] text-zinc-400 font-mono mt-1">{perf.standardBadgesCount} Combat Badges</p>
+                        <p className="text-[9px] text-zinc-400 font-mono">{perf.standardBadgesCount} Ribbons</p>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col justify-between">
-                        <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
-                            <span>Badge Rewards RP</span>
+                    <div className="p-2 sm:p-2.5 rounded-lg bg-zinc-950/70 border border-zinc-800/80 flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                            <span>Badge RP</span>
                             <InfoTooltip text="Bonus Rank Points awarded from unlocking combat ribbons and legendary commendations." />
                         </div>
-                        <p className="text-2xl sm:text-3xl font-black font-mono text-amber-400">
+                        <p className="text-lg sm:text-xl font-black font-mono text-amber-400 mt-0.5">
                             +{perf.badgeRewardsXp.toLocaleString()}
                         </p>
-                        <p className="text-[10px] text-zinc-500 font-mono mt-1">Earned badge bonuses</p>
+                        <p className="text-[9px] text-zinc-500 font-mono">Award bonuses</p>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col justify-between">
-                        <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
-                            <span>Official Honors</span>
-                            <span className="text-[10px] font-mono text-purple-400">Hall of Fame</span>
+                    <div className="p-2 sm:p-2.5 rounded-lg bg-zinc-950/70 border border-zinc-800/80 flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                            <span>Honors</span>
+                            <span className="text-[9px] font-mono text-purple-400">Hall of Fame</span>
                         </div>
-                        <p className="text-2xl sm:text-3xl font-black font-mono text-white">
+                        <p className="text-lg sm:text-xl font-black font-mono text-white mt-0.5">
                             {perf.honorsCount}
                         </p>
-                        <p className="text-[10px] text-zinc-400 font-mono mt-1">{perf.motmCount} MotM • {perf.motmthCount} MotMth</p>
+                        <p className="text-[9px] text-zinc-400 font-mono">{perf.motmCount} MotM • {perf.motmthCount} MotMth</p>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col justify-between">
-                        <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                    <div className="p-2 sm:p-2.5 rounded-lg bg-zinc-950/70 border border-zinc-800/80 flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400">
                             <span>Combat Rating</span>
-                            <span className="text-[10px] font-mono text-emerald-400">Grade {perf.combatGrade}</span>
+                            <span className="text-[9px] font-mono text-emerald-400">{perf.combatGrade}</span>
                         </div>
-                        <p className="text-2xl sm:text-3xl font-black font-mono text-emerald-400">
-                            {perf.combatRating}<span className="text-xs text-zinc-500 font-normal">/100</span>
+                        <p className="text-lg sm:text-xl font-black font-mono text-emerald-400 mt-0.5">
+                            {perf.combatRating}<span className="text-[10px] text-zinc-500 font-normal">/100</span>
                         </p>
-                        <p className="text-[10px] text-zinc-400 font-mono mt-1">Overall Tactical Index</p>
+                        <p className="text-[9px] text-zinc-400 font-mono">Tactical Index</p>
                     </div>
                 </div>
             </div>
@@ -1236,10 +894,18 @@ const PodiumPlayer: React.FC<{ player: Player, rank: 1 | 2 | 3, delay: number }>
 };
 
 
-const EventsTab: React.FC<Pick<PlayerDashboardProps, 'events' | 'player' | 'onEventSignUp' | 'locations' | 'signups'> & { onOpenQRScanner?: () => void }> = ({ events, player, onEventSignUp, locations, signups, onOpenQRScanner }) => {
+const EventsTab: React.FC<Pick<PlayerDashboardProps, 'events' | 'player' | 'onEventSignUp' | 'locations' | 'signups'> & { onOpenQRScanner?: () => void, onSelectEvent?: (e: GameEvent) => void }> = ({ events, player, onEventSignUp, locations, signups, onOpenQRScanner, onSelectEvent }) => {
     const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
     const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');
     const [selectedEvent, setSelectedEvent] = useState<GameEvent | null>(null);
+
+    const handleSelectEvent = (event: GameEvent) => {
+        if (onSelectEvent) {
+            onSelectEvent(event);
+        } else {
+            setSelectedEvent(event);
+        }
+    };
 
     const upcomingEvents = events
         .filter(e => e.status === 'Upcoming' || e.status === 'In Progress')
@@ -1308,13 +974,13 @@ const EventsTab: React.FC<Pick<PlayerDashboardProps, 'events' | 'player' | 'onEv
                 {viewMode === 'calendar' ? (
                     <EventCalendarView
                         events={events}
-                        onSelectEvent={(ev) => setSelectedEvent(ev)}
+                        onSelectEvent={(ev) => handleSelectEvent(ev)}
                         activeFilter={filter}
                     />
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-4 max-h-[65vh] overflow-y-auto pr-1 sm:pr-2">
                         {eventsToShow.length > 0 ? eventsToShow.map(event => (
-                            <div key={event.id} className="cursor-pointer h-full" onClick={() => setSelectedEvent(event)}>
+                            <div key={event.id} className="cursor-pointer h-full" onClick={() => handleSelectEvent(event)}>
                                 <EventCard 
                                     event={event} 
                                     signupsCount={signups ? signups.filter(s => s.eventId === event.id).length : undefined} 
@@ -1634,6 +1300,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
     const { player, players, sponsors, events, onEventSignUp, legendaryBadges, raffles, ranks, locations, signups, onPlayerUpdate, onOpenInfoModal } = props;
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
     const [showQRScanner, setShowQRScanner] = useState<boolean>(false);
+    const [selectedEvent, setSelectedEvent] = useState<GameEvent | null>(null);
     const auth = useContext(AuthContext);
     const data = useContext(DataContext);
     
@@ -1686,7 +1353,11 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                         events={events} 
                         signups={signups} 
                         onSelectEvent={(event) => {
-                            setActiveTab('Events');
+                            if (event) {
+                                setSelectedEvent(event);
+                            } else {
+                                setActiveTab('Events');
+                            }
                         }} 
                     />
                     <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -1698,7 +1369,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.2 }}
                         >
-                            {activeTab === 'Overview' && <OverviewTab player={player} players={players} events={events} sponsors={sponsors} ranks={ranks} />}
+                            {activeTab === 'Overview' && <OverviewTab player={player} players={players} events={events} sponsors={sponsors} ranks={ranks} onSelectEvent={setSelectedEvent} />}
                             {activeTab === 'Events' && (
                                 <EventsTab 
                                     events={events} 
@@ -1707,6 +1378,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                                     locations={locations} 
                                     signups={signups} 
                                     onOpenQRScanner={() => setShowQRScanner(true)}
+                                    onSelectEvent={setSelectedEvent}
                                 />
                             )}
                             {activeTab === 'Raffles' && <RafflesTab raffles={raffles} player={player} players={players} />}
@@ -1731,6 +1403,21 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                     setDoc={data.setDoc}
                 />
             )}
+
+            <AnimatePresence>
+                {selectedEvent && (
+                    <PlayerEventFullView
+                        event={selectedEvent}
+                        player={player}
+                        locations={locations}
+                        signups={signups}
+                        onClose={() => setSelectedEvent(null)}
+                        onSignUp={(id, requestedGearIds, note, voteGameTypeId) => {
+                            onEventSignUp(id, requestedGearIds, note, voteGameTypeId);
+                        }}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };

@@ -680,15 +680,28 @@ WHERE id = '${player.id}';`;
                                     <p className="text-sm font-semibold text-gray-300">Progression</p>
                                     <p className="text-sm font-mono text-amber-300">{playerXP.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'} RP</p>
                                 </div>
-                                <div className="w-full bg-zinc-900 rounded-full h-4 border border-zinc-800 shadow-inner">
+                                <div className="w-full bg-zinc-900 rounded-full h-4 border border-zinc-800 shadow-inner overflow-hidden relative p-0.5">
                                     <motion.div 
-                                        className="bg-gradient-to-r from-red-600 to-red-800 h-full rounded-full"
+                                        key={`profile-xp-bar-${playerXP}`}
+                                        className="bg-gradient-to-r from-red-600 via-amber-500 to-yellow-400 h-full rounded-full shadow-[0_0_12px_rgba(245,158,11,0.5)] relative overflow-hidden"
                                         initial={{ width: '0%' }}
                                         animate={{ width: `${progressPercentage}%` }}
-                                        transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-                                    />
+                                        transition={{ 
+                                            type: 'spring',
+                                            stiffness: 50,
+                                            damping: 15,
+                                            duration: 1.1 
+                                        }}
+                                    >
+                                        <motion.div 
+                                            animate={{ x: ['-100%', '200%'] }}
+                                            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                                            className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/35 to-transparent skew-x-12 pointer-events-none"
+                                        />
+                                        <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                                    </motion.div>
                                 </div>
-                                <p className="text-right text-xs text-gray-400">
+                                <p className="text-right text-xs text-gray-400 font-mono">
                                     {next ? `${(next.minXp - playerXP > 0 ? next.minXp - playerXP : 0).toLocaleString()} RP to ${next.name}` : 'Maximum Rank Reached!'}
                                 </p>
                             </div>
@@ -698,7 +711,21 @@ WHERE id = '${player.id}';`;
                                     <div>
                                         <h4 className="text-sm font-semibold text-gray-400 mb-1">Percentile</h4>
                                         <p className="text-lg font-bold text-white">Top {(100 - percentile).toFixed(1)}%</p>
-                                        <p className="text-xs text-gray-500">of all operators</p>
+                                        <div className="w-full h-2 bg-zinc-950 rounded-full border border-zinc-800 overflow-hidden relative mt-1">
+                                            <motion.div 
+                                                key={`profile-percentile-${percentile}`}
+                                                className="h-full rounded-full bg-gradient-to-r from-red-600 via-amber-500 to-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)] relative overflow-hidden"
+                                                initial={{ width: '0%' }}
+                                                animate={{ width: `${percentile}%` }}
+                                                transition={{ 
+                                                    type: 'spring', 
+                                                    stiffness: 45, 
+                                                    damping: 14, 
+                                                    duration: 1.2 
+                                                }}
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-gray-500 font-mono mt-0.5">of all operators</p>
                                     </div>
                                     {next && (
                                         <div>

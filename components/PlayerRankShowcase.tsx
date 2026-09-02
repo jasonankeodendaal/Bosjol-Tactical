@@ -514,10 +514,11 @@ export const PlayerRankShowcase: React.FC<PlayerRankShowcaseProps> = ({
                                 </button>
                                 <button
                                     onClick={() => setShowCelebrationPreview(true)}
-                                    className="py-1.5 px-2 bg-gradient-to-r from-amber-500/20 to-yellow-400/20 hover:from-amber-500/30 hover:to-yellow-400/30 border border-amber-400/40 text-amber-300 hover:text-amber-200 font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-[0_0_12px_rgba(245,158,11,0.2)] flex items-center justify-center gap-1 font-mono truncate"
+                                    className="py-1.5 px-2 bg-gradient-to-r from-amber-500/25 to-yellow-400/25 hover:from-amber-500/35 hover:to-yellow-400/35 border border-amber-400/60 text-amber-300 hover:text-amber-200 font-black text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.25)] flex items-center justify-center gap-1 font-mono truncate"
+                                    title="Experience 3D Live-Action Promotion Ceremony"
                                 >
-                                    <SparklesIcon className="w-3 h-3 text-amber-400 flex-shrink-0 animate-pulse" />
-                                    <span>CEREMONY</span>
+                                    <SparklesIcon className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 animate-pulse" />
+                                    <span>3D CEREMONY</span>
                                 </button>
                             </div>
                         </div>

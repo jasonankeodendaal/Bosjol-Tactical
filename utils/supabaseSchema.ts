@@ -287,16 +287,46 @@ BEGIN
     ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS "participationXp" NUMERIC DEFAULT 50;
     ALTER TABLE public."gameTypes" ADD COLUMN IF NOT EXISTS participationxp NUMERIC DEFAULT 50;
 
-    -- Add team, winner, and gameTypeId columns to events
+    -- Add team, winner, gameTypeId, rentals, fees, and voting columns to events
     ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "gameTypeId" TEXT DEFAULT '';
     ALTER TABLE public.events ADD COLUMN IF NOT EXISTS gametypeid TEXT DEFAULT '';
     ALTER TABLE public.events ADD COLUMN IF NOT EXISTS game_type_id TEXT DEFAULT '';
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "gameFee" NUMERIC DEFAULT 0;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS gamefee NUMERIC DEFAULT 0;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "gearForRent" JSONB DEFAULT '[]'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS gearforrent JSONB DEFAULT '[]'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "rentalPriceOverrides" JSONB DEFAULT '{}'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS rentalpriceoverrides JSONB DEFAULT '{}'::jsonb;
     ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "teamCount" NUMERIC DEFAULT 2;
     ALTER TABLE public.events ADD COLUMN IF NOT EXISTS teamcount NUMERIC DEFAULT 2;
     ALTER TABLE public.events ADD COLUMN IF NOT EXISTS team_count NUMERIC DEFAULT 2;
     ALTER TABLE public.events ADD COLUMN IF NOT EXISTS teams JSONB DEFAULT '{}'::jsonb;
     ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "winningTeamId" TEXT DEFAULT '';
     ALTER TABLE public.events ADD COLUMN IF NOT EXISTS winningteamid TEXT DEFAULT '';
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "liveStats" JSONB DEFAULT '{}'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS livestats JSONB DEFAULT '{}'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "votingEnabled" BOOLEAN DEFAULT false;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS votingenabled BOOLEAN DEFAULT false;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "votingGameTypeIds" JSONB DEFAULT '[]'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS votinggametypeids JSONB DEFAULT '[]'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "gameTypeVotes" JSONB DEFAULT '{}'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS gametypevotes JSONB DEFAULT '{}'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "audioBriefingUrl" TEXT DEFAULT '';
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS audiobriefingurl TEXT DEFAULT '';
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS rules TEXT DEFAULT '';
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS theme TEXT DEFAULT 'Standard';
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "participationXp" NUMERIC DEFAULT 50;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS participationxp NUMERIC DEFAULT 50;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "winXpAward" NUMERIC DEFAULT 100;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS winxpaward NUMERIC DEFAULT 100;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "gameDurationSeconds" NUMERIC DEFAULT 2700;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS gamedurationseconds NUMERIC DEFAULT 2700;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "eventBadges" JSONB DEFAULT '[]'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS eventbadges JSONB DEFAULT '[]'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "awardedBadges" JSONB DEFAULT '{}'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS awardedbadges JSONB DEFAULT '{}'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS "xpOverrides" JSONB DEFAULT '{}'::jsonb;
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS xpoverrides JSONB DEFAULT '{}'::jsonb;
 END $$;
 
 -- 6. SETTINGS & APP CONFIGURATION TABLE
@@ -337,9 +367,24 @@ CREATE TABLE IF NOT EXISTS public.signups (
     selectedweapon TEXT DEFAULT '',
     "tacticalRole" TEXT DEFAULT '',
     tacticalrole TEXT DEFAULT '',
+    "requestedGearIds" JSONB DEFAULT '[]'::jsonb,
+    requestedgearids JSONB DEFAULT '[]'::jsonb,
+    note TEXT DEFAULT '',
+    "operatorNote" TEXT DEFAULT '',
+    operatornote TEXT DEFAULT '',
+    "votedGameTypeId" TEXT DEFAULT '',
+    votedgametypeid TEXT DEFAULT '',
     amount NUMERIC DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS "requestedGearIds" JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS requestedgearids JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS note TEXT DEFAULT '';
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS "operatorNote" TEXT DEFAULT '';
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS operatornote TEXT DEFAULT '';
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS "votedGameTypeId" TEXT DEFAULT '';
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS votedgametypeid TEXT DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS public.notifications (
     id TEXT PRIMARY KEY,
@@ -445,13 +490,47 @@ CREATE TABLE IF NOT EXISTS public.inventory (
     name TEXT NOT NULL,
     category TEXT DEFAULT 'Gear',
     quantity NUMERIC DEFAULT 0,
+    stock NUMERIC DEFAULT 0,
     "pricePerUnit" NUMERIC DEFAULT 0,
     priceperunit NUMERIC DEFAULT 0,
+    "salePrice" NUMERIC DEFAULT 0,
+    saleprice NUMERIC DEFAULT 0,
+    type TEXT DEFAULT 'Gear',
+    "isRental" BOOLEAN DEFAULT false,
+    isrental BOOLEAN DEFAULT false,
+    description TEXT DEFAULT '',
+    condition TEXT DEFAULT 'New',
+    "serialNumber" TEXT DEFAULT '',
+    serialnumber TEXT DEFAULT '',
     "supplierId" TEXT,
     supplierid TEXT,
     status TEXT DEFAULT 'In Stock',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "salePrice" NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS saleprice NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS stock NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'Gear';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "isRental" BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS isrental BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS condition TEXT DEFAULT 'New';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "serialNumber" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS serialnumber TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "purchaseDate" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS purchasedate TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "lastServiceDate" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS lastservicedate TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS sku TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "purchasePrice" NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS purchaseprice NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "reorderLevel" NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS reorderlevel NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "warrantyInfo" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS warrantyinfo TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "imageUrl" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS imageurl TEXT DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS public.suppliers (
     id TEXT PRIMARY KEY,
@@ -836,15 +915,73 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
     if (collectionName === 'events') {
         const tc = Number(item.teamCount ?? item.teamcount ?? item.team_count ?? 2) || 2;
         const winner = item.winningTeamId || item.winningteamid || null;
+        const gameFee = Number(item.gameFee ?? item.gamefee ?? item.price ?? 0) || 0;
         return {
             ...item,
             id: String(item.id),
+            gameFee: gameFee,
+            gamefee: gameFee,
+            gearForRent: Array.isArray(item.gearForRent) ? item.gearForRent : (item.gearforrent || []),
+            gearforrent: Array.isArray(item.gearForRent) ? item.gearForRent : (item.gearforrent || []),
+            rentalPriceOverrides: item.rentalPriceOverrides || item.rentalpriceoverrides || {},
+            rentalpriceoverrides: item.rentalPriceOverrides || item.rentalpriceoverrides || {},
             teamCount: tc,
             teamcount: tc,
             team_count: tc,
             winningTeamId: winner,
             winningteamid: winner,
             teams: item.teams || { alpha: [], bravo: [] },
+            liveStats: item.liveStats || item.livestats || {},
+            livestats: item.liveStats || item.livestats || {},
+            attendees: Array.isArray(item.attendees) ? item.attendees : [],
+            votingEnabled: !!(item.votingEnabled || item.votingenabled),
+            votingenabled: !!(item.votingEnabled || item.votingenabled),
+            votingGameTypeIds: Array.isArray(item.votingGameTypeIds) ? item.votingGameTypeIds : (item.votinggametypeids || []),
+            votinggametypeids: Array.isArray(item.votingGameTypeIds) ? item.votingGameTypeIds : (item.votinggametypeids || []),
+            gameTypeVotes: item.gameTypeVotes || item.gametypevotes || {},
+            gametypevotes: item.gameTypeVotes || item.gametypevotes || {},
+        };
+    }
+
+    if (collectionName === 'signups') {
+        const requestedGear = Array.isArray(item.requestedGearIds) ? item.requestedGearIds : (item.requestedgearids || []);
+        const note = item.note || item.operatorNote || item.operatornote || '';
+        return {
+            ...item,
+            id: String(item.id),
+            eventId: item.eventId || item.eventid || '',
+            eventid: item.eventId || item.eventid || '',
+            playerId: item.playerId || item.playerid || '',
+            playerid: item.playerId || item.playerid || '',
+            requestedGearIds: requestedGear,
+            requestedgearids: requestedGear,
+            note: note,
+            operatorNote: note,
+            operatornote: note,
+            votedGameTypeId: item.votedGameTypeId || item.votedgametypeid || '',
+            votedgametypeid: item.votedGameTypeId || item.votedgametypeid || '',
+        };
+    }
+
+    if (collectionName === 'inventory') {
+        const salePrice = Number(item.salePrice ?? item.saleprice ?? item.pricePerUnit ?? item.priceperunit ?? 0) || 0;
+        const stock = Number(item.stock ?? item.quantity ?? 0) || 0;
+        const isRental = !!(item.isRental || item.isrental);
+        return {
+            ...item,
+            id: String(item.id),
+            name: item.name || '',
+            category: item.category || 'Gear',
+            salePrice: salePrice,
+            saleprice: salePrice,
+            pricePerUnit: salePrice,
+            priceperunit: salePrice,
+            stock: stock,
+            quantity: stock,
+            isRental: isRental,
+            isrental: isRental,
+            condition: item.condition || 'New',
+            description: item.description || '',
         };
     }
 

@@ -4,13 +4,15 @@ import { motion, Variants } from 'framer-motion';
 import { GameEvent, EventType, EventStatus } from '../types';
 import { BadgePill } from './BadgePill';
 import { CalendarIcon } from './icons/Icons';
-import { QrCode, Users } from 'lucide-react';
+import { QrCode, Users, ClipboardList } from 'lucide-react';
 
 interface EventCardProps {
   event: GameEvent;
   className?: string;
   onShowQR?: (event: GameEvent) => void;
+  onShowRentals?: (event: GameEvent) => void;
   signupsCount?: number;
+  rentalsCount?: number;
 }
 
 const eventTypeColorMap: Record<EventType, 'amber' | 'blue' | 'green' | 'red'> = {
@@ -27,7 +29,7 @@ const eventStatusColorMap: Record<EventStatus, 'green' | 'blue' | 'red' | 'amber
     'Cancelled': 'red',
 };
 
-const EventCardComponent: React.FC<EventCardProps> = ({ event, className = '', onShowQR, signupsCount }) => {
+const EventCardComponent: React.FC<EventCardProps> = ({ event, className = '', onShowQR, onShowRentals, signupsCount, rentalsCount }) => {
   const cardVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
@@ -66,19 +68,39 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, className = '', o
           <span>{attendingCount} {attendingCount === 1 ? 'player' : 'players'} attending</span>
         </div>
 
-        {onShowQR && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onShowQR(event);
-            }}
-            className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-lg bg-black/80 hover:bg-red-600 text-zinc-200 hover:text-white border border-red-500/40 backdrop-blur-md text-[9px] font-bold transition-all shadow-md flex items-center gap-1 z-10"
-            title="Enlarge Event QR Code for Check-In"
-          >
-            <QrCode className="w-3 h-3 text-red-400" />
-            <span className="hidden sm:inline">QR Pass</span>
-          </button>
-        )}
+        {/* Action Buttons Overlay */}
+        <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
+          {onShowRentals && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onShowRentals(event);
+              }}
+              className="px-1.5 py-0.5 rounded-lg bg-black/80 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-white/20 backdrop-blur-md text-[9px] font-bold transition-all shadow-md flex items-center gap-1"
+              title="Equipment Rentals Summary & Manifest"
+            >
+              <ClipboardList className="w-3 h-3 text-red-400" />
+              <span className="hidden sm:inline">Rentals</span>
+              {rentalsCount !== undefined && rentalsCount > 0 && (
+                <span className="text-red-400 font-mono">({rentalsCount})</span>
+              )}
+            </button>
+          )}
+
+          {onShowQR && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onShowQR(event);
+              }}
+              className="px-1.5 py-0.5 rounded-lg bg-black/80 hover:bg-red-600 text-zinc-200 hover:text-white border border-red-500/40 backdrop-blur-md text-[9px] font-bold transition-all shadow-md flex items-center gap-1"
+              title="Enlarge Event QR Code for Check-In"
+            >
+              <QrCode className="w-3 h-3 text-red-400" />
+              <span className="hidden sm:inline">QR Pass</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="p-1.5 sm:p-3 flex flex-col flex-grow justify-between min-w-0">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import type { GameEvent, Signup } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
@@ -7,6 +7,8 @@ import { EventCard } from './EventCard';
 import { EventQRCodeModal } from './EventQRCodeModal';
 import { EventCalendarView } from './EventCalendarView';
 import { LayoutGrid, CalendarDays } from 'lucide-react';
+import { DataContext } from '../data/DataContext';
+import { EquipmentRentalsSummaryModal } from './EquipmentRentalsSummaryModal';
 
 interface EventsTabProps {
     events: GameEvent[];
@@ -15,9 +17,11 @@ interface EventsTabProps {
 }
 
 export const EventsTab: React.FC<EventsTabProps> = ({ events, signups = [], onManageEvent }) => {
+    const dataContext = useContext(DataContext);
     const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
     const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');
     const [selectedQREvent, setSelectedQREvent] = useState<GameEvent | null>(null);
+    const [selectedRentalEvent, setSelectedRentalEvent] = useState<GameEvent | null>(null);
 
     const upcomingEvents = events
         .filter(e => e.status === 'Upcoming' || e.status === 'In Progress')
@@ -85,15 +89,22 @@ export const EventsTab: React.FC<EventsTabProps> = ({ events, signups = [], onMa
                     />
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-4 max-h-[65vh] overflow-y-auto pr-1 sm:pr-2">
-                        {eventsToShow.length > 0 ? eventsToShow.map(event => (
-                            <div key={event.id} className="cursor-pointer h-full" onClick={() => onManageEvent(event.id)}>
-                                <EventCard 
-                                    event={event} 
-                                    onShowQR={(ev) => setSelectedQREvent(ev)}
-                                    signupsCount={signups ? signups.filter(s => s.eventId === event.id).length : undefined}
-                                />
-                            </div>
-                        )) : (
+                        {eventsToShow.length > 0 ? eventsToShow.map(event => {
+                            const eventRentalsCount = (event.attendees || []).reduce((acc, a) => acc + (a.rentedGearIds || []).length, 0) +
+                                signups.filter(s => s.eventId === event.id).reduce((acc, s) => acc + (s.requestedGearIds || []).length, 0);
+
+                            return (
+                                <div key={event.id} className="cursor-pointer h-full" onClick={() => onManageEvent(event.id)}>
+                                    <EventCard 
+                                        event={event} 
+                                        onShowQR={(ev) => setSelectedQREvent(ev)}
+                                        onShowRentals={(ev) => setSelectedRentalEvent(ev)}
+                                        signupsCount={signups ? signups.filter(s => s.eventId === event.id).length : undefined}
+                                        rentalsCount={eventRentalsCount}
+                                    />
+                                </div>
+                            );
+                        }) : (
                              <p className="text-center text-gray-500 py-8 col-span-full text-xs sm:text-base">No {filter} events found.</p>
                         )}
                     </div>
@@ -105,6 +116,19 @@ export const EventsTab: React.FC<EventsTabProps> = ({ events, signups = [], onMa
                     event={selectedQREvent}
                     signups={signups}
                     onClose={() => setSelectedQREvent(null)}
+                />
+            )}
+
+            {selectedRentalEvent && (
+                <EquipmentRentalsSummaryModal
+                    event={selectedRentalEvent}
+                    player={null}
+                    players={dataContext?.players || []}
+                    signups={signups}
+                    inventory={dataContext?.inventory || []}
+                    onClose={() => setSelectedRentalEvent(null)}
+                    isAdmin={true}
+                    initialTab="admin-manifest"
                 />
             )}
         </DashboardCard>

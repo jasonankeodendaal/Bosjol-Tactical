@@ -213,6 +213,7 @@ export interface EventCore {
   eventBadges?: string[]; // Array of LegendaryBadge IDs
   awardedBadges?: { [playerId: string]: string[] }; // { 'p001': ['badgeId1'], 'p002': ['badgeId2'] }
   votingEnabled?: boolean;
+  votingGameTypeIds?: string[];
   gameTypeVotes?: Record<string, string>; // playerId -> gameTypeId
 }
 

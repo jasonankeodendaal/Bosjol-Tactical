@@ -92,8 +92,11 @@ export const AdminGameTypesManager: React.FC = () => {
   };
 
   const handleDelete = async (id: string, name: string) => {
+    console.log('Attempting to delete game type:', name, id);
     if (confirm(`Are you sure you want to delete the game type "${name}"? Events using this template will retain their settings.`)) {
+      console.log('Confirmed deletion for:', id);
       await deleteDoc('gameTypes', id);
+      console.log('deleteDoc called');
     }
   };
 

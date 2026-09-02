@@ -9,9 +9,10 @@ import { BadgePill } from './BadgePill';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
-import { QrCode, Ban, RotateCcw, Database, Sparkles, Image as ImageIcon, Palette } from 'lucide-react';
+import { QrCode, Ban, RotateCcw, Database, Sparkles, Image as ImageIcon, Palette, ClipboardList, Users } from 'lucide-react';
 import { EventQRCodeModal } from './EventQRCodeModal';
 import { EventPosterModal } from './EventPosterModal';
+import { EquipmentRentalsSummaryModal } from './EquipmentRentalsSummaryModal';
 
 interface ManageEventPageProps {
     event?: GameEvent;
@@ -65,12 +66,25 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
 
     const [showQRModal, setShowQRModal] = useState(false);
     const [showPosterModal, setShowPosterModal] = useState(false);
+    const [showRentalManifestModal, setShowRentalManifestModal] = useState(false);
     const [formData, setFormData] = useState<Omit<GameEvent, 'id'>>(() => {
         if (!event) return defaultEvent;
         // Ensure date is in 'YYYY-MM-DD' format for the input
         const date = new Date(event.date).toISOString().split('T')[0];
         return { ...event, date };
     });
+    
+    // Total rental items count across attendees and signups
+    const eventRentalsCount = useMemo(() => {
+        let count = 0;
+        (formData.attendees || []).forEach(a => {
+            count += (a.rentedGearIds || []).length;
+        });
+        signups.filter(s => s.eventId === event?.id).forEach(s => {
+            count += (s.requestedGearIds || []).length;
+        });
+        return count;
+    }, [formData.attendees, signups, event?.id]);
     
     const [liveStats, setLiveStats] = useState<Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>>>(event?.liveStats || {});
     
@@ -332,13 +346,18 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                     });
                 }
     
+                const playerLiveStats = liveStats[player.id] || {};
+                const killsToAdd = Number(playerLiveStats.kills) || 0;
+                const deathsToAdd = Number(playerLiveStats.deaths) || 0;
+                const headshotsToAdd = Number(playerLiveStats.headshots) || 0;
+
                 const newMatchRecord = {
                     eventId: event!.id,
                     result: matchResult,
                     playerStats: {
-                        kills: 0,
-                        deaths: 0,
-                        headshots: 0,
+                        kills: killsToAdd,
+                        deaths: deathsToAdd,
+                        headshots: headshotsToAdd,
                     }
                 };
     
@@ -355,10 +374,10 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                     stats: {
                         ...currentStats,
                         xp: currentStats.xp + xpGained,
-                        kills: currentStats.kills,
-                        deaths: currentStats.deaths,
-                        headshots: currentStats.headshots,
-                        gamesPlayed: currentStats.gamesPlayed + 1,
+                        kills: (currentStats.kills || 0) + killsToAdd,
+                        deaths: (currentStats.deaths || 0) + deathsToAdd,
+                        headshots: (currentStats.headshots || 0) + headshotsToAdd,
+                        gamesPlayed: (currentStats.gamesPlayed || 0) + 1,
                     },
                     badges: newBadgesForPlayer.length > 0 
                         ? [...(mutablePlayer.badges || []), ...newBadgesForPlayer] 
@@ -430,6 +449,34 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     
         setPlayers(updatedPlayers);
         setTransactions(prev => [...prev, ...newTransactions]);
+
+        // Persist all modified players to Supabase so XP, badges, stats, and ranks are saved live and permanently
+        const modifiedPlayers = updatedPlayers.filter(p => {
+            const orig = players.find(o => o.id === p.id);
+            if (!orig) return false;
+            return (
+                (orig.stats?.xp ?? 0) !== (p.stats?.xp ?? 0) ||
+                (orig.stats?.gamesPlayed ?? 0) !== (p.stats?.gamesPlayed ?? 0) ||
+                (orig.stats?.kills ?? 0) !== (p.stats?.kills ?? 0) ||
+                (orig.stats?.deaths ?? 0) !== (p.stats?.deaths ?? 0) ||
+                (orig.stats?.headshots ?? 0) !== (p.stats?.headshots ?? 0) ||
+                (orig.badges?.length || 0) !== (p.badges?.length || 0) ||
+                (orig.matchHistory?.length || 0) !== (p.matchHistory?.length || 0) ||
+                (orig.xpAdjustments?.length || 0) !== (p.xpAdjustments?.length || 0) ||
+                orig.rank?.id !== p.rank?.id
+            );
+        });
+
+        const playerPersistPromises = modifiedPlayers.map(p => 
+            dataContext?.updateDoc ? dataContext.updateDoc('players', p) : setDoc('players', p.id, p)
+        );
+
+        // Persist all newly generated transactions (event fees, gear rentals) to Supabase
+        const transactionPersistPromises = newTransactions.map(tx => 
+            dataContext?.setDoc ? dataContext.setDoc('transactions', tx.id, tx) : setDoc('transactions', tx.id, tx)
+        );
+
+        await Promise.all([...playerPersistPromises, ...transactionPersistPromises]);
     
         const finalEventData: GameEvent = {
             ...(event || {}), ...formData,
@@ -572,6 +619,23 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                         <Sparkles className="w-4 h-4 text-amber-300" />
                         <span>Generate Poster (JPG)</span>
                     </Button>
+                    {event && (
+                        <Button
+                            onClick={() => setShowRentalManifestModal(true)}
+                            size="sm"
+                            className="!bg-zinc-900 hover:!bg-zinc-800 !border !border-white/20 text-white font-bold flex items-center gap-2"
+                            title="View Equipment Rental Manifest"
+                        >
+                            <ClipboardList className="w-4 h-4 text-red-400" />
+                            <span className="hidden sm:inline">Equipment Rentals Summary</span>
+                            <span className="sm:hidden">Rentals</span>
+                            {eventRentalsCount > 0 && (
+                                <span className="px-1.5 py-0.2 rounded-full bg-red-600 text-white text-[10px] font-mono font-bold">
+                                    {eventRentalsCount}
+                                </span>
+                            )}
+                        </Button>
+                    )}
                     {event && (
                         <Button
                             onClick={() => setShowQRModal(true)}
@@ -848,17 +912,41 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             
                             <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-700/50 mt-4">
                                 <label className="flex items-center gap-3 cursor-pointer">
-                                    <input
-                                        type="checkbox"
+                                    <input 
+                                        type="checkbox" 
                                         checked={!!formData.votingEnabled}
-                                        onChange={(e) => setFormData(f => ({ ...f, votingEnabled: e.target.checked }))}
-                                        className="h-5 w-5 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500"
+                                        onChange={e => setFormData(f => ({ ...f, votingEnabled: e.target.checked }))}
+                                        className="w-4 h-4 rounded border-zinc-700 text-red-600 focus:ring-red-500 bg-zinc-950"
                                     />
-                                    <div>
-                                        <span className="text-white font-bold">Enable Game Type Voting</span>
-                                        <p className="text-xs text-gray-400">Allow players to vote for their preferred game type when signing up.</p>
-                                    </div>
+                                    <span className="text-sm font-medium text-gray-200">Enable Game Voting</span>
                                 </label>
+                                
+                                {formData.votingEnabled && (
+                                    <div className="mt-4 space-y-2">
+                                        <label className="block text-sm font-medium text-gray-400">Select Game Types for Voting</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {(dataContext?.gameTypes || []).map(gt => (
+                                                <label key={gt.id} className="flex items-center gap-2 text-xs text-zinc-300 p-2 bg-zinc-950 rounded border border-zinc-800 hover:border-zinc-700 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={formData.votingGameTypeIds?.includes(gt.id) || false}
+                                                        onChange={e => {
+                                                            setFormData(f => {
+                                                                const currentIds = f.votingGameTypeIds || [];
+                                                                const newIds = e.target.checked
+                                                                    ? [...currentIds, gt.id]
+                                                                    : currentIds.filter(id => id !== gt.id);
+                                                                return { ...f, votingGameTypeIds: newIds };
+                                                            });
+                                                        }}
+                                                        className="w-3.5 h-3.5 rounded border-zinc-700 text-red-600 focus:ring-red-500 bg-zinc-900"
+                                                    />
+                                                    {gt.name}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                                 
                                 {formData.votingEnabled && (
                                     <div className="mt-3 text-sm text-zinc-300">
@@ -1061,6 +1149,28 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
 
                 {/* Right Column - Players & Actions */}
                 <div className="lg:col-span-1 space-y-6">
+                    {event && (
+                        <div className="p-3.5 rounded-xl bg-zinc-900/90 border border-white/10 flex items-center justify-between gap-3 shadow-md">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="p-2 rounded-lg bg-red-950/60 border border-red-500/30 text-red-400 shrink-0">
+                                    <ClipboardList className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-bold text-white truncate">Equipment Rentals Summary</p>
+                                    <p className="text-[11px] text-zinc-400 font-mono">
+                                        {eventRentalsCount} gear item{eventRentalsCount === 1 ? '' : 's'} reserved
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                size="sm"
+                                onClick={() => setShowRentalManifestModal(true)}
+                                className="!text-xs !py-1.5 !px-3 font-bold !bg-zinc-800 hover:!bg-zinc-700 text-white shrink-0"
+                            >
+                                View Manifest
+                            </Button>
+                        </div>
+                    )}
                      <DashboardCard title={`Signed Up (${signedUpPlayersDetails.length})`} icon={<UserIcon className="w-6 h-6" />}>
                         <div className="p-4 space-y-2 max-h-60 overflow-y-auto">
                             {signedUpPlayersDetails.length > 0 ? signedUpPlayersDetails.map(player => (
@@ -1187,6 +1297,24 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                     onUpdateEventImage={(newUrl) => {
                         setFormData(f => ({ ...f, imageUrl: newUrl }));
                     }}
+                />
+            )}
+
+            {showRentalManifestModal && (
+                <EquipmentRentalsSummaryModal
+                    event={{
+                        ...(event || {}),
+                        ...formData,
+                        id: event?.id || 'preview_event',
+                        liveStats: liveStats
+                    }}
+                    player={null}
+                    players={players}
+                    signups={signups}
+                    inventory={inventory}
+                    onClose={() => setShowRentalManifestModal(false)}
+                    isAdmin={true}
+                    initialTab="admin-manifest"
                 />
             )}
         </div>

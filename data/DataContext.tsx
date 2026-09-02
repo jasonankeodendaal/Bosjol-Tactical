@@ -187,7 +187,14 @@ async function safeUpsertRow(table: string, initialPayload: any): Promise<boolea
     let attempts = 0;
     while (attempts < 10) {
         attempts++;
-        const { error } = await supabase.from(table).upsert(currentPayload);
+        
+        // Handle case-sensitive table names for collections created with quotes
+        const tableName = table === 'gameTypes' ? '"gameTypes"' : 
+                          table === 'legendaryBadges' ? '"legendaryBadges"' : 
+                          table === 'gamificationSettings' ? '"gamificationSettings"' : 
+                          table;
+
+        const { error } = await supabase.from(tableName).upsert(currentPayload);
         if (!error) {
             recordDatabaseActivity('writes', 1);
             return true;
@@ -577,6 +584,34 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         notifications: setNotifications,
     };
 
+    // Stable reference to current collection data arrays
+    const collectionDataRef = useRef<Record<string, any[]>>({});
+    collectionDataRef.current = {
+        players,
+        events,
+        gameTypes,
+        ranks,
+        badges,
+        legendaryBadges,
+        gamificationSettings,
+        tacticalRules,
+        sponsors,
+        vouchers,
+        inventory,
+        suppliers,
+        transactions,
+        locations,
+        raffles,
+        honors,
+        signups,
+        sessions,
+        activityLog,
+        socialLinks,
+        carouselMedia,
+        apiSetupGuide,
+        notifications,
+    };
+
     const setDoc = useCallback(async (collectionName: string, docId: string, data: object) => {
         const fullDoc = { id: docId, ...data };
         const setter = collectionSettersRef.current[collectionName];
@@ -629,26 +664,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [ranks]);
 
     const updateDoc = useCallback(async <T extends {id: string}>(collectionName: string, doc: Partial<T> & {id: string}) => {
-        const { id, ...newData } = doc;
+        const { id } = doc;
+        const currentList = collectionDataRef.current[collectionName] || [];
+        const existingItem = currentList.find((item: any) => item.id === id);
+        const mergedDoc: any = existingItem ? { ...existingItem, ...doc } : { ...doc };
 
         if (collectionName === 'players') {
-            const rawDoc: any = doc;
-            if (rawDoc.stats?.xp !== undefined) {
-                const calculatedTier = getRankForPlayer({ stats: rawDoc.stats }, ranks);
-                rawDoc.rank = calculatedTier;
-                (newData as any).rank = calculatedTier;
+            if (mergedDoc.stats?.xp !== undefined) {
+                const calculatedTier = getRankForPlayer({ stats: mergedDoc.stats }, ranks);
+                mergedDoc.rank = calculatedTier;
             }
         }
 
         // Instant optimistic local update
         const setter = collectionSettersRef.current[collectionName];
         if (setter) {
-            setter(prev => prev.map(item => item.id === id ? { ...item, ...doc } : item));
+            setter(prev => prev.map(item => item.id === id ? { ...item, ...mergedDoc } : item));
         }
 
         if (IS_LIVE_DATA && supabase) {
             try {
-                const preparedPayload = prepareSupabasePayload(collectionName, { id, ...newData }, ranks);
+                const preparedPayload = prepareSupabasePayload(collectionName, mergedDoc, ranks);
                 await safeUpsertRow(collectionName, preparedPayload);
             } catch (err: any) {
                 console.warn(`Network error in updateDoc (${collectionName}):`, err?.message || err);
@@ -657,6 +693,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [ranks]);
 
     const deleteDoc = useCallback(async (collectionName: string, docId: string) => {
+        console.log(`deleteDoc called for ${collectionName}/${docId}`);
         // Find existing doc in state if possible to extract any storage URLs
         let targetDoc: any = null;
         const setter = collectionSettersRef.current[collectionName];
@@ -694,7 +731,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     ]);
                 }
 
-                const { error } = await supabase.from(collectionName).delete().eq('id', docId);
+                console.log(`Attempting to delete from Supabase table: ${collectionName}`);
+                
+                // Handle case-sensitive table names for collections created with quotes
+                const tableName = collectionName === 'gameTypes' ? '"gameTypes"' : 
+                                  collectionName === 'legendaryBadges' ? '"legendaryBadges"' : 
+                                  collectionName === 'gamificationSettings' ? '"gamificationSettings"' : 
+                                  collectionName;
+                
+                const { error } = await supabase.from(tableName).delete().eq('id', docId);
                 if (error) {
                     console.warn(`Supabase deleteDoc error on ${collectionName}:`, error.message || error);
                     alert(`Failed to delete: ${error.message}`);
@@ -703,6 +748,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         setter(prev => [...prev, targetDoc]);
                     }
                 } else {
+                    console.log(`Successfully deleted from Supabase table: ${collectionName}`);
                     recordDatabaseActivity('deletes', 1);
                 }
             } catch (err: any) {

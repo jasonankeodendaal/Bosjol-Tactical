@@ -16,6 +16,61 @@ interface FileUploadProps {
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
+// Helper to downscale and compress images to lightweight JPEG/WebP before upload or data URL fallback
+async function compressImage(file: File, maxWidth = 800, maxHeight = 800, quality = 0.85): Promise<{ blob: Blob; dataUrl: string }> {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ blob: file, dataUrl: reader.result as string });
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > maxWidth || height > maxHeight) {
+        if (width > height) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        } else {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+      }
+
+      const mimeType = 'image/jpeg';
+      const dataUrl = canvas.toDataURL(mimeType, quality);
+      canvas.toBlob(
+        (blob) => {
+          resolve({ blob: blob || file, dataUrl });
+        },
+        mimeType,
+        quality
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      const reader = new FileReader();
+      reader.onload = () => resolve({ blob: file, dataUrl: reader.result as string });
+      reader.readAsDataURL(file);
+    };
+    img.src = objectUrl;
+  });
+}
+
 export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multiple = false, apiServerUrl, onUploadingChange }) => {
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [message, setMessage] = useState('');
@@ -25,19 +80,20 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
     setStatus('uploading');
     onUploadingChange?.(true);
 
-    const targetFile = fileToUpload;
-    setMessage(`Uploading ${targetFile.name} to Supabase...`);
+    setMessage(`Optimizing and uploading ${fileToUpload.name}...`);
+    const { blob: optimizedBlob, dataUrl: optimizedDataUrl } = await compressImage(fileToUpload);
 
     // Direct push to Supabase Storage if configured
     if (isSupabaseConfigured() && supabase) {
-      const sanitizedName = targetFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const sanitizedName = fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const filePath = `uploads/${Date.now()}_${sanitizedName}`;
-      const bucketsToTry = ['media', 'public', 'uploads', 'settings'];
+      const bucketsToTry = ['avatars', 'media', 'public', 'uploads', 'settings'];
 
       for (const bucket of bucketsToTry) {
         try {
-          const { data, error } = await supabase.storage.from(bucket).upload(filePath, targetFile, {
+          const { data, error } = await supabase.storage.from(bucket).upload(filePath, optimizedBlob, {
             cacheControl: '3600',
+            contentType: 'image/jpeg',
             upsert: true
           });
           if (!error && data) {
@@ -55,7 +111,7 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
     if (apiServerUrl) {
         // Upload to external server
         const formData = new FormData();
-        formData.append('file', targetFile);
+        formData.append('file', optimizedBlob, fileToUpload.name);
 
         try {
             const response = await fetch(`${apiServerUrl}/upload`, {
@@ -73,16 +129,8 @@ export const ImageUpload: React.FC<FileUploadProps> = ({ onUpload, accept, multi
             throw new Error((error as Error).message || 'Failed to connect to the API server.');
         }
     } else {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                resolve(reader.result as string);
-            };
-            reader.onerror = (error) => {
-                reject(new Error(`Failed to read file: ${error}`));
-            };
-            reader.readAsDataURL(targetFile);
-        });
+        // Lightweight optimized base64 fallback
+        return optimizedDataUrl;
     }
   }, [apiServerUrl, onUploadingChange]);
 

@@ -127,13 +127,14 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
         if (!dataToSave.avatarUrl) {
             dataToSave.avatarUrl = `https://api.dicebear.com/8.x/bottts/svg?seed=${dataToSave.name}${dataToSave.surname}`;
         }
-        // Retain latest stats, rank, and xpAdjustments from current player prop
+        // Retain latest stats, rank, and xpAdjustments from form/player state
         const updatedPlayer: Player = {
             ...player,
             ...dataToSave,
-            stats: player.stats || dataToSave.stats,
-            rank: player.rank || playerTier,
-            xpAdjustments: player.xpAdjustments || [],
+            avatarUrl: dataToSave.avatarUrl,
+            stats: dataToSave.stats || player.stats,
+            rank: dataToSave.rank || player.rank || playerTier,
+            xpAdjustments: dataToSave.xpAdjustments || player.xpAdjustments || [],
         };
         onUpdatePlayer(updatedPlayer);
         setIsEditing(false);

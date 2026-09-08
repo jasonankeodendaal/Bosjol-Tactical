@@ -17,7 +17,20 @@ export const COMPLETE_SUPABASE_SETUP_SQL = `-- =================================
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 2. PLAYERS TABLE (Supports Operators, Stats, Ranks, XP, and Badges)
+-- 2. SUPABASE STORAGE SETUP (Avatars, Media, Public, Uploads, Settings)
+INSERT INTO storage.buckets (id, name, public)
+VALUES 
+    ('avatars', 'avatars', true),
+    ('media', 'media', true),
+    ('public', 'public', true),
+    ('uploads', 'uploads', true),
+    ('settings', 'settings', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+CREATE POLICY "Public Access" ON storage.objects FOR ALL USING (true) WITH CHECK (true);
+
+-- 3. PLAYERS TABLE (Supports Operators, Stats, Ranks, XP, and Badges)
 CREATE TABLE IF NOT EXISTS public.players (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL DEFAULT '',
@@ -25,35 +38,44 @@ CREATE TABLE IF NOT EXISTS public.players (
     callsign TEXT DEFAULT '',
     "playerCode" TEXT,
     playercode TEXT,
+    player_code TEXT,
     email TEXT DEFAULT '',
     phone TEXT DEFAULT '',
     pin TEXT DEFAULT '000000',
     age NUMERIC DEFAULT 18,
     "idNumber" TEXT DEFAULT '',
     idnumber TEXT DEFAULT '',
+    id_number TEXT DEFAULT '',
     role TEXT DEFAULT 'player',
     status TEXT DEFAULT 'Active',
     "avatarUrl" TEXT DEFAULT '',
     avatarurl TEXT DEFAULT '',
+    avatar_url TEXT DEFAULT '',
     stats JSONB DEFAULT '{"kills":0,"deaths":0,"headshots":0,"gamesPlayed":0,"xp":0}'::jsonb,
     rank JSONB DEFAULT '{}'::jsonb,
     loadout JSONB DEFAULT '{"primaryWeapon":"M4A1 Assault Rifle","secondaryWeapon":"X12 Pistol","lethal":"Frag Grenade","tactical":"Flashbang"}'::jsonb,
     badges JSONB DEFAULT '[]'::jsonb,
     "legendaryBadges" JSONB DEFAULT '[]'::jsonb,
     legendarybadges JSONB DEFAULT '[]'::jsonb,
+    legendary_badges JSONB DEFAULT '[]'::jsonb,
     "matchHistory" JSONB DEFAULT '[]'::jsonb,
     matchhistory JSONB DEFAULT '[]'::jsonb,
+    match_history JSONB DEFAULT '[]'::jsonb,
     "xpAdjustments" JSONB DEFAULT '[]'::jsonb,
     xpadjustments JSONB DEFAULT '[]'::jsonb,
+    xp_adjustments JSONB DEFAULT '[]'::jsonb,
     address TEXT DEFAULT '',
     allergies TEXT DEFAULT '',
     "medicalNotes" TEXT DEFAULT '',
     medicalnotes TEXT DEFAULT '',
+    medical_notes TEXT DEFAULT '',
     bio TEXT DEFAULT '',
     "preferredRole" TEXT DEFAULT 'Assault',
     preferredrole TEXT DEFAULT 'Assault',
+    preferred_role TEXT DEFAULT 'Assault',
     "activeAuthUID" TEXT DEFAULT '',
     activeauthuid TEXT DEFAULT '',
+    active_auth_uid TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -61,26 +83,39 @@ CREATE TABLE IF NOT EXISTS public.players (
 -- Ensure all expected columns exist if table was already created
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS "playerCode" TEXT;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS playercode TEXT;
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS player_code TEXT;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS "avatarUrl" TEXT;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS avatarurl TEXT;
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS "idNumber" TEXT;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS idnumber TEXT;
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS id_number TEXT;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS stats JSONB DEFAULT '{"kills":0,"deaths":0,"headshots":0,"gamesPlayed":0,"xp":0}'::jsonb;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS rank JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS loadout JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS badges JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS "legendaryBadges" JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS legendarybadges JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS legendary_badges JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS "matchHistory" JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS matchhistory JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS match_history JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS "xpAdjustments" JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS xpadjustments JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS xp_adjustments JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS "medicalNotes" TEXT DEFAULT '';
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS medicalnotes TEXT DEFAULT '';
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS medical_notes TEXT DEFAULT '';
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS "preferredRole" TEXT DEFAULT 'Assault';
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS preferredrole TEXT DEFAULT 'Assault';
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS preferred_role TEXT DEFAULT 'Assault';
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS "activeAuthUID" TEXT DEFAULT '';
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS activeauthuid TEXT DEFAULT '';
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS active_auth_uid TEXT DEFAULT '';
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+-- Enable Full Replica Identity so updates broadcast complete row states in Realtime
+ALTER TABLE public.players REPLICA IDENTITY FULL;
 
 -- 3. RANKS & TIERS TABLE (Progression Hierarchy)
 CREATE TABLE IF NOT EXISTS public.ranks (
@@ -797,9 +832,9 @@ export function normalizePlayerRow(raw: any, ranks?: Rank[]): Player {
 
     const parsedRank = safeJsonParse(raw.rank, {} as Tier);
     const parsedBadges = safeJsonParse<Badge[]>(raw.badges, []);
-    const parsedLegendaryBadges = safeJsonParse<LegendaryBadge[]>(raw.legendaryBadges ?? raw.legendarybadges, []);
-    const parsedMatchHistory = safeJsonParse<any[]>(raw.matchHistory ?? raw.matchhistory, []);
-    const parsedXpAdjustments = safeJsonParse<any[]>(raw.xpAdjustments ?? raw.xpadjustments, []);
+    const parsedLegendaryBadges = safeJsonParse<LegendaryBadge[]>(raw.legendaryBadges ?? raw.legendarybadges ?? raw.legendary_badges, []);
+    const parsedMatchHistory = safeJsonParse<any[]>(raw.matchHistory ?? raw.matchhistory ?? raw.match_history, []);
+    const parsedXpAdjustments = safeJsonParse<any[]>(raw.xpAdjustments ?? raw.xpadjustments ?? raw.xp_adjustments, []);
     const parsedLoadout = safeJsonParse(raw.loadout, {
         primaryWeapon: 'M4A1 Assault Rifle',
         secondaryWeapon: 'X12 Pistol',
@@ -812,15 +847,15 @@ export function normalizePlayerRow(raw: any, ranks?: Rank[]): Player {
         name: raw.name || '',
         surname: raw.surname || '',
         callsign: raw.callsign || raw.name || 'Operator',
-        playerCode: raw.playerCode || raw.playercode || 'NO-CODE',
+        playerCode: raw.playerCode || raw.playercode || raw.player_code || 'NO-CODE',
         email: raw.email || '',
         phone: raw.phone || '',
         pin: String(raw.pin || '000000'),
         age: Number(raw.age || 18),
-        idNumber: raw.idNumber || raw.idnumber || '',
+        idNumber: raw.idNumber || raw.idnumber || raw.id_number || '',
         role: raw.role || 'player',
         status: raw.status || 'Active',
-        avatarUrl: raw.avatarUrl || raw.avatarurl || `https://api.dicebear.com/8.x/bottts/svg?seed=${encodeURIComponent(raw.name || 'Operator')}`,
+        avatarUrl: raw.avatarUrl || raw.avatarurl || raw.avatar_url || `https://api.dicebear.com/8.x/bottts/svg?seed=${encodeURIComponent(raw.name || 'Operator')}`,
         stats: parsedStats,
         rank: parsedRank,
         badges: Array.isArray(parsedBadges) ? parsedBadges : [],
@@ -830,10 +865,10 @@ export function normalizePlayerRow(raw: any, ranks?: Rank[]): Player {
         loadout: parsedLoadout,
         address: raw.address || '',
         allergies: raw.allergies || '',
-        medicalNotes: raw.medicalNotes || raw.medicalnotes || '',
+        medicalNotes: raw.medicalNotes || raw.medicalnotes || raw.medical_notes || '',
         bio: raw.bio || '',
-        preferredRole: raw.preferredRole || raw.preferredrole || 'Assault',
-        activeAuthUID: raw.activeAuthUID || raw.activeauthuid || '',
+        preferredRole: raw.preferredRole || raw.preferredrole || raw.preferred_role || 'Assault',
+        activeAuthUID: raw.activeAuthUID || raw.activeauthuid || raw.active_auth_uid || '',
     };
 
     // Auto-calculate exact rank tier if ranks array provided
@@ -1035,37 +1070,46 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
             name: item.name || '',
             surname: item.surname || '',
             callsign: item.callsign || item.name || 'Operator',
-            playerCode: item.playerCode || item.playercode || '',
-            playercode: item.playerCode || item.playercode || '',
+            playerCode: item.playerCode || item.playercode || item.player_code || '',
+            playercode: item.playerCode || item.playercode || item.player_code || '',
+            player_code: item.playerCode || item.playercode || item.player_code || '',
             email: item.email || '',
             phone: item.phone || '',
             pin: String(item.pin || '000000'),
             age: Number(item.age || 18),
-            idNumber: item.idNumber || item.idnumber || '',
-            idnumber: item.idNumber || item.idnumber || '',
+            idNumber: item.idNumber || item.idnumber || item.id_number || '',
+            idnumber: item.idNumber || item.idnumber || item.id_number || '',
+            id_number: item.idNumber || item.idnumber || item.id_number || '',
             role: item.role || 'player',
             status: item.status || 'Active',
-            avatarUrl: item.avatarUrl || item.avatarurl || '',
-            avatarurl: item.avatarUrl || item.avatarurl || '',
+            avatarUrl: item.avatarUrl || item.avatarurl || item.avatar_url || '',
+            avatarurl: item.avatarUrl || item.avatarurl || item.avatar_url || '',
+            avatar_url: item.avatarUrl || item.avatarurl || item.avatar_url || '',
             stats: stats,
             rank: calculatedRank,
             loadout: item.loadout || {},
             badges: Array.isArray(item.badges) ? item.badges : [],
-            legendaryBadges: Array.isArray(item.legendaryBadges) ? item.legendaryBadges : (item.legendarybadges || []),
-            legendarybadges: Array.isArray(item.legendaryBadges) ? item.legendaryBadges : (item.legendarybadges || []),
-            matchHistory: Array.isArray(item.matchHistory) ? item.matchHistory : (item.matchhistory || []),
-            matchhistory: Array.isArray(item.matchHistory) ? item.matchHistory : (item.matchhistory || []),
-            xpAdjustments: Array.isArray(item.xpAdjustments) ? item.xpAdjustments : (item.xpadjustments || []),
-            xpadjustments: Array.isArray(item.xpAdjustments) ? item.xpAdjustments : (item.xpadjustments || []),
+            legendaryBadges: Array.isArray(item.legendaryBadges) ? item.legendaryBadges : (item.legendarybadges || item.legendary_badges || []),
+            legendarybadges: Array.isArray(item.legendaryBadges) ? item.legendaryBadges : (item.legendarybadges || item.legendary_badges || []),
+            legendary_badges: Array.isArray(item.legendaryBadges) ? item.legendaryBadges : (item.legendarybadges || item.legendary_badges || []),
+            matchHistory: Array.isArray(item.matchHistory) ? item.matchHistory : (item.matchhistory || item.match_history || []),
+            matchhistory: Array.isArray(item.matchHistory) ? item.matchHistory : (item.matchhistory || item.match_history || []),
+            match_history: Array.isArray(item.matchHistory) ? item.matchHistory : (item.matchhistory || item.match_history || []),
+            xpAdjustments: Array.isArray(item.xpAdjustments) ? item.xpAdjustments : (item.xpadjustments || item.xp_adjustments || []),
+            xpadjustments: Array.isArray(item.xpAdjustments) ? item.xpAdjustments : (item.xpadjustments || item.xp_adjustments || []),
+            xp_adjustments: Array.isArray(item.xpAdjustments) ? item.xpAdjustments : (item.xpadjustments || item.xp_adjustments || []),
             address: item.address || '',
             allergies: item.allergies || '',
-            medicalNotes: item.medicalNotes || item.medicalnotes || '',
-            medicalnotes: item.medicalNotes || item.medicalnotes || '',
+            medicalNotes: item.medicalNotes || item.medicalnotes || item.medical_notes || '',
+            medicalnotes: item.medicalNotes || item.medicalnotes || item.medical_notes || '',
+            medical_notes: item.medicalNotes || item.medicalnotes || item.medical_notes || '',
             bio: item.bio || '',
-            preferredRole: item.preferredRole || item.preferredrole || 'Assault',
-            preferredrole: item.preferredRole || item.preferredrole || 'Assault',
-            activeAuthUID: item.activeAuthUID || item.activeauthuid || '',
-            activeauthuid: item.activeAuthUID || item.activeauthuid || '',
+            preferredRole: item.preferredRole || item.preferredrole || item.preferred_role || 'Assault',
+            preferredrole: item.preferredRole || item.preferredrole || item.preferred_role || 'Assault',
+            preferred_role: item.preferredRole || item.preferredrole || item.preferred_role || 'Assault',
+            activeAuthUID: item.activeAuthUID || item.activeauthuid || item.active_auth_uid || '',
+            activeauthuid: item.activeAuthUID || item.activeauthuid || item.active_auth_uid || '',
+            active_auth_uid: item.activeAuthUID || item.activeauthuid || item.active_auth_uid || '',
             updated_at: new Date().toISOString(),
         };
     }

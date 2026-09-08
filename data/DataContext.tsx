@@ -123,19 +123,7 @@ function useCollection<T extends {id: string}>(
                         const updatedDoc = normalizeCollectionItem<T>(collectionName, payload.new);
                         setData(currentData => currentData.map(item => {
                             if ((item as any).id === (updatedDoc as any).id) {
-                                const mergedDoc: any = { ...item };
-                                Object.keys(updatedDoc as any).forEach(k => {
-                                    const val = (updatedDoc as any)[k];
-                                    // Only overwrite if incoming value is not null/undefined/empty string when existing item has a value
-                                    if (val !== undefined && val !== null && val !== '') {
-                                        mergedDoc[k] = val;
-                                    } else if (Array.isArray(val) && val.length > 0) {
-                                        mergedDoc[k] = val;
-                                    } else if (val === 0 || val === false) {
-                                        mergedDoc[k] = val;
-                                    }
-                                });
-                                return mergedDoc;
+                                return { ...(item as any), ...(updatedDoc as any) };
                             }
                             return item;
                         }));
@@ -742,7 +730,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const { error } = await supabase.from(tableName).delete().eq('id', docId);
                 if (error) {
                     console.warn(`Supabase deleteDoc error on ${collectionName}:`, error.message || error);
-                    alert(`Failed to delete: ${error.message}`);
                     // Revert the optimistic UI update
                     if (setter && targetDoc) {
                         setter(prev => [...prev, targetDoc]);
@@ -753,7 +740,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
             } catch (err: any) {
                 console.warn(`Network error in deleteDoc (${collectionName}):`, err?.message || err);
-                alert(`Network error deleting document: ${err?.message || err}`);
                 // Revert the optimistic UI update
                 if (setter && targetDoc) {
                     setter(prev => [...prev, targetDoc]);

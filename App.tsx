@@ -324,20 +324,8 @@ const AppContent: React.FC = () => {
             console.warn("Session register failed (handled):", err);
         });
 
-        const handleBeforeUnload = () => {
-            if (sessionRef.current.id) {
-                deleteDoc('sessions', sessionRef.current.id).catch(() => {});
-            }
-        };
-
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        
         return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-            if (sessionRef.current.id) {
-                deleteDoc('sessions', sessionRef.current.id).catch(() => {});
-                sessionRef.current.id = null;
-            }
+            sessionRef.current.id = null;
         };
     }, [isAuthenticated, user?.id, user?.name, user?.role]);
 

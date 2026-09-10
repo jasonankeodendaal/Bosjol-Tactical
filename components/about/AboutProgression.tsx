@@ -219,57 +219,63 @@ export const AboutProgression: React.FC = () => {
             </div>
 
             {/* 6 Tiers Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {rankTiers.map((tier, idx) => {
                     const badgeUri = resolveRankIcon('', tier.baseName);
                     return (
                         <div 
                             key={idx} 
-                            className={`p-4 sm:p-5 rounded-3xl bg-gradient-to-br ${tier.gradient} border ${tier.border} shadow-xl backdrop-blur-md space-y-3 relative overflow-hidden group hover:scale-[1.01] transition-all`}
+                            className={`p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br ${tier.gradient} border ${tier.border} shadow-xl backdrop-blur-md space-y-3 relative overflow-hidden group hover:scale-[1.01] transition-all flex flex-col justify-between`}
                         >
-                            <div className="flex items-center gap-3.5">
-                                <div className="w-14 h-14 flex items-center justify-center shrink-0">
-                                    <img 
-                                        src={badgeUri} 
-                                        alt={tier.name}
-                                        onError={(e) => {
-                                            (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(tier.baseName);
-                                        }}
-                                        className="w-full h-full object-contain filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.7)] group-hover:scale-110 transition-transform"
-                                    />
-                                </div>
-                                <div className="min-w-0">
-                                    <div className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest">
-                                        TIER 0{idx + 1}
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center shrink-0">
+                                        <img 
+                                            src={badgeUri} 
+                                            alt={tier.name}
+                                            onError={(e) => {
+                                                (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(tier.baseName);
+                                            }}
+                                            className="w-full h-full object-contain filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.7)] group-hover:scale-110 transition-transform"
+                                        />
                                     </div>
-                                    <h4 className={`text-base font-black uppercase tracking-tight ${tier.accent}`}>
-                                        {tier.name}
-                                    </h4>
-                                    <span className="inline-block text-[11px] font-mono font-bold text-amber-400 bg-black/60 px-2 py-0.5 rounded border border-amber-500/30 mt-0.5">
-                                        {tier.xp}
-                                    </span>
+                                    <div className="min-w-0">
+                                        <div className="text-[9px] sm:text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest">
+                                            TIER 0{idx + 1}
+                                        </div>
+                                        <h4 className={`text-sm sm:text-base font-black uppercase tracking-tight ${tier.accent} truncate`}>
+                                            {tier.name}
+                                        </h4>
+                                        <span className="inline-block text-[10px] sm:text-[11px] font-mono font-bold text-amber-400 bg-black/60 px-2 py-0.5 rounded border border-amber-500/30 mt-0.5">
+                                            {tier.xp}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Sub-ranks */}
-                            <div className="pt-2 border-t border-white/10 space-y-1">
-                                <div className="text-[10px] font-mono text-zinc-400 uppercase">Sub-Ranks Inside Tier:</div>
-                                <div className="text-xs font-mono text-zinc-200">
-                                    {tier.subranks.join(' • ')}
+                                {/* Sub-ranks with tags */}
+                                <div className="pt-2 border-t border-white/10 space-y-1">
+                                    <div className="text-[9.5px] sm:text-[10px] font-mono text-zinc-400 uppercase">Sub-Ranks Inside Tier:</div>
+                                    <div className="flex flex-wrap gap-1">
+                                        {tier.subranks.map((sr, sIdx) => (
+                                            <span key={sIdx} className="px-1.5 py-0.5 rounded bg-black/50 border border-white/10 text-[9.5px] sm:text-[10px] font-mono text-zinc-200">
+                                                {sr}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Unlocked Perks */}
-                            <div className="space-y-1">
-                                <div className="text-[10px] font-mono text-zinc-400 uppercase">Tier Benefits &amp; Perks:</div>
-                                <ul className="text-xs text-zinc-300 space-y-1">
-                                    {tier.perks.map((p, i) => (
-                                        <li key={i} className="flex items-start gap-1.5">
-                                            <span className="text-amber-400 font-bold">•</span>
-                                            <span>{p}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                                {/* Unlocked Perks */}
+                                <div className="space-y-1">
+                                    <div className="text-[9.5px] sm:text-[10px] font-mono text-zinc-400 uppercase">Tier Benefits &amp; Perks:</div>
+                                    <ul className="text-[11px] sm:text-xs text-zinc-300 space-y-1">
+                                        {tier.perks.map((p, i) => (
+                                            <li key={i} className="flex items-start gap-1.5">
+                                                <span className="text-amber-400 font-bold shrink-0">•</span>
+                                                <span className="break-words leading-tight">{p}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     );
@@ -277,87 +283,97 @@ export const AboutProgression: React.FC = () => {
             </div>
 
             {/* RP Math Breakdown Grid */}
-            <div className="p-4 sm:p-6 rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-800">
+            <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl space-y-3 sm:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 sm:pb-3 border-b border-zinc-800">
                     <div>
                         <div className="flex items-center gap-2">
-                            <Zap className="w-5 h-5 text-amber-400" />
-                            <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
+                            <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
+                            <h3 className="text-sm sm:text-lg font-black text-white uppercase tracking-wider">
                                 Rank Points (RP) Earning &amp; Penalty Mathematics
                             </h3>
                         </div>
-                        <p className="text-xs text-zinc-400 mt-0.5">
+                        <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">
                             Automated calculations applied across confirmed player profiles during match finalization.
                         </p>
                     </div>
-                    <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-800/50">
+                    <span className="text-[10px] sm:text-xs font-mono font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-800/50 self-start sm:self-auto">
                         CLOUD CASCADE FORMULA
                     </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-center space-y-1">
-                        <div className="text-xl font-black text-emerald-400 font-mono">+500 RP</div>
-                        <div className="text-xs font-bold text-white uppercase">Match Finalization</div>
-                        <p className="text-[11px] text-zinc-400">Awarded to all checked-in operators upon single-click event finalization.</p>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+                    <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-900/60 border border-zinc-800 text-center space-y-1 flex flex-col justify-between">
+                        <div>
+                            <div className="text-base sm:text-xl font-black text-emerald-400 font-mono">+500 RP</div>
+                            <div className="text-[10.5px] sm:text-xs font-bold text-white uppercase mt-0.5">Match Finalization</div>
+                        </div>
+                        <p className="text-[9.5px] sm:text-[11px] text-zinc-400 leading-snug">Awarded to all checked-in operators upon single-click event finalization.</p>
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-center space-y-1">
-                        <div className="text-xl font-black text-emerald-400 font-mono">+250 RP</div>
-                        <div className="text-xs font-bold text-white uppercase">Objective Capture / VIP</div>
-                        <p className="text-[11px] text-zinc-400">Securing domination points, defusing bombs, or successful VIP extractions.</p>
+                    <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-900/60 border border-zinc-800 text-center space-y-1 flex flex-col justify-between">
+                        <div>
+                            <div className="text-base sm:text-xl font-black text-emerald-400 font-mono">+250 RP</div>
+                            <div className="text-[10.5px] sm:text-xs font-bold text-white uppercase mt-0.5">Objective / VIP</div>
+                        </div>
+                        <p className="text-[9.5px] sm:text-[11px] text-zinc-400 leading-snug">Securing domination points, defusing bombs, or successful VIP extractions.</p>
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-center space-y-1">
-                        <div className="text-xl font-black text-emerald-400 font-mono">+150 RP</div>
-                        <div className="text-xs font-bold text-white uppercase">Marshal Commendation</div>
-                        <p className="text-[11px] text-zinc-400">Awarded for outstanding team leadership, communication, or honor plays.</p>
+                    <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-900/60 border border-zinc-800 text-center space-y-1 flex flex-col justify-between">
+                        <div>
+                            <div className="text-base sm:text-xl font-black text-emerald-400 font-mono">+150 RP</div>
+                            <div className="text-[10.5px] sm:text-xs font-bold text-white uppercase mt-0.5">Commendation</div>
+                        </div>
+                        <p className="text-[9.5px] sm:text-[11px] text-zinc-400 leading-snug">Awarded for outstanding team leadership, communication, or honor plays.</p>
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-red-500/30 text-center space-y-1">
-                        <div className="text-xl font-black text-red-400 font-mono">-200 RP</div>
-                        <div className="text-xs font-bold text-red-300 uppercase">Safety SOP Penalty</div>
-                        <p className="text-[11px] text-zinc-400">Chrono failure, blind-firing, uncalled hit warning, or safe-zone magazine violation.</p>
+                    <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-900/60 border border-red-500/30 text-center space-y-1 flex flex-col justify-between">
+                        <div>
+                            <div className="text-base sm:text-xl font-black text-red-400 font-mono">-200 RP</div>
+                            <div className="text-[10.5px] sm:text-xs font-bold text-red-300 uppercase mt-0.5">SOP Penalty</div>
+                        </div>
+                        <p className="text-[9.5px] sm:text-[11px] text-zinc-400 leading-snug">Chrono failure, blind-firing, uncalled hit warning, or safe-zone violation.</p>
                     </div>
                 </div>
             </div>
 
             {/* Legendary Achievement Medals Showcase */}
-            <div className="p-4 sm:p-6 rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-800">
+            <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl space-y-3 sm:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 sm:pb-3 border-b border-zinc-800">
                     <div>
                         <div className="flex items-center gap-2">
-                            <Award className="w-5 h-5 text-amber-400" />
-                            <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
+                            <Award className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
+                            <h3 className="text-sm sm:text-lg font-black text-white uppercase tracking-wider">
                                 Legendary Combat Medals &amp; Milestone Achievements
                             </h3>
                         </div>
-                        <p className="text-xs text-zinc-400 mt-0.5">
+                        <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">
                             Special career badges awarded for extraordinary tactical milestones.
                         </p>
                     </div>
-                    <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-800/50">
+                    <span className="text-[10px] sm:text-xs font-mono font-bold text-amber-400 bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-800/50 self-start sm:self-auto">
                         SEASONAL AWARDS
                     </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
                     {medals.map((m, i) => (
-                        <div key={i} className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-2">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-800">
-                                        {m.icon}
+                        <div key={i} className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-1.5 flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between gap-1.5">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-800 shrink-0">
+                                            {m.icon}
+                                        </div>
+                                        <h4 className="text-xs font-black text-white uppercase truncate">{m.title}</h4>
                                     </div>
-                                    <h4 className="text-xs font-black text-white uppercase">{m.title}</h4>
+                                    <span className="text-[9.5px] sm:text-[10px] font-mono font-bold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/40 shrink-0">
+                                        {m.bonus}
+                                    </span>
                                 </div>
-                                <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/40">
-                                    {m.bonus}
-                                </span>
+                                <p className="text-[10.5px] sm:text-xs text-zinc-400 leading-snug mt-1.5">
+                                    {m.desc}
+                                </p>
                             </div>
-                            <p className="text-xs text-zinc-400 leading-relaxed">
-                                {m.desc}
-                            </p>
                         </div>
                     ))}
                 </div>

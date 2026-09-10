@@ -180,21 +180,21 @@ export const AboutBallistics: React.FC = () => {
                     <button
                         key={w.id}
                         onClick={() => setSelectedWeaponClass(w.id as any)}
-                        className={`p-3 rounded-2xl text-left transition-all border flex flex-col justify-between gap-1.5 ${
+                        className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl text-left transition-all border flex flex-col justify-between gap-1.5 ${
                             selectedWeaponClass === w.id
                                 ? 'bg-red-600 text-white font-bold border-red-500 shadow-lg shadow-red-900/40 scale-[1.02]'
                                 : 'bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 border-zinc-800/90'
                         }`}
                     >
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-black uppercase truncate">{w.name.split('(')[0]}</span>
-                            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold ${
+                        <div className="flex items-center justify-between gap-1">
+                            <span className="text-[11px] sm:text-xs font-black uppercase truncate">{w.name.split('(')[0]}</span>
+                            <span className={`text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded font-bold shrink-0 ${
                                 selectedWeaponClass === w.id ? 'bg-black/40 text-white' : 'bg-zinc-950 text-amber-400'
                             }`}>
                                 {w.maxJoules} J
                             </span>
                         </div>
-                        <div className={`text-[10px] font-mono ${selectedWeaponClass === w.id ? 'text-red-100' : 'text-zinc-400'}`}>
+                        <div className={`text-[9.5px] sm:text-[10px] font-mono truncate ${selectedWeaponClass === w.id ? 'text-red-100' : 'text-zinc-400'}`}>
                             MED: {w.med}
                         </div>
                     </button>
@@ -202,68 +202,68 @@ export const AboutBallistics: React.FC = () => {
             </div>
 
             {/* Active Class Detailed Breakdown Table */}
-            <div className="p-4 sm:p-6 rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl space-y-4">
+            <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl space-y-4">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-zinc-800">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono font-bold text-red-400 uppercase">
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            <span className="text-[9px] sm:text-[10px] font-mono font-bold text-red-400 uppercase">
                                 WEAPON CLASS SPECIFICATION:
                             </span>
-                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${currentClass.tagBg}`}>
+                            <span className={`text-[9px] sm:text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${currentClass.tagBg}`}>
                                 TAG: {currentClass.tagColor}
                             </span>
                         </div>
-                        <h4 className="text-base sm:text-xl font-black text-white uppercase mt-0.5">
+                        <h4 className="text-sm sm:text-xl font-black text-white uppercase mt-0.5 break-words">
                             {currentClass.name}
                         </h4>
-                        <p className="text-xs text-zinc-400">
+                        <p className="text-[11px] sm:text-xs text-zinc-400 break-words mt-0.5">
                             {currentClass.desc} • <strong>Fire Mode:</strong> {currentClass.fireModes}
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2 font-mono">
-                        <div className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-center">
-                            <div className="text-[10px] text-zinc-400 uppercase">Max Energy</div>
-                            <div className="text-sm font-black text-amber-400">{currentClass.maxJoules} Joules</div>
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2 font-mono shrink-0">
+                        <div className="px-2 sm:px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-center">
+                            <div className="text-[8.5px] sm:text-[10px] text-zinc-400 uppercase">Max Energy</div>
+                            <div className="text-xs sm:text-sm font-black text-amber-400">{currentClass.maxJoules} J</div>
                         </div>
-                        <div className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-center">
-                            <div className="text-[10px] text-zinc-400 uppercase">Base FPS (0.20g)</div>
-                            <div className="text-sm font-black text-red-400">{currentClass.fps020} FPS</div>
+                        <div className="px-2 sm:px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-center">
+                            <div className="text-[8.5px] sm:text-[10px] text-zinc-400 uppercase">0.20g FPS</div>
+                            <div className="text-xs sm:text-sm font-black text-red-400">{currentClass.fps020} FPS</div>
                         </div>
-                        <div className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-center">
-                            <div className="text-[10px] text-zinc-400 uppercase">Min Engagement</div>
-                            <div className="text-sm font-black text-emerald-400">{currentClass.med}</div>
+                        <div className="px-2 sm:px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-center">
+                            <div className="text-[8.5px] sm:text-[10px] text-zinc-400 uppercase">Min Eng (MED)</div>
+                            <div className="text-xs sm:text-sm font-black text-emerald-400">{currentClass.med}</div>
                         </div>
                     </div>
                 </div>
 
                 {/* Ballistics Table */}
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs font-mono">
+                <div className="overflow-x-auto custom-scrollbar -mx-1 sm:mx-0">
+                    <table className="w-full text-left text-xs font-mono min-w-[540px]">
                         <thead>
-                            <tr className="bg-zinc-900/90 text-zinc-400 text-[10px] uppercase border-b border-zinc-800">
-                                <th className="p-2.5">BB Weight</th>
-                                <th className="p-2.5">Max Velocity (FPS)</th>
-                                <th className="p-2.5">Velocity (m/s)</th>
-                                <th className="p-2.5">Max Kinetic Energy (Joules)</th>
-                                <th className="p-2.5">Minimum Engagement Distance</th>
-                                <th className="p-2.5">Chrono Status</th>
+                            <tr className="bg-zinc-900/90 text-zinc-400 text-[9.5px] sm:text-[10px] uppercase border-b border-zinc-800">
+                                <th className="p-2 sm:p-2.5">BB Weight</th>
+                                <th className="p-2 sm:p-2.5">Max Velocity (FPS)</th>
+                                <th className="p-2 sm:p-2.5">Velocity (m/s)</th>
+                                <th className="p-2 sm:p-2.5">Max Kinetic Energy</th>
+                                <th className="p-2 sm:p-2.5">Minimum Engagement</th>
+                                <th className="p-2 sm:p-2.5">Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
                             {currentClass.data.map((row, i) => (
                                 <tr key={i} className="hover:bg-zinc-900/40 transition-colors">
-                                    <td className="p-2.5 font-bold text-white flex items-center gap-1.5">
-                                        <Crosshair className="w-3.5 h-3.5 text-zinc-400" />
-                                        <span>{row.weight}</span>
+                                    <td className="p-2 sm:p-2.5 font-bold text-white flex items-center gap-1.5">
+                                        <Crosshair className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                                        <span className="truncate">{row.weight}</span>
                                     </td>
-                                    <td className="p-2.5 text-red-400 font-bold">{row.fps} FPS</td>
-                                    <td className="p-2.5 text-zinc-300">{row.ms} m/s</td>
-                                    <td className="p-2.5 text-amber-400 font-bold">{row.joules} J</td>
-                                    <td className="p-2.5 text-emerald-400 font-bold">{row.med}</td>
-                                    <td className="p-2.5">
-                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60">
-                                            PASSED FIELD LEGAL
+                                    <td className="p-2 sm:p-2.5 text-red-400 font-bold">{row.fps} FPS</td>
+                                    <td className="p-2 sm:p-2.5 text-zinc-300">{row.ms} m/s</td>
+                                    <td className="p-2 sm:p-2.5 text-amber-400 font-bold">{row.joules} J</td>
+                                    <td className="p-2 sm:p-2.5 text-emerald-400 font-bold">{row.med}</td>
+                                    <td className="p-2 sm:p-2.5">
+                                        <span className="px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60 whitespace-nowrap">
+                                            FIELD LEGAL
                                         </span>
                                     </td>
                                 </tr>

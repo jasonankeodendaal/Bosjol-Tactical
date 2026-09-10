@@ -222,42 +222,42 @@ export const AboutOperations: React.FC = () => {
             </div>
 
             {/* Header with Selector */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 sm:pb-3 border-b border-zinc-800">
                 <div>
                     <div className="flex items-center gap-2">
-                        <Target className="w-5 h-5 text-red-500" />
-                        <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
+                        <Target className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
+                        <h3 className="text-sm sm:text-lg font-black text-white uppercase tracking-wider">
                             8 Official Combat Match Formats &amp; Rules of Engagement (ROE)
                         </h3>
                     </div>
-                    <p className="text-xs text-zinc-400 mt-0.5">
+                    <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">
                         Comprehensive tactical blueprints, respawn rules, scoring algorithms, and pro operator tips.
                     </p>
                 </div>
-                <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-zinc-900 text-red-400 border border-zinc-800 self-start sm:self-auto">
+                <span className="px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-mono font-bold bg-zinc-900 text-red-400 border border-zinc-800 self-start sm:self-auto shrink-0">
                     SELECT SCENARIO BELOW
                 </span>
             </div>
 
             {/* Scenario Selector Tabs */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 sm:gap-2">
                 {scenarios.map((sc, idx) => (
                     <button
                         key={sc.id}
                         onClick={() => setSelectedScenario(idx)}
-                        className={`p-2.5 rounded-xl text-left transition-all border flex flex-col justify-between gap-2 ${
+                        className={`p-2 sm:p-2.5 rounded-xl text-left transition-all border flex flex-col justify-between gap-1.5 sm:gap-2 ${
                             selectedScenario === idx
                                 ? 'bg-red-600 text-white font-bold border-red-500 shadow-lg shadow-red-900/40 scale-[1.02]'
                                 : 'bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 border-zinc-800/90'
                         }`}
                     >
                         <div className="flex items-center justify-between">
-                            <div className={`p-1.5 rounded-lg ${selectedScenario === idx ? 'bg-black/30' : 'bg-zinc-950 border border-zinc-800'}`}>
+                            <div className={`p-1 sm:p-1.5 rounded-lg ${selectedScenario === idx ? 'bg-black/30' : 'bg-zinc-950 border border-zinc-800'}`}>
                                 {sc.icon}
                             </div>
-                            <span className="text-[10px] font-mono font-bold opacity-70">0{idx + 1}</span>
+                            <span className="text-[9.5px] sm:text-[10px] font-mono font-bold opacity-70">0{idx + 1}</span>
                         </div>
-                        <div className="text-[11px] font-black uppercase tracking-tight leading-tight line-clamp-2">
+                        <div className="text-[10.5px] sm:text-[11px] font-black uppercase tracking-tight leading-tight line-clamp-2">
                             {sc.title.split('(')[0]}
                         </div>
                     </button>
@@ -265,44 +265,44 @@ export const AboutOperations: React.FC = () => {
             </div>
 
             {/* Active Scenario Detailed Deep Dive Card */}
-            <div className="p-4 sm:p-6 rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl space-y-4 relative overflow-hidden">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-zinc-800">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-2xl bg-red-600/20 text-red-400 border border-red-500/30 shrink-0">
+            <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl space-y-3 sm:space-y-4 relative overflow-hidden">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3 pb-2.5 sm:pb-3 border-b border-zinc-800">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-red-600/20 text-red-400 border border-red-500/30 shrink-0">
                             {currentScenario.icon}
                         </div>
-                        <div>
-                            <span className="text-[10px] font-mono font-bold text-red-400 uppercase tracking-widest">
+                        <div className="min-w-0">
+                            <span className="text-[9px] sm:text-[10px] font-mono font-bold text-red-400 uppercase tracking-widest">
                                 SCENARIO BLUEPRINT #0{selectedScenario + 1}
                             </span>
-                            <h4 className="text-base sm:text-xl font-black text-white uppercase tracking-tight">
+                            <h4 className="text-sm sm:text-xl font-black text-white uppercase tracking-tight truncate">
                                 {currentScenario.title}
                             </h4>
-                            <p className="text-xs text-zinc-400 font-medium">
+                            <p className="text-[10.5px] sm:text-xs text-zinc-400 font-medium truncate">
                                 {currentScenario.subtitle}
                             </p>
                         </div>
                     </div>
 
                     {/* Scenario Badges */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        <div className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] font-mono font-bold text-zinc-300 flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <div className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] sm:text-[11px] font-mono font-bold text-zinc-300 flex items-center gap-1 sm:gap-1.5">
+                            <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400" />
                             <span>{currentScenario.duration}</span>
                         </div>
-                        <div className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] font-mono font-bold text-zinc-300 flex items-center gap-1.5">
-                            <Users className="w-3.5 h-3.5 text-cyan-400" />
+                        <div className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] sm:text-[11px] font-mono font-bold text-zinc-300 flex items-center gap-1 sm:gap-1.5">
+                            <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
                             <span>{currentScenario.playerCapacity}</span>
                         </div>
-                        <div className="px-2.5 py-1 rounded-lg bg-red-950/80 border border-red-800/60 text-[11px] font-mono font-bold text-red-300">
+                        <div className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-red-950/80 border border-red-800/60 text-[10px] sm:text-[11px] font-mono font-bold text-red-300">
                             {currentScenario.respawnType}
                         </div>
                     </div>
                 </div>
 
                 {/* Objective Callout Box */}
-                <div className="p-3.5 rounded-2xl bg-zinc-900/80 border border-zinc-800 space-y-1">
-                    <div className="text-[10px] font-mono uppercase font-bold text-red-400 flex items-center gap-1">
+                <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-900/80 border border-zinc-800 space-y-1">
+                    <div className="text-[9.5px] sm:text-[10px] font-mono uppercase font-bold text-red-400 flex items-center gap-1">
                         <Target className="w-3.5 h-3.5" /> PRIMARY MISSION WIN CONDITION:
                     </div>
                     <p className="text-xs sm:text-sm font-semibold text-white leading-relaxed">
@@ -311,38 +311,38 @@ export const AboutOperations: React.FC = () => {
                 </div>
 
                 {/* Rules & Mechanics Checklist */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-2">
-                        <h5 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Operational Rules &amp; Field Mechanics
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3">
+                    <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-1.5 sm:space-y-2">
+                        <h5 className="text-[11px] sm:text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" /> Operational Rules &amp; Field Mechanics
                         </h5>
-                        <ul className="text-xs text-zinc-300 space-y-1.5">
+                        <ul className="text-[10.5px] sm:text-xs text-zinc-300 space-y-1 sm:space-y-1.5">
                             {currentScenario.rules.map((r, i) => (
-                                <li key={i} className="flex items-start gap-2">
-                                    <span className="text-red-400 font-bold font-mono">0{i+1}.</span>
+                                <li key={i} className="flex items-start gap-1.5 sm:gap-2">
+                                    <span className="text-red-400 font-bold font-mono text-[9.5px] sm:text-xs">0{i+1}.</span>
                                     <span>{r}</span>
                                 </li>
                             ))}
                         </ul>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-2.5 sm:space-y-3">
                         {/* Scoring Formula Box */}
-                        <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-amber-500/30 space-y-1">
-                            <h5 className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Sparkles className="w-4 h-4" /> RP &amp; Badge Reward Formula
+                        <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-900/60 border border-amber-500/30 space-y-1">
+                            <h5 className="text-[11px] sm:text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> RP &amp; Badge Reward Formula
                             </h5>
-                            <p className="text-xs text-zinc-200 leading-relaxed">
+                            <p className="text-[10.5px] sm:text-xs text-zinc-200 leading-relaxed">
                                 {currentScenario.scoring}
                             </p>
                         </div>
 
                         {/* Pro Operator Tactical Tip */}
-                        <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-cyan-500/30 space-y-1">
-                            <h5 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Info className="w-4 h-4" /> Pro Operator Field Tip
+                        <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-900/60 border border-cyan-500/30 space-y-1">
+                            <h5 className="text-[11px] sm:text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <Info className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Pro Operator Field Tip
                             </h5>
-                            <p className="text-xs text-zinc-300 leading-relaxed italic">
+                            <p className="text-[10.5px] sm:text-xs text-zinc-300 leading-relaxed italic">
                                 "{currentScenario.tacticalTip}"
                             </p>
                         </div>
@@ -351,31 +351,31 @@ export const AboutOperations: React.FC = () => {
             </div>
 
             {/* Hit Calling & Medic Revive Universal SOP Matrix */}
-            <div className="p-4 sm:p-6 rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-800">
+            <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl space-y-3 sm:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 sm:pb-3 border-b border-zinc-800">
                     <div>
                         <div className="flex items-center gap-2">
-                            <AlertTriangle className="w-5 h-5 text-amber-400" />
-                            <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
+                            <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
+                            <h3 className="text-sm sm:text-lg font-black text-white uppercase tracking-wider">
                                 Universal Hit Calling, Ricochet &amp; Medic Protocols
                             </h3>
                         </div>
-                        <p className="text-xs text-zinc-400 mt-0.5">
+                        <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">
                             Airsoft is an honor-based sport. Zero tolerance for uncalled hits or aggressive conduct.
                         </p>
                     </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-950 text-amber-400 border border-amber-800/60">
+                    <span className="px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-mono font-bold bg-amber-950 text-amber-400 border border-amber-800/60 self-start sm:self-auto shrink-0">
                         HONOR CODE STRICT
                     </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="p-4 rounded-2xl bg-zinc-900/70 border border-zinc-800 space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
+                    <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-zinc-900/70 border border-zinc-800 space-y-1.5 sm:space-y-2">
                         <div className="flex items-center gap-2 text-red-400">
                             <Crosshair className="w-4 h-4" />
-                            <h4 className="text-xs font-black uppercase tracking-wider">What Counts as a Hit</h4>
+                            <h4 className="text-[11px] sm:text-xs font-black uppercase tracking-wider">What Counts as a Hit</h4>
                         </div>
-                        <ul className="text-xs text-zinc-300 space-y-1.5">
+                        <ul className="text-[10.5px] sm:text-xs text-zinc-300 space-y-1 sm:space-y-1.5">
                             <li className="flex items-start gap-1.5">
                                 <span className="text-emerald-400 font-bold">✓</span>
                                 <span>Direct BB strike to any part of body, head, helmet, boots, or uniform.</span>
@@ -390,17 +390,17 @@ export const AboutOperations: React.FC = () => {
                             </li>
                             <li className="flex items-start gap-1.5">
                                 <span className="text-amber-400 font-bold">~</span>
-                                <span>Gun hits: Gun hits disable the primary weapon unless switching to sidearm.</span>
+                                <span>Gun hits: Gun hits disable primary weapon unless switching to sidearm.</span>
                             </li>
                         </ul>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-zinc-900/70 border border-zinc-800 space-y-2">
+                    <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-zinc-900/70 border border-zinc-800 space-y-1.5 sm:space-y-2">
                         <div className="flex items-center gap-2 text-amber-400">
                             <Flame className="w-4 h-4" />
-                            <h4 className="text-xs font-black uppercase tracking-wider">Hit Confirmation Procedure</h4>
+                            <h4 className="text-[11px] sm:text-xs font-black uppercase tracking-wider">Hit Confirmation Procedure</h4>
                         </div>
-                        <ul className="text-xs text-zinc-300 space-y-1.5">
+                        <ul className="text-[10.5px] sm:text-xs text-zinc-300 space-y-1 sm:space-y-1.5">
                             <li className="flex items-start gap-1.5">
                                 <span className="text-red-400 font-bold">1.</span>
                                 <span>Loudly shout <strong>"HIT!"</strong> immediately with hands high.</span>
@@ -411,7 +411,7 @@ export const AboutOperations: React.FC = () => {
                             </li>
                             <li className="flex items-start gap-1.5">
                                 <span className="text-red-400 font-bold">3.</span>
-                                <span>Never call hits on opposing players ("Call your hits!"). Inform a field marshal instead.</span>
+                                <span>Never call hits on opposing players. Inform a field marshal instead.</span>
                             </li>
                             <li className="flex items-start gap-1.5">
                                 <span className="text-red-400 font-bold">4.</span>
@@ -420,12 +420,12 @@ export const AboutOperations: React.FC = () => {
                         </ul>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-zinc-900/70 border border-zinc-800 space-y-2">
+                    <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-zinc-900/70 border border-zinc-800 space-y-1.5 sm:space-y-2">
                         <div className="flex items-center gap-2 text-emerald-400">
                             <Shield className="w-4 h-4" />
-                            <h4 className="text-xs font-black uppercase tracking-wider">Surrender &amp; "Bang-Bang"</h4>
+                            <h4 className="text-[11px] sm:text-xs font-black uppercase tracking-wider">Surrender &amp; "Bang-Bang"</h4>
                         </div>
-                        <ul className="text-xs text-zinc-300 space-y-1.5">
+                        <ul className="text-[10.5px] sm:text-xs text-zinc-300 space-y-1 sm:space-y-1.5">
                             <li className="flex items-start gap-1.5">
                                 <span className="text-cyan-400 font-bold">•</span>
                                 <span>If within 3 meters directly behind an unaware player, say <strong>"Surrender!"</strong>.</span>
@@ -436,7 +436,7 @@ export const AboutOperations: React.FC = () => {
                             </li>
                             <li className="flex items-start gap-1.5">
                                 <span className="text-cyan-400 font-bold">•</span>
-                                <span>If two players round a corner simultaneously, both fall back 5 meters and re-engage.</span>
+                                <span>If two players round a corner simultaneously, both fall back 5m and re-engage.</span>
                             </li>
                             <li className="flex items-start gap-1.5">
                                 <span className="text-cyan-400 font-bold">•</span>

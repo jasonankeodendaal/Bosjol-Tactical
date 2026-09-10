@@ -110,39 +110,39 @@ export const AboutIntelFaq: React.FC = () => {
     return (
         <div className="space-y-6">
             {/* Header & Search Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 pb-2.5 sm:pb-3 border-b border-zinc-800">
                 <div>
                     <div className="flex items-center gap-2">
-                        <Terminal className="w-5 h-5 text-red-500" />
-                        <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
+                        <Terminal className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
+                        <h3 className="text-sm sm:text-lg font-black text-white uppercase tracking-wider">
                             Tactical Intel Terminal &amp; Comprehensive Knowledgebase
                         </h3>
                     </div>
-                    <p className="text-xs text-zinc-400 mt-0.5">
+                    <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">
                         Instant searchable answers covering match operations, cloud sync, chrono physics, and field safety rules.
                     </p>
                 </div>
 
                 {/* Search Bar */}
-                <div className="relative w-full sm:w-72">
-                    <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <div className="relative w-full sm:w-72 shrink-0">
+                    <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                         type="text"
                         placeholder="Search intel knowledgebase..."
                         value={faqSearch}
                         onChange={e => setFaqSearch(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 text-xs bg-zinc-900/90 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 transition-colors shadow-inner"
+                        className="w-full pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2 text-[11px] sm:text-xs bg-zinc-900/90 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 transition-colors shadow-inner"
                     />
                 </div>
             </div>
 
             {/* Category Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+            <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar pb-1">
                 {categories.map(cat => (
                     <button
                         key={cat}
                         onClick={() => setSelectedCategory(cat)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shrink-0 ${
+                        className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all shrink-0 ${
                             selectedCategory === cat
                                 ? 'bg-red-600 text-white font-black shadow-md shadow-red-900/30'
                                 : 'bg-zinc-900/80 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
@@ -154,30 +154,30 @@ export const AboutIntelFaq: React.FC = () => {
             </div>
 
             {/* FAQ Accordion List */}
-            <div className="space-y-2.5">
+            <div className="space-y-2 sm:space-y-2.5">
                 {filteredFaqs.map(faq => {
                     const isExpanded = expandedFaq === faq.id;
                     return (
                         <div
                             key={faq.id}
-                            className="rounded-2xl border border-zinc-800/80 bg-zinc-950/80 overflow-hidden transition-all shadow-md"
+                            className="rounded-xl sm:rounded-2xl border border-zinc-800/80 bg-zinc-950/80 overflow-hidden transition-all shadow-md"
                         >
                             <button
                                 onClick={() => setExpandedFaq(isExpanded ? null : faq.id)}
-                                className="w-full flex items-center justify-between gap-3 p-4 text-left hover:bg-zinc-900/50 transition-colors"
+                                className="w-full flex items-center justify-between gap-2.5 sm:gap-3 p-3 sm:p-4 text-left hover:bg-zinc-900/50 transition-colors"
                             >
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <span className="text-[10px] font-mono font-bold text-red-400 bg-red-950/70 px-2 py-0.5 rounded border border-red-800/50 shrink-0">
+                                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                                    <span className="text-[9px] sm:text-[10px] font-mono font-bold text-red-400 bg-red-950/70 px-1.5 sm:px-2 py-0.5 rounded border border-red-800/50 shrink-0">
                                         {faq.category}
                                     </span>
-                                    <span className="text-xs sm:text-sm font-bold text-white truncate">
+                                    <span className="text-[11px] sm:text-sm font-bold text-white truncate">
                                         {faq.question}
                                     </span>
                                 </div>
-                                <ChevronDown className={`w-4 h-4 text-zinc-400 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180 text-red-400' : ''}`} />
+                                <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-400 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180 text-red-400' : ''}`} />
                             </button>
                             {isExpanded && (
-                                <div className="px-4 pb-4 pt-1 text-xs text-zinc-300 leading-relaxed border-t border-zinc-800/60 bg-black/40">
+                                <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-1 text-[11px] sm:text-xs text-zinc-300 leading-relaxed border-t border-zinc-800/60 bg-black/40">
                                     {faq.answer}
                                 </div>
                             )}
@@ -186,7 +186,7 @@ export const AboutIntelFaq: React.FC = () => {
                 })}
 
                 {filteredFaqs.length === 0 && (
-                    <div className="text-center py-12 text-zinc-500 text-xs bg-zinc-950/50 rounded-2xl border border-zinc-800">
+                    <div className="text-center py-10 sm:py-12 text-zinc-500 text-xs bg-zinc-950/50 rounded-xl sm:rounded-2xl border border-zinc-800 px-4">
                         No intel documents found matching "{faqSearch}". Try searching for "chrono", "RP", "radio", or "safety".
                     </div>
                 )}

@@ -15,6 +15,7 @@ import { SendCredentialsModal } from './SendCredentialsModal';
 import { motion } from 'framer-motion';
 import { getRankForPlayer, getRankProgression as computeRankProgression, FALLBACK_RECRUIT_TIER, resolveRankIcon, getRankBadgeSvg } from '../utils/rankUtils';
 import { calculatePlayerPerformance } from '../utils/playerPerformanceUtils';
+import { generateUniquePlayerCode } from '../utils/playerCodeGenerator';
 
 const getTierForPlayer = (player: Player, ranks: Rank[]): Tier => {
     return getRankForPlayer(player, ranks);
@@ -445,6 +446,28 @@ WHERE id = '${player.id}';`;
                                         onChange={e => setFormData(f => ({...f, callsign: e.target.value}))}
                                         tooltip="As an Administrator, you have exclusive authority to assign and change player callsigns. Regular players cannot edit their callsigns."
                                     />
+                                    <div className="flex items-end gap-2">
+                                        <div className="flex-grow">
+                                            <Input 
+                                                label="Player Code" 
+                                                value={formData.playerCode || ''} 
+                                                onChange={e => setFormData(f => ({...f, playerCode: e.target.value.toUpperCase()}))}
+                                                placeholder="e.g. DD01, VLERMUIS101"
+                                                tooltip="Unique player ID code used for event check-ins and live score sheets."
+                                            />
+                                        </div>
+                                        <Button 
+                                            type="button" 
+                                            variant="secondary"
+                                            onClick={() => {
+                                                const code = generateUniquePlayerCode(formData, (players || []).filter(p => p.id !== player.id));
+                                                setFormData(f => ({ ...f, playerCode: code }));
+                                            }}
+                                            className="mb-1 text-xs whitespace-nowrap !py-2.5"
+                                        >
+                                            Auto-Gen
+                                        </Button>
+                                    </div>
                                      <div className="grid grid-cols-2 gap-4">
                                         <Input label="Age" type="number" value={formData.age} onChange={e => setFormData(f => ({...f, age: Number(e.target.value)}))} />
                                         <Input label="ID Number" value={formData.idNumber} onChange={e => setFormData(f => ({...f, idNumber: e.target.value}))} />
@@ -490,7 +513,30 @@ WHERE id = '${player.id}';`;
                                 </>
                             ) : (
                                 <>
-                                    <p><strong className="text-gray-400">Code:</strong> <span className="font-mono text-red-400">{player.playerCode}</span> <InfoTooltip text="This is the player's unique identification code. Use this code to quickly find and check them into events. It is also used on any manual stat-tracking sheets during live games to ensure XP and stats are assigned correctly." /></p>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <p><strong className="text-gray-400">Code:</strong>{' '}</p>
+                                        {(!player.playerCode || player.playerCode === 'NO-CODE') ? (
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="font-mono text-amber-400 bg-amber-950/60 border border-amber-600/50 px-2 py-0.5 rounded text-xs font-bold">
+                                                    NO-CODE (Unassigned)
+                                                </span>
+                                                <Button
+                                                    size="sm"
+                                                    variant="secondary"
+                                                    onClick={() => {
+                                                        const newCode = generateUniquePlayerCode(player, (players || []).filter(p => p.id !== player.id));
+                                                        onUpdatePlayer({ ...player, playerCode: newCode });
+                                                    }}
+                                                    className="!py-0.5 !px-2 text-xs text-amber-300 border-amber-600/60 hover:bg-amber-950/80"
+                                                >
+                                                    Auto-Assign Code
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <span className="font-mono text-red-400 font-bold">{player.playerCode}</span>
+                                        )}
+                                        <InfoTooltip text="This is the player's unique identification code. Use this code to quickly find and check them into events. It is also used on any manual stat-tracking sheets during live games to ensure XP and stats are assigned correctly." />
+                                    </div>
                                     <p><strong className="text-gray-400">Age:</strong> {player.age}</p>
                                     <p><strong className="text-gray-400">ID Number:</strong> {player.idNumber}</p>
                                     <div className="bg-zinc-800/50 p-3 rounded-md border border-zinc-700/50">

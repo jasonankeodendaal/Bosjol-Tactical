@@ -32,6 +32,7 @@ import { AuthContext } from '../auth/AuthContext';
 import { SendCredentialsModal } from './SendCredentialsModal';
 
 import { AdminGameTypesManager } from './AdminGameTypesManager';
+import { generateUniquePlayerCode } from '../utils/playerCodeGenerator';
 
 export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' | 'seedInitialData' | 'updatePlayerDoc' | 'addEventDoc' | 'deleteEventDoc' | 'updateEventDoc'> & {
     onDeleteAllData: () => void;
@@ -362,7 +363,13 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     );
 };
 
-const PlayerListItem = React.memo(({ player, rank, onViewPlayer, onDeletePlayer }: { player: Player; rank: Tier; onViewPlayer: (id: string) => void; onDeletePlayer: (id: string) => void }) => {
+const PlayerListItem = React.memo(({ player, rank, onViewPlayer, onDeletePlayer, onAssignCode }: { 
+    player: Player; 
+    rank: Tier; 
+    onViewPlayer: (id: string) => void; 
+    onDeletePlayer: (id: string) => void;
+    onAssignCode?: (player: Player) => void;
+}) => {
     const xp = player.stats?.xp || 0;
     const matchesCount = player.stats?.gamesPlayed ?? (player.matchHistory?.length || 0);
     const badgesCount = (player.badges?.length || 0) + (player.legendaryBadges?.length || 0);
@@ -397,7 +404,22 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer, onDeletePlayer 
                         />
                         <span className="truncate font-medium text-zinc-300">{rank.name}</span>
                         <span className="text-zinc-600">&bull;</span>
-                        <span className="font-mono text-zinc-300 font-bold">{player.playerCode || 'NO-CODE'}</span>
+                        {(!player.playerCode || player.playerCode === 'NO-CODE') ? (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onAssignCode?.(player);
+                                }}
+                                className="inline-flex items-center gap-1 font-mono text-amber-400 bg-amber-950/70 hover:bg-amber-900/90 border border-amber-500/50 px-1.5 py-0.2 rounded text-[9px] font-bold transition-all shadow-xs"
+                                title="No player code in database. Click to auto-assign a unique code."
+                            >
+                                <span>NO-CODE</span>
+                                <span className="text-[8px] bg-amber-500 text-black px-1 py-0.1 rounded font-sans font-black tracking-tight">+ Assign</span>
+                            </button>
+                        ) : (
+                            <span className="font-mono text-zinc-300 font-bold">{player.playerCode}</span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -424,9 +446,46 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer, onDeletePlayer 
 });
 
 const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' | 'ranks' | 'companyDetails'> & { onViewPlayer: (id: string) => void; onDeletePlayer: (id: string) => void }> = ({ players, addPlayerDoc, ranks, companyDetails, onViewPlayer, onDeletePlayer }) => {
+    const dataContext = useContext(DataContext);
     const [showNewPlayerModal, setShowNewPlayerModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState<'alpha-asc' | 'alpha-desc' | 'xp-desc' | 'matches-desc'>('alpha-asc');
+    const [isAssigningAll, setIsAssigningAll] = useState(false);
+
+    // Identify players missing valid player codes
+    const missingCodePlayers = useMemo(() => {
+        return players.filter(p => !p.playerCode || p.playerCode === 'NO-CODE' || p.playerCode.trim() === '');
+    }, [players]);
+
+    const handleAssignSingleCode = useCallback(async (targetPlayer: Player) => {
+        const code = generateUniquePlayerCode(targetPlayer, players);
+        if (dataContext?.updateDoc) {
+            await dataContext.updateDoc('players', { id: targetPlayer.id, playerCode: code });
+        }
+        if (dataContext?.logActivity) {
+            dataContext.logActivity(`Assigned player code ${code} to ${targetPlayer.name} ("${targetPlayer.callsign || targetPlayer.name}")`);
+        }
+    }, [players, dataContext]);
+
+    const handleAssignAllMissingCodes = useCallback(async () => {
+        if (missingCodePlayers.length === 0 || isAssigningAll) return;
+        setIsAssigningAll(true);
+        try {
+            let pool = [...players];
+            for (const p of missingCodePlayers) {
+                const code = generateUniquePlayerCode(p, pool);
+                pool = pool.map(x => x.id === p.id ? { ...x, playerCode: code } : x);
+                if (dataContext?.updateDoc) {
+                    await dataContext.updateDoc('players', { id: p.id, playerCode: code });
+                }
+            }
+            if (dataContext?.logActivity) {
+                dataContext.logActivity(`Auto-assigned player codes to ${missingCodePlayers.length} operators`);
+            }
+        } finally {
+            setIsAssigningAll(false);
+        }
+    }, [missingCodePlayers, players, dataContext, isAssigningAll]);
 
     // Auto-alphabetical by default (A-Z by name/callsign, then surname)
     const filteredPlayers = useMemo(() => {
@@ -565,12 +624,44 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
                 </div>
             </div>
 
+            {/* Missing Player Codes Alert Banner */}
+            {missingCodePlayers.length > 0 && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-gradient-to-r from-amber-950/70 via-zinc-900 to-zinc-900 border border-amber-500/50 text-xs text-amber-200 shadow-sm">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-amber-400 text-lg flex-shrink-0">⚠️</span>
+                        <div className="min-w-0">
+                            <p className="font-bold text-amber-300">
+                                {missingCodePlayers.length} {missingCodePlayers.length === 1 ? 'operator has' : 'operators have'} no Player Code (states NO-CODE)
+                            </p>
+                            <p className="text-[11px] text-zinc-300 truncate">
+                                Codes are required for event check-ins, voucher redemptions, and live game stat tracking.
+                            </p>
+                        </div>
+                    </div>
+                    <Button
+                        size="sm"
+                        onClick={handleAssignAllMissingCodes}
+                        disabled={isAssigningAll}
+                        className="!py-1.5 !px-3 text-xs bg-amber-500 hover:bg-amber-400 text-black font-black flex-shrink-0 whitespace-nowrap shadow-sm"
+                    >
+                        {isAssigningAll ? 'Assigning...' : `Auto-Assign All Codes (${missingCodePlayers.length})`}
+                    </Button>
+                </div>
+            )}
+
             {/* Side by side grid on mobile */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-2.5 max-h-[72vh] overflow-y-auto pr-1">
                 {filteredPlayers.map(p => {
                     const rank = getRankForPlayer(p, ranks);
                     return (
-                        <PlayerListItem key={p.id} player={p} rank={rank} onViewPlayer={onViewPlayer} onDeletePlayer={onDeletePlayer} />
+                        <PlayerListItem 
+                            key={p.id} 
+                            player={p} 
+                            rank={rank} 
+                            onViewPlayer={onViewPlayer} 
+                            onDeletePlayer={onDeletePlayer} 
+                            onAssignCode={handleAssignSingleCode}
+                        />
                     );
                 })}
                 {filteredPlayers.length === 0 && (

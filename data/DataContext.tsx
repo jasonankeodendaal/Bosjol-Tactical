@@ -42,7 +42,84 @@ function normalizeCollectionItem<T>(collectionName: string, item: any): T {
     if (collectionName === 'gameTypes' || collectionName === 'game_types' || collectionName === 'gametypes') {
         return normalizeGameTypeRow(item) as unknown as T;
     }
+    if (collectionName === 'legendaryBadges' || collectionName === 'legendarybadges' || collectionName === 'legendary_badges') {
+        return {
+            id: String(item.id || ''),
+            name: item.name || '',
+            description: item.description || '',
+            iconUrl: item.iconUrl || item.iconurl || item.icon_url || '',
+            howToObtain: item.howToObtain || item.howtoobtain || item.how_to_obtain || '',
+        } as unknown as T;
+    }
+    if (collectionName === 'badges') {
+        return {
+            id: String(item.id || ''),
+            name: item.name || '',
+            description: item.description || '',
+            iconUrl: item.iconUrl || item.iconurl || item.icon_url || '',
+            criteria: item.criteria || {},
+        } as unknown as T;
+    }
     return item as T;
+}
+
+// Track discovered active table names in PostgreSQL to eliminate duplicate lookup latency
+const resolvedTableMap: Record<string, string> = {};
+
+export function getTableCandidates(collectionName: string): string[] {
+    const primary = resolvedTableMap[collectionName];
+    switch (collectionName) {
+        case 'legendaryBadges':
+        case 'legendarybadges':
+        case 'legendary_badges': {
+            const list = ['legendaryBadges', 'legendarybadges', 'legendary_badges'];
+            return primary ? [primary, ...list.filter(t => t !== primary)] : list;
+        }
+        case 'gameTypes':
+        case 'game_types':
+        case 'gametypes': {
+            const list = ['gameTypes', 'game_types', 'gametypes'];
+            return primary ? [primary, ...list.filter(t => t !== primary)] : list;
+        }
+        case 'gamificationSettings':
+        case 'gamificationsettings':
+        case 'gamification_rules': {
+            const list = ['gamificationSettings', 'gamificationsettings', 'gamification_rules'];
+            return primary ? [primary, ...list.filter(t => t !== primary)] : list;
+        }
+        case 'socialLinks':
+        case 'sociallinks':
+        case 'social_links': {
+            const list = ['socialLinks', 'sociallinks', 'social_links'];
+            return primary ? [primary, ...list.filter(t => t !== primary)] : list;
+        }
+        case 'carouselMedia':
+        case 'carouselmedia':
+        case 'carousel_media': {
+            const list = ['carouselMedia', 'carouselmedia', 'carousel_media'];
+            return primary ? [primary, ...list.filter(t => t !== primary)] : list;
+        }
+        case 'tacticalRules':
+        case 'tacticalrules':
+        case 'tactical_rules': {
+            const list = ['tacticalRules', 'tacticalrules', 'tactical_rules'];
+            return primary ? [primary, ...list.filter(t => t !== primary)] : list;
+        }
+        case 'activityLog':
+        case 'activitylog':
+        case 'activity_log': {
+            const list = ['activityLog', 'activitylog', 'activity_log'];
+            return primary ? [primary, ...list.filter(t => t !== primary)] : list;
+        }
+        case 'apiSetupGuide':
+        case 'apisetupguide':
+        case 'api_setup_guide': {
+            const list = ['apiSetupGuide', 'apisetupguide', 'api_setup_guide'];
+            return primary ? [primary, ...list.filter(t => t !== primary)] : list;
+        }
+        default:
+            return primary ? [primary] : [collectionName];
+    }
 }
 
 // Helper to fetch collection data directly from Supabase with 100% live real-time sync (zero localStorage)
@@ -72,70 +149,87 @@ function useCollection<T extends {id: string}>(
 
         setLoading(true);
         let isMounted = true;
-        
-        // Initial live fetch from Supabase
-        supabase.from(collectionName).select('*')
-            .then(({ data: fetchedData, error }) => {
-                if (!isMounted) return;
-                if (error) {
-                    console.warn(`Live fetch notice on ${collectionName}:`, error.message || error);
-                    setData(mockData || []);
-                } else {
-                    if (fetchedData && fetchedData.length > 0) {
-                        recordDatabaseActivity('reads', fetchedData.length);
-                        const normalizedFetched = fetchedData.map(row => normalizeCollectionItem<T>(collectionName, row));
-                        const merged = [...(mockData || [])];
-                        normalizedFetched.forEach(fetchedItem => {
-                            const idx = merged.findIndex(item => (item as any).id === (fetchedItem as any).id);
-                            if (idx > -1) {
-                                merged[idx] = fetchedItem;
-                            } else {
-                                merged.push(fetchedItem);
-                            }
-                        });
-                        setData(merged);
-                    } else {
-                        setData(mockData || []);
-                    }
-                }
-                setLoading(false);
-            })
-            .catch(err => {
-                if (!isMounted) return;
-                console.warn(`Network notice on ${collectionName}:`, err?.message || err);
-                setData(mockData || []);
-                setLoading(false);
-            });
-
-        // Realtime Subscription directly from Supabase PostgreSQL
         let channel: any = null;
-        try {
-            channel = supabase.channel(`public:${collectionName}`)
-                .on('postgres_changes', { event: '*', schema: 'public', table: collectionName }, (payload) => {
-                    recordDatabaseActivity('reads', 1);
-                    if (payload.eventType === 'INSERT') {
-                        const newDoc = normalizeCollectionItem<T>(collectionName, payload.new);
-                        setData(currentData => [
-                            ...currentData.filter(item => (item as any).id !== (newDoc as any).id), 
-                            newDoc
-                        ]);
-                    } else if (payload.eventType === 'UPDATE') {
-                        const updatedDoc = normalizeCollectionItem<T>(collectionName, payload.new);
-                        setData(currentData => currentData.map(item => {
-                            if ((item as any).id === (updatedDoc as any).id) {
-                                return { ...(item as any), ...(updatedDoc as any) };
-                            }
-                            return item;
-                        }));
-                    } else if (payload.eventType === 'DELETE') {
-                        const deletedId = (payload.old as any)?.id;
-                        setData(currentData => currentData.filter(item => (item as any).id !== deletedId));
+        const candidates = getTableCandidates(collectionName);
+        
+        // Initial live fetch from Supabase with candidate fallback
+        async function loadInitial() {
+            let fetchedData: any[] | null = null;
+            let lastError: any = null;
+            let activeTable = collectionName;
+
+            for (const candidate of candidates) {
+                const { data: resData, error: resError } = await supabase.from(candidate).select('*');
+                if (!resError && resData) {
+                    fetchedData = resData;
+                    activeTable = candidate;
+                    resolvedTableMap[collectionName] = candidate;
+                    break;
+                }
+                lastError = resError;
+                const msg = resError?.message || '';
+                const isMissingRelation = msg.includes('relation') || msg.includes('Could not find') || msg.includes('schema cache');
+                if (!isMissingRelation) {
+                    break;
+                }
+            }
+
+            if (!isMounted) return;
+
+            if (fetchedData && fetchedData.length > 0) {
+                recordDatabaseActivity('reads', fetchedData.length);
+                const normalizedFetched = fetchedData.map(row => normalizeCollectionItem<T>(collectionName, row));
+                const merged = [...(mockData || [])];
+                normalizedFetched.forEach(fetchedItem => {
+                    const idx = merged.findIndex(item => (item as any).id === (fetchedItem as any).id);
+                    if (idx > -1) {
+                        merged[idx] = fetchedItem;
+                    } else {
+                        merged.push(fetchedItem);
                     }
-                })
-                .subscribe();
-        } catch (subErr) {
-            console.warn(`Could not subscribe to realtime changes for ${collectionName}:`, subErr);
+                });
+                setData(merged);
+            } else if (fetchedData && fetchedData.length === 0) {
+                setData(mockData || []);
+            } else {
+                if (lastError) {
+                    console.warn(`Live fetch notice on ${collectionName}:`, lastError.message || lastError);
+                }
+                setData(mockData || []);
+            }
+            setLoading(false);
+
+            // Realtime Subscription directly from Supabase PostgreSQL
+            try {
+                channel = supabase.channel(`public:${collectionName}:${activeTable}`)
+                    .on('postgres_changes', { event: '*', schema: 'public', table: activeTable }, (payload) => {
+                        recordDatabaseActivity('reads', 1);
+                        if (payload.eventType === 'INSERT') {
+                            const newDoc = normalizeCollectionItem<T>(collectionName, payload.new);
+                            setData(currentData => [
+                                ...currentData.filter(item => (item as any).id !== (newDoc as any).id), 
+                                newDoc
+                            ]);
+                        } else if (payload.eventType === 'UPDATE') {
+                            const updatedDoc = normalizeCollectionItem<T>(collectionName, payload.new);
+                            setData(currentData => currentData.map(item => {
+                                if ((item as any).id === (updatedDoc as any).id) {
+                                    return { ...(item as any), ...(updatedDoc as any) };
+                                }
+                                return item;
+                            }));
+                        } else if (payload.eventType === 'DELETE') {
+                            const deletedId = (payload.old as any)?.id;
+                            setData(currentData => currentData.filter(item => (item as any).id !== deletedId));
+                        }
+                    })
+                    .subscribe();
+            } catch (subErr) {
+                console.warn(`Could not subscribe to realtime changes for ${collectionName}:`, subErr);
+            }
         }
+
+        loadInitial();
 
         return () => {
             isMounted = false;
@@ -171,40 +265,52 @@ function extractDocumentField(rawRow: Record<string, any>, key: string, fallback
 // Helper to safely upsert a row to Supabase, stripping missing columns automatically if table schema does not include them yet
 async function safeUpsertRow(table: string, initialPayload: any): Promise<boolean> {
     if (!supabase) return false;
-    let currentPayload = { ...initialPayload };
-    let attempts = 0;
-    while (attempts < 10) {
-        attempts++;
-        
-        // Handle case-sensitive table names for collections created with quotes
-        const tableName = table === 'gameTypes' ? '"gameTypes"' : 
-                          table === 'legendaryBadges' ? '"legendaryBadges"' : 
-                          table === 'gamificationSettings' ? '"gamificationSettings"' : 
-                          table;
+    const candidates = getTableCandidates(table);
 
-        const { error } = await supabase.from(tableName).upsert(currentPayload);
-        if (!error) {
-            recordDatabaseActivity('writes', 1);
-            return true;
-        }
-        const msg = error.message || String(error);
-        const match = msg.match(/Could not find the '([^']+)' column/i) || msg.match(/column "([^"]+)" of relation/i);
-        if (match && match[1]) {
-            const missingCol = match[1];
-            let removed = false;
-            for (const k of Object.keys(currentPayload)) {
-                if (k === missingCol || k.toLowerCase() === missingCol.toLowerCase()) {
-                    delete currentPayload[k];
-                    removed = true;
+    for (const tableName of candidates) {
+        let currentPayload = { ...initialPayload };
+        let attempts = 0;
+        let isMissingRelation = false;
+
+        while (attempts < 10) {
+            attempts++;
+            const { error } = await supabase.from(tableName).upsert(currentPayload);
+            if (!error) {
+                recordDatabaseActivity('writes', 1);
+                resolvedTableMap[table] = tableName;
+                return true;
+            }
+
+            const msg = error.message || String(error);
+            const relationNotFound = msg.includes('relation') || msg.includes('Could not find') || msg.includes('schema cache');
+            if (relationNotFound && attempts === 1) {
+                isMissingRelation = true;
+                break;
+            }
+
+            const match = msg.match(/Could not find the '([^']+)' column/i) || msg.match(/column "([^"]+)" of relation/i);
+            if (match && match[1]) {
+                const missingCol = match[1];
+                let removed = false;
+                for (const k of Object.keys(currentPayload)) {
+                    if (k === missingCol || k.toLowerCase() === missingCol.toLowerCase()) {
+                        delete currentPayload[k];
+                        removed = true;
+                    }
+                }
+                if (removed && Object.keys(currentPayload).length > 0) {
+                    console.warn(`Supabase table '${tableName}' missing column '${missingCol}'. Stripped missing column and retrying upsert...`);
+                    continue;
                 }
             }
-            if (removed && Object.keys(currentPayload).length > 0) {
-                console.warn(`Supabase table '${table}' missing column '${missingCol}'. Stripped missing column and retrying upsert...`);
-                continue;
-            }
+
+            console.warn(`Supabase upsert notice for ${tableName}:`, msg);
+            break;
         }
-        console.warn(`Supabase upsert notice for ${table}:`, msg);
-        break;
+
+        if (!isMissingRelation) {
+            break;
+        }
     }
     return false;
 }
@@ -721,22 +827,33 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
                 console.log(`Attempting to delete from Supabase table: ${collectionName}`);
                 
-                // Handle case-sensitive table names for collections created with quotes
-                const tableName = collectionName === 'gameTypes' ? '"gameTypes"' : 
-                                  collectionName === 'legendaryBadges' ? '"legendaryBadges"' : 
-                                  collectionName === 'gamificationSettings' ? '"gamificationSettings"' : 
-                                  collectionName;
+                const candidates = getTableCandidates(collectionName);
+                let deletedSuccessfully = false;
+                let lastDeleteError: any = null;
+
+                for (const tableName of candidates) {
+                    const { error } = await supabase.from(tableName).delete().eq('id', docId);
+                    if (!error) {
+                        console.log(`Successfully deleted from Supabase table: ${tableName}`);
+                        recordDatabaseActivity('deletes', 1);
+                        resolvedTableMap[collectionName] = tableName;
+                        deletedSuccessfully = true;
+                        break;
+                    }
+                    lastDeleteError = error;
+                    const msg = error.message || '';
+                    const isMissingRelation = msg.includes('relation') || msg.includes('Could not find') || msg.includes('schema cache');
+                    if (!isMissingRelation) {
+                        break;
+                    }
+                }
                 
-                const { error } = await supabase.from(tableName).delete().eq('id', docId);
-                if (error) {
-                    console.warn(`Supabase deleteDoc error on ${collectionName}:`, error.message || error);
+                if (!deletedSuccessfully && lastDeleteError) {
+                    console.warn(`Supabase deleteDoc error on ${collectionName}:`, lastDeleteError.message || lastDeleteError);
                     // Revert the optimistic UI update
                     if (setter && targetDoc) {
                         setter(prev => [...prev, targetDoc]);
                     }
-                } else {
-                    console.log(`Successfully deleted from Supabase table: ${collectionName}`);
-                    recordDatabaseActivity('deletes', 1);
                 }
             } catch (err: any) {
                 console.warn(`Network error in deleteDoc (${collectionName}):`, err?.message || err);

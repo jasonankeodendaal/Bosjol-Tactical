@@ -9,6 +9,7 @@ import { DashboardCard } from './DashboardCard';
 import { DataContext } from '../data/DataContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { resolveRankIcon, getRankBadgeSvg, DEFAULT_RANKS } from '../utils/rankUtils';
+import { LEGENDARY_BADGES_SQL } from '../utils/supabaseSchema';
 
 
 interface ProgressionTabProps {
@@ -161,9 +162,16 @@ const LegendaryBadgeEditorModal: React.FC<{
     });
 
     const handleSave = () => {
+        if (!formData.name.trim()) {
+            alert("Please enter a Badge Name.");
+            return;
+        }
         const finalBadge = {
-            ...badge,
-            ...formData,
+            ...(badge?.id ? { id: badge.id } : {}),
+            name: formData.name.trim(),
+            description: formData.description.trim(),
+            iconUrl: formData.iconUrl.trim(),
+            howToObtain: formData.howToObtain.trim(),
         };
         onSave(finalBadge);
         onClose();
@@ -721,7 +729,11 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
 
     const handleSaveLegendaryBadge = async (badge: Omit<LegendaryBadge, 'id'> | LegendaryBadge) => { 
         setEditingLegendaryBadge(null);
-        'id' in badge ? await updateDoc('legendaryBadges', badge) : await addDoc('legendaryBadges', badge);
+        if ('id' in badge && badge.id) {
+            await updateDoc('legendaryBadges', badge);
+        } else {
+            await addDoc('legendaryBadges', badge);
+        }
     }
     const handleDeleteLegendaryBadge = async () => { if (deletingLegendaryBadge) { await deleteDoc('legendaryBadges', deletingLegendaryBadge.id); setDeletingLegendaryBadge(null); } }
 
@@ -846,6 +858,14 @@ export const ProgressionTab: React.FC<ProgressionTabProps> = ({
     
     const [showSqlGuide, setShowSqlGuide] = useState(false);
     const [copiedSql, setCopiedSql] = useState(false);
+    const [showLegendarySqlModal, setShowLegendarySqlModal] = useState(false);
+    const [copiedLegendarySql, setCopiedLegendarySql] = useState(false);
+
+    const handleCopyLegendarySql = () => {
+        navigator.clipboard.writeText(LEGENDARY_BADGES_SQL);
+        setCopiedLegendarySql(true);
+        setTimeout(() => setCopiedLegendarySql(false), 2500);
+    };
 
     const rankSqlSnippet = `-- SQL Seed Script for all 15 Rank Divisions & 150 Sub-Tiers
 CREATE TABLE IF NOT EXISTS public.ranks (
@@ -888,6 +908,42 @@ SET name = EXCLUDED.name,
     return (
         <div className="w-full max-w-full overflow-hidden space-y-4 sm:space-y-6">
             {/* Modals */}
+            {showLegendarySqlModal && (
+                <Modal isOpen={true} onClose={() => setShowLegendarySqlModal(false)} title="Legendary Badges - Supabase Live Sync SQL">
+                    <div className="space-y-3 text-xs sm:text-sm">
+                        <p className="text-zinc-300">
+                            Run this SQL in your Supabase SQL Editor (<span className="font-semibold text-white">Dashboard &rarr; SQL Editor &rarr; New query &rarr; Paste &rarr; Run</span>) to ensure the <span className="font-mono text-amber-400">legendaryBadges</span> table and player badge links sync with 100% instant real-time persistence:
+                        </p>
+                        <div className="relative">
+                            <pre className="max-h-60 overflow-y-auto p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-amber-300/90 font-mono text-[10px] sm:text-xs select-all">
+                                {LEGENDARY_BADGES_SQL}
+                            </pre>
+                            <button
+                                onClick={handleCopyLegendarySql}
+                                className="absolute top-2 right-2 px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded text-[10px] flex items-center gap-1 shadow"
+                            >
+                                {copiedLegendarySql ? (
+                                    <>
+                                        <CheckCircleIcon className="w-3 h-3 text-white" />
+                                        <span>Copied!</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <CodeBracketIcon className="w-3 h-3" />
+                                        <span>Copy SQL</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                        <div className="flex justify-end gap-2 pt-2">
+                            <Button variant="secondary" onClick={() => setShowLegendarySqlModal(false)}>Close</Button>
+                            <Button onClick={handleCopyLegendarySql}>
+                                {copiedLegendarySql ? 'Copied to Clipboard!' : 'Copy SQL Snippet'}
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
             {editingRule && <GamificationRuleEditorModal rule={editingRule} onClose={() => setEditingRule(null)} onSave={handleSaveRule} />}
             {deletingRule && <Modal isOpen={true} onClose={() => setDeletingRule(null)} title="Confirm Deletion"><p>Delete "{deletingRule.name}"?</p><div className="flex justify-end gap-4 mt-6"><Button variant="secondary" onClick={() => setDeletingRule(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteRule}>Delete</Button></div></Modal>}
             {editingBadge && <BadgeEditorModal badge={editingBadge} onClose={() => setEditingBadge(null)} onSave={handleSaveBadge} />}
@@ -1108,9 +1164,19 @@ SET name = EXCLUDED.name,
                                 <SparklesIcon className="w-5 h-5 text-amber-400" />
                                 <h3 className="text-sm sm:text-lg font-bold text-amber-400 uppercase tracking-wider">Legendary Badges</h3>
                             </div>
-                            <Button size="sm" onClick={() => setEditingLegendaryBadge({})} className="!px-2.5 !py-1 text-[11px] !bg-amber-600 hover:!bg-amber-500">
-                                <PlusIcon className="w-3.5 h-3.5 mr-1"/> Add Legendary
-                            </Button>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <Button 
+                                    size="sm" 
+                                    variant="secondary" 
+                                    onClick={() => setShowLegendarySqlModal(true)} 
+                                    className="!px-2.5 !py-1 text-[11px] !border-amber-500/40 text-amber-300 hover:!bg-amber-950/40"
+                                >
+                                    <CodeBracketIcon className="w-3.5 h-3.5 mr-1 text-amber-400"/> SQL Sync Setup
+                                </Button>
+                                <Button size="sm" onClick={() => setEditingLegendaryBadge({})} className="!px-2.5 !py-1 text-[11px] !bg-amber-600 hover:!bg-amber-500">
+                                    <PlusIcon className="w-3.5 h-3.5 mr-1"/> Add Legendary
+                                </Button>
+                            </div>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                             {legendaryBadges.map(badge => (

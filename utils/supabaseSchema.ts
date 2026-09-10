@@ -177,10 +177,20 @@ CREATE TABLE IF NOT EXISTS public."legendaryBadges" (
     description TEXT DEFAULT '',
     "iconUrl" TEXT DEFAULT '',
     iconurl TEXT DEFAULT '',
+    icon_url TEXT DEFAULT '',
     "howToObtain" TEXT DEFAULT '',
     howtoobtain TEXT DEFAULT '',
+    how_to_obtain TEXT DEFAULT '',
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE public."legendaryBadges" ADD COLUMN IF NOT EXISTS "iconUrl" TEXT DEFAULT '';
+ALTER TABLE public."legendaryBadges" ADD COLUMN IF NOT EXISTS iconurl TEXT DEFAULT '';
+ALTER TABLE public."legendaryBadges" ADD COLUMN IF NOT EXISTS icon_url TEXT DEFAULT '';
+ALTER TABLE public."legendaryBadges" ADD COLUMN IF NOT EXISTS "howToObtain" TEXT DEFAULT '';
+ALTER TABLE public."legendaryBadges" ADD COLUMN IF NOT EXISTS howtoobtain TEXT DEFAULT '';
+ALTER TABLE public."legendaryBadges" ADD COLUMN IF NOT EXISTS how_to_obtain TEXT DEFAULT '';
+ALTER TABLE public."legendaryBadges" ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 CREATE TABLE IF NOT EXISTS public.legendarybadges (
     id TEXT PRIMARY KEY,
@@ -188,10 +198,41 @@ CREATE TABLE IF NOT EXISTS public.legendarybadges (
     description TEXT DEFAULT '',
     "iconUrl" TEXT DEFAULT '',
     iconurl TEXT DEFAULT '',
+    icon_url TEXT DEFAULT '',
     "howToObtain" TEXT DEFAULT '',
     howtoobtain TEXT DEFAULT '',
+    how_to_obtain TEXT DEFAULT '',
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE public.legendarybadges ADD COLUMN IF NOT EXISTS "iconUrl" TEXT DEFAULT '';
+ALTER TABLE public.legendarybadges ADD COLUMN IF NOT EXISTS iconurl TEXT DEFAULT '';
+ALTER TABLE public.legendarybadges ADD COLUMN IF NOT EXISTS icon_url TEXT DEFAULT '';
+ALTER TABLE public.legendarybadges ADD COLUMN IF NOT EXISTS "howToObtain" TEXT DEFAULT '';
+ALTER TABLE public.legendarybadges ADD COLUMN IF NOT EXISTS howtoobtain TEXT DEFAULT '';
+ALTER TABLE public.legendarybadges ADD COLUMN IF NOT EXISTS how_to_obtain TEXT DEFAULT '';
+ALTER TABLE public.legendarybadges ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+CREATE TABLE IF NOT EXISTS public.legendary_badges (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    "iconUrl" TEXT DEFAULT '',
+    iconurl TEXT DEFAULT '',
+    icon_url TEXT DEFAULT '',
+    "howToObtain" TEXT DEFAULT '',
+    howtoobtain TEXT DEFAULT '',
+    how_to_obtain TEXT DEFAULT '',
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.legendary_badges ADD COLUMN IF NOT EXISTS "iconUrl" TEXT DEFAULT '';
+ALTER TABLE public.legendary_badges ADD COLUMN IF NOT EXISTS iconurl TEXT DEFAULT '';
+ALTER TABLE public.legendary_badges ADD COLUMN IF NOT EXISTS icon_url TEXT DEFAULT '';
+ALTER TABLE public.legendary_badges ADD COLUMN IF NOT EXISTS "howToObtain" TEXT DEFAULT '';
+ALTER TABLE public.legendary_badges ADD COLUMN IF NOT EXISTS howtoobtain TEXT DEFAULT '';
+ALTER TABLE public.legendary_badges ADD COLUMN IF NOT EXISTS how_to_obtain TEXT DEFAULT '';
+ALTER TABLE public.legendary_badges ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 -- 5. EVENTS & GAME TYPES TABLES
 CREATE TABLE IF NOT EXISTS public.events (
@@ -1138,5 +1179,158 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
         };
     }
 
+    if (collectionName === 'legendaryBadges' || collectionName === 'legendarybadges' || collectionName === 'legendary_badges') {
+        const id = String(item.id || `lb_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`);
+        const iconUrl = item.iconUrl || item.iconurl || item.icon_url || '';
+        const howToObtain = item.howToObtain || item.howtoobtain || item.how_to_obtain || '';
+        return {
+            id,
+            name: item.name || '',
+            description: item.description || '',
+            iconUrl: iconUrl,
+            iconurl: iconUrl,
+            icon_url: iconUrl,
+            howToObtain: howToObtain,
+            howtoobtain: howToObtain,
+            how_to_obtain: howToObtain,
+            updated_at: new Date().toISOString(),
+        };
+    }
+
+    if (collectionName === 'badges') {
+        const id = String(item.id || `badge_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`);
+        const iconUrl = item.iconUrl || item.iconurl || item.icon_url || '';
+        return {
+            id,
+            name: item.name || '',
+            description: item.description || '',
+            iconUrl: iconUrl,
+            iconurl: iconUrl,
+            criteria: item.criteria || {},
+            updated_at: new Date().toISOString(),
+        };
+    }
+
     return payload;
 }
+
+export const LEGENDARY_BADGES_SQL = `-- =========================================================================
+-- BOSJOL TACTICAL AIRSOFT - LEGENDARY BADGES LIVE SYNC POSTGRESQL SETUP
+-- Run this in your Supabase SQL Editor (SQL Editor -> New query -> Paste -> Run)
+-- Safe to run multiple times (idempotent)
+-- =========================================================================
+
+-- 1. Create the legendaryBadges table (supports case-preserved queries)
+CREATE TABLE IF NOT EXISTS public."legendaryBadges" (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    "iconUrl" TEXT DEFAULT '',
+    iconurl TEXT DEFAULT '',
+    icon_url TEXT DEFAULT '',
+    "howToObtain" TEXT DEFAULT '',
+    howtoobtain TEXT DEFAULT '',
+    how_to_obtain TEXT DEFAULT '',
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. Create the lowercase legendarybadges table (standard PostgREST lowercase fallback)
+CREATE TABLE IF NOT EXISTS public.legendarybadges (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    "iconUrl" TEXT DEFAULT '',
+    iconurl TEXT DEFAULT '',
+    icon_url TEXT DEFAULT '',
+    "howToObtain" TEXT DEFAULT '',
+    howtoobtain TEXT DEFAULT '',
+    how_to_obtain TEXT DEFAULT '',
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. Create the snake_case legendary_badges table fallback
+CREATE TABLE IF NOT EXISTS public.legendary_badges (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    "iconUrl" TEXT DEFAULT '',
+    iconurl TEXT DEFAULT '',
+    icon_url TEXT DEFAULT '',
+    "howToObtain" TEXT DEFAULT '',
+    howtoobtain TEXT DEFAULT '',
+    how_to_obtain TEXT DEFAULT '',
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. Ensure all columns exist on tables if already created previously
+ALTER TABLE public."legendaryBadges" ADD COLUMN IF NOT EXISTS "iconUrl" TEXT DEFAULT '';
+ALTER TABLE public."legendaryBadges" ADD COLUMN IF NOT EXISTS iconurl TEXT DEFAULT '';
+ALTER TABLE public."legendaryBadges" ADD COLUMN IF NOT EXISTS icon_url TEXT DEFAULT '';
+ALTER TABLE public."legendaryBadges" ADD COLUMN IF NOT EXISTS "howToObtain" TEXT DEFAULT '';
+ALTER TABLE public."legendaryBadges" ADD COLUMN IF NOT EXISTS howtoobtain TEXT DEFAULT '';
+ALTER TABLE public."legendaryBadges" ADD COLUMN IF NOT EXISTS how_to_obtain TEXT DEFAULT '';
+ALTER TABLE public."legendaryBadges" ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+ALTER TABLE public.legendarybadges ADD COLUMN IF NOT EXISTS "iconUrl" TEXT DEFAULT '';
+ALTER TABLE public.legendarybadges ADD COLUMN IF NOT EXISTS iconurl TEXT DEFAULT '';
+ALTER TABLE public.legendarybadges ADD COLUMN IF NOT EXISTS icon_url TEXT DEFAULT '';
+ALTER TABLE public.legendarybadges ADD COLUMN IF NOT EXISTS "howToObtain" TEXT DEFAULT '';
+ALTER TABLE public.legendarybadges ADD COLUMN IF NOT EXISTS howtoobtain TEXT DEFAULT '';
+ALTER TABLE public.legendarybadges ADD COLUMN IF NOT EXISTS how_to_obtain TEXT DEFAULT '';
+ALTER TABLE public.legendarybadges ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+ALTER TABLE public.legendary_badges ADD COLUMN IF NOT EXISTS "iconUrl" TEXT DEFAULT '';
+ALTER TABLE public.legendary_badges ADD COLUMN IF NOT EXISTS iconurl TEXT DEFAULT '';
+ALTER TABLE public.legendary_badges ADD COLUMN IF NOT EXISTS icon_url TEXT DEFAULT '';
+ALTER TABLE public.legendary_badges ADD COLUMN IF NOT EXISTS "howToObtain" TEXT DEFAULT '';
+ALTER TABLE public.legendary_badges ADD COLUMN IF NOT EXISTS howtoobtain TEXT DEFAULT '';
+ALTER TABLE public.legendary_badges ADD COLUMN IF NOT EXISTS how_to_obtain TEXT DEFAULT '';
+ALTER TABLE public.legendary_badges ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+-- 5. Ensure players table has the legendaryBadges columns to store awarded badges
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS "legendaryBadges" JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS legendarybadges JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS legendary_badges JSONB DEFAULT '[]'::jsonb;
+
+-- 6. Enable Row Level Security (RLS) & Grant full public access
+ALTER TABLE public."legendaryBadges" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public full access on legendaryBadges" ON public."legendaryBadges";
+CREATE POLICY "Allow public full access on legendaryBadges" ON public."legendaryBadges" FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE public.legendarybadges ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public full access on legendarybadges" ON public.legendarybadges;
+CREATE POLICY "Allow public full access on legendarybadges" ON public.legendarybadges FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE public.legendary_badges ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public full access on legendary_badges" ON public.legendary_badges;
+CREATE POLICY "Allow public full access on legendary_badges" ON public.legendary_badges FOR ALL USING (true) WITH CHECK (true);
+
+-- Grant privileges to anon and authenticated roles
+GRANT ALL ON TABLE public."legendaryBadges" TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.legendarybadges TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.legendary_badges TO anon, authenticated, service_role;
+
+-- 7. Enable Realtime Replication for instant live sync across devices
+DO $$
+BEGIN
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public."legendaryBadges";
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    WHEN OTHERS THEN NULL;
+    END;
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.legendarybadges;
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    WHEN OTHERS THEN NULL;
+    END;
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.legendary_badges;
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    WHEN OTHERS THEN NULL;
+    END;
+END $$;
+`;
+

@@ -29,7 +29,10 @@ export const RecruitSignUpForm: React.FC<RecruitSignUpFormProps> = ({
     onClose
 }) => {
     const data = useContext(DataContext);
-    const [fullName, setFullName] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [surname, setSurname] = useState('');
+    const [nameError, setNameError] = useState('');
+    const [surnameError, setSurnameError] = useState('');
     const [callsign, setCallsign] = useState('');
     const [age, setAge] = useState<string>('');
     const [idNumber, setIdNumber] = useState('');
@@ -71,7 +74,8 @@ export const RecruitSignUpForm: React.FC<RecruitSignUpFormProps> = ({
 
     // Auto-generated pre-built WhatsApp text based on form inputs
     const generatedWhatsAppMessage = useMemo(() => {
-        const nameText = fullName.trim() || '[Full Name]';
+        const fullName = `${firstName.trim()} ${surname.trim()}`.trim();
+        const nameText = fullName || '[Full Name (First & Surname)]';
         const callsignText = callsign.trim() ? `"${callsign.trim()}"` : '"[Callsign]"';
         const ageText = age ? `${age} yrs` : '[Age]';
         const idText = idNumber.trim() || '[ID/Passport]';
@@ -92,25 +96,37 @@ export const RecruitSignUpForm: React.FC<RecruitSignUpFormProps> = ({
 📝 *Notes:* ${notesText}
 ----------------------------------------
 I agree to standard field regulations (Min Age: ${minAge}). Requesting Command clearance!`;
-    }, [fullName, callsign, age, idNumber, phone, email, loadout, role, notes, companyDetails.name, minAge]);
+    }, [firstName, surname, callsign, age, idNumber, phone, email, loadout, role, notes, companyDetails.name, minAge]);
 
     const whatsappHref = `https://wa.me/${formattedWhatsAppNumber}?text=${encodeURIComponent(generatedWhatsAppMessage)}`;
 
     const handleDirectRegister = async () => {
-        if (!fullName.trim()) return;
+        let hasError = false;
+        if (!firstName.trim()) {
+            setNameError('First Name is mandatory');
+            hasError = true;
+        } else {
+            setNameError('');
+        }
+
+        if (!surname.trim()) {
+            setSurnameError('Surname is mandatory');
+            hasError = true;
+        } else {
+            setSurnameError('');
+        }
+
+        if (hasError) return;
 
         setIsSaving(true);
         try {
             if (data?.addDoc) {
-                const nameParts = fullName.trim().split(/\s+/);
-                const firstName = nameParts[0] || '';
-                const surname = nameParts.slice(1).join(' ') || '';
                 const newPlayerId = `rec_${Date.now()}`;
                 await data.addDoc('players', {
                     id: newPlayerId,
-                    name: firstName,
-                    surname: surname,
-                    callsign: callsign.trim() || firstName,
+                    name: firstName.trim(),
+                    surname: surname.trim(),
+                    callsign: callsign.trim() || firstName.trim(),
                     email: email.trim(),
                     phone: phone.trim(),
                     role: 'player',
@@ -217,36 +233,60 @@ I agree to standard field regulations (Min Age: ${minAge}). Requesting Command c
 
                 {/* Main Content Area - Compact Side-by-Side Mobile Layout */}
                 <form onSubmit={(e) => e.preventDefault()} className="relative z-10 space-y-2.5 max-h-[72vh] overflow-y-auto overflow-x-hidden pr-1 custom-scrollbar w-full max-w-full box-border">
-                    {/* Row 1: Full Name & Callsign (Side-by-Side on Mobile!) */}
+                    {/* Row 1: First Name & Surname (Side-by-Side on Mobile!) */}
                     <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full max-w-full min-w-0">
                         <div className="min-w-0">
                             <label className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-0.5 flex items-center gap-1 truncate">
                                 <User className="w-3 h-3 text-red-400 shrink-0" />
-                                <span className="truncate">Full Name <span className="text-red-500">*</span></span>
+                                <span className="truncate">First Name <span className="text-red-500">*</span></span>
                             </label>
                             <input
                                 type="text"
                                 required
-                                placeholder="e.g. Jason A"
-                                value={fullName}
-                                onChange={(e) => setFullName(e.target.value)}
-                                className="w-full min-w-0 box-border px-2.5 py-1.5 sm:py-2 rounded-xl bg-black/40 border border-white/15 focus:border-red-500 text-white placeholder-zinc-500 text-xs font-medium transition-all shadow-inner"
+                                placeholder="e.g. Jason"
+                                value={firstName}
+                                onChange={(e) => {
+                                    setFirstName(e.target.value);
+                                    if (e.target.value.trim()) setNameError('');
+                                }}
+                                className={`w-full min-w-0 box-border px-2.5 py-1.5 sm:py-2 rounded-xl bg-black/40 border ${nameError ? 'border-red-500' : 'border-white/15'} focus:border-red-500 text-white placeholder-zinc-500 text-xs font-medium transition-all shadow-inner`}
                             />
+                            {nameError && <p className="text-red-400 text-[9px] mt-0.5 font-medium">{nameError}</p>}
                         </div>
 
                         <div className="min-w-0">
                             <label className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-0.5 flex items-center gap-1 truncate">
-                                <Crosshair className="w-3 h-3 text-red-400 shrink-0" />
-                                <span className="truncate">Callsign</span>
+                                <User className="w-3 h-3 text-red-400 shrink-0" />
+                                <span className="truncate">Surname <span className="text-red-500">*</span></span>
                             </label>
                             <input
                                 type="text"
-                                placeholder='e.g. Maverick'
-                                value={callsign}
-                                onChange={(e) => setCallsign(e.target.value)}
-                                className="w-full min-w-0 box-border px-2.5 py-1.5 sm:py-2 rounded-xl bg-black/40 border border-white/15 focus:border-red-500 text-white placeholder-zinc-500 text-xs font-medium transition-all shadow-inner"
+                                required
+                                placeholder="e.g. Archer"
+                                value={surname}
+                                onChange={(e) => {
+                                    setSurname(e.target.value);
+                                    if (e.target.value.trim()) setSurnameError('');
+                                }}
+                                className={`w-full min-w-0 box-border px-2.5 py-1.5 sm:py-2 rounded-xl bg-black/40 border ${surnameError ? 'border-red-500' : 'border-white/15'} focus:border-red-500 text-white placeholder-zinc-500 text-xs font-medium transition-all shadow-inner`}
                             />
+                            {surnameError && <p className="text-red-400 text-[9px] mt-0.5 font-medium">{surnameError}</p>}
                         </div>
+                    </div>
+
+                    {/* Row 1.5: Callsign (Optional) */}
+                    <div className="min-w-0">
+                        <label className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-0.5 flex items-center gap-1 truncate">
+                            <Crosshair className="w-3 h-3 text-amber-400 shrink-0" />
+                            <span className="truncate">Callsign <span className="text-zinc-500 font-normal">(Optional / Subject to Command)</span></span>
+                        </label>
+                        <input
+                            type="text"
+                            placeholder='e.g. Maverick'
+                            value={callsign}
+                            onChange={(e) => setCallsign(e.target.value)}
+                            className="w-full min-w-0 box-border px-2.5 py-1.5 sm:py-2 rounded-xl bg-black/40 border border-white/15 focus:border-red-500 text-white placeholder-zinc-500 text-xs font-medium transition-all shadow-inner"
+                        />
                     </div>
 
                     {/* Row 2: Age, SA ID & WhatsApp Phone (Side-by-Side on Mobile!) */}

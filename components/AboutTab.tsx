@@ -162,129 +162,137 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
             <div className="absolute bottom-10 left-10 w-72 sm:w-96 h-72 sm:h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
             {/* COMMAND HERO BANNER */}
-            <div className="relative p-4 sm:p-6 lg:p-7 rounded-3xl bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-black border border-zinc-800/80 shadow-[0_15px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl z-30">
+            <div className="relative p-3.5 sm:p-5 lg:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-zinc-900/95 via-zinc-950/95 to-black border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.15)] backdrop-blur-xl z-30">
                 {/* Tactical Top Accent Light Line */}
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-600 via-amber-500 to-emerald-500 opacity-80 rounded-t-3xl" />
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-600 via-amber-500 to-emerald-500 opacity-90 rounded-t-2xl sm:rounded-t-3xl shadow-[0_0_12px_rgba(239,68,68,0.8)]" />
                 
                 {/* Watermark Crosshair */}
                 <div className="absolute -right-8 -bottom-8 opacity-5 pointer-events-none">
                     <Crosshair className="w-64 h-64 sm:w-96 sm:h-96 text-red-500" />
                 </div>
 
-                <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6">
-                    <div className="space-y-2 max-w-3xl">
-                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider bg-red-950/80 text-red-400 border border-red-800/60 flex items-center gap-1 shadow-sm">
+                <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 sm:gap-5">
+                    <div className="space-y-1.5 sm:space-y-2 max-w-3xl">
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                            <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-xs font-mono font-bold uppercase tracking-wider bg-red-950/90 text-red-400 border border-red-800/70 flex items-center gap-1 shadow-[0_2px_8px_rgba(220,38,38,0.3)]">
                                 <Sparkles className="w-3 h-3 text-red-400" /> Tactical Engine v3.0
                             </span>
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 flex items-center gap-1 shadow-sm">
+                            <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-xs font-mono font-bold uppercase tracking-wider bg-emerald-950/90 text-emerald-400 border border-emerald-800/70 flex items-center gap-1 shadow-[0_2px_8px_rgba(16,185,129,0.3)]">
                                 <Activity className="w-3 h-3 text-emerald-400" /> Supabase Realtime CDC
                             </span>
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider bg-zinc-900 text-zinc-300 border border-zinc-700/80">
+                            <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-xs font-mono font-bold uppercase tracking-wider bg-zinc-900/90 text-zinc-300 border border-zinc-700/80 shadow-sm">
                                 19 Schemas
                             </span>
                         </div>
 
-                        <div className="flex items-center gap-3 sm:gap-4 pt-1">
+                        <div className="flex items-center gap-2.5 sm:gap-4 pt-0.5">
                             {clubLogo ? (
                                 <img 
                                     src={clubLogo} 
                                     alt={clubName} 
                                     referrerPolicy="no-referrer"
-                                    className="w-12 h-12 sm:w-16 sm:h-16 object-contain rounded-2xl border border-zinc-700/80 bg-black/60 p-1.5 shrink-0 drop-shadow-md"
+                                    className="w-10 h-10 sm:w-14 sm:h-14 object-contain rounded-xl sm:rounded-2xl border border-zinc-700/80 bg-black/70 p-1 shrink-0 drop-shadow-xl shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
                                 />
                             ) : (
-                                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl border border-red-500/40 bg-red-950/40 flex items-center justify-center p-2 shrink-0 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
-                                    <Shield className="w-7 h-7 sm:w-9 sm:h-9 text-red-500" />
+                                <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl border border-red-500/50 bg-gradient-to-b from-red-950/60 to-black flex items-center justify-center p-1.5 shrink-0 shadow-[0_0_25px_rgba(239,68,68,0.35),inset_0_1px_1px_rgba(255,255,255,0.2)]">
+                                    <Shield className="w-5 h-5 sm:w-8 sm:h-8 text-red-500" />
                                 </div>
                             )}
 
                             <div>
-                                <h1 className="text-lg sm:text-2xl lg:text-3xl font-black uppercase tracking-tight text-white flex items-center gap-2 flex-wrap">
+                                <h1 className="text-base sm:text-2xl lg:text-3xl font-black uppercase tracking-tight text-white flex items-center gap-1.5 sm:gap-2 flex-wrap">
                                     <span>{clubName}</span>
-                                    <span className="text-[10px] sm:text-xs font-mono font-bold px-2 py-0.5 bg-red-600/20 text-red-400 border border-red-500/40 rounded-lg">
+                                    <span className="text-[9px] sm:text-xs font-mono font-bold px-1.5 sm:px-2 py-0.5 bg-red-600/25 text-red-400 border border-red-500/50 rounded-lg shadow-inner">
                                         OFFICIAL FIELD &amp; TECH MANUAL
                                     </span>
                                 </h1>
-                                <p className="text-xs sm:text-sm text-zinc-400 font-medium">
+                                <p className="text-[11px] sm:text-sm text-zinc-400 font-medium line-clamp-1 sm:line-clamp-none">
                                     {clubSlogan}
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Quick Live Telemetry Grid */}
-                    <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-4 lg:flex lg:flex-row gap-2">
-                        <div className="p-2.5 sm:p-3 rounded-2xl bg-black/60 border border-zinc-800/80 backdrop-blur-sm flex items-center gap-2.5">
-                            <Users className="w-4 h-4 text-cyan-400 shrink-0" />
-                            <div>
-                                <div className="text-[9px] sm:text-[10px] font-mono text-zinc-400 uppercase leading-none">Max Capacity</div>
-                                <div className="text-xs sm:text-sm font-black text-white font-mono mt-0.5">Unlimited</div>
+                    {/* Quick Live Telemetry Grid - Side-by-Side 3D Squares on Mobile */}
+                    <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-4 lg:flex lg:flex-row gap-1.5 sm:gap-2 pt-1 lg:pt-0">
+                        <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-b from-zinc-900/90 to-black border border-white/10 shadow-[0_6px_16px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.1)] flex items-center gap-2 hover:-translate-y-0.5 transition-transform">
+                            <div className="p-1 rounded-lg bg-cyan-950/80 border border-cyan-500/40 text-cyan-400 shrink-0">
+                                <Users className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="min-w-0">
+                                <div className="text-[8.5px] sm:text-[9.5px] font-mono text-zinc-400 uppercase leading-none truncate">Max Capacity</div>
+                                <div className="text-[11px] sm:text-xs font-black text-white font-mono mt-0.5 truncate">Unlimited</div>
                             </div>
                         </div>
 
-                        <div className="p-2.5 sm:p-3 rounded-2xl bg-black/60 border border-zinc-800/80 backdrop-blur-sm flex items-center gap-2.5">
-                            <Gauge className="w-4 h-4 text-red-400 shrink-0" />
-                            <div>
-                                <div className="text-[9px] sm:text-[10px] font-mono text-zinc-400 uppercase leading-none">Chrono Limit</div>
-                                <div className="text-xs sm:text-sm font-black text-white font-mono mt-0.5">1.50J (AEG)</div>
+                        <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-b from-zinc-900/90 to-black border border-white/10 shadow-[0_6px_16px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.1)] flex items-center gap-2 hover:-translate-y-0.5 transition-transform">
+                            <div className="p-1 rounded-lg bg-red-950/80 border border-red-500/40 text-red-400 shrink-0">
+                                <Gauge className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="min-w-0">
+                                <div className="text-[8.5px] sm:text-[9.5px] font-mono text-zinc-400 uppercase leading-none truncate">Chrono Limit</div>
+                                <div className="text-[11px] sm:text-xs font-black text-white font-mono mt-0.5 truncate">1.50J (AEG)</div>
                             </div>
                         </div>
 
-                        <div className="p-2.5 sm:p-3 rounded-2xl bg-black/60 border border-zinc-800/80 backdrop-blur-sm flex items-center gap-2.5">
-                            <Radio className="w-4 h-4 text-amber-400 shrink-0" />
-                            <div>
-                                <div className="text-[9px] sm:text-[10px] font-mono text-zinc-400 uppercase leading-none">Command Freq</div>
-                                <div className="text-xs sm:text-sm font-black text-white font-mono mt-0.5">CH 01 (462.56)</div>
+                        <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-b from-zinc-900/90 to-black border border-white/10 shadow-[0_6px_16px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.1)] flex items-center gap-2 hover:-translate-y-0.5 transition-transform">
+                            <div className="p-1 rounded-lg bg-amber-950/80 border border-amber-500/40 text-amber-400 shrink-0">
+                                <Radio className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="min-w-0">
+                                <div className="text-[8.5px] sm:text-[9.5px] font-mono text-zinc-400 uppercase leading-none truncate">Command Freq</div>
+                                <div className="text-[11px] sm:text-xs font-black text-white font-mono mt-0.5 truncate">CH 01 (462.56)</div>
                             </div>
                         </div>
 
-                        <div className="p-2.5 sm:p-3 rounded-2xl bg-black/60 border border-zinc-800/80 backdrop-blur-sm flex items-center gap-2.5">
-                            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                            <div>
-                                <div className="text-[9px] sm:text-[10px] font-mono text-zinc-400 uppercase leading-none">Eye Standard</div>
-                                <div className="text-xs sm:text-sm font-black text-white font-mono mt-0.5">ANSI Z87.1+</div>
+                        <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-b from-zinc-900/90 to-black border border-white/10 shadow-[0_6px_16px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.1)] flex items-center gap-2 hover:-translate-y-0.5 transition-transform">
+                            <div className="p-1 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 shrink-0">
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="min-w-0">
+                                <div className="text-[8.5px] sm:text-[9.5px] font-mono text-zinc-400 uppercase leading-none truncate">Eye Standard</div>
+                                <div className="text-[11px] sm:text-xs font-black text-white font-mono mt-0.5 truncate">ANSI Z87.1+</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* NAVIGATION BAR: DROPDOWN + QUICK CYCLER + DESKTOP PILLS */}
-                <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-zinc-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="mt-3 sm:mt-5 pt-2.5 sm:pt-3.5 border-t border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                     
                     {/* DROPDOWN SELECTOR */}
                     <div className="relative flex-grow max-w-full sm:max-w-md" ref={dropdownRef}>
                         <button
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="w-full flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800/90 border border-red-500/40 shadow-[0_0_15px_rgba(239,68,68,0.15)] text-left transition-all"
+                            className="w-full flex items-center justify-between gap-2 px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-b from-zinc-900 to-zinc-950 hover:from-zinc-850 hover:to-zinc-900 border border-red-500/50 shadow-[0_4px_20px_rgba(239,68,68,0.2),inset_0_1px_0_rgba(255,255,255,0.15)] text-left transition-all active:scale-[0.99]"
                             aria-expanded={isDropdownOpen}
                             aria-haspopup="listbox"
                         >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="p-1.5 rounded-xl bg-red-600/20 text-red-400 border border-red-500/30 shrink-0">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <div className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl bg-red-600/25 text-red-400 border border-red-500/40 shrink-0 shadow-inner">
                                     {currentTab.icon}
                                 </div>
                                 <div className="min-w-0">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1.5">
                                         <span className="text-xs sm:text-sm font-black text-white uppercase tracking-wider truncate">
                                             {currentTab.label}
                                         </span>
                                         {currentTab.badge && (
-                                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 bg-red-950 text-red-400 rounded border border-red-800/60 shrink-0">
+                                            <span className="text-[8.5px] sm:text-[9px] font-mono font-bold px-1.5 py-0.2 bg-red-950 text-red-400 rounded border border-red-800/60 shrink-0">
                                                 {currentTab.badge}
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-[10px] text-zinc-400 truncate hidden sm:block">
+                                    <p className="text-[9.5px] sm:text-[10px] text-zinc-400 truncate hidden sm:block">
                                         {currentTab.desc}
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-1.5 shrink-0 text-zinc-400">
-                                <span className="text-[10px] font-mono font-bold uppercase text-red-400 bg-red-950/60 px-2 py-0.5 rounded-lg border border-red-900/40">
+                            <div className="flex items-center gap-1 shrink-0 text-zinc-400">
+                                <span className="text-[9.5px] sm:text-[10px] font-mono font-bold uppercase text-red-400 bg-red-950/80 px-1.5 py-0.5 rounded-lg border border-red-900/50">
                                     {currentTabIndex + 1}/{subTabs.length}
                                 </span>
-                                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-red-400' : ''}`} />
+                                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-red-400' : ''}`} />
                             </div>
                         </button>
 
@@ -355,25 +363,25 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
                     </div>
 
                     {/* Quick Cycler & Desktop Nav Strip */}
-                    <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+                    <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 shrink-0">
                         <button
                             onClick={handlePrevTab}
-                            className="flex-1 sm:flex-initial flex items-center justify-center gap-1 px-3 py-2 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-300 hover:text-white transition-colors"
+                            className="flex-1 sm:flex-initial flex items-center justify-center gap-1 px-3 py-1.5 sm:py-2 rounded-xl bg-gradient-to-b from-zinc-900 to-zinc-950 hover:from-zinc-800 hover:to-zinc-900 border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] text-xs font-bold text-zinc-300 hover:text-white transition-all active:scale-95"
                             title="Previous Section"
                         >
-                            <ChevronLeft className="w-4 h-4" />
-                            <span className="text-xs sm:hidden">Prev</span>
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                            <span className="text-[11px] sm:hidden">Prev</span>
                         </button>
 
                         {/* Desktop Pill Strip for Wide Screens */}
-                        <div className="hidden lg:flex items-center gap-1 px-1.5 py-1 rounded-2xl bg-black/40 border border-zinc-800/80">
+                        <div className="hidden lg:flex items-center gap-1 px-1.5 py-1 rounded-2xl bg-black/60 border border-white/10 shadow-inner">
                             {subTabs.map(t => (
                                 <button
                                     key={t.id}
                                     onClick={() => setActiveSubTab(t.id)}
                                     className={`px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all ${
                                         activeSubTab === t.id
-                                            ? 'bg-red-600 text-white shadow-md'
+                                            ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-[0_4px_14px_rgba(220,38,38,0.4)] border border-red-500/50'
                                             : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
                                     }`}
                                 >
@@ -384,11 +392,11 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
 
                         <button
                             onClick={handleNextTab}
-                            className="flex-1 sm:flex-initial flex items-center justify-center gap-1 px-3 py-2 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-300 hover:text-white transition-colors"
+                            className="flex-1 sm:flex-initial flex items-center justify-center gap-1 px-3 py-1.5 sm:py-2 rounded-xl bg-gradient-to-b from-zinc-900 to-zinc-950 hover:from-zinc-800 hover:to-zinc-900 border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] text-xs font-bold text-zinc-300 hover:text-white transition-all active:scale-95"
                             title="Next Section"
                         >
-                            <span className="text-xs sm:hidden">Next</span>
-                            <ChevronRight className="w-4 h-4" />
+                            <span className="text-[11px] sm:hidden">Next</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
                         </button>
                     </div>
                 </div>

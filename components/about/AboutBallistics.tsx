@@ -109,6 +109,53 @@ export const AboutBallistics: React.FC = () => {
 
     return (
         <div className="space-y-6">
+            {/* Chrono Lab Visual Banner */}
+            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 bg-black shadow-[0_20px_50px_rgba(0,0,0,0.85)] group">
+                <div className="relative h-44 sm:h-56 md:h-64 w-full overflow-hidden">
+                    <img 
+                        src="/images/chrono_ballistics_lab_1789071711983.jpg" 
+                        alt="Ballistic Chronograph Testing Station" 
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 filter brightness-90 contrast-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-transparent to-black/60" />
+
+                    {/* HUD Tactical Tags */}
+                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-emerald-500/40 backdrop-blur-md">
+                            <Gauge className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="text-[9.5px] sm:text-[11px] font-mono font-bold text-emerald-300 tracking-wider uppercase">JOULES-FIRST TELEMETRY</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-red-500/40 backdrop-blur-md">
+                            <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+                            <span className="text-[9.5px] sm:text-[11px] font-mono font-bold text-red-300 tracking-wider">ZIP-TIE CHRONO PASS</span>
+                        </div>
+                    </div>
+
+                    {/* Bottom Headline */}
+                    <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                        <div className="space-y-1">
+                            <span className="px-2 py-0.5 rounded bg-emerald-600/80 text-white font-mono text-[9px] font-bold uppercase tracking-wider">
+                                Scientific Velocity Analysis
+                            </span>
+                            <h2 className="text-lg sm:text-2xl font-black text-white uppercase tracking-wider drop-shadow-md">
+                                Ballistics Academy &amp; Kinetic Energy Lab
+                            </h2>
+                            <p className="text-[11px] sm:text-xs text-zinc-300 max-w-xl line-clamp-2 sm:line-clamp-none drop-shadow">
+                                Calibrated digital chronographs measure exact muzzle energy in Joules with the operator's actual game-weight BBs to prevent Joule creep.
+                            </p>
+                        </div>
+                        <div className="hidden sm:flex items-center gap-2">
+                            <div className="px-3 py-1.5 rounded-xl bg-black/70 border border-white/10 backdrop-blur-md text-right font-mono">
+                                <div className="text-[9px] text-zinc-400">AEG LIMIT</div>
+                                <div className="text-xs font-bold text-emerald-400">1.49J / 400 FPS (0.20g)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-800">
                 <div>
@@ -223,6 +270,126 @@ export const AboutBallistics: React.FC = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            {/* Ballistics Flight Dynamics & Magnus Effect Trajectory Vector Diagram */}
+            <div className="p-4 sm:p-6 rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-800">
+                    <div className="flex items-center gap-2">
+                        <Crosshair className="w-5 h-5 text-cyan-400" />
+                        <div>
+                            <h4 className="text-sm sm:text-base font-black text-white uppercase">
+                                Magnus Effect &amp; BB Weight Flight Trajectory Comparison
+                            </h4>
+                            <p className="text-xs text-zinc-400">
+                                How BB mass counteracts crosswind deflection and maintains flat trajectory over range (1.49J muzzle energy baseline).
+                            </p>
+                        </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-cyan-950 text-cyan-400 border border-cyan-800/60 self-start sm:self-auto">
+                        AERODYNAMICS VECTOR
+                    </span>
+                </div>
+
+                {/* SVG Visual Trajectory Arc Canvas */}
+                <div className="p-3 sm:p-4 rounded-2xl bg-black/60 border border-zinc-800/80 relative overflow-hidden">
+                    <div className="w-full overflow-x-auto custom-scrollbar pb-2">
+                        <svg viewBox="0 0 800 240" className="w-full min-w-[650px] h-52 select-none">
+                            <defs>
+                                <linearGradient id="gridGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stopColor="#18181b" stopOpacity="0.4" />
+                                    <stop offset="100%" stopColor="#09090b" stopOpacity="0.8" />
+                                </linearGradient>
+                                <linearGradient id="arc020" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stopColor="#ef4444" />
+                                    <stop offset="100%" stopColor="#991b1b" />
+                                </linearGradient>
+                                <linearGradient id="arc025" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stopColor="#f59e0b" />
+                                    <stop offset="100%" stopColor="#b45309" />
+                                </linearGradient>
+                                <linearGradient id="arc028" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stopColor="#10b981" />
+                                    <stop offset="100%" stopColor="#047857" />
+                                </linearGradient>
+                                <linearGradient id="arc032" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stopColor="#06b6d4" />
+                                    <stop offset="100%" stopColor="#0e7490" />
+                                </linearGradient>
+                            </defs>
+
+                            {/* Background Grid */}
+                            <rect x="0" y="0" width="800" height="240" fill="url(#gridGrad)" rx="12" />
+                            
+                            {/* Horizontal Grid lines */}
+                            <line x1="60" y1="40" x2="760" y2="40" stroke="#27272a" strokeDasharray="3,3" />
+                            <line x1="60" y1="90" x2="760" y2="90" stroke="#27272a" strokeDasharray="3,3" />
+                            <line x1="60" y1="140" x2="760" y2="140" stroke="#27272a" strokeDasharray="3,3" />
+                            <line x1="60" y1="190" x2="760" y2="190" stroke="#3f3f46" strokeWidth="1.5" />
+
+                            {/* Range Distance Markers */}
+                            <line x1="60" y1="30" x2="60" y2="195" stroke="#3f3f46" />
+                            <text x="60" y="215" fill="#71717a" fontSize="10" fontFamily="monospace" textAnchor="middle">0m (Muzzle)</text>
+
+                            <line x1="200" y1="30" x2="200" y2="195" stroke="#27272a" strokeDasharray="2,2" />
+                            <text x="200" y="215" fill="#71717a" fontSize="10" fontFamily="monospace" textAnchor="middle">15m (CQB)</text>
+
+                            <line x1="380" y1="30" x2="380" y2="195" stroke="#27272a" strokeDasharray="2,2" />
+                            <text x="380" y="215" fill="#71717a" fontSize="10" fontFamily="monospace" textAnchor="middle">35m (Assault)</text>
+
+                            <line x1="560" y1="30" x2="560" y2="195" stroke="#27272a" strokeDasharray="2,2" />
+                            <text x="560" y="215" fill="#71717a" fontSize="10" fontFamily="monospace" textAnchor="middle">55m (DMR Range)</text>
+
+                            <line x1="740" y1="30" x2="740" y2="195" stroke="#27272a" strokeDasharray="2,2" />
+                            <text x="740" y="215" fill="#71717a" fontSize="10" fontFamily="monospace" textAnchor="middle">75m+ (Sniper)</text>
+
+                            {/* Trajectory Arcs */}
+                            {/* 0.20g: Rises fast then drops drastically due to air resistance */}
+                            <path d="M 60 140 Q 200 80, 360 110 T 500 190" fill="none" stroke="url(#arc020)" strokeWidth="2.5" strokeDasharray="4,2" />
+                            <circle cx="500" cy="190" r="4" fill="#ef4444" />
+                            <text x="470" y="175" fill="#ef4444" fontSize="9" fontWeight="bold">0.20g (Drops @ 48m)</text>
+
+                            {/* 0.25g: Moderate Magnus curve */}
+                            <path d="M 60 140 Q 220 95, 420 115 T 600 190" fill="none" stroke="url(#arc025)" strokeWidth="2.5" />
+                            <circle cx="600" cy="190" r="4" fill="#f59e0b" />
+                            <text x="570" y="175" fill="#f59e0b" fontSize="9" fontWeight="bold">0.25g (58m)</text>
+
+                            {/* 0.28g: Optimal flat tactical trajectory */}
+                            <path d="M 60 140 Q 250 110, 480 120 T 690 190" fill="none" stroke="url(#arc028)" strokeWidth="3" />
+                            <circle cx="690" cy="190" r="4.5" fill="#10b981" />
+                            <text x="650" y="175" fill="#10b981" fontSize="9" fontWeight="bold">0.28g Optimal (68m)</text>
+
+                            {/* 0.32g Heavy: Laser straight retention */}
+                            <path d="M 60 140 Q 280 125, 520 125 T 750 185" fill="none" stroke="url(#arc032)" strokeWidth="3.5" />
+                            <circle cx="750" cy="185" r="5" fill="#06b6d4" />
+                            <text x="700" y="165" fill="#06b6d4" fontSize="9" fontWeight="bold">0.32g Heavy (75m+)</text>
+
+                            {/* Muzzle flash icon at origin */}
+                            <circle cx="60" cy="140" r="6" fill="#f59e0b" />
+                            <circle cx="60" cy="140" r="3" fill="#ffffff" />
+                        </svg>
+                    </div>
+
+                    {/* Vector Legend */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-zinc-800 text-[11px]">
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-3 h-1 rounded bg-red-500"></span>
+                            <span className="text-zinc-300 font-mono">0.20g: High FPS, High Wind Drift</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-3 h-1 rounded bg-amber-500"></span>
+                            <span className="text-zinc-300 font-mono">0.25g: Standard Field General</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-3 h-1 rounded bg-emerald-500"></span>
+                            <span className="text-zinc-300 font-mono">0.28g: Recommended Sweet Spot</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-3 h-1 rounded bg-cyan-500"></span>
+                            <span className="text-zinc-300 font-mono">0.32g+: Maximum Range &amp; Grouping</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 

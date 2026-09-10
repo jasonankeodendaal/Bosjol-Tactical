@@ -25,140 +25,212 @@ import {
 
 export const AboutOverview: React.FC = () => {
     return (
-        <div className="space-y-6">
-            {/* 4 Core Operational Pillars */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="p-4 rounded-2xl bg-zinc-950/80 border border-amber-500/30 hover:border-amber-500/60 transition-all space-y-2.5 shadow-lg backdrop-blur-md group">
-                    <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0 group-hover:scale-110 transition-transform">
-                            <Zap className="w-5 h-5" />
+        <div className="space-y-4 sm:space-y-6">
+            {/* Tactical Combat Arena Visual Hero Banner */}
+            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 bg-black shadow-[0_20px_50px_rgba(0,0,0,0.85)] group">
+                <div className="relative h-48 sm:h-64 md:h-72 w-full overflow-hidden">
+                    <img 
+                        src="/images/tactical_arena_banner_1789071688526.jpg" 
+                        alt="Bosjol Tactical Combat Arena" 
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 filter brightness-90 contrast-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/60" />
+
+                    {/* Top HUD Badges */}
+                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-red-500/40 backdrop-blur-md">
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                            <span className="text-[9.5px] sm:text-[11px] font-mono font-bold text-white tracking-wider uppercase">LIVE ARENA SECTOR 7</span>
                         </div>
-                        <div>
-                            <h4 className="text-sm font-black text-white uppercase tracking-wider">Combat Progression</h4>
-                            <p className="text-[10px] text-amber-400 font-mono">Rank Points (RP) Engine</p>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-emerald-500/40 backdrop-blur-md">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="text-[9.5px] sm:text-[11px] font-mono font-bold text-emerald-400 tracking-wider">MARSHAL MESH ACTIVE</span>
                         </div>
                     </div>
-                    <ul className="text-xs text-zinc-300 space-y-1.5 pt-2 border-t border-zinc-800/80">
-                        <li className="flex items-start gap-1.5">
-                            <span className="text-amber-400 font-bold">•</span>
-                            <span><strong>+500 RP</strong> awarded automatically per confirmed finalized combat match.</span>
-                        </li>
-                        <li className="flex items-start gap-1.5">
-                            <span className="text-amber-400 font-bold">•</span>
-                            <span><strong>6 Tier Hierarchy:</strong> Rookie &rarr; Veteran &rarr; Elite &rarr; Pro &rarr; Master &rarr; Legendary.</span>
-                        </li>
-                        <li className="flex items-start gap-1.5">
-                            <span className="text-amber-400 font-bold">•</span>
-                            <span>Automated unlock triggers for rental discounts, VIP staging, and calling cards.</span>
-                        </li>
-                    </ul>
+
+                    {/* Bottom Info Overlay */}
+                    <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 flex flex-col sm:flex-row sm:items-end justify-between gap-2.5">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded bg-red-600/80 text-white font-mono text-[9px] font-bold uppercase tracking-wider">
+                                    Official Combat Grounds
+                                </span>
+                                <span className="text-[10px] font-mono text-zinc-300">Gauteng, South Africa</span>
+                            </div>
+                            <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-white uppercase tracking-wider drop-shadow-md">
+                                Bosjol Tactical Combat Complex
+                            </h2>
+                            <p className="text-[11px] sm:text-xs text-zinc-300 max-w-xl line-clamp-2 sm:line-clamp-none drop-shadow">
+                                Multi-sector tactical combat arena featuring modular shipping container CQB compounds, woodland tactical lanes, forward operating bases, and fiber-linked digital chrono stations.
+                            </p>
+                        </div>
+
+                        {/* Telemetry Pills */}
+                        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 self-stretch sm:self-auto shrink-0">
+                            <div className="px-2.5 py-1.5 rounded-xl bg-black/70 border border-white/10 backdrop-blur-md text-center">
+                                <div className="text-[8.5px] sm:text-[9.5px] font-mono text-zinc-400 uppercase">Acreage</div>
+                                <div className="text-xs sm:text-sm font-black font-mono text-amber-400">12.5 Ha</div>
+                            </div>
+                            <div className="px-2.5 py-1.5 rounded-xl bg-black/70 border border-white/10 backdrop-blur-md text-center">
+                                <div className="text-[8.5px] sm:text-[9.5px] font-mono text-zinc-400 uppercase">Capacity</div>
+                                <div className="text-xs sm:text-sm font-black font-mono text-cyan-400">120+ Ops</div>
+                            </div>
+                            <div className="px-2.5 py-1.5 rounded-xl bg-black/70 border border-white/10 backdrop-blur-md text-center">
+                                <div className="text-[8.5px] sm:text-[9.5px] font-mono text-zinc-400 uppercase">Chrono</div>
+                                <div className="text-xs sm:text-sm font-black font-mono text-emerald-400">1.50J Cap</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 4 Core Operational Pillars - Side-by-Side 3D Squares on Mobile */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3.5">
+                <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-b from-zinc-900/95 via-zinc-950/90 to-black border border-amber-500/30 hover:border-amber-500/60 transition-all space-y-2 shadow-[0_10px_25px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.1)] hover:shadow-[0_16px_35px_rgba(245,158,11,0.2)] hover:-translate-y-1 backdrop-blur-md group flex flex-col justify-between">
+                    <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 shrink-0 group-hover:scale-105 transition-transform shadow-inner">
+                                <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <h4 className="text-[11px] sm:text-sm font-black text-white uppercase tracking-wider truncate">Combat Progression</h4>
+                                <p className="text-[8.5px] sm:text-[10px] text-amber-400 font-mono truncate">Rank Points Engine</p>
+                            </div>
+                        </div>
+                        <ul className="text-[9.5px] sm:text-xs text-zinc-300 space-y-1 pt-1.5 border-t border-white/10 leading-tight">
+                            <li className="flex items-start gap-1">
+                                <span className="text-amber-400 font-bold">•</span>
+                                <span><strong>+500 RP</strong> per confirmed finalized match.</span>
+                            </li>
+                            <li className="flex items-start gap-1">
+                                <span className="text-amber-400 font-bold">•</span>
+                                <span><strong>6 Tiers:</strong> Rookie to Legendary.</span>
+                            </li>
+                            <li className="flex items-start gap-1 hidden sm:flex">
+                                <span className="text-amber-400 font-bold">•</span>
+                                <span>Automated discounts &amp; VIP perks.</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div className="pt-1 text-[8.5px] sm:text-[9.5px] font-mono text-amber-400/80 uppercase">Tier System Auto-Sync</div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-zinc-950/80 border border-red-500/30 hover:border-red-500/60 transition-all space-y-2.5 shadow-lg backdrop-blur-md group">
-                    <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 shrink-0 group-hover:scale-110 transition-transform">
-                            <Gauge className="w-5 h-5" />
+                <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-b from-zinc-900/95 via-zinc-950/90 to-black border border-red-500/30 hover:border-red-500/60 transition-all space-y-2 shadow-[0_10px_25px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.1)] hover:shadow-[0_16px_35px_rgba(239,68,68,0.2)] hover:-translate-y-1 backdrop-blur-md group flex flex-col justify-between">
+                    <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-red-500/20 text-red-400 border border-red-500/40 shrink-0 group-hover:scale-105 transition-transform shadow-inner">
+                                <Gauge className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <h4 className="text-[11px] sm:text-sm font-black text-white uppercase tracking-wider truncate">Ballistics &amp; Chrono</h4>
+                                <p className="text-[8.5px] sm:text-[10px] text-red-400 font-mono truncate">Joules &amp; MED Safety</p>
+                            </div>
                         </div>
-                        <div>
-                            <h4 className="text-sm font-black text-white uppercase tracking-wider">Ballistics & Chrono</h4>
-                            <p className="text-[10px] text-red-400 font-mono">Joules & MED Safety</p>
-                        </div>
+                        <ul className="text-[9.5px] sm:text-xs text-zinc-300 space-y-1 pt-1.5 border-t border-white/10 leading-tight">
+                            <li className="flex items-start gap-1">
+                                <span className="text-red-400 font-bold">•</span>
+                                <span><strong>1.50J / 400 FPS</strong> strict Assault AEG cap.</span>
+                            </li>
+                            <li className="flex items-start gap-1">
+                                <span className="text-red-400 font-bold">•</span>
+                                <span>Color zip-tie chrono validation tags.</span>
+                            </li>
+                            <li className="flex items-start gap-1 hidden sm:flex">
+                                <span className="text-red-400 font-bold">•</span>
+                                <span>MED enforced from 0m to 20m.</span>
+                            </li>
+                        </ul>
                     </div>
-                    <ul className="text-xs text-zinc-300 space-y-1.5 pt-2 border-t border-zinc-800/80">
-                        <li className="flex items-start gap-1.5">
-                            <span className="text-red-400 font-bold">•</span>
-                            <span><strong>1.50 Joules / 400 FPS (0.20g)</strong> strict ceiling for standard Assault AEGs.</span>
-                        </li>
-                        <li className="flex items-start gap-1.5">
-                            <span className="text-red-400 font-bold">•</span>
-                            <span>Mandatory <strong>Joule-Tested</strong> chrono check with color-coded tamper-evident tags.</span>
-                        </li>
-                        <li className="flex items-start gap-1.5">
-                            <span className="text-red-400 font-bold">•</span>
-                            <span>Enforced Minimum Engagement Distance (MED): 0m (Pistols) up to 20m (Snipers).</span>
-                        </li>
-                    </ul>
+                    <div className="pt-1 text-[8.5px] sm:text-[9.5px] font-mono text-red-400/80 uppercase">Tamper-Proof Tagging</div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-zinc-950/80 border border-emerald-500/30 hover:border-emerald-500/60 transition-all space-y-2.5 shadow-lg backdrop-blur-md group">
-                    <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0 group-hover:scale-110 transition-transform">
-                            <Target className="w-5 h-5" />
+                <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-b from-zinc-900/95 via-zinc-950/90 to-black border border-emerald-500/30 hover:border-emerald-500/60 transition-all space-y-2 shadow-[0_10px_25px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.1)] hover:shadow-[0_16px_35px_rgba(16,185,129,0.2)] hover:-translate-y-1 backdrop-blur-md group flex flex-col justify-between">
+                    <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shrink-0 group-hover:scale-105 transition-transform shadow-inner">
+                                <Target className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <h4 className="text-[11px] sm:text-sm font-black text-white uppercase tracking-wider truncate">Field Command</h4>
+                                <p className="text-[8.5px] sm:text-[10px] text-emerald-400 font-mono truncate">QR Check-in &amp; Roster</p>
+                            </div>
                         </div>
-                        <div>
-                            <h4 className="text-sm font-black text-white uppercase tracking-wider">Field Command</h4>
-                            <p className="text-[10px] text-emerald-400 font-mono">QR Check-in & Signups</p>
-                        </div>
+                        <ul className="text-[9.5px] sm:text-xs text-zinc-300 space-y-1 pt-1.5 border-t border-white/10 leading-tight">
+                            <li className="flex items-start gap-1">
+                                <span className="text-emerald-400 font-bold">•</span>
+                                <span>Instant QR pass scan for check-in.</span>
+                            </li>
+                            <li className="flex items-start gap-1">
+                                <span className="text-emerald-400 font-bold">•</span>
+                                <span>Rental package tracking &amp; inventory.</span>
+                            </li>
+                            <li className="flex items-start gap-1 hidden sm:flex">
+                                <span className="text-emerald-400 font-bold">•</span>
+                                <span>Auto faction &amp; squad balance.</span>
+                            </li>
+                        </ul>
                     </div>
-                    <ul className="text-xs text-zinc-300 space-y-1.5 pt-2 border-t border-zinc-800/80">
-                        <li className="flex items-start gap-1.5">
-                            <span className="text-emerald-400 font-bold">•</span>
-                            <span>Instant QR pass scan for player registration, waiver validation, and squad assignment.</span>
-                        </li>
-                        <li className="flex items-start gap-1.5">
-                            <span className="text-emerald-400 font-bold">•</span>
-                            <span>Real-time rental package tracking with auto armory deduction and return logging.</span>
-                        </li>
-                        <li className="flex items-start gap-1.5">
-                            <span className="text-emerald-400 font-bold">•</span>
-                            <span>Live dynamic game roster generation for fair team balance and balanced combat.</span>
-                        </li>
-                    </ul>
+                    <div className="pt-1 text-[8.5px] sm:text-[9.5px] font-mono text-emerald-400/80 uppercase">Sub-Second QR Check-In</div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-zinc-950/80 border border-cyan-500/30 hover:border-cyan-500/60 transition-all space-y-2.5 shadow-lg backdrop-blur-md group">
-                    <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shrink-0 group-hover:scale-110 transition-transform">
-                            <Radio className="w-5 h-5" />
+                <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-b from-zinc-900/95 via-zinc-950/90 to-black border border-cyan-500/30 hover:border-cyan-500/60 transition-all space-y-2 shadow-[0_10px_25px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.1)] hover:shadow-[0_16px_35px_rgba(6,182,212,0.2)] hover:-translate-y-1 backdrop-blur-md group flex flex-col justify-between">
+                    <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shrink-0 group-hover:scale-105 transition-transform shadow-inner">
+                                <Radio className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <h4 className="text-[11px] sm:text-sm font-black text-white uppercase tracking-wider truncate">Cloud Synchrony</h4>
+                                <p className="text-[8.5px] sm:text-[10px] text-cyan-400 font-mono truncate">Supabase Realtime CDC</p>
+                            </div>
                         </div>
-                        <div>
-                            <h4 className="text-sm font-black text-white uppercase tracking-wider">Cloud Synchrony</h4>
-                            <p className="text-[10px] text-cyan-400 font-mono">Supabase Realtime CDC</p>
-                        </div>
+                        <ul className="text-[9.5px] sm:text-xs text-zinc-300 space-y-1 pt-1.5 border-t border-white/10 leading-tight">
+                            <li className="flex items-start gap-1">
+                                <span className="text-cyan-400 font-bold">•</span>
+                                <span>&lt;15ms WebSocket live synchronization.</span>
+                            </li>
+                            <li className="flex items-start gap-1">
+                                <span className="text-cyan-400 font-bold">•</span>
+                                <span>Automated Ledger double-entry.</span>
+                            </li>
+                            <li className="flex items-start gap-1 hidden sm:flex">
+                                <span className="text-cyan-400 font-bold">•</span>
+                                <span>Row-Level Security on all tables.</span>
+                            </li>
+                        </ul>
                     </div>
-                    <ul className="text-xs text-zinc-300 space-y-1.5 pt-2 border-t border-zinc-800/80">
-                        <li className="flex items-start gap-1.5">
-                            <span className="text-cyan-400 font-bold">•</span>
-                            <span>Sub-15ms WebSocket synchronization across field marshals, armory, and players.</span>
-                        </li>
-                        <li className="flex items-start gap-1.5">
-                            <span className="text-cyan-400 font-bold">•</span>
-                            <span>Automated double-entry Financial Ledger posting for ticket entry and gear revenue.</span>
-                        </li>
-                        <li className="flex items-start gap-1.5">
-                            <span className="text-cyan-400 font-bold">•</span>
-                            <span>Row-Level Security protecting operator personal contact info and medical records.</span>
-                        </li>
-                    </ul>
+                    <div className="pt-1 text-[8.5px] sm:text-[9.5px] font-mono text-cyan-400/80 uppercase">WebSocket Stream Active</div>
                 </div>
             </div>
 
             {/* Tactical Field Layout Illustration (Interactive Graphic) */}
-            <div className="p-4 sm:p-6 rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl relative overflow-hidden space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-800">
+            <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-zinc-950/95 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.15)] relative overflow-hidden space-y-3 sm:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 sm:pb-3 border-b border-white/10">
                     <div>
                         <div className="flex items-center gap-2">
-                            <MapPin className="w-5 h-5 text-red-500" />
-                            <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
-                                Bosjol Tactical Combat Arena Map & Zone Architecture
+                            <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
+                            <h3 className="text-sm sm:text-lg font-black text-white uppercase tracking-wider">
+                                Combat Arena Map &amp; Zone Architecture
                             </h3>
                         </div>
-                        <p className="text-xs text-zinc-400 mt-0.5">
-                            Zone safety classification, engagement corridors, safe staging, and forward operating bases.
+                        <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">
+                            Zone safety classifications, engagement corridors, safe staging, and forward operating bases.
                         </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60">
+                    <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                        <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60 shadow-sm">
                             GREEN: SAFE ZONE
                         </span>
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-red-950 text-red-400 border border-red-800/60">
+                        <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-red-950 text-red-400 border border-red-800/60 shadow-sm">
                             RED: HOT ZONE
                         </span>
                     </div>
                 </div>
 
                 {/* SVG Visual Tactical Field Map */}
-                <div className="relative w-full rounded-2xl bg-zinc-900/90 border border-zinc-800 p-3 sm:p-4 overflow-hidden">
+                <div className="relative w-full rounded-xl sm:rounded-2xl bg-zinc-900/90 border border-zinc-800/80 p-2 sm:p-4 overflow-hidden shadow-inner">
                     <svg viewBox="0 0 900 380" className="w-full h-auto text-zinc-300 select-none font-mono">
                         <defs>
                             <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
@@ -253,57 +325,58 @@ export const AboutOverview: React.FC = () => {
                         <text x="800" y="123" textAnchor="middle" fill="#6ee7b7" fontSize="7">Overwatch Hill</text>
 
                         {/* Movement Flow Arrows */}
-                        <path d="M 470 100 Q 520 80 570 100" fill="none" stroke="#60a5fa" strokeWidth="2" strokeDasharray="5 3" markerEnd="url(#arrow)" />
+                        <path d="M 470 100 Q 520 80 570 100" fill="none" stroke="#60a5fa" strokeWidth="2" strokeDasharray="5 3" />
                         <path d="M 750 300 Q 700 320 650 300" fill="none" stroke="#f87171" strokeWidth="2" strokeDasharray="5 3" />
                     </svg>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 text-[11px] border-t border-zinc-800">
-                        <div className="flex items-center gap-1.5 text-zinc-300">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
-                            <span><strong>Safe Staging:</strong> Goggles off, barrel sock on.</span>
+                    {/* Side-by-Side 3D Legend Tiles on Mobile */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 pt-2.5 sm:pt-3 text-[10px] sm:text-[11px] border-t border-white/10">
+                        <div className="p-2 rounded-xl bg-black/50 border border-emerald-500/20 shadow-sm flex items-center gap-1.5 text-zinc-300">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+                            <span className="truncate"><strong>Safe Staging:</strong> Goggles off.</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-zinc-300">
-                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
-                            <span><strong>Chrono Line:</strong> 1.50J max Assault, 2.32J Sniper.</span>
+                        <div className="p-2 rounded-xl bg-black/50 border border-amber-500/20 shadow-sm flex items-center gap-1.5 text-zinc-300">
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0 shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span>
+                            <span className="truncate"><strong>Chrono:</strong> 1.50J max AEG.</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-zinc-300">
-                            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0"></span>
-                            <span><strong>CQB Village:</strong> Semi-auto only, flashlights OK.</span>
+                        <div className="p-2 rounded-xl bg-black/50 border border-indigo-500/20 shadow-sm flex items-center gap-1.5 text-zinc-300">
+                            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0 shadow-[0_0_8px_rgba(99,102,241,0.8)]"></span>
+                            <span className="truncate"><strong>CQB Village:</strong> Semi only.</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-zinc-300">
-                            <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0"></span>
-                            <span><strong>Hot Zone:</strong> Eye-pro 100% mandatory at all times.</span>
+                        <div className="p-2 rounded-xl bg-black/50 border border-red-500/20 shadow-sm flex items-center gap-1.5 text-zinc-300">
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
+                            <span className="truncate"><strong>Hot Zone:</strong> Eye-pro 100%.</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* 8-Step Complete Match Day Lifecycle Walkthrough */}
-            <div className="p-4 sm:p-6 rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-800">
+            {/* 8-Step Complete Match Day Lifecycle Walkthrough - 2-Column Side-by-Side 3D Squares on Mobile */}
+            <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-zinc-950/95 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.15)] space-y-3 sm:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 sm:pb-3 border-b border-white/10">
                     <div>
                         <div className="flex items-center gap-2">
-                            <Workflow className="w-5 h-5 text-red-500" />
-                            <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
-                                Chronological Match Day Lifecycle (8-Step Tactical Walkthrough)
+                            <Workflow className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
+                            <h3 className="text-sm sm:text-lg font-black text-white uppercase tracking-wider">
+                                Chronological Match Day Lifecycle (8 Steps)
                             </h3>
                         </div>
-                        <p className="text-xs text-zinc-400 mt-0.5">
+                        <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">
                             Standard operating timeline from dawn registration and chrono tagging to final cloud ledger synchronization.
                         </p>
                     </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-red-950/80 text-red-400 border border-red-800/60 self-start sm:self-auto">
+                    <span className="px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-mono font-bold bg-red-950/80 text-red-400 border border-red-800/60 self-start sm:self-auto shadow-sm">
                         07:30 &rarr; 17:00 SCHEDULE
                     </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
                     {[
                         {
                             step: '01',
                             time: '07:30 - 08:30',
                             title: 'Arrival & QR Sign-In',
-                            desc: 'Operators present QR player codes at Registration HQ. Waivers validated, emergency contacts recorded, ticket fees settled into cloud ledger.',
+                            desc: 'Operators present QR player codes at Registration HQ. Waivers validated & ticket fees settled.',
                             color: 'text-cyan-400',
                             border: 'border-cyan-500/30'
                         },
@@ -311,7 +384,7 @@ export const AboutOverview: React.FC = () => {
                             step: '02',
                             time: '08:00 - 09:00',
                             title: 'Chrono & Tagging',
-                            desc: 'Primary replicas and sidearms tested with game BB weights. FPS/Joules recorded; color zip-tie tag affixed to trigger guard or buffer tube.',
+                            desc: 'Replicas tested with game BB weights. Joules recorded; color zip-tie tag affixed to trigger guard.',
                             color: 'text-amber-400',
                             border: 'border-amber-500/30'
                         },
@@ -319,7 +392,7 @@ export const AboutOverview: React.FC = () => {
                             step: '03',
                             time: '08:45 - 09:15',
                             title: 'Armory Rental Issue',
-                            desc: 'Rental packages issued (G&G Raider AEG, 2x Hi-Cap mags, 11.1v LiPo, full-face mesh mask, speedloader, 2,000 bio BBs).',
+                            desc: 'Rental packages issued (G&G Raider AEG, 2x Hi-Cap mags, 11.1v LiPo, mesh mask, 2k BBs).',
                             color: 'text-emerald-400',
                             border: 'border-emerald-500/30'
                         },
@@ -327,7 +400,7 @@ export const AboutOverview: React.FC = () => {
                             step: '04',
                             time: '09:15 - 09:45',
                             title: 'Safety Briefing & SOP',
-                            desc: 'Mandatory field rules: "Blind Man" cease-fire drill, dead-rag deployment, hit honor code, MED rules, and sector boundary markers.',
+                            desc: 'Mandatory rules: "Blind Man" cease-fire drill, dead-rag deployment, hit honor code & MED rules.',
                             color: 'text-red-400',
                             border: 'border-red-500/30'
                         },
@@ -335,7 +408,7 @@ export const AboutOverview: React.FC = () => {
                             step: '05',
                             time: '09:45 - 10:00',
                             title: 'Factions & Radio Sync',
-                            desc: 'Alpha (Blue) vs. Bravo (Red) assigned. Squad leaders designated, UHF/FRS radio channels tuned (CH 01 HQ, CH 02 Alpha, CH 03 Bravo).',
+                            desc: 'Alpha (Blue) vs Bravo (Red) assigned. Squad leaders designated, UHF/FRS radio channels tuned.',
                             color: 'text-indigo-400',
                             border: 'border-indigo-500/30'
                         },
@@ -343,7 +416,7 @@ export const AboutOverview: React.FC = () => {
                             step: '06',
                             time: '10:00 - 13:00',
                             title: 'Phase 1 Engagements',
-                            desc: 'Dynamic scenario rotations: Team Deathmatch warmup, Sector Domination with electronic capture clocks, and CQB Hostage Rescue.',
+                            desc: 'Dynamic scenario rotations: Team Deathmatch warmup, Sector Domination & CQB Hostage Rescue.',
                             color: 'text-pink-400',
                             border: 'border-pink-500/30'
                         },
@@ -351,7 +424,7 @@ export const AboutOverview: React.FC = () => {
                             step: '07',
                             time: '13:00 - 16:30',
                             title: 'Phase 2 Scenario Ops',
-                            desc: 'Post-lunch tactical missions: VIP Escort, Search & Destroy bomb defusal, and King of the Hill compound defense under marshal supervision.',
+                            desc: 'Tactical missions: VIP Escort, Search & Destroy bomb defusal & King of the Hill compound defense.',
                             color: 'text-purple-400',
                             border: 'border-purple-500/30'
                         },
@@ -359,45 +432,70 @@ export const AboutOverview: React.FC = () => {
                             step: '08',
                             time: '16:30 - 17:00',
                             title: 'Event Finalization',
-                            desc: 'Game master triggers Finalize Event in Manage Event console. +500 RP awarded, badges unlocked, leaderboard updated, financial ledger balanced.',
+                            desc: 'Game master clicks Finalize Event. +500 RP awarded, badges unlocked, leaderboard updated.',
                             color: 'text-emerald-400',
                             border: 'border-emerald-500/30'
                         }
                     ].map((item, idx) => (
-                        <div key={idx} className={`p-3.5 rounded-2xl bg-zinc-900/70 border ${item.border} space-y-1.5 backdrop-blur-sm hover:bg-zinc-900 transition-all`}>
-                            <div className="flex items-center justify-between">
-                                <span className={`text-base font-black font-mono ${item.color}`}>{item.step}</span>
-                                <span className="text-[10px] font-mono font-bold text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">
-                                    {item.time}
-                                </span>
+                        <div key={idx} className={`p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-b from-zinc-900/90 to-zinc-950 border ${item.border} space-y-1.5 shadow-[0_6px_16px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.8)] hover:-translate-y-0.5 transition-all flex flex-col justify-between`}>
+                            <div className="space-y-1">
+                                <div className="flex items-center justify-between gap-1">
+                                    <span className={`text-sm sm:text-base font-black font-mono ${item.color}`}>{item.step}</span>
+                                    <span className="text-[8.5px] sm:text-[10px] font-mono font-bold text-zinc-400 bg-black/60 px-1.5 py-0.5 rounded border border-zinc-800 shrink-0">
+                                        {item.time}
+                                    </span>
+                                </div>
+                                <h4 className="text-[11px] sm:text-xs font-bold text-white uppercase leading-tight">{item.title}</h4>
+                                <p className="text-[9.5px] sm:text-[11px] text-zinc-400 leading-snug">{item.desc}</p>
                             </div>
-                            <h4 className="text-xs font-bold text-white uppercase">{item.title}</h4>
-                            <p className="text-[11px] text-zinc-400 leading-relaxed">{item.desc}</p>
                         </div>
                     ))}
                 </div>
             </div>
 
             {/* Squad Radio Comms & Frequency Allocations Table */}
-            <div className="p-4 sm:p-6 rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-800">
+            <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-zinc-950/95 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.15)] space-y-3 sm:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 sm:pb-3 border-b border-white/10">
                     <div>
                         <div className="flex items-center gap-2">
-                            <RadioTower className="w-5 h-5 text-amber-500" />
-                            <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
-                                Squad Radio Frequency Plan & Communications Protocol (UHF/FRS)
+                            <RadioTower className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
+                            <h3 className="text-sm sm:text-lg font-black text-white uppercase tracking-wider">
+                                Squad Radio Frequency Plan &amp; Protocol (UHF/FRS)
                             </h3>
                         </div>
-                        <p className="text-xs text-zinc-400 mt-0.5">
+                        <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">
                             Standard channel assignments for Baofeng, Motorola, and Midland tactical radios.
                         </p>
                     </div>
-                    <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-800/50">
+                    <span className="text-[10px] sm:text-xs font-mono font-bold text-amber-400 bg-amber-950/60 px-2.5 py-0.5 sm:py-1 rounded-full border border-amber-800/50 self-start sm:self-auto shadow-sm">
                         FRS/GMRS STANDARD
                     </span>
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* Mobile Side-by-Side Channel Squares */}
+                <div className="grid grid-cols-2 md:hidden gap-2">
+                    {[
+                        { ch: 'CH 01', freq: '462.5625 MHz', tone: 'Open (CSQ)', role: 'Marshal / Emergency', desc: 'Cease-fire alerts ("Blind Man"), injury calls & emergency stop sirens.', color: 'text-amber-400', border: 'border-amber-500/40', badge: 'bg-amber-950/80 text-amber-300' },
+                        { ch: 'CH 02', freq: '462.5875 MHz', tone: '67.0 Hz', role: 'Alpha Faction (Blue)', desc: 'Blue team tactical moves, spotter calls & objective capture status.', color: 'text-blue-400', border: 'border-blue-500/40', badge: 'bg-blue-950/80 text-blue-300' },
+                        { ch: 'CH 03', freq: '462.6125 MHz', tone: '71.9 Hz', role: 'Bravo Faction (Red)', desc: 'Red team assaults, sniper overwatch calls & flank maneuvers.', color: 'text-red-400', border: 'border-red-500/40', badge: 'bg-red-950/80 text-red-300' },
+                        { ch: 'CH 04', freq: '462.6375 MHz', tone: '77.0 Hz', role: 'Armory & Logistics', desc: 'Rental battery swaps, BB restock & chrono marshal check-ins.', color: 'text-emerald-400', border: 'border-emerald-500/40', badge: 'bg-emerald-950/80 text-emerald-300' }
+                    ].map((radio, idx) => (
+                        <div key={idx} className={`p-2.5 rounded-xl bg-gradient-to-b from-zinc-900/90 to-zinc-950 border ${radio.border} shadow-[0_6px_14px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] space-y-1.5 flex flex-col justify-between`}>
+                            <div>
+                                <div className="flex items-center justify-between">
+                                    <span className={`text-xs font-black font-mono ${radio.color}`}>{radio.ch}</span>
+                                    <span className="text-[8.5px] font-mono text-zinc-400 bg-black/60 px-1 py-0.5 rounded border border-zinc-800">{radio.tone}</span>
+                                </div>
+                                <div className="text-[10px] font-mono text-white font-bold">{radio.freq}</div>
+                                <div className={`text-[9px] font-bold uppercase ${radio.color} mt-0.5`}>{radio.role}</div>
+                                <p className="text-[8.5px] text-zinc-400 leading-snug mt-1">{radio.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left text-xs font-mono">
                         <thead>
                             <tr className="bg-zinc-900/90 text-zinc-400 text-[10px] uppercase border-b border-zinc-800">
@@ -444,3 +542,4 @@ export const AboutOverview: React.FC = () => {
         </div>
     );
 };
+

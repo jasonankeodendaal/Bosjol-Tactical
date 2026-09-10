@@ -11,6 +11,7 @@ import { BadgePill } from './BadgePill';
 import { Modal } from './Modal';
 import { UNRANKED_TIER } from '../constants';
 import { getRankForPlayer, resolveRankIcon, getRankBadgeSvg } from '../utils/rankUtils';
+import { generatePlayerCodeFromName, generateUniquePlayerCode } from '../utils/playerCodeGenerator';
 import { PlayerProfilePage } from './PlayerProfilePage';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FinanceTab } from './FinanceTab';
@@ -483,10 +484,10 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer, onDeletePlayer,
                                     onAssignCode?.(player);
                                 }}
                                 className="inline-flex items-center gap-1 font-mono text-amber-400 bg-amber-950/70 hover:bg-amber-900/90 border border-amber-500/50 px-1.5 py-0.2 rounded text-[9px] font-bold transition-all shadow-xs"
-                                title="No player code in database. Click to auto-assign a unique code."
+                                title="Click to permanently sync this generated player code to the database."
                             >
-                                <span>NO-CODE</span>
-                                <span className="text-[8px] bg-amber-500 text-black px-1 py-0.1 rounded font-sans font-black tracking-tight">+ Assign</span>
+                                <span>{generatePlayerCodeFromName(player.name, player.surname, player.id)}</span>
+                                <span className="text-[8px] bg-amber-500 text-black px-1 py-0.1 rounded font-sans font-black tracking-tight">+ Save</span>
                             </button>
                         ) : (
                             <span className="font-mono text-zinc-300 font-bold">{player.playerCode}</span>
@@ -702,7 +703,7 @@ const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' 
                         <span className="text-amber-400 text-lg flex-shrink-0">⚠️</span>
                         <div className="min-w-0">
                             <p className="font-bold text-amber-300">
-                                {missingCodePlayers.length} {missingCodePlayers.length === 1 ? 'operator has' : 'operators have'} no Player Code (states NO-CODE)
+                                {missingCodePlayers.length} {missingCodePlayers.length === 1 ? 'operator code needs' : 'operator codes need'} database sync
                             </p>
                             <p className="text-[11px] text-zinc-300 truncate">
                                 Codes are required for event check-ins, voucher redemptions, and live game stat tracking.

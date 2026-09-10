@@ -44,3 +44,48 @@ export function generateUniquePlayerCode(player: Partial<Player>, existingPlayer
     }
     return candidate;
 }
+
+/**
+ * Deterministically creates a 4-character login player code from name and surname (e.g. JD01),
+ * guaranteeing a player NEVER has "NO-CODE" displayed.
+ */
+export function generatePlayerCodeFromName(name?: string, surname?: string, id?: string): string {
+    const namePart = (name || '').trim();
+    const surnamePart = (surname || '').trim();
+    let prefix = '';
+    if (namePart && surnamePart) {
+        prefix = (namePart.charAt(0) + surnamePart.charAt(0)).toUpperCase();
+    } else if (namePart.length >= 2) {
+        prefix = namePart.substring(0, 2).toUpperCase();
+    } else if (namePart.length === 1) {
+        prefix = (namePart + 'X').toUpperCase();
+    } else {
+        prefix = 'OP';
+    }
+    prefix = prefix.replace(/[^A-Z0-9]/g, '') || 'OP';
+    if (prefix.length < 2) {
+        prefix = (prefix + 'X').slice(0, 2);
+    }
+    
+    let numStr = '01';
+    if (id) {
+        const matches = id.match(/\d+/g);
+        if (matches && matches.length > 0) {
+            const lastMatch = matches[matches.length - 1];
+            const parsed = parseInt(lastMatch.slice(-3), 10);
+            if (!isNaN(parsed) && parsed > 0) {
+                const modNum = (parsed % 99) || 1;
+                numStr = String(modNum).padStart(2, '0');
+            }
+        }
+    }
+    return `${prefix}${numStr}`;
+}
+
+/**
+ * Generates a secure random 6-digit numeric PIN for player login (e.g. 583921).
+ */
+export function generateRandom6DigitPin(): string {
+    return String(Math.floor(100000 + Math.random() * 900000));
+}
+

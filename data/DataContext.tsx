@@ -516,8 +516,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [rawRanks]);
     const setRanks = setRawRanks;
 
-    const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', MOCK_DATA_MAP.badges, { isProtected: true });
-    const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', MOCK_DATA_MAP.legendaryBadges, { isProtected: true });
+    const [badges, setBadges, loadingBadges] = useCollection<Badge>('badges', MOCK_DATA_MAP.badges);
+    const [legendaryBadges, setLegendaryBadges, loadingLegendary] = useCollection<LegendaryBadge>('legendaryBadges', MOCK_DATA_MAP.legendaryBadges);
 
     // Auto-calculate and ensure every player's rank strictly matches their current XP total
     // and dynamically resolve all earned badges and legendary badges to use the latest live database configurations.

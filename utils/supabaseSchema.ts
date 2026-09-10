@@ -1,5 +1,6 @@
 import type { Player, Rank, Tier, Badge, LegendaryBadge, GameEvent, GamificationRule, GameType } from '../types';
 import { getRankForPlayer } from './rankUtils';
+import { generatePlayerCodeFromName } from './playerCodeGenerator';
 
 /**
  * Complete, idempotent SQL migration snippet for Supabase PostgreSQL.
@@ -884,12 +885,17 @@ export function normalizePlayerRow(raw: any, ranks?: Rank[]): Player {
         tactical: 'Flashbang',
     });
 
+    const rawCode = (raw.playerCode || raw.playercode || raw.player_code || '').trim();
+    const validCode = (rawCode && rawCode.toUpperCase() !== 'NO-CODE')
+        ? rawCode.toUpperCase()
+        : generatePlayerCodeFromName(raw.name, raw.surname, raw.id);
+
     const player: Player = {
         id: String(raw.id || `p_${Date.now()}`),
         name: raw.name || '',
         surname: raw.surname || '',
         callsign: raw.callsign || raw.name || 'Operator',
-        playerCode: raw.playerCode || raw.playercode || raw.player_code || 'NO-CODE',
+        playerCode: validCode,
         email: raw.email || '',
         phone: raw.phone || '',
         pin: String(raw.pin || '000000'),
@@ -1107,14 +1113,20 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
             calculatedRank = getRankForPlayer({ stats }, liveRanks);
         }
 
+        let finalCode = (item.playerCode || item.playercode || item.player_code || '').trim();
+        if (!finalCode || finalCode.toUpperCase() === 'NO-CODE') {
+            finalCode = generatePlayerCodeFromName(item.name, item.surname, item.id);
+        }
+        finalCode = finalCode.toUpperCase();
+
         return {
             id: String(item.id),
             name: item.name || '',
             surname: item.surname || '',
             callsign: item.callsign || item.name || 'Operator',
-            playerCode: item.playerCode || item.playercode || item.player_code || '',
-            playercode: item.playerCode || item.playercode || item.player_code || '',
-            player_code: item.playerCode || item.playercode || item.player_code || '',
+            playerCode: finalCode,
+            playercode: finalCode,
+            player_code: finalCode,
             email: item.email || '',
             phone: item.phone || '',
             pin: String(item.pin || '000000'),
@@ -1333,4 +1345,143 @@ BEGIN
     END;
 END $$;
 `;
+
+export const PLAYER_LOGIN_CODE_SQL = `-- =========================================================================
+-- BOSJOL TACTICAL AIRSOFT - PLAYER LOGIN CODE FIX & AUTOMATION SCRIPT
+-- Run this in your Supabase SQL Editor (SQL Editor -> New query -> Paste -> Run)
+-- Safe to run multiple times (idempotent)
+-- =========================================================================
+
+-- 1. Ensure all player code columns exist on public.players table
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS "playerCode" TEXT DEFAULT '';
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS playercode TEXT DEFAULT '';
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS player_code TEXT DEFAULT '';
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS pin TEXT DEFAULT '000000';
+
+-- 2. Create PostgreSQL helper function to generate player code from Name & Surname
+CREATE OR REPLACE FUNCTION public.generate_player_code(p_name TEXT, p_surname TEXT, p_id TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_clean_name TEXT;
+    v_clean_surname TEXT;
+    v_prefix TEXT;
+    v_candidate TEXT;
+    v_counter INT := 1;
+BEGIN
+    v_clean_name := UPPER(REGEXP_REPLACE(COALESCE(TRIM(p_name), ''), '[^a-zA-Z0-9]', '', 'g'));
+    v_clean_surname := UPPER(REGEXP_REPLACE(COALESCE(TRIM(p_surname), ''), '[^a-zA-Z0-9]', '', 'g'));
+
+    IF LENGTH(v_clean_name) >= 1 AND LENGTH(v_clean_surname) >= 1 THEN
+        v_prefix := SUBSTRING(v_clean_name FROM 1 FOR 1) || SUBSTRING(v_clean_surname FROM 1 FOR 1);
+    ELSIF LENGTH(v_clean_name) >= 2 THEN
+        v_prefix := SUBSTRING(v_clean_name FROM 1 FOR 2);
+    ELSIF LENGTH(v_clean_name) = 1 THEN
+        v_prefix := v_clean_name || 'X';
+    ELSE
+        v_prefix := 'OP';
+    END IF;
+
+    -- Ensure prefix is exactly 2 letters
+    IF LENGTH(v_prefix) < 2 THEN
+        v_prefix := RPAD(v_prefix, 2, 'X');
+    END IF;
+
+    -- Find next available sequential number that is not taken by another player
+    LOOP
+        v_candidate := v_prefix || LPAD(v_counter::TEXT, 2, '0');
+        IF NOT EXISTS (
+            SELECT 1 FROM public.players
+            WHERE id <> COALESCE(p_id, '')
+              AND (
+                UPPER(COALESCE("playerCode", '')) = v_candidate
+                OR UPPER(COALESCE(playercode, '')) = v_candidate
+                OR UPPER(COALESCE(player_code, '')) = v_candidate
+              )
+        ) THEN
+            RETURN v_candidate;
+        END IF;
+        v_counter := v_counter + 1;
+        EXIT WHEN v_counter > 99;
+    END LOOP;
+
+    RETURN v_candidate;
+END;
+$$;
+
+-- 3. Update ALL existing player rows that currently have NULL, blank, or 'NO-CODE'
+DO $$
+DECLARE
+    r RECORD;
+    v_new_code TEXT;
+BEGIN
+    FOR r IN (
+        SELECT id, name, surname, "playerCode", playercode, player_code
+        FROM public.players
+        WHERE "playerCode" IS NULL OR TRIM("playerCode") = '' OR UPPER(TRIM("playerCode")) = 'NO-CODE'
+           OR playercode IS NULL OR TRIM(playercode) = '' OR UPPER(TRIM(playercode)) = 'NO-CODE'
+           OR player_code IS NULL OR TRIM(player_code) = '' OR UPPER(TRIM(player_code)) = 'NO-CODE'
+        ORDER BY created_at ASC NULLS LAST, id ASC
+    ) LOOP
+        v_new_code := public.generate_player_code(r.name, r.surname, r.id);
+        
+        UPDATE public.players
+        SET "playerCode" = v_new_code,
+            playercode = v_new_code,
+            player_code = v_new_code,
+            updated_at = NOW()
+        WHERE id = r.id;
+    END LOOP;
+END $$;
+
+-- 4. Automatically synchronize all playerCode column variations for all existing players
+UPDATE public.players
+SET 
+    "playerCode" = UPPER(TRIM(COALESCE(NULLIF("playerCode", ''), NULLIF(playercode, ''), NULLIF(player_code, '')))),
+    playercode = UPPER(TRIM(COALESCE(NULLIF(playercode, ''), NULLIF("playerCode", ''), NULLIF(player_code, '')))),
+    player_code = UPPER(TRIM(COALESCE(NULLIF(player_code, ''), NULLIF("playerCode", ''), NULLIF(playercode, ''))))
+WHERE "playerCode" IS NOT NULL AND "playerCode" <> '';
+
+-- 5. Trigger function: Auto-generate player code on INSERT / UPDATE if missing or 'NO-CODE'
+CREATE OR REPLACE FUNCTION public.fn_auto_generate_player_code()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_code TEXT;
+BEGIN
+    v_code := COALESCE(NULLIF(TRIM(NEW."playerCode"), ''), NULLIF(TRIM(NEW.playercode), ''), NULLIF(TRIM(NEW.player_code), ''));
+
+    IF v_code IS NULL OR UPPER(v_code) = 'NO-CODE' THEN
+        v_code := public.generate_player_code(NEW.name, NEW.surname, NEW.id);
+    ELSE
+        v_code := UPPER(v_code);
+    END IF;
+
+    NEW."playerCode" := v_code;
+    NEW.playercode := v_code;
+    NEW.player_code := v_code;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_ensure_player_code ON public.players;
+CREATE TRIGGER trg_ensure_player_code
+BEFORE INSERT OR UPDATE ON public.players
+FOR EACH ROW
+EXECUTE FUNCTION public.fn_auto_generate_player_code();
+
+-- 6. Indexes for ultra-fast, case-insensitive player login
+CREATE INDEX IF NOT EXISTS idx_players_playercode_upper ON public.players (UPPER("playerCode"));
+CREATE INDEX IF NOT EXISTS idx_players_playercode_lower ON public.players (LOWER(playercode));
+CREATE INDEX IF NOT EXISTS idx_players_pin ON public.players (pin);
+
+-- 7. Ensure Row Level Security (RLS) allows login verification queries
+ALTER TABLE public.players ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read and login on players" ON public.players;
+CREATE POLICY "Allow public read and login on players" ON public.players FOR ALL USING (true) WITH CHECK (true);
+GRANT ALL ON TABLE public.players TO anon, authenticated, service_role;
+`;
+
 

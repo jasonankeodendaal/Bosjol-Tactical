@@ -6,6 +6,7 @@ import { DashboardCard } from './DashboardCard';
 import { Button } from './Button';
 import { Input } from './Input';
 import { UsersIcon, CogIcon, CalendarIcon, TrashIcon, ShieldCheckIcon, PlusIcon, TrophyIcon, BuildingOfficeIcon, SparklesIcon, PencilIcon, XIcon, TicketIcon, AtSymbolIcon, PhoneIcon, GlobeAltIcon, ArrowLeftIcon, ArchiveBoxIcon, CurrencyDollarIcon, TruckIcon, MapPinIcon, MinusIcon, KeyIcon, Bars3Icon, ExclamationTriangleIcon, InformationCircleIcon, CreditCardIcon, CheckCircleIcon, PrinterIcon, PlusCircleIcon, CodeBracketIcon, ChartBarIcon } from './icons/Icons';
+import { generatePlayerCodeFromName } from './utils/playerCodeGenerator';
 import { BadgePill } from './BadgePill';
 import { Modal } from './Modal';
 import { UNRANKED_TIER } from '../constants';
@@ -287,7 +288,7 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer }: { player: Pla
                     <img src={rank.iconUrl} alt={rank.name} className="w-5 h-5 mr-1.5"/>
                     <span>{rank.name}</span>
                     <span className="mx-2">|</span>
-                    <span className="font-mono">{(player.playerCode || 'NO-CODE')}</span>
+                    <span className="font-mono">{((player.playerCode && player.playerCode !== 'NO-CODE') ? player.playerCode : generatePlayerCodeFromName(player.name, player.surname, player.id))}</span>
                 </div>
             </div>
             <div className="text-right">

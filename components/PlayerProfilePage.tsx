@@ -16,7 +16,7 @@ import { SendCredentialsModal } from './SendCredentialsModal';
 import { motion } from 'framer-motion';
 import { getRankForPlayer, getRankProgression as computeRankProgression, FALLBACK_RECRUIT_TIER, resolveRankIcon, getRankBadgeSvg } from '../utils/rankUtils';
 import { calculatePlayerPerformance } from '../utils/playerPerformanceUtils';
-import { generateUniquePlayerCode } from '../utils/playerCodeGenerator';
+import { generateUniquePlayerCode, generatePlayerCodeFromName } from '../utils/playerCodeGenerator';
 
 const getTierForPlayer = (player: Player, ranks: Rank[]): Tier => {
     return getRankForPlayer(player, ranks);
@@ -443,7 +443,7 @@ WHERE id = '${player.id}';`;
                                 {playerRank ? `${playerRank.name} - ${playerTier.name}` : playerTier.name}
                             </span>
                             <span>•</span>
-                            <span className="font-mono text-zinc-300">Code: <strong className="text-amber-400">{player.playerCode || 'NO-CODE'}</strong></span>
+                            <span className="font-mono text-zinc-300">Code: <strong className="text-amber-400">{((player.playerCode && player.playerCode !== 'NO-CODE') ? player.playerCode : generatePlayerCodeFromName(player.name, player.surname, player.id))}</strong></span>
                             {players && players.length > 0 && (
                                 <>
                                     <span>•</span>
@@ -909,22 +909,9 @@ WHERE id = '${player.id}';`;
                                         {/* Code */}
                                         <div className="bg-zinc-900/60 p-2 rounded border border-zinc-800">
                                             <span className="text-[10px] text-zinc-400 block font-medium">Player Code</span>
-                                            {(!player.playerCode || player.playerCode === 'NO-CODE') ? (
-                                                <div className="flex items-center gap-1 mt-0.5">
-                                                    <span className="text-amber-400 text-[10px] font-mono font-bold">Unassigned</span>
-                                                    <button
-                                                        onClick={() => {
-                                                            const newCode = generateUniquePlayerCode(player, (players || []).filter(p => p.id !== player.id));
-                                                            onUpdatePlayer({ ...player, playerCode: newCode });
-                                                        }}
-                                                        className="text-[9px] text-amber-300 underline"
-                                                    >
-                                                        Auto-Assign
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <span className="font-mono text-amber-400 font-bold text-xs">{player.playerCode}</span>
-                                            )}
+                                            <span className="font-mono text-amber-400 font-bold text-xs">
+                                                {((player.playerCode && player.playerCode !== 'NO-CODE') ? player.playerCode : generatePlayerCodeFromName(player.name, player.surname, player.id))}
+                                            </span>
                                         </div>
 
                                         {/* PIN Code */}

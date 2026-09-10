@@ -3,6 +3,8 @@ import React, { createContext, useState, ReactNode, useEffect, useMemo, useCallb
 import type { User, AuthContextType, Player, Admin, CreatorDetails } from '../types';
 import { MOCK_PLAYERS, MOCK_ADMIN } from '../constants';
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
+import { generatePlayerCodeFromName } from '../utils/playerCodeGenerator';
+import { normalizePlayerRow } from '../utils/supabaseSchema';
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -73,13 +75,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const newPlayerId = `p_${Date.now()}`;
             const cleanName = email.split('@')[0];
             const formattedName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
-            const newPlayerCode = `P${Math.floor(1000 + Math.random() * 9000)}`;
+            const newPlayerCode = generatePlayerCodeFromName(formattedName, '', newPlayerId);
 
             const newPlayer: Partial<Player> = {
                 id: newPlayerId,
                 name: formattedName,
                 surname: '',
                 playerCode: newPlayerCode,
+                playercode: newPlayerCode,
+                player_code: newPlayerCode,
                 email: email,
                 phone: '',
                 pin: '1234',
@@ -168,9 +172,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     setUser(MOCK_ADMIN);
                     return true;
                 } else {
-                    const player = MOCK_PLAYERS.find(p => p.playerCode === identifier && p.pin === password);
+                    const cleanCode = identifier.trim().toUpperCase();
+                    const cleanPin = String(password).trim();
+                    const player = MOCK_PLAYERS.find(p => {
+                        const code = (p.playerCode || generatePlayerCodeFromName(p.name, p.surname, p.id)).trim().toUpperCase();
+                        return code === cleanCode && String(p.pin).trim() === cleanPin;
+                    });
                     if (player) {
-                        setUser(player);
+                        setUser({ ...player, playerCode: cleanCode });
                         return true;
                     }
                 }
@@ -194,15 +203,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 return true;
             } else {
                 // Player Login via Table Query (App-Level Auth)
-                const { data: player, error } = await supabase
+                const cleanCode = identifier.trim().toUpperCase();
+                const cleanPin = String(password).trim();
+
+                let matchedPlayer: any = null;
+
+                // 1. Direct query matching across all playerCode column variations
+                const { data: directMatches } = await supabase
                     .from('players')
                     .select('*')
-                    .eq('playerCode', identifier)
-                    .single();
+                    .or(`playerCode.ilike.${cleanCode},playercode.ilike.${cleanCode},player_code.ilike.${cleanCode}`)
+                    .limit(5);
 
-                if (player && player.pin === password) {
-                    setUser(player as Player);
-                    sessionStorage.setItem('activePlayerId', player.id);
+                if (directMatches && directMatches.length > 0) {
+                    matchedPlayer = directMatches.find(p => String(p.pin).trim() === cleanPin);
+                }
+
+                // 2. Fallback: Check if any player's name & surname dynamically produces this code
+                if (!matchedPlayer) {
+                    const { data: pinMatches } = await supabase
+                        .from('players')
+                        .select('*')
+                        .eq('pin', cleanPin);
+
+                    if (pinMatches && pinMatches.length > 0) {
+                        matchedPlayer = pinMatches.find(p => {
+                            const gen = generatePlayerCodeFromName(p.name, p.surname, p.id);
+                            return gen.toUpperCase() === cleanCode;
+                        });
+                    }
+                }
+
+                if (matchedPlayer) {
+                    const normalized = normalizePlayerRow(matchedPlayer);
+                    // Ensure the playerCode is saved in memory
+                    normalized.playerCode = cleanCode;
+                    setUser(normalized);
+                    sessionStorage.setItem('activePlayerId', normalized.id);
                     return true;
                 }
             }

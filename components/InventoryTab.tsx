@@ -202,26 +202,6 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInvent
     const [deletingItem, setDeletingItem] = useState<InventoryItem | null>(null);
     const [filter, setFilter] = useState<'all' | 'rental' | 'sale' | 'inspection'>('all');
     const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
-    const [copiedSql, setCopiedSql] = useState<boolean>(false);
-
-    const sampleSqlSnippet = `-- Sample SQL to bulk upload or seed inventory in Supabase
-INSERT INTO inventory (id, name, description, "salePrice", stock, type, "isRental", category, condition)
-VALUES
-  ('weapon_rental_1', 'Rental 1 - G&G Raider M4 AEG', 'Primary rental rifle package with high-cap magazine', 250.00, 1, 'Weapon', true, 'AEG Rifle', 'Good'),
-  ('weapon_rental_2', 'Rental 2 - G&G Raider M4 AEG', 'Primary rental rifle package with high-cap magazine', 250.00, 1, 'Weapon', true, 'AEG Rifle', 'Good'),
-  ('extra_rental_gloves', 'Tactical Full-Finger Gloves', 'Impact knuckle protection gloves', 50.00, 20, 'Gear', true, 'Gloves', 'New'),
-  ('extra_rental_vest', 'Chest Rig / Tactical Vest', 'Viper elite rig with pre-fitted mag pouches', 80.00, 15, 'Gear', true, 'Vest', 'Good')
-ON CONFLICT (id) DO UPDATE SET
-  name = EXCLUDED.name,
-  "isRental" = EXCLUDED."isRental",
-  "salePrice" = EXCLUDED."salePrice",
-  stock = EXCLUDED.stock;`;
-
-    const handleCopySql = () => {
-        navigator.clipboard.writeText(sampleSqlSnippet);
-        setCopiedSql(true);
-        setTimeout(() => setCopiedSql(false), 2000);
-    };
 
     const filteredInventory = useMemo(() => {
         if (filter === 'rental') return inventory.filter(i => i.isRental);
@@ -329,35 +309,6 @@ ON CONFLICT (id) DO UPDATE SET
                                     Set reorder thresholds to receive low-stock alerts. If equipment is damaged, switch condition to <strong className="text-white">"Needs Inspection"</strong> to flag it for field servicing.
                                 </p>
                             </div>
-                        </div>
-
-                        {/* SQL Quick-Upload Helper */}
-                        <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800/90 space-y-2">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5 text-zinc-300 font-bold text-[11px]">
-                                    <Sparkles className="w-3.5 h-3.5 text-red-400" />
-                                    <span>Bulk Database Upload (Supabase SQL)</span>
-                                </div>
-                                <button
-                                    onClick={handleCopySql}
-                                    className="flex items-center gap-1 px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] text-zinc-300 transition"
-                                >
-                                    {copiedSql ? (
-                                        <>
-                                            <Check className="w-3 h-3 text-emerald-400" />
-                                            <span className="text-emerald-400 font-bold">Copied!</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Copy className="w-3 h-3 text-zinc-400" />
-                                            <span>Copy SQL</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                            <pre className="p-2.5 rounded-lg bg-zinc-900/90 border border-zinc-800 font-mono text-[10px] text-zinc-300 overflow-x-auto custom-scrollbar leading-relaxed">
-                                {sampleSqlSnippet}
-                            </pre>
                         </div>
 
                         <div className="pt-2 flex justify-end">

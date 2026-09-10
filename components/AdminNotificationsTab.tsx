@@ -40,8 +40,6 @@ export const AdminNotificationsTab: React.FC<AdminNotificationsTabProps> = ({
     const [filter, setFilter] = useState<'all' | 'unread' | 'badge' | 'rank' | 'signup'>('all');
     const [filterMenuOpen, setFilterMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [isSqlModalOpen, setIsSqlModalOpen] = useState(false);
-    const [copiedSql, setCopiedSql] = useState(false);
 
     const unreadCount = useMemo(() => {
         return notifications.filter(n => !n.read).length;
@@ -99,68 +97,6 @@ export const AdminNotificationsTab: React.FC<AdminNotificationsTabProps> = ({
         });
     };
 
-    const sqlSnippets = `-- ==========================================================
--- SUPABASE / POSTGRESQL NOTIFICATIONS SCHEMA & REALTIME SYNC
--- ==========================================================
-
--- 1. Create the notifications table
-CREATE TABLE IF NOT EXISTS public.notifications (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    message TEXT NOT NULL,
-    type TEXT NOT NULL,
-    timestamp TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
-    read BOOLEAN NOT NULL DEFAULT false,
-    "playerId" TEXT,
-    "playerName" TEXT,
-    "playerCallsign" TEXT,
-    "playerCode" TEXT,
-    "playerAvatarUrl" TEXT,
-    "badgeId" TEXT,
-    "badgeName" TEXT,
-    "badgeIconUrl" TEXT,
-    "badgeDescription" TEXT,
-    "badgeCriteria" TEXT,
-    "rankName" TEXT,
-    "rankIconUrl" TEXT,
-    "eventId" TEXT,
-    "eventTitle" TEXT,
-    details JSONB
-);
-
--- 2. Enable Row Level Security (RLS)
-ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
-
--- 3. Create RLS Policies for Admin Access & App Operations
-CREATE POLICY "Allow all access to notifications for authenticated users" 
-ON public.notifications 
-FOR ALL 
-TO authenticated 
-USING (true) 
-WITH CHECK (true);
-
-CREATE POLICY "Allow public read-write for app services" 
-ON public.notifications 
-FOR ALL 
-TO anon 
-USING (true) 
-WITH CHECK (true);
-
--- 4. Enable Realtime Publications for instant live updates
-ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
-
--- 5. Performance Indexing for fast queries
-CREATE INDEX IF NOT EXISTS idx_notifications_timestamp ON public.notifications (timestamp DESC);
-CREATE INDEX IF NOT EXISTS idx_notifications_player ON public.notifications ("playerId");
-CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications (read);
-`;
-
-    const handleCopySql = () => {
-        navigator.clipboard.writeText(sqlSnippets);
-        setCopiedSql(true);
-        setTimeout(() => setCopiedSql(false), 2500);
-    };
-
     return (
         <div className="w-full space-y-4">
             {/* Free View Header */}
@@ -192,15 +128,6 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications (read)
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5">
-                    <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        onClick={() => setIsSqlModalOpen(true)}
-                        className="!py-1 !px-2.5 text-[11px] text-blue-400 border-blue-900/50 hover:bg-blue-950/30"
-                    >
-                        <CodeBracketIcon className="w-3.5 h-3.5 mr-1" />
-                        SQL Setup
-                    </Button>
                     {unreadCount > 0 && (
                         <Button 
                             variant="secondary" 
@@ -524,47 +451,6 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications (read)
                     })
                 )}
             </div>
-
-            {/* SQL Snippet Helper Modal */}
-            <Modal
-                isOpen={isSqlModalOpen}
-                onClose={() => setIsSqlModalOpen(false)}
-                title="Supabase Notifications SQL Setup"
-                maxWidth="xl"
-            >
-                <div className="space-y-4">
-                    <div className="bg-blue-950/40 border border-blue-800/60 p-3.5 rounded-lg flex items-start gap-3">
-                        <InformationCircleIcon className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                        <div className="text-xs text-blue-200 space-y-1">
-                            <p className="font-semibold">Run this SQL in your Supabase SQL Editor:</p>
-                            <p>
-                                This script creates the <code>notifications</code> table, sets up appropriate row-level security (RLS), adds high-performance indexes, and enables Supabase Realtime publication so alerts appear without refreshing.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="relative">
-                        <pre className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-emerald-400 overflow-x-auto max-h-[340px] scrollbar-thin">
-                            {sqlSnippets}
-                        </pre>
-                        <button
-                            onClick={handleCopySql}
-                            className="absolute top-3 right-3 px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded-md text-xs font-semibold shadow-md flex items-center gap-1.5 transition-colors"
-                        >
-                            {copiedSql ? '✓ Copied!' : 'Copy SQL'}
-                        </button>
-                    </div>
-
-                    <div className="flex justify-end gap-2 pt-2">
-                        <Button variant="secondary" onClick={() => setIsSqlModalOpen(false)}>
-                            Close
-                        </Button>
-                        <Button variant="primary" onClick={handleCopySql}>
-                            {copiedSql ? 'Copied to Clipboard' : 'Copy Full SQL Script'}
-                        </Button>
-                    </div>
-                </div>
-            </Modal>
         </div>
     );
 };

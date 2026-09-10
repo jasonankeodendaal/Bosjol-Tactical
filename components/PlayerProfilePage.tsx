@@ -103,9 +103,6 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
     const [isResettingPin, setIsResettingPin] = useState(false);
     const [isSendingCredentials, setIsSendingCredentials] = useState(false);
     const dataContext = useContext(DataContext);
-    
-    const [showSqlModal, setShowSqlModal] = useState(false);
-    const [copiedSql, setCopiedSql] = useState(false);
 
     useEffect(() => {
         setFormData(player);
@@ -350,58 +347,11 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
 
     const playerHonors = useMemo(() => dataContext?.honors?.filter(h => h.playerId === player.id) || [], [dataContext?.honors, player.id]);
 
-    const playerSqlSnippet = `-- ==========================================================
--- MANUAL XP AWARD SQL QUERY FOR POSTGRESQL / SUPABASE
--- Target Operator: ${player.name} (${player.callsign})
--- Player ID: ${player.id}
--- ==========================================================
-
--- Award 500 XP (replace 500 with desired amount & reason)
-UPDATE public.players
-SET 
-  stats = jsonb_set(
-    COALESCE(stats, '{"kills":0,"deaths":0,"headshots":0,"gamesPlayed":0,"xp":0}'::jsonb),
-    '{xp}',
-    to_jsonb(COALESCE((stats->>'xp')::int, 0) + 500)
-  ),
-  "xpAdjustments" = COALESCE("xpAdjustments", '[]'::jsonb) || jsonb_build_object(
-    'amount', 500,
-    'reason', 'Manual Admin XP Award',
-    'date', CURRENT_TIMESTAMP
-  )
-WHERE id = '${player.id}';`;
-
     return (
         <div className="p-2 sm:p-4 lg:p-6 max-w-7xl mx-auto space-y-2.5 sm:space-y-3.5">
             {isAwardingXp && <AwardXpModal onClose={() => setIsAwardingXp(false)} onSave={handleAwardXp} />}
             {isResettingPin && <ResetPinModal onClose={() => setIsResettingPin(false)} onSave={handleResetPin} />}
             {isSendingCredentials && <SendCredentialsModal player={player} onClose={() => setIsSendingCredentials(false)} />}
-            {showSqlModal && (
-                <Modal title={`SQL Query: Award XP to ${player.callsign}`} onClose={() => setShowSqlModal(false)}>
-                    <div className="space-y-4">
-                        <p className="text-sm text-zinc-300">
-                            Run this SQL query directly in your Supabase SQL Editor or PostgreSQL terminal to manually award XP and log the adjustment for <strong className="text-white">{player.name} ({player.callsign})</strong>.
-                        </p>
-                        <div className="relative bg-zinc-950 p-3 rounded-lg border border-zinc-800 font-mono text-xs text-green-400 overflow-x-auto">
-                            <pre>{playerSqlSnippet}</pre>
-                            <button
-                                onClick={() => {
-                                    navigator.clipboard.writeText(playerSqlSnippet);
-                                    setCopiedSql(true);
-                                    setTimeout(() => setCopiedSql(false), 2000);
-                                }}
-                                className="absolute top-2 right-2 px-2.5 py-1 text-xs bg-red-600 hover:bg-red-500 text-white rounded font-sans transition-colors flex items-center gap-1"
-                            >
-                                {copiedSql ? <Check className="w-3 h-3 text-white" /> : <Copy className="w-3 h-3 text-white" />}
-                                <span>{copiedSql ? 'Copied!' : 'Copy SQL'}</span>
-                            </button>
-                        </div>
-                        <div className="flex justify-end pt-2">
-                            <Button variant="secondary" onClick={() => setShowSqlModal(false)}>Close</Button>
-                        </div>
-                    </div>
-                </Modal>
-            )}
 
             {/* Compact Header & Action Toolbar */}
             <div className="bg-zinc-950/90 backdrop-blur-md border border-zinc-800/80 rounded-xl p-2.5 sm:p-3.5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-2.5">
@@ -469,9 +419,6 @@ WHERE id = '${player.id}';`;
                     <Button size="sm" variant="secondary" onClick={() => setIsSendingCredentials(true)} className="!py-1.5 !px-2.5 text-xs flex items-center gap-1" title="Send Login Credentials">
                         <Send className="w-3.5 h-3.5 text-blue-400" />
                         <span className="hidden sm:inline">Credentials</span>
-                    </Button>
-                    <Button size="sm" variant="secondary" onClick={() => setShowSqlModal(true)} className="!py-1.5 !px-2 text-xs" title="View SQL Query">
-                        <Code className="w-3.5 h-3.5 text-zinc-400" />
                     </Button>
                     {onDeletePlayer && (
                         <Button 
@@ -971,7 +918,7 @@ WHERE id = '${player.id}';`;
                                     )}
 
                                     {/* Bottom action bar */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1">
+                                    <div className="grid grid-cols-3 gap-1.5 pt-1">
                                         <Button size="sm" variant="secondary" onClick={() => setIsEditing(true)} className="!py-1 text-xs">
                                             Edit
                                         </Button>
@@ -980,9 +927,6 @@ WHERE id = '${player.id}';`;
                                         </Button>
                                         <Button size="sm" variant="secondary" onClick={() => setIsSendingCredentials(true)} className="!py-1 text-xs">
                                             Credentials
-                                        </Button>
-                                        <Button size="sm" variant="secondary" onClick={() => setShowSqlModal(true)} className="!py-1 text-xs">
-                                            SQL
                                         </Button>
                                     </div>
                                 </div>

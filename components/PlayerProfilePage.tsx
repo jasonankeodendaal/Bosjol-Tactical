@@ -409,6 +409,14 @@ WHERE id = '${player.id}';`;
                         </span>
                         <span className="text-gray-400 mx-2">|</span>
                         <BadgePill color={player.status === 'Active' ? 'green' : 'red'}>{player.status}</BadgePill>
+                        {players && players.length > 0 && (
+                            <>
+                                <span className="text-gray-400 mx-2">|</span>
+                                <span className="text-xs text-zinc-400 font-mono">
+                                    Player {Math.max(1, players.findIndex(p => p.id === player.id) + 1)} of {players.length}
+                                </span>
+                            </>
+                        )}
                     </div>
                 </div>
             </header>

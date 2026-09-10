@@ -231,11 +231,14 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     const unreadNotificationsCount = useMemo(() => {
         return (dataContext?.notifications || []).filter(n => !n.read).length;
     }, [dataContext?.notifications]);
+    const totalPlayersCount = useMemo(() => {
+        return (dataContext?.players || []).length;
+    }, [dataContext?.players]);
 
-    const tabs: {name: Tab, icon: React.ReactNode, badgeCount?: number}[] = [
+    const tabs: {name: Tab, icon: React.ReactNode, badgeCount?: number, countBadge?: number}[] = [
         {name: 'Events', icon: <CalendarIcon className="w-5 h-5"/>},
         {name: 'Game Types', icon: <SparklesIcon className="w-5 h-5 text-red-500"/>},
-        {name: 'Players', icon: <UsersIcon className="w-5 h-5"/>},
+        {name: 'Players', icon: <UsersIcon className="w-5 h-5"/>, countBadge: totalPlayersCount},
         {name: 'Notifications', icon: <BellIcon className="w-5 h-5"/>, badgeCount: unreadNotificationsCount},
         {name: 'Rules', icon: <InformationCircleIcon className="w-5 h-5"/>},
         {name: 'Progression', icon: <ShieldCheckIcon className="w-5 h-5"/>},
@@ -264,6 +267,11 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
                     <div className="flex items-center gap-2.5 truncate">
                         <div className="text-red-400">{activeTabInfo?.icon}</div>
                         <span className="truncate">{activeTabInfo?.name || activeTab}</span>
+                        {activeTabInfo?.countBadge !== undefined && (
+                            <span className="bg-zinc-800 text-zinc-300 border border-zinc-700/80 text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">
+                                {activeTabInfo.countBadge}
+                            </span>
+                        )}
                         {activeTabInfo?.badgeCount !== undefined && activeTabInfo.badgeCount > 0 && (
                             <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
                                 {activeTabInfo.badgeCount}
@@ -303,11 +311,18 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
                                             <span className={activeTab === tab.name ? 'text-red-400' : 'text-zinc-400'}>{tab.icon}</span>
                                             <span className="truncate">{tab.name}</span>
                                         </div>
-                                        {tab.badgeCount !== undefined && tab.badgeCount > 0 && (
-                                            <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                                {tab.badgeCount}
-                                            </span>
-                                        )}
+                                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                                            {tab.countBadge !== undefined && (
+                                                <span className="bg-zinc-800 text-zinc-300 border border-zinc-700/80 text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">
+                                                    {tab.countBadge}
+                                                </span>
+                                            )}
+                                            {tab.badgeCount !== undefined && tab.badgeCount > 0 && (
+                                                <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                                    {tab.badgeCount}
+                                                </span>
+                                            )}
+                                        </div>
                                     </button>
                                 ))}
                             </motion.div>
@@ -330,6 +345,11 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
                     >
                         <div className="scale-90 opacity-80">{tab.icon}</div>
                         <span>{tab.name}</span>
+                        {tab.countBadge !== undefined && (
+                            <span className="ml-1 bg-zinc-800/90 text-zinc-300 border border-zinc-700/80 text-[9px] font-bold px-1.5 py-0.2 rounded-full font-mono">
+                                {tab.countBadge}
+                            </span>
+                        )}
                         {tab.badgeCount !== undefined && tab.badgeCount > 0 && (
                             <span className="ml-1 bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
                                 {tab.badgeCount}
@@ -406,41 +426,142 @@ const PlayerListItem = React.memo(({ player, rank, onViewPlayer, onDeletePlayer 
 const PlayersTab: React.FC<Pick<AdminDashboardProps, 'players' | 'addPlayerDoc' | 'ranks' | 'companyDetails'> & { onViewPlayer: (id: string) => void; onDeletePlayer: (id: string) => void }> = ({ players, addPlayerDoc, ranks, companyDetails, onViewPlayer, onDeletePlayer }) => {
     const [showNewPlayerModal, setShowNewPlayerModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState<'alpha-asc' | 'alpha-desc' | 'xp-desc' | 'matches-desc'>('alpha-asc');
 
-    const filteredPlayers = players.filter(p => 
-        (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.callsign || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.playerCode || '').toLowerCase().includes(searchTerm.toLowerCase())
-    ).sort((a,b) => (b.stats?.xp ?? 0) - (a.stats?.xp ?? 0));
+    // Auto-alphabetical by default (A-Z by name/callsign, then surname)
+    const filteredPlayers = useMemo(() => {
+        const query = searchTerm.trim().toLowerCase();
+        const list = players.filter(p => {
+            if (!query) return true;
+            return (
+                (p.name || '').toLowerCase().includes(query) ||
+                (p.surname || '').toLowerCase().includes(query) ||
+                (p.callsign || '').toLowerCase().includes(query) ||
+                (p.playerCode || '').toLowerCase().includes(query)
+            );
+        });
+
+        return list.sort((a, b) => {
+            if (sortBy === 'alpha-asc') {
+                const nameA = (a.name || a.callsign || '').trim();
+                const nameB = (b.name || b.callsign || '').trim();
+                const comp = nameA.localeCompare(nameB, undefined, { sensitivity: 'base', numeric: true });
+                if (comp !== 0) return comp;
+                const surA = (a.surname || '').trim();
+                const surB = (b.surname || '').trim();
+                const surComp = surA.localeCompare(surB, undefined, { sensitivity: 'base', numeric: true });
+                if (surComp !== 0) return surComp;
+                return (a.callsign || '').trim().localeCompare((b.callsign || '').trim(), undefined, { sensitivity: 'base', numeric: true });
+            }
+            if (sortBy === 'alpha-desc') {
+                const nameA = (a.name || a.callsign || '').trim();
+                const nameB = (b.name || b.callsign || '').trim();
+                const comp = nameB.localeCompare(nameA, undefined, { sensitivity: 'base', numeric: true });
+                if (comp !== 0) return comp;
+                const surA = (a.surname || '').trim();
+                const surB = (b.surname || '').trim();
+                return surB.localeCompare(surA, undefined, { sensitivity: 'base', numeric: true });
+            }
+            if (sortBy === 'xp-desc') {
+                return (b.stats?.xp ?? 0) - (a.stats?.xp ?? 0);
+            }
+            if (sortBy === 'matches-desc') {
+                const matchesA = a.stats?.gamesPlayed ?? (a.matchHistory?.length || 0);
+                const matchesB = b.stats?.gamesPlayed ?? (b.matchHistory?.length || 0);
+                return matchesB - matchesA;
+            }
+            return 0;
+        });
+    }, [players, searchTerm, sortBy]);
 
     return (
         <div className="w-full space-y-3 sm:space-y-4">
             {showNewPlayerModal && <NewPlayerModal onClose={() => setShowNewPlayerModal(false)} players={players} addPlayerDoc={addPlayerDoc} companyDetails={companyDetails} ranks={ranks} />}
             
-            {/* Top Free-View Header Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-zinc-800/80">
-                <div className="flex items-center gap-2">
-                    <UsersIcon className="w-5 h-5 text-red-500" />
+            {/* Top Free-View Header Bar with Count */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800/80">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-950/40 border border-red-800/40 flex items-center justify-center flex-shrink-0 text-red-500">
+                        <UsersIcon className="w-5 h-5" />
+                    </div>
                     <div>
-                        <h2 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
-                            Registered Operators
-                        </h2>
-                        <p className="text-[10px] sm:text-xs text-zinc-400">
-                            {players.length} total players registered &bull; Rank Points & match statistics
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                            <h2 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
+                                Registered Operators
+                            </h2>
+                            <span 
+                                id="admin-players-total-count-badge"
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-red-600/20 text-red-400 border border-red-500/40 font-mono tracking-tight shadow-sm"
+                                title="Total registered players"
+                            >
+                                {players.length} {players.length === 1 ? 'Player' : 'Players'}
+                            </span>
+                        </div>
+                        <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5">
+                            {searchTerm ? (
+                                <span>Showing <strong className="text-white font-bold">{filteredPlayers.length}</strong> of <strong className="text-white font-bold">{players.length}</strong> operators &bull; Auto-sorted alphabetically (A–Z)</span>
+                            ) : (
+                                <span>Total: <strong className="text-white font-bold">{players.length}</strong> {players.length === 1 ? 'player' : 'players'} registered &bull; Auto-sorted alphabetically (A–Z)</span>
+                            )}
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <Input 
-                        placeholder="Search callsign, code, name..." 
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="!text-xs !py-1 w-44 sm:w-60"
-                    />
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    <div className="relative flex-grow sm:flex-grow-0">
+                        <Input 
+                            placeholder="Search callsign, code, name..." 
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="!text-xs !py-1 w-full sm:w-60 pr-7"
+                        />
+                        {searchTerm && (
+                            <button 
+                                onClick={() => setSearchTerm('')}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-0.5 text-xs"
+                                title="Clear search"
+                            >
+                                &times;
+                            </button>
+                        )}
+                    </div>
                     <Button onClick={() => setShowNewPlayerModal(true)} size="sm" className="!py-1 !px-2.5 text-xs flex-shrink-0">
                         <PlusIcon className="w-3.5 h-3.5 mr-1" /> Add Player
                     </Button>
+                </div>
+            </div>
+
+            {/* Quick Player Count & Alphabetical Controls Bar */}
+            <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-zinc-900/50 border border-zinc-800/80 text-xs text-zinc-400">
+                <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-zinc-500 font-medium">Player Count:</span>
+                    <span className="font-bold text-white bg-zinc-800 border border-zinc-700/80 px-2 py-0.5 rounded-md text-xs font-mono">
+                        {players.length}
+                    </span>
+                    {searchTerm && (
+                        <span className="text-xs text-zinc-400">
+                            (Filtered: <strong className="text-red-400 font-bold">{filteredPlayers.length}</strong>)
+                        </span>
+                    )}
+                    <span className="text-zinc-600 hidden sm:inline">&bull;</span>
+                    <span className="text-zinc-500 text-[11px] hidden sm:inline">
+                        Default: Alphabetical (A–Z)
+                    </span>
+                </div>
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-zinc-500 text-xs hidden sm:inline">Sort:</span>
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as any)}
+                        className="bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs rounded-lg px-2.5 py-1 focus:outline-none focus:border-red-500 cursor-pointer"
+                        aria-label="Sort players"
+                    >
+                        <option value="alpha-asc">Alphabetical (A–Z) [Auto]</option>
+                        <option value="alpha-desc">Alphabetical (Z–A)</option>
+                        <option value="xp-desc">Rank Points (XP)</option>
+                        <option value="matches-desc">Match Count</option>
+                    </select>
                 </div>
             </div>
 

@@ -7,6 +7,7 @@ import { BadgePill } from './BadgePill';
 import { EventCard } from './EventCard';
 import { MOCK_PLAYER_ROLES, UNRANKED_TIER } from '../constants';
 import { ArrowLeftIcon, UserIcon, ChartBarIcon, CalendarIcon, TrophyIcon, CrosshairsIcon, PlusCircleIcon, TrashIcon, ShieldCheckIcon } from './icons/Icons';
+import { Eye, EyeOff, Sparkles, Send, Edit3, Code, Award, Key, Copy, Check, ChevronDown, Award as AwardIcon } from 'lucide-react';
 import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
@@ -347,6 +348,8 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
     };
 
 
+    const playerHonors = useMemo(() => dataContext?.honors?.filter(h => h.playerId === player.id) || [], [dataContext?.honors, player.id]);
+
     const playerSqlSnippet = `-- ==========================================================
 -- MANUAL XP AWARD SQL QUERY FOR POSTGRESQL / SUPABASE
 -- Target Operator: ${player.name} (${player.callsign})
@@ -369,7 +372,7 @@ SET
 WHERE id = '${player.id}';`;
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8">
+        <div className="p-2 sm:p-4 lg:p-6 max-w-7xl mx-auto space-y-2.5 sm:space-y-3.5">
             {isAwardingXp && <AwardXpModal onClose={() => setIsAwardingXp(false)} onSave={handleAwardXp} />}
             {isResettingPin && <ResetPinModal onClose={() => setIsResettingPin(false)} onSave={handleResetPin} />}
             {isSendingCredentials && <SendCredentialsModal player={player} onClose={() => setIsSendingCredentials(false)} />}
@@ -379,7 +382,7 @@ WHERE id = '${player.id}';`;
                         <p className="text-sm text-zinc-300">
                             Run this SQL query directly in your Supabase SQL Editor or PostgreSQL terminal to manually award XP and log the adjustment for <strong className="text-white">{player.name} ({player.callsign})</strong>.
                         </p>
-                        <div className="relative bg-zinc-950 p-4 rounded-lg border border-zinc-800 font-mono text-xs text-green-400 overflow-x-auto">
+                        <div className="relative bg-zinc-950 p-3 rounded-lg border border-zinc-800 font-mono text-xs text-green-400 overflow-x-auto">
                             <pre>{playerSqlSnippet}</pre>
                             <button
                                 onClick={() => {
@@ -387,9 +390,10 @@ WHERE id = '${player.id}';`;
                                     setCopiedSql(true);
                                     setTimeout(() => setCopiedSql(false), 2000);
                                 }}
-                                className="absolute top-2 right-2 px-3 py-1 text-xs bg-red-600 hover:bg-red-500 text-white rounded font-sans transition-colors"
+                                className="absolute top-2 right-2 px-2.5 py-1 text-xs bg-red-600 hover:bg-red-500 text-white rounded font-sans transition-colors flex items-center gap-1"
                             >
-                                {copiedSql ? 'Copied!' : 'Copy SQL'}
+                                {copiedSql ? <Check className="w-3 h-3 text-white" /> : <Copy className="w-3 h-3 text-white" />}
+                                <span>{copiedSql ? 'Copied!' : 'Copy SQL'}</span>
                             </button>
                         </div>
                         <div className="flex justify-end pt-2">
@@ -398,52 +402,398 @@ WHERE id = '${player.id}';`;
                     </div>
                 </Modal>
             )}
-            <header className="flex items-center mb-6">
-                <Button onClick={onBack} variant="secondary" size="sm" className="mr-4">
-                    <ArrowLeftIcon className="w-5 h-5" />
-                </Button>
-                <img 
-                    src={player.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`} 
-                    alt={player.name} 
-                    onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
-                    }}
-                    className="w-12 h-12 rounded-full object-cover mr-4 border border-zinc-700" 
-                />
-                <div>
-                    <h1 className="text-2xl font-bold text-white">{player.name} "{player.callsign}" {player.surname}</h1>
-                    <div className="flex items-center mt-1">
+
+            {/* Compact Header & Action Toolbar */}
+            <div className="bg-zinc-950/90 backdrop-blur-md border border-zinc-800/80 rounded-xl p-2.5 sm:p-3.5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <Button onClick={onBack} variant="secondary" size="sm" className="!p-2 shrink-0 h-9 w-9 flex items-center justify-center" title="Back to Players List">
+                        <ArrowLeftIcon className="w-4 h-4" />
+                    </Button>
+                    <div className="relative shrink-0">
                         <img 
-                            src={resolveRankIcon(playerTier.iconUrl, playerRank?.name || playerTier.name, playerTier.name, playerRank?.rankBadgeUrl)} 
-                            alt={playerTier.name} 
+                            src={player.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`} 
+                            alt={player.name} 
                             onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(playerTier.name || playerRank?.name || '');
+                                (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
                             }}
-                            className="w-6 h-6 mr-2 object-contain drop-shadow-sm" 
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-red-600/70 shadow-md" 
                         />
-                        <span className="text-md font-semibold text-red-400">
-                            {playerRank ? `${playerRank.name} - ${playerTier.name}` : playerTier.name}
-                        </span>
-                        <span className="text-gray-400 mx-2">|</span>
-                        <BadgePill color={player.status === 'Active' ? 'green' : 'red'}>{player.status}</BadgePill>
-                        {players && players.length > 0 && (
-                            <>
-                                <span className="text-gray-400 mx-2">|</span>
-                                <span className="text-xs text-zinc-400 font-mono">
-                                    Player {Math.max(1, players.findIndex(p => p.id === player.id) + 1)} of {players.length}
+                        <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-zinc-950 ${player.status === 'Active' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                    </div>
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <h1 className="text-sm sm:text-base md:text-lg font-black text-white truncate">{player.name} {player.surname}</h1>
+                            {player.callsign && (
+                                <span className="px-1.5 py-0.2 rounded bg-red-950/80 border border-red-500/40 text-red-400 font-mono text-[10px] sm:text-xs font-bold">
+                                    "{player.callsign}"
                                 </span>
-                            </>
-                        )}
+                            )}
+                            <BadgePill color={player.status === 'Active' ? 'green' : 'red'}>{player.status}</BadgePill>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-zinc-400 flex-wrap mt-0.5">
+                            <span className="text-red-400 font-semibold flex items-center gap-1">
+                                <img 
+                                    src={resolveRankIcon(playerTier.iconUrl, playerRank?.name || playerTier.name, playerTier.name, playerRank?.rankBadgeUrl)} 
+                                    alt={playerTier.name} 
+                                    onError={(e) => {
+                                        (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(playerTier.name || playerRank?.name || '');
+                                    }}
+                                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 object-contain inline-block" 
+                                />
+                                {playerRank ? `${playerRank.name} - ${playerTier.name}` : playerTier.name}
+                            </span>
+                            <span>•</span>
+                            <span className="font-mono text-zinc-300">Code: <strong className="text-amber-400">{player.playerCode || 'NO-CODE'}</strong></span>
+                            {players && players.length > 0 && (
+                                <>
+                                    <span>•</span>
+                                    <span className="text-[10px] text-zinc-500 font-mono">
+                                        #{Math.max(1, players.findIndex(p => p.id === player.id) + 1)} of {players.length}
+                                    </span>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1 space-y-6">
-                    <DashboardCard title="Operator Details" icon={<UserIcon className="w-6 h-6" />}>
-                        <div className="p-6 space-y-4">
+                {/* Quick Action Buttons */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 md:pb-0 shrink-0 self-end md:self-auto">
+                    <Button size="sm" variant={isEditing ? 'primary' : 'secondary'} onClick={() => setIsEditing(!isEditing)} className="!py-1.5 !px-2.5 text-xs flex items-center gap-1">
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>
+                    </Button>
+                    <Button size="sm" onClick={() => setIsAwardingXp(true)} className="!py-1.5 !px-2.5 text-xs flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                        <span>Award XP</span>
+                    </Button>
+                    <Button size="sm" variant="secondary" onClick={() => setIsSendingCredentials(true)} className="!py-1.5 !px-2.5 text-xs flex items-center gap-1" title="Send Login Credentials">
+                        <Send className="w-3.5 h-3.5 text-blue-400" />
+                        <span className="hidden sm:inline">Credentials</span>
+                    </Button>
+                    <Button size="sm" variant="secondary" onClick={() => setShowSqlModal(true)} className="!py-1.5 !px-2 text-xs" title="View SQL Query">
+                        <Code className="w-3.5 h-3.5 text-zinc-400" />
+                    </Button>
+                    {onDeletePlayer && (
+                        <Button 
+                            size="sm" 
+                            variant="danger" 
+                            onClick={() => {
+                                if (confirm(`Are you sure you want to permanently delete operator "${player.name} ${player.surname || ''}" (${player.playerCode})? This action cannot be undone.`)) {
+                                    onDeletePlayer(player.id);
+                                }
+                            }}
+                            className="!py-1.5 !px-2 text-xs"
+                            title="Delete Operator"
+                        >
+                            <TrashIcon className="w-3.5 h-3.5" />
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            {/* Main Responsive Grid: 2-column square side-by-side on mobile, 12-column on desktop */}
+            <div className="grid grid-cols-2 lg:grid-cols-12 gap-2 sm:gap-3">
+                {/* 1. Rank & Progression */}
+                <div className="col-span-2 lg:col-span-7">
+                    <DashboardCard title="Rank & Progression" icon={<ShieldCheckIcon className="w-4 h-4 text-red-400"/>} compact>
+                        <div className="p-2.5 sm:p-3.5 flex flex-col justify-between gap-2.5">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <img 
+                                        src={resolveRankIcon(current.iconUrl, rank?.name, current.name, rank?.rankBadgeUrl)} 
+                                        alt={rank?.name || current.name} 
+                                        onError={(e) => {
+                                            (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(current.name || rank?.name || '');
+                                        }}
+                                        className="w-10 h-10 sm:w-12 sm:h-12 object-contain drop-shadow-md shrink-0"
+                                    />
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider truncate">{rank?.name || 'Unranked'}</p>
+                                        <p className="text-sm sm:text-base font-black text-white truncate">{current.name}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                    <p className="text-[10px] text-zinc-400">Progression</p>
+                                    <p className="text-xs sm:text-sm font-black font-mono text-amber-300">
+                                        {playerXP.toLocaleString()} <span className="text-zinc-500 font-normal">/ {next ? next.minXp.toLocaleString() : 'MAX'} RP</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Progress bar */}
+                            <div className="space-y-1">
+                                <div className="w-full bg-zinc-900 rounded-full h-2.5 sm:h-3 border border-zinc-800 shadow-inner overflow-hidden relative p-0.5">
+                                    <motion.div 
+                                        key={`profile-xp-bar-${playerXP}`}
+                                        className="bg-gradient-to-r from-red-600 via-amber-500 to-yellow-400 h-full rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)] relative overflow-hidden"
+                                        initial={{ width: '0%' }}
+                                        animate={{ width: `${progressPercentage}%` }}
+                                        transition={{ 
+                                            type: 'spring',
+                                            stiffness: 50,
+                                            damping: 15,
+                                            duration: 1.1 
+                                        }}
+                                    >
+                                        <motion.div 
+                                            animate={{ x: ['-100%', '200%'] }}
+                                            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                                            className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/35 to-transparent skew-x-12 pointer-events-none"
+                                        />
+                                    </motion.div>
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] text-zinc-400 font-mono">
+                                    <span>Top {(100 - percentile).toFixed(1)}% of operators</span>
+                                    <span className="text-amber-400/90 font-semibold">
+                                        {next ? `${(next.minXp - playerXP > 0 ? next.minXp - playerXP : 0).toLocaleString()} RP to ${next.name}` : 'Maximum Rank Reached!'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Next tier unlocks mini row */}
+                            {next && (next.perks || []).length > 0 && (
+                                <div className="pt-1.5 border-t border-zinc-800/60 flex items-center gap-1.5 overflow-x-auto text-[10px] text-zinc-400">
+                                    <span className="font-semibold text-zinc-300 shrink-0">Unlocks:</span>
+                                    {(next.perks || []).map((perk, i) => (
+                                        <span key={i} className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300 whitespace-nowrap shrink-0">
+                                            {perk}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </DashboardCard>
+                </div>
+
+                {/* 2. Lifetime Performance with Square Side-by-Side metric tiles */}
+                <div className="col-span-2 lg:col-span-5">
+                    <DashboardCard 
+                        title="Performance" 
+                        icon={<ChartBarIcon className="w-4 h-4 text-emerald-400"/>} 
+                        compact 
+                        titleAddon={
+                            <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-zinc-300">
+                                Grade: <strong className="text-emerald-400">{perf.combatGrade}</strong> ({perf.combatRating}/100)
+                            </span>
+                        }
+                    >
+                        {/* 6 Square Side-by-Side tiles (3 columns on mobile & desktop) */}
+                        <div className="grid grid-cols-3 gap-1 sm:gap-2 p-2">
+                            {/* Total RP */}
+                            <div className="aspect-square p-1.5 sm:p-2 bg-zinc-950/70 rounded-lg border border-zinc-800/80 flex flex-col justify-center items-center text-center hover:border-zinc-700 transition-colors">
+                                <span className="text-[9px] sm:text-[10px] text-zinc-400 uppercase font-medium line-clamp-1">Total RP</span>
+                                <span className="text-xs sm:text-base font-black font-mono text-amber-300 my-0.5">{perf.totalLifetimeXp.toLocaleString()}</span>
+                                <span className="text-[8px] sm:text-[9px] text-red-400 font-mono line-clamp-1">+{perf.avgXpPerMatch}/m</span>
+                            </div>
+                            {/* Matches */}
+                            <div className="aspect-square p-1.5 sm:p-2 bg-zinc-950/70 rounded-lg border border-zinc-800/80 flex flex-col justify-center items-center text-center hover:border-zinc-700 transition-colors">
+                                <span className="text-[9px] sm:text-[10px] text-zinc-400 uppercase font-medium line-clamp-1">Matches</span>
+                                <span className="text-xs sm:text-base font-black font-mono text-white my-0.5">{perf.matchesPlayed}</span>
+                                <span className="text-[8px] sm:text-[9px] text-zinc-500 font-mono line-clamp-1">Attended</span>
+                            </div>
+                            {/* Rating */}
+                            <div className="aspect-square p-1.5 sm:p-2 bg-zinc-950/70 rounded-lg border border-zinc-800/80 flex flex-col justify-center items-center text-center hover:border-zinc-700 transition-colors">
+                                <span className="text-[9px] sm:text-[10px] text-zinc-400 uppercase font-medium line-clamp-1">Rating</span>
+                                <span className="text-xs sm:text-base font-black font-mono text-emerald-400 my-0.5">{perf.combatRating}<span className="text-[9px] text-zinc-500 font-normal">/100</span></span>
+                                <span className="text-[8px] sm:text-[9px] text-emerald-400 font-mono line-clamp-1">Grade {perf.combatGrade}</span>
+                            </div>
+                            {/* Badges */}
+                            <div className="aspect-square p-1.5 sm:p-2 bg-zinc-950/70 rounded-lg border border-zinc-800/80 flex flex-col justify-center items-center text-center hover:border-zinc-700 transition-colors">
+                                <span className="text-[9px] sm:text-[10px] text-zinc-400 uppercase font-medium line-clamp-1">Badges</span>
+                                <span className="text-xs sm:text-base font-black font-mono text-white my-0.5">{perf.totalBadgesEarned}</span>
+                                <span className="text-[8px] sm:text-[9px] text-amber-400 font-mono line-clamp-1">{perf.legendaryBadgesCount} Mythic</span>
+                            </div>
+                            {/* Bonus RP */}
+                            <div className="aspect-square p-1.5 sm:p-2 bg-zinc-950/70 rounded-lg border border-zinc-800/80 flex flex-col justify-center items-center text-center hover:border-zinc-700 transition-colors">
+                                <span className="text-[9px] sm:text-[10px] text-zinc-400 uppercase font-medium line-clamp-1">Bonus RP</span>
+                                <span className="text-xs sm:text-base font-black font-mono text-amber-400 my-0.5">+{perf.badgeRewardsXp.toLocaleString()}</span>
+                                <span className="text-[8px] sm:text-[9px] text-zinc-500 font-mono line-clamp-1">Awards</span>
+                            </div>
+                            {/* Honors */}
+                            <div className="aspect-square p-1.5 sm:p-2 bg-zinc-950/70 rounded-lg border border-zinc-800/80 flex flex-col justify-center items-center text-center hover:border-zinc-700 transition-colors">
+                                <span className="text-[9px] sm:text-[10px] text-zinc-400 uppercase font-medium line-clamp-1">Honors</span>
+                                <span className="text-xs sm:text-base font-black font-mono text-purple-300 my-0.5">{perf.honorsCount}</span>
+                                <span className="text-[8px] sm:text-[9px] text-purple-400 font-mono line-clamp-1">{perf.motmCount} MotM</span>
+                            </div>
+                        </div>
+                    </DashboardCard>
+                </div>
+
+                {/* 3. Mobile Square Side-by-Side Pair 1: Legendary Awards (Left) & Standard Badges (Right) */}
+                <div className="col-span-1 lg:col-span-3">
+                    <DashboardCard 
+                        title="Legendary" 
+                        icon={<TrophyIcon className="w-3.5 h-3.5 text-amber-400" />} 
+                        compact 
+                        titleAddon={<span className="text-[10px] font-mono font-bold text-amber-400">{(player.legendaryBadges || []).length}</span>}
+                    >
+                        <div className="h-44 sm:h-52 p-2 flex flex-col justify-between text-xs">
+                            <div className="space-y-1.5 overflow-y-auto custom-scrollbar pr-0.5 flex-grow">
+                                {(player.legendaryBadges || []).length > 0 ? (player.legendaryBadges || []).map(badge => (
+                                    <div key={badge.id} className="flex items-center justify-between gap-1.5 bg-zinc-900/70 p-1.5 rounded border border-zinc-800">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            {badge.iconUrl && badge.iconUrl.trim() !== '' ? (
+                                                <img src={badge.iconUrl} alt={badge.name} className="w-5 h-5 shrink-0 object-contain"/>
+                                            ) : (
+                                                <TrophyIcon className="w-4 h-4 text-amber-400 shrink-0" />
+                                            )}
+                                            <span className="font-semibold text-amber-300 text-[10px] sm:text-xs truncate">{badge.name}</span>
+                                        </div>
+                                        <button 
+                                            onClick={() => handleRevokeLegendaryBadge(badge.id)} 
+                                            className="text-zinc-500 hover:text-red-400 p-0.5"
+                                            title="Revoke Badge"
+                                        >
+                                            <TrashIcon className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                )) : (
+                                    <p className="text-zinc-500 text-center text-[11px] py-6">No mythic awards yet.</p>
+                                )}
+                            </div>
+
+                            {/* Award dropdown */}
+                            {availableBadgesToAward.length > 0 && (
+                                <div className="pt-1.5 border-t border-zinc-800/80 mt-1 flex gap-1">
+                                    <select 
+                                        value={selectedLegendaryBadge} 
+                                        onChange={e => setSelectedLegendaryBadge(e.target.value)}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-1.5 py-1 text-[10px] text-white focus:outline-none"
+                                    >
+                                        <option value="">Award...</option>
+                                        {availableBadgesToAward.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                    </select>
+                                    <Button size="sm" onClick={handleAwardLegendaryBadge} disabled={!selectedLegendaryBadge} className="!py-0.5 !px-2 text-[10px]">
+                                        +
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    </DashboardCard>
+                </div>
+
+                <div className="col-span-1 lg:col-span-3">
+                    <DashboardCard 
+                        title="Badges" 
+                        icon={<TrophyIcon className="w-3.5 h-3.5 text-zinc-400" />} 
+                        compact 
+                        titleAddon={<span className="text-[10px] font-mono font-bold text-zinc-400">{(player.badges || []).length}</span>}
+                    >
+                        <div className="h-44 sm:h-52 p-2 overflow-y-auto custom-scrollbar space-y-1.5 text-xs">
+                            {allStandardBadges.length > 0 ? allStandardBadges.map(badge => {
+                                const hasBadge = (player.badges || []).some(b => b.id === badge.id);
+                                return (
+                                    <div key={badge.id} className="flex items-center justify-between gap-1.5 bg-zinc-900/70 p-1.5 rounded border border-zinc-800">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            {badge.iconUrl && badge.iconUrl.trim() !== '' ? (
+                                                <img src={badge.iconUrl} alt={badge.name} className="w-5 h-5 shrink-0 object-contain"/>
+                                            ) : (
+                                                <TrophyIcon className="w-4 h-4 text-zinc-400 shrink-0" />
+                                            )}
+                                            <span className={`text-[10px] sm:text-xs font-semibold truncate ${hasBadge ? 'text-white' : 'text-zinc-500'}`}>{badge.name}</span>
+                                        </div>
+                                        {hasBadge ? (
+                                            <button 
+                                                onClick={() => handleRevokeStandardBadge(badge.id)}
+                                                className="text-[9px] text-red-400 hover:underline px-1 py-0.5"
+                                                title="Revoke"
+                                            >
+                                                Revoke
+                                            </button>
+                                        ) : (
+                                            <button 
+                                                onClick={() => handleAwardStandardBadge(badge)}
+                                                className="text-[9px] text-amber-400 hover:underline px-1 py-0.5"
+                                                title="Award"
+                                            >
+                                                +Award
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            }) : (
+                                <p className="text-zinc-500 text-center text-[11px] py-6">No standard badges configured.</p>
+                            )}
+                        </div>
+                    </DashboardCard>
+                </div>
+
+                {/* 4. Mobile Square Side-by-Side Pair 2: Honors (Left) & XP History (Right) */}
+                <div className="col-span-1 lg:col-span-3">
+                    <DashboardCard 
+                        title="Honors" 
+                        icon={<TrophyIcon className="w-3.5 h-3.5 text-purple-400" />} 
+                        compact 
+                        titleAddon={<span className="text-[10px] font-mono font-bold text-purple-300">{perf.honorsCount}</span>}
+                    >
+                        <div className="h-44 sm:h-52 p-2 overflow-y-auto custom-scrollbar space-y-1.5 text-xs">
+                            {playerHonors.length > 0 ? playerHonors.map(h => {
+                                const typeNorm = (h.type || '').toLowerCase();
+                                let icon = '🎖️';
+                                if (typeNorm.includes('year') || typeNorm === 'man_of_the_year') icon = '👑';
+                                else if (typeNorm.includes('month') || typeNorm === 'man_of_the_month') icon = '🏆';
+                                else if (typeNorm.includes('match') || typeNorm === 'man_of_the_match') icon = '🌟';
+
+                                return (
+                                    <div key={h.id} className="p-1.5 bg-zinc-900/70 rounded border border-purple-500/30 flex items-center gap-1.5">
+                                        <span className="text-sm shrink-0">{icon}</span>
+                                        <div className="min-w-0 flex-grow">
+                                            <p className="text-[10px] font-bold text-white truncate">{h.title}</p>
+                                            <p className="text-[8px] text-purple-400 font-mono">{h.date} • {h.type}</p>
+                                        </div>
+                                    </div>
+                                );
+                            }) : (
+                                <p className="text-zinc-500 text-center text-[11px] py-6">No official honors yet.</p>
+                            )}
+                        </div>
+                    </DashboardCard>
+                </div>
+
+                <div className="col-span-1 lg:col-span-3">
+                    <DashboardCard 
+                        title="XP Log" 
+                        icon={<PlusCircleIcon className="w-3.5 h-3.5 text-emerald-400" />} 
+                        compact 
+                        titleAddon={<span className="text-[10px] font-mono font-bold text-emerald-400">{(player.xpAdjustments || []).length}</span>}
+                    >
+                        <div className="h-44 sm:h-52 p-2 overflow-y-auto custom-scrollbar space-y-1.5 text-xs">
+                            {(player.xpAdjustments || []).length > 0 ? [...player.xpAdjustments].reverse().map((adj, i) => (
+                                <div key={i} className="bg-zinc-900/70 p-1.5 rounded border border-zinc-800">
+                                    <div className="flex justify-between items-baseline">
+                                        <span className={`font-black font-mono text-[11px] ${adj.amount >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                            {adj.amount >= 0 ? '+' : ''}{adj.amount.toLocaleString()} XP
+                                        </span>
+                                        <span className="text-[8px] text-zinc-500 font-mono">{new Date(adj.date).toLocaleDateString()}</span>
+                                    </div>
+                                    <p className="text-[9px] text-zinc-400 italic truncate mt-0.5">"{adj.reason}"</p>
+                                </div>
+                            )) : (
+                                <p className="text-zinc-500 text-center text-[11px] py-6">No manual adjustments.</p>
+                            )}
+                        </div>
+                    </DashboardCard>
+                </div>
+
+                {/* 5. Operator Details (Full width on mobile, 6-col on desktop) */}
+                <div className="col-span-2 lg:col-span-6">
+                    <DashboardCard 
+                        title="Operator Details" 
+                        icon={<UserIcon className="w-4 h-4 text-red-400" />} 
+                        compact 
+                        titleAddon={
+                            <button 
+                                onClick={() => setIsEditing(!isEditing)} 
+                                className="text-[10px] text-red-400 hover:underline flex items-center gap-1 font-semibold"
+                            >
+                                <Edit3 className="w-3 h-3" />
+                                <span>{isEditing ? 'Cancel' : 'Edit'}</span>
+                            </button>
+                        }
+                    >
+                        <div className="p-2.5 sm:p-3.5">
                             {isEditing ? (
-                                <>
+                                <div className="space-y-2.5">
                                     <div className="flex flex-col items-center">
                                         <UrlOrUploadField
                                             label="Avatar"
@@ -454,13 +804,15 @@ WHERE id = '${player.id}';`;
                                             apiServerUrl={companyDetails?.apiServerUrl}
                                         />
                                     </div>
-                                    <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))}/>
-                                    <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({...f, surname: e.target.value}))}/>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))}/>
+                                        <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({...f, surname: e.target.value}))}/>
+                                    </div>
                                     <Input 
                                         label="Callsign (Admin Assigned)" 
                                         value={formData.callsign} 
                                         onChange={e => setFormData(f => ({...f, callsign: e.target.value}))}
-                                        tooltip="As an Administrator, you have exclusive authority to assign and change player callsigns. Regular players cannot edit their callsigns."
+                                        tooltip="As an Administrator, you have exclusive authority to assign and change player callsigns."
                                     />
                                     <div className="flex items-end gap-2">
                                         <div className="flex-grow">
@@ -474,17 +826,17 @@ WHERE id = '${player.id}';`;
                                         </div>
                                         <Button 
                                             type="button" 
-                                            variant="secondary"
+                                            variant="secondary" 
                                             onClick={() => {
                                                 const code = generateUniquePlayerCode(formData, (players || []).filter(p => p.id !== player.id));
                                                 setFormData(f => ({ ...f, playerCode: code }));
                                             }}
-                                            className="mb-1 text-xs whitespace-nowrap !py-2.5"
+                                            className="mb-1 text-xs whitespace-nowrap !py-2"
                                         >
                                             Auto-Gen
                                         </Button>
                                     </div>
-                                     <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 gap-2">
                                         <Input label="Age" type="number" value={formData.age} onChange={e => setFormData(f => ({...f, age: Number(e.target.value)}))} />
                                         <Input label="ID Number" value={formData.idNumber} onChange={e => setFormData(f => ({...f, idNumber: e.target.value}))} />
                                     </div>
@@ -513,399 +865,174 @@ WHERE id = '${player.id}';`;
                                                 const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
                                                 setFormData(f => ({ ...f, pin: randomPin }));
                                             }}
-                                            className="mb-1 text-xs whitespace-nowrap !py-2.5"
+                                            className="mb-1 text-xs whitespace-nowrap !py-2"
                                             title="Auto-generate a random 6-digit PIN"
                                         >
                                             Auto-Gen
                                         </Button>
                                     </div>
-                                    <Input label="Email" value={formData.email} onChange={e => setFormData(f => ({...f, email: e.target.value}))}/>
-                                    <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({...f, phone: e.target.value}))}/>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <Input label="Email" value={formData.email} onChange={e => setFormData(f => ({...f, email: e.target.value}))}/>
+                                        <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({...f, phone: e.target.value}))}/>
+                                    </div>
                                     <Input label="Address" value={formData.address} onChange={e => setFormData(f => ({...f, address: e.target.value}))}/>
-                                    <textarea placeholder="Bio" value={formData.bio} onChange={e => setFormData(p => ({...p, bio: e.target.value}))} rows={3} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
-                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Preferred Role</label>
-                                        <select value={formData.preferredRole} onChange={e => setFormData(p => ({...p, preferredRole: e.target.value as PlayerRole}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                                            {MOCK_PLAYER_ROLES.map(role => <option key={role}>{role}</option>)}
-                                        </select>
-                                    </div>
-                                    <Input label="Allergies" value={formData.allergies} onChange={e => setFormData(f => ({...f, allergies: e.target.value}))}/>
-                                    <Input label="Medical Notes" value={formData.medicalNotes} onChange={e => setFormData(f => ({...f, medicalNotes: e.target.value}))}/>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1.5">Status</label>
-                                        <select value={formData.status} onChange={(e) => setFormData(p => ({...p, status: e.target.value as Player['status']}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                                            <option>Active</option>
-                                            <option>On Leave</option>
-                                            <option>Retired</option>
-                                        </select>
-                                    </div>
-                                    <div className="flex gap-2 pt-2">
-                                        <Button variant="secondary" onClick={handleCancel} className="w-full">Cancel</Button>
-                                        <Button onClick={handleSave} className="w-full">Save</Button>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <p><strong className="text-gray-400">Code:</strong>{' '}</p>
-                                        {(!player.playerCode || player.playerCode === 'NO-CODE') ? (
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="font-mono text-amber-400 bg-amber-950/60 border border-amber-600/50 px-2 py-0.5 rounded text-xs font-bold">
-                                                    NO-CODE (Unassigned)
-                                                </span>
-                                                <Button
-                                                    size="sm"
-                                                    variant="secondary"
-                                                    onClick={() => {
-                                                        const newCode = generateUniquePlayerCode(player, (players || []).filter(p => p.id !== player.id));
-                                                        onUpdatePlayer({ ...player, playerCode: newCode });
-                                                    }}
-                                                    className="!py-0.5 !px-2 text-xs text-amber-300 border-amber-600/60 hover:bg-amber-950/80"
-                                                >
-                                                    Auto-Assign Code
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <span className="font-mono text-red-400 font-bold">{player.playerCode}</span>
-                                        )}
-                                        <InfoTooltip text="This is the player's unique identification code. Use this code to quickly find and check them into events. It is also used on any manual stat-tracking sheets during live games to ensure XP and stats are assigned correctly." />
-                                    </div>
-                                    <p><strong className="text-gray-400">Age:</strong> {player.age}</p>
-                                    <p><strong className="text-gray-400">ID Number:</strong> {player.idNumber}</p>
-                                    <div className="bg-zinc-800/50 p-3 rounded-md border border-zinc-700/50">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <label className="text-sm font-medium text-gray-400">PIN Code</label>
-                                                <p className="font-mono text-lg text-red-400 tracking-widest">{showPin ? player.pin : '******'}</p>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <Button size="sm" variant="secondary" onClick={() => setShowPin(!showPin)}>{showPin ? 'Hide' : 'Show'}</Button>
-                                                <Button size="sm" variant="secondary" onClick={() => setIsResettingPin(true)}>Reset</Button>
-                                            </div>
+                                    <textarea placeholder="Bio" value={formData.bio} onChange={e => setFormData(p => ({...p, bio: e.target.value}))} rows={2} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:ring-2 focus:ring-red-500" />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-400 mb-1">Preferred Role</label>
+                                            <select value={formData.preferredRole} onChange={e => setFormData(p => ({...p, preferredRole: e.target.value as PlayerRole}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-red-500">
+                                                {MOCK_PLAYER_ROLES.map(role => <option key={role}>{role}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
+                                            <select value={formData.status} onChange={(e) => setFormData(p => ({...p, status: e.target.value as Player['status']}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-red-500">
+                                                <option>Active</option>
+                                                <option>On Leave</option>
+                                                <option>Retired</option>
+                                            </select>
                                         </div>
                                     </div>
-                                    <p><strong className="text-gray-400">Email:</strong> {player.email}</p>
-                                    <p><strong className="text-gray-400">Phone:</strong> {player.phone}</p>
-                                    <p><strong className="text-gray-400">Address:</strong> {player.address || 'N/A'}</p>
-                                    <p><strong className="text-gray-400">Preferred Role:</strong> {player.preferredRole || 'N/A'}</p>
-                                    <p><strong className="text-gray-400">Allergies:</strong> {player.allergies || 'N/A'}</p>
-                                    <p><strong className="text-gray-400">Medical Notes:</strong> {player.medicalNotes || 'N/A'}</p>
-                                    <p><strong className="text-gray-400">Bio:</strong> {player.bio || 'N/A'}</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <Input label="Allergies" value={formData.allergies} onChange={e => setFormData(f => ({...f, allergies: e.target.value}))}/>
+                                        <Input label="Medical Notes" value={formData.medicalNotes} onChange={e => setFormData(f => ({...f, medicalNotes: e.target.value}))}/>
+                                    </div>
                                     <div className="flex gap-2 pt-2">
-                                        <Button variant="secondary" onClick={() => setIsEditing(true)} className="w-full">Edit Profile</Button>
-                                        <Button onClick={() => setIsAwardingXp(true)} className="w-full">Award XP</Button>
+                                        <Button variant="secondary" size="sm" onClick={handleCancel} className="w-full">Cancel</Button>
+                                        <Button size="sm" onClick={handleSave} className="w-full">Save Profile</Button>
                                     </div>
-                                    <div className="pt-2 flex gap-2">
-                                        <Button variant="secondary" onClick={() => setIsSendingCredentials(true)} className="w-full">
-                                            Send Credentials
-                                        </Button>
-                                        <Button variant="secondary" onClick={() => setShowSqlModal(true)} className="w-full text-xs">
-                                            SQL Query
-                                        </Button>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {/* Structured 2-column info grid */}
+                                    <div className="grid grid-cols-2 gap-1.5 sm:gap-2 text-xs">
+                                        {/* Code */}
+                                        <div className="bg-zinc-900/60 p-2 rounded border border-zinc-800">
+                                            <span className="text-[10px] text-zinc-400 block font-medium">Player Code</span>
+                                            {(!player.playerCode || player.playerCode === 'NO-CODE') ? (
+                                                <div className="flex items-center gap-1 mt-0.5">
+                                                    <span className="text-amber-400 text-[10px] font-mono font-bold">Unassigned</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            const newCode = generateUniquePlayerCode(player, (players || []).filter(p => p.id !== player.id));
+                                                            onUpdatePlayer({ ...player, playerCode: newCode });
+                                                        }}
+                                                        className="text-[9px] text-amber-300 underline"
+                                                    >
+                                                        Auto-Assign
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <span className="font-mono text-amber-400 font-bold text-xs">{player.playerCode}</span>
+                                            )}
+                                        </div>
+
+                                        {/* PIN Code */}
+                                        <div className="bg-zinc-900/60 p-2 rounded border border-zinc-800 flex items-center justify-between">
+                                            <div>
+                                                <span className="text-[10px] text-zinc-400 block font-medium">PIN Code</span>
+                                                <span className="font-mono text-red-400 font-bold text-xs tracking-wider">
+                                                    {showPin ? player.pin : '••••••'}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <button onClick={() => setShowPin(!showPin)} className="p-1 text-zinc-400 hover:text-white" title="Toggle PIN visibility">
+                                                    {showPin ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                                </button>
+                                                <button onClick={() => setIsResettingPin(true)} className="text-[9px] text-zinc-400 hover:text-white underline">
+                                                    Reset
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Age & ID */}
+                                        <div className="bg-zinc-900/60 p-2 rounded border border-zinc-800">
+                                            <span className="text-[10px] text-zinc-400 block font-medium">Age / ID</span>
+                                            <span className="text-white font-medium truncate block">{player.age || '—'} / {player.idNumber || '—'}</span>
+                                        </div>
+
+                                        {/* Role & Status */}
+                                        <div className="bg-zinc-900/60 p-2 rounded border border-zinc-800">
+                                            <span className="text-[10px] text-zinc-400 block font-medium">Role & Status</span>
+                                            <span className="text-white font-medium truncate block">{player.preferredRole || 'Operator'} • {player.status}</span>
+                                        </div>
+
+                                        {/* Email */}
+                                        <div className="bg-zinc-900/60 p-2 rounded border border-zinc-800">
+                                            <span className="text-[10px] text-zinc-400 block font-medium">Email</span>
+                                            <span className="text-white font-medium truncate block" title={player.email}>{player.email || '—'}</span>
+                                        </div>
+
+                                        {/* Phone */}
+                                        <div className="bg-zinc-900/60 p-2 rounded border border-zinc-800">
+                                            <span className="text-[10px] text-zinc-400 block font-medium">Phone</span>
+                                            <span className="text-white font-medium truncate block">{player.phone || '—'}</span>
+                                        </div>
                                     </div>
-                                    {onDeletePlayer && (
-                                        <div className="pt-2 border-t border-zinc-800/80 mt-2">
-                                            <Button 
-                                                variant="danger" 
-                                                onClick={() => {
-                                                    if (confirm(`Are you sure you want to permanently delete operator "${player.name} ${player.surname || ''}" (${player.playerCode})? This action cannot be undone.`)) {
-                                                        onDeletePlayer(player.id);
-                                                    }
-                                                }} 
-                                                className="w-full flex items-center justify-center gap-2"
-                                            >
-                                                <TrashIcon className="w-4 h-4" />
-                                                Delete Operator
-                                            </Button>
+
+                                    {/* Medical & Bio summary pills */}
+                                    {(player.medicalNotes || player.allergies || player.bio || player.address) && (
+                                        <div className="bg-zinc-900/40 p-2 rounded border border-zinc-800/80 text-[11px] space-y-1 text-zinc-300">
+                                            {player.bio && <p className="line-clamp-1"><strong className="text-zinc-400">Bio:</strong> {player.bio}</p>}
+                                            {player.address && <p className="line-clamp-1"><strong className="text-zinc-400">Address:</strong> {player.address}</p>}
+                                            {(player.allergies || player.medicalNotes) && (
+                                                <p className="line-clamp-1 text-red-300">
+                                                    <strong>Medical:</strong> {player.allergies ? `Allergies: ${player.allergies}` : ''} {player.medicalNotes ? `Notes: ${player.medicalNotes}` : ''}
+                                                </p>
+                                            )}
                                         </div>
                                     )}
-                                </>
+
+                                    {/* Bottom action bar */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1">
+                                        <Button size="sm" variant="secondary" onClick={() => setIsEditing(true)} className="!py-1 text-xs">
+                                            Edit
+                                        </Button>
+                                        <Button size="sm" onClick={() => setIsAwardingXp(true)} className="!py-1 text-xs">
+                                            Award XP
+                                        </Button>
+                                        <Button size="sm" variant="secondary" onClick={() => setIsSendingCredentials(true)} className="!py-1 text-xs">
+                                            Credentials
+                                        </Button>
+                                        <Button size="sm" variant="secondary" onClick={() => setShowSqlModal(true)} className="!py-1 text-xs">
+                                            SQL
+                                        </Button>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </DashboardCard>
-                    <DashboardCard title="Legendary Awards" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
-                        <div className="p-6 space-y-3">
-                            {(player.legendaryBadges || []).length > 0 ? (player.legendaryBadges || []).map(badge => (
-                                <div key={badge.id} className="flex items-center justify-between gap-3 bg-zinc-800/50 p-2 rounded-md">
-                                    <div className="flex items-center gap-3">
-                                        {badge.iconUrl && badge.iconUrl.trim() !== '' ? (
-                                            <img src={badge.iconUrl} alt={badge.name} className="w-8 h-8"/>
-                                        ) : (
-                                            <TrophyIcon className="w-8 h-8 text-amber-400" />
-                                        )}
-                                        <p className="font-semibold text-amber-300">{badge.name}</p>
-                                    </div>
-                                    <Button size="sm" variant="danger" className="!p-1.5" onClick={() => handleRevokeLegendaryBadge(badge.id)}><TrashIcon className="w-4 h-4" /></Button>
-                                </div>
-                            )) : <p className="text-gray-500 text-center text-sm">No legendary badges earned.</p>}
-                            <div className="pt-3 border-t border-zinc-700/50">
-                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Award New Badge</label>
-                                <div className="flex gap-2">
-                                    <select 
-                                        value={selectedLegendaryBadge} 
-                                        onChange={e => setSelectedLegendaryBadge(e.target.value)}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-                                    >
-                                        <option value="">Select a badge...</option>
-                                        {availableBadgesToAward.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                                    </select>
-                                    <Button onClick={handleAwardLegendaryBadge} disabled={!selectedLegendaryBadge}>Award</Button>
-                                </div>
-                            </div>
-                        </div>
-                    </DashboardCard>
-
-                    {/* Official Honors Card */}
-                    <DashboardCard title="Player Honors (MOTM / MOTMth / MOTYr)" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
-                        <div className="p-6 space-y-3">
-                            {(() => {
-                                const playerHonors = dataContext?.honors?.filter(h => h.playerId === player.id) || [];
-                                if (playerHonors.length === 0) {
-                                    return <p className="text-gray-500 text-center text-sm">No official honors assigned yet.</p>;
-                                }
-                                return playerHonors.map(h => {
-                                    const typeNorm = (h.type || '').toLowerCase();
-                                    let icon = '🎖️';
-                                    let label = h.type || 'Honor';
-                                    if (typeNorm.includes('year') || typeNorm === 'man_of_the_year') {
-                                        icon = '👑';
-                                        label = h.type || 'Man of Year';
-                                    } else if (typeNorm.includes('month') || typeNorm === 'man_of_the_month') {
-                                        icon = '🏆';
-                                        label = h.type || 'Man of Month';
-                                    } else if (typeNorm.includes('match') || typeNorm === 'man_of_the_match') {
-                                        icon = '🌟';
-                                        label = h.type || 'Man of Match';
-                                    }
-
-                                    return (
-                                        <div key={h.id} className="p-3 bg-zinc-800/60 rounded-lg border border-amber-500/30 flex items-start gap-3">
-                                            {h.badgeImageUrl ? (
-                                                <img src={h.badgeImageUrl} alt={h.title} className="w-10 h-10 object-contain drop-shadow flex-shrink-0" />
-                                            ) : (
-                                                <div className="w-10 h-10 rounded-lg bg-zinc-950/80 border border-amber-500/40 flex items-center justify-center text-xl flex-shrink-0">
-                                                    {icon}
-                                                </div>
-                                            )}
-                                            <div className="flex-grow min-w-0">
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
-                                                        <span>{icon}</span> <span>{label}</span>
-                                                    </span>
-                                                    <span className="text-[11px] text-zinc-400 font-mono">{h.date}</span>
-                                                </div>
-                                                <p className="text-sm font-bold text-white truncate">{h.title}</p>
-                                                {h.notes && <p className="text-xs text-zinc-300 italic mt-1 bg-zinc-900/60 p-1.5 rounded line-clamp-2">"{h.notes}"</p>}
-                                            </div>
-                                        </div>
-                                    );
-                                });
-                            })()}
-                        </div>
-                    </DashboardCard>
-                    <DashboardCard title="Standard Badges" icon={<TrophyIcon className="w-6 h-6" />}>
-                        <div className="p-6 space-y-3 max-h-60 overflow-y-auto">
-                            {allStandardBadges.length > 0 ? allStandardBadges.map(badge => {
-                                const hasBadge = (player.badges || []).some(b => b.id === badge.id);
-                                return (
-                                    <div key={badge.id} className="flex items-center justify-between gap-3 bg-zinc-800/50 p-2 rounded-md">
-                                        <div className="flex items-center gap-3">
-                                            {badge.iconUrl && badge.iconUrl.trim() !== '' ? (
-                                                <img src={badge.iconUrl} alt={badge.name} className="w-8 h-8"/>
-                                            ) : (
-                                                <TrophyIcon className="w-8 h-8 text-zinc-400" />
-                                            )}
-                                            <p className="font-semibold text-white">{badge.name}</p>
-                                        </div>
-                                        {hasBadge ? (
-                                            <Button size="sm" variant="danger" onClick={() => handleRevokeStandardBadge(badge.id)}>Revoke</Button>
-                                        ) : (
-                                            <Button size="sm" variant="secondary" onClick={() => handleAwardStandardBadge(badge)}>Award</Button>
-                                        )}
-                                    </div>
-                                )
-                            }) : <p className="text-gray-500 text-center text-sm">No standard badges configured.</p>}
-                        </div>
-                    </DashboardCard>
-                    <DashboardCard title="XP History" icon={<PlusCircleIcon className="w-6 h-6" />} titleAddon={<InfoTooltip text="This section displays a complete history of all manual Rank Point (XP) adjustments made to this player's account by an administrator. It does not include XP earned automatically from playing matches. Each entry shows the amount, the reason provided by the admin, and the date of the adjustment." />}>
-                        <div className="p-6 space-y-3 max-h-60 overflow-y-auto">
-                           {(player.xpAdjustments || []).length > 0 ? [...player.xpAdjustments].reverse().map((adj, i) => (
-                               <div key={i} className="bg-zinc-800/50 p-2.5 rounded-md">
-                                    <div className="flex justify-between items-center">
-                                        <p className={`font-bold text-lg ${adj.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                            {adj.amount >= 0 ? '+' : ''}{adj.amount.toLocaleString()} XP
-                                        </p>
-                                        <p className="text-xs text-gray-500">{new Date(adj.date).toLocaleDateString()}</p>
-                                    </div>
-                                   <p className="text-sm text-gray-300 italic">"{adj.reason}"</p>
-                               </div>
-                           )) : (
-                               <p className="text-gray-500 text-center text-sm py-4">No manual XP adjustments recorded.</p>
-                           )}
-                        </div>
-                    </DashboardCard>
                 </div>
-                <div className="lg:col-span-2 space-y-6">
-                    <DashboardCard title="Rank & Progression" icon={<ShieldCheckIcon className="w-6 h-6"/>}>
-                        <div className="p-6">
-                            <div className="flex items-center gap-4 mb-4">
-                                <img 
-                                    src={resolveRankIcon(current.iconUrl, rank?.name, current.name, rank?.rankBadgeUrl)} 
-                                    alt={rank?.name || current.name} 
-                                    onError={(e) => {
-                                        (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(current.name || rank?.name || '');
-                                    }}
-                                    className="w-16 h-16 object-contain drop-shadow-md"
-                                />
-                                <div>
-                                    <p className="text-sm text-gray-400 uppercase tracking-wider">{rank?.name || 'Unranked'}</p>
-                                    <p className="text-2xl font-bold text-white">{current.name}</p>
-                                </div>
-                            </div>
 
-                            <div className="space-y-1 mb-4">
-                                <div className="flex justify-between items-baseline">
-                                    <p className="text-sm font-semibold text-gray-300">Progression</p>
-                                    <p className="text-sm font-mono text-amber-300">{playerXP.toLocaleString()} / {next ? next.minXp.toLocaleString() : 'MAX'} RP</p>
-                                </div>
-                                <div className="w-full bg-zinc-900 rounded-full h-4 border border-zinc-800 shadow-inner overflow-hidden relative p-0.5">
-                                    <motion.div 
-                                        key={`profile-xp-bar-${playerXP}`}
-                                        className="bg-gradient-to-r from-red-600 via-amber-500 to-yellow-400 h-full rounded-full shadow-[0_0_12px_rgba(245,158,11,0.5)] relative overflow-hidden"
-                                        initial={{ width: '0%' }}
-                                        animate={{ width: `${progressPercentage}%` }}
-                                        transition={{ 
-                                            type: 'spring',
-                                            stiffness: 50,
-                                            damping: 15,
-                                            duration: 1.1 
-                                        }}
-                                    >
-                                        <motion.div 
-                                            animate={{ x: ['-100%', '200%'] }}
-                                            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-                                            className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/35 to-transparent skew-x-12 pointer-events-none"
-                                        />
-                                        <div className="absolute inset-0 bg-white/20 animate-pulse" />
-                                    </motion.div>
-                                </div>
-                                <p className="text-right text-xs text-gray-400 font-mono">
-                                    {next ? `${(next.minXp - playerXP > 0 ? next.minXp - playerXP : 0).toLocaleString()} RP to ${next.name}` : 'Maximum Rank Reached!'}
-                                </p>
-                            </div>
-
-                            <div className="mt-6 pt-4 border-t border-zinc-700/50">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-gray-400 mb-1">Percentile</h4>
-                                        <p className="text-lg font-bold text-white">Top {(100 - percentile).toFixed(1)}%</p>
-                                        <div className="w-full h-2 bg-zinc-950 rounded-full border border-zinc-800 overflow-hidden relative mt-1">
-                                            <motion.div 
-                                                key={`profile-percentile-${percentile}`}
-                                                className="h-full rounded-full bg-gradient-to-r from-red-600 via-amber-500 to-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)] relative overflow-hidden"
-                                                initial={{ width: '0%' }}
-                                                animate={{ width: `${percentile}%` }}
-                                                transition={{ 
-                                                    type: 'spring', 
-                                                    stiffness: 45, 
-                                                    damping: 14, 
-                                                    duration: 1.2 
-                                                }}
-                                            />
-                                        </div>
-                                        <p className="text-[10px] text-gray-500 font-mono mt-0.5">of all operators</p>
-                                    </div>
-                                    {next && (
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-gray-400 mb-1">Next Tier Unlocks</h4>
-                                            <ul className="text-xs text-gray-300 list-disc list-inside space-y-0.5">
-                                                {(next.perks || []).map((perk, i) => <li key={i}>{perk}</li>)}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </DashboardCard>
-                    <DashboardCard title="Lifetime Performance" icon={<ChartBarIcon className="w-6 h-6"/>}>
-                        <div className="p-4 sm:p-6 space-y-4">
-                            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                                <span className="text-xs text-zinc-400">
-                                    Career metrics dynamically computed from matches, XP adjustments, badges, and honors.
-                                </span>
-                                <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-zinc-300">
-                                    Grade: <strong className="text-emerald-400">{perf.combatGrade}</strong> ({perf.combatRating}/100)
-                                </span>
-                            </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-                                <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
-                                    <p className="text-xs text-zinc-400">Total Rank Points</p>
-                                    <p className="text-2xl sm:text-3xl font-black font-mono text-amber-300 mt-1">
-                                        {perf.totalLifetimeXp.toLocaleString()}
-                                    </p>
-                                    <p className="text-[10px] text-red-400 font-mono mt-0.5">+{perf.avgXpPerMatch} RP/match</p>
-                                </div>
-                                <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
-                                    <p className="text-xs text-zinc-400">Matches Played</p>
-                                    <p className="text-2xl sm:text-3xl font-black font-mono text-white mt-1">
-                                        {perf.matchesPlayed.toLocaleString()}
-                                    </p>
-                                    <p className="text-[10px] text-zinc-400 font-mono mt-0.5">Career events</p>
-                                </div>
-                                <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
-                                    <p className="text-xs text-zinc-400">Badges Earned</p>
-                                    <p className="text-2xl sm:text-3xl font-black font-mono text-white mt-1">
-                                        {perf.totalBadgesEarned}
-                                    </p>
-                                    <p className="text-[10px] text-amber-400 font-mono mt-0.5">{perf.legendaryBadgesCount} Mythic</p>
-                                </div>
-                                <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
-                                    <p className="text-xs text-zinc-400">Badge Bonus RP</p>
-                                    <p className="text-2xl sm:text-3xl font-black font-mono text-amber-400 mt-1">
-                                        +{perf.badgeRewardsXp.toLocaleString()}
-                                    </p>
-                                    <p className="text-[10px] text-zinc-400 font-mono mt-0.5">Commendation rewards</p>
-                                </div>
-                                <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
-                                    <p className="text-xs text-zinc-400">Official Honors</p>
-                                    <p className="text-2xl sm:text-3xl font-black font-mono text-purple-300 mt-1">
-                                        {perf.honorsCount}
-                                    </p>
-                                    <p className="text-[10px] text-zinc-400 font-mono mt-0.5">{perf.motmCount} MotM • {perf.motmthCount} MotMth</p>
-                                </div>
-                                <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-center">
-                                    <p className="text-xs text-zinc-400">Combat Rating</p>
-                                    <p className="text-2xl sm:text-3xl font-black font-mono text-emerald-400 mt-1">
-                                        {perf.combatRating}<span className="text-xs text-zinc-500 font-normal">/100</span>
-                                    </p>
-                                    <p className="text-[10px] text-emerald-400 font-mono mt-0.5">Grade {perf.combatGrade}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </DashboardCard>
-                     <DashboardCard title="Match & Event History" icon={<CalendarIcon className="w-6 h-6" />}>
-                        <div className="p-4 space-y-3 max-h-[40rem] overflow-y-auto">
+                {/* 6. Match & Event History (Full width on mobile, 6-col on desktop) */}
+                <div className="col-span-2 lg:col-span-6">
+                    <DashboardCard 
+                        title="Match History" 
+                        icon={<CalendarIcon className="w-4 h-4 text-blue-400" />} 
+                        compact 
+                        titleAddon={<span className="text-[10px] font-mono text-zinc-400">{(player.matchHistory || []).length} matches</span>}
+                    >
+                        <div className="h-56 sm:h-64 p-2 overflow-y-auto custom-scrollbar space-y-1.5 text-xs">
                             {player?.matchHistory && player.matchHistory.length > 0 ? (
                                 player.matchHistory
                                     .map(record => ({...record, event: (events || []).find(e => e.id === record?.eventId)}))
                                     .filter(record => record.event)
                                     .sort((a,b) => new Date(b.event!.date).getTime() - new Date(a.event!.date).getTime())
                                     .map(({ event }, index) => (
-                                        <div key={index} className="bg-zinc-900/60 p-3.5 rounded-xl border border-zinc-800/80 flex items-center justify-between gap-3">
+                                        <div key={index} className="bg-zinc-900/60 p-2 rounded-lg border border-zinc-800/80 flex items-center justify-between gap-2">
                                             <div className="min-w-0">
-                                                <h4 className="font-bold text-white text-sm truncate">{event!.title}</h4>
-                                                <p className="text-xs text-zinc-400 font-mono mt-0.5">{new Date(event!.date).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                                                <h4 className="font-bold text-white text-xs truncate">{event!.title}</h4>
+                                                <p className="text-[10px] text-zinc-400 font-mono mt-0.5">
+                                                    {new Date(event!.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                                                </p>
                                             </div>
-                                            <div className="text-right shrink-0">
-                                                <span className="px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-xs font-bold font-mono">
-                                                    Attended
-                                                </span>
-                                            </div>
+                                            <span className="px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold font-mono shrink-0">
+                                                Attended
+                                            </span>
                                         </div>
                                     ))
                             ) : (
-                                <p className="text-gray-500 text-center py-4">No matches played yet.</p>
+                                <p className="text-zinc-500 text-center text-xs py-8">No matches played yet.</p>
                             )}
                         </div>
                     </DashboardCard>

@@ -112,6 +112,7 @@ ALTER TABLE public.players ADD COLUMN IF NOT EXISTS preferred_role TEXT DEFAULT 
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS "activeAuthUID" TEXT DEFAULT '';
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS activeauthuid TEXT DEFAULT '';
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS active_auth_uid TEXT DEFAULT '';
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE public.players ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 -- Enable Full Replica Identity so updates broadcast complete row states in Realtime

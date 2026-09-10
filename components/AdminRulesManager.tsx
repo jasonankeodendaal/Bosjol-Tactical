@@ -1,10 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useData } from '../data/DataContext';
 import type { TacticalRuleSet, TacticalRuleItem, TacticalRuleCategory } from '../types';
-import { DEFAULT_TACTICAL_RULE_SETS } from '../constants';
 import { 
     Plus, Edit, Trash2, Shield, Crosshair, Target, AlertTriangle, Zap, Scale, 
-    Upload, Download, RefreshCw, Eye, Check, X, FileText, Sparkles, AlertOctagon,
+    Download, Eye, Check, X, FileText, AlertOctagon,
     Sliders, ChevronDown, ChevronUp, Layers, CheckCircle2
 } from 'lucide-react';
 
@@ -27,8 +26,6 @@ export const AdminRulesManager: React.FC<AdminRulesManagerProps> = ({ onOpenInfo
     const [isCreatingSet, setIsCreatingSet] = useState(false);
     const [editingSet, setEditingSet] = useState<TacticalRuleSet | null>(null);
     const [editingRuleIndex, setEditingRuleIndex] = useState<number | null>(null);
-    const [uploadNotice, setUploadNotice] = useState<string | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Form state for creating or editing a TacticalRuleSet
     const [formData, setFormData] = useState<Omit<TacticalRuleSet, 'id'>>({
@@ -166,61 +163,6 @@ export const AdminRulesManager: React.FC<AdminRulesManagerProps> = ({ onOpenInfo
         }));
     };
 
-    // Load Default Tactical Presets Library
-    const handleRestorePrebuiltPresets = async () => {
-        if (confirm("Restore or overwrite with default pre-built tactical rule sets library (Safety, FPS, CQB, Domination, S&D, Medic)?")) {
-            try {
-                for (const preset of DEFAULT_TACTICAL_RULE_SETS) {
-                    await setDoc('tacticalRules', preset.id, preset);
-                }
-                setUploadNotice("Default tactical rule set presets successfully loaded!");
-                setTimeout(() => setUploadNotice(null), 4000);
-            } catch (err: any) {
-                console.error("Error restoring presets:", err);
-                alert(`Failed to restore presets: ${err?.message || err}`);
-            }
-        }
-    };
-
-    // Upload JSON Prebuilt Rule Sets
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            try {
-                const parsed = JSON.parse(event.target?.result as string);
-                const itemsToImport = Array.isArray(parsed) ? parsed : [parsed];
-
-                let importedCount = 0;
-                for (const item of itemsToImport) {
-                    if (item.title && item.rules && Array.isArray(item.rules)) {
-                        const newId = item.id || `uploaded_${Date.now()}_${importedCount}`;
-                        await setDoc('tacticalRules', newId, {
-                            id: newId,
-                            title: item.title,
-                            category: item.category || 'General',
-                            shortDescription: item.shortDescription || '',
-                            icon: item.icon || 'shield',
-                            badge: item.badge || 'CUSTOM',
-                            rules: item.rules,
-                            isActive: true,
-                            lastUpdated: new Date().toISOString().split('T')[0]
-                        });
-                        importedCount++;
-                    }
-                }
-
-                setUploadNotice(`Successfully uploaded & imported ${importedCount} rule set(s)!`);
-                setTimeout(() => setUploadNotice(null), 4000);
-            } catch (err: any) {
-                alert(`Invalid JSON format: ${err?.message || err}`);
-            }
-        };
-        reader.readAsText(file);
-    };
-
     // Export current rule sets to JSON
     const handleExportJson = () => {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tacticalRules, null, 2));
@@ -246,7 +188,7 @@ export const AdminRulesManager: React.FC<AdminRulesManagerProps> = ({ onOpenInfo
                         Info Popup & Rule Set Builder
                     </h2>
                     <p className="text-xs text-zinc-400 max-w-xl">
-                        Create custom rule sets, add rules 1 by 1, upload pre-built rule sets, or load tactical presets. These display live in the "i" info popup and Player Rules page.
+                        Create custom rule sets and add rules 1 by 1. These display live in the "i" info popup and Player Rules page.
                     </p>
                 </div>
 
@@ -257,32 +199,6 @@ export const AdminRulesManager: React.FC<AdminRulesManagerProps> = ({ onOpenInfo
                     >
                         <Plus className="w-4 h-4" />
                         <span>Add New Rule Set</span>
-                    </button>
-
-                    <button
-                        onClick={handleRestorePrebuiltPresets}
-                        className="px-3.5 py-2.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5"
-                        title="Load Pre-Built Tactical Rules"
-                    >
-                        <Sparkles className="w-4 h-4" />
-                        <span>Load Presets</span>
-                    </button>
-
-                    <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleFileUpload} 
-                        accept=".json" 
-                        className="hidden" 
-                    />
-
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="px-3.5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-semibold transition flex items-center gap-1.5"
-                        title="Upload JSON Rule Set File"
-                    >
-                        <Upload className="w-4 h-4 text-red-400" />
-                        <span>Upload JSON</span>
                     </button>
 
                     <button
@@ -306,18 +222,6 @@ export const AdminRulesManager: React.FC<AdminRulesManagerProps> = ({ onOpenInfo
                     )}
                 </div>
             </div>
-
-            {uploadNotice && (
-                <div className="p-3.5 rounded-2xl bg-green-950/80 border border-green-500/50 text-green-300 text-xs font-bold flex items-center justify-between animate-fade-in">
-                    <span className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-green-400" />
-                        {uploadNotice}
-                    </span>
-                    <button onClick={() => setUploadNotice(null)} className="text-zinc-400 hover:text-white">
-                        <X className="w-4 h-4" />
-                    </button>
-                </div>
-            )}
 
             {/* Rule Sets Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-4">

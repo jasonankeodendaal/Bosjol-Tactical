@@ -33,6 +33,7 @@ import { SendCredentialsModal } from './SendCredentialsModal';
 
 import { AdminGameTypesManager } from './AdminGameTypesManager';
 import { generateUniquePlayerCode } from '../utils/playerCodeGenerator';
+import { Eye, EyeOff, Sparkles } from 'lucide-react';
 
 export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' | 'seedInitialData' | 'updatePlayerDoc' | 'addEventDoc' | 'deleteEventDoc' | 'updateEventDoc'> & {
     onDeleteAllData: () => void;
@@ -64,9 +65,17 @@ const NewPlayerModal: React.FC<{
     });
     const [playerCode, setPlayerCode] = useState('');
     const [playerCodeError, setPlayerCodeError] = useState('');
+    const [showPin, setShowPin] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [newlyCreatedPlayer, setNewlyCreatedPlayer] = useState<Player | null>(null);
     const dataContext = useContext(DataContext);
+
+    const handleAutoGeneratePin = () => {
+        // Generate a random 6-digit PIN between 100000 and 999999
+        const generatedPin = Math.floor(100000 + Math.random() * 900000).toString();
+        setFormData(f => ({ ...f, pin: generatedPin }));
+        setShowPin(true);
+    };
 
 
     useEffect(() => {
@@ -214,7 +223,69 @@ const NewPlayerModal: React.FC<{
                         <Input label="Age" type="number" value={formData.age} onChange={e => setFormData(f => ({ ...f, age: e.target.value }))} />
                         <Input label="ID Number" value={formData.idNumber} onChange={e => setFormData(f => ({ ...f, idNumber: e.target.value }))} />
                     </div>
-                    <Input label="6-Digit PIN" type="password" value={formData.pin} onChange={e => setFormData(f => ({ ...f, pin: e.target.value.replace(/\D/g, '') }))} maxLength={6} />
+                    <div>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="block text-xs sm:text-sm font-medium text-gray-300">
+                                6-Digit PIN <span className="text-red-500">*</span>
+                            </label>
+                            <button
+                                type="button"
+                                onClick={handleAutoGeneratePin}
+                                className="inline-flex items-center gap-1 text-[11px] font-bold text-red-400 hover:text-red-300 hover:underline transition-colors cursor-pointer"
+                                title="Click to auto-generate a random 6-digit PIN"
+                            >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>Auto-Gen PIN</span>
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex-grow">
+                                <input
+                                    type={showPin ? "text" : "password"}
+                                    value={formData.pin}
+                                    onChange={e => {
+                                        const val = e.target.value.replace(/\D/g, '');
+                                        if (val.length <= 6) {
+                                            setFormData(f => ({ ...f, pin: val }));
+                                        }
+                                    }}
+                                    maxLength={6}
+                                    pattern="\d{6}"
+                                    inputMode="numeric"
+                                    placeholder="Enter or Auto-Gen 6-digit PIN"
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-red-500 pr-9 text-xs sm:text-sm"
+                                />
+                                {formData.pin && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPin(!showPin)}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-0.5 transition-colors"
+                                        title={showPin ? "Hide PIN" : "Show PIN"}
+                                    >
+                                        {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                )}
+                            </div>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={handleAutoGeneratePin}
+                                className="!py-2 !px-3 text-xs flex-shrink-0 flex items-center gap-1.5 border-zinc-700 hover:border-red-500/50 hover:bg-zinc-800 font-medium"
+                                title="Generate a random 6-digit PIN"
+                            >
+                                <Sparkles className="w-3.5 h-3.5 text-red-400" />
+                                <span>Auto-Gen</span>
+                            </Button>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-zinc-400 mt-1">
+                            <span>Operator uses this 6-digit PIN to authenticate and check into events.</span>
+                            {formData.pin && formData.pin.length === 6 && (
+                                <span className="text-emerald-400 font-mono font-bold flex items-center gap-0.5">
+                                    ✓ 6 Digits Set
+                                </span>
+                            )}
+                        </div>
+                    </div>
                 </div>
                 <div className="mt-3 sm:mt-6">
                     <Button className="w-full !py-2 sm:!py-2.5" onClick={handleSave} disabled={isSaving || !!playerCodeError}>

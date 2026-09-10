@@ -273,21 +273,37 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
         return (
             <Modal isOpen={true} onClose={onClose} title={`Reset PIN for ${player.name}`}>
                 <div className="space-y-4">
-                    <Input
-                        label="New 6-Digit PIN"
-                        type="text"
-                        value={newPin}
-                        onChange={e => {
-                            const val = e.target.value.replace(/\D/g, '');
-                            if (val.length <= 6) {
-                                setNewPin(val);
-                            }
-                        }}
-                        maxLength={6}
-                        placeholder="Enter a new 6-digit PIN"
-                        inputMode="numeric"
-                        pattern="\d{6}"
-                    />
+                    <div className="flex items-end gap-2">
+                        <div className="flex-grow">
+                            <Input
+                                label="New 6-Digit PIN"
+                                type="text"
+                                value={newPin}
+                                onChange={e => {
+                                    const val = e.target.value.replace(/\D/g, '');
+                                    if (val.length <= 6) {
+                                        setNewPin(val);
+                                    }
+                                }}
+                                maxLength={6}
+                                placeholder="Enter or Auto-Gen 6 digits"
+                                inputMode="numeric"
+                                pattern="\d{6}"
+                            />
+                        </div>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => {
+                                const gen = Math.floor(100000 + Math.random() * 900000).toString();
+                                setNewPin(gen);
+                            }}
+                            className="mb-1 text-xs whitespace-nowrap !py-2.5"
+                            title="Auto-generate a random 6-digit PIN"
+                        >
+                            Auto-Gen
+                        </Button>
+                    </div>
                 </div>
                 <div className="mt-6">
                     <Button onClick={handleSave} className="w-full" disabled={!isValid}>
@@ -472,20 +488,37 @@ WHERE id = '${player.id}';`;
                                         <Input label="Age" type="number" value={formData.age} onChange={e => setFormData(f => ({...f, age: Number(e.target.value)}))} />
                                         <Input label="ID Number" value={formData.idNumber} onChange={e => setFormData(f => ({...f, idNumber: e.target.value}))} />
                                     </div>
-                                    <Input
-                                        label="6-Digit PIN"
-                                        type="text"
-                                        value={formData.pin}
-                                        onChange={e => {
-                                            const val = e.target.value.replace(/\D/g, '');
-                                            if (val.length <= 6) {
-                                                setFormData(f => ({ ...f, pin: val }));
-                                            }
-                                        }}
-                                        maxLength={6}
-                                        pattern="\d{6}"
-                                        inputMode="numeric"
-                                    />
+                                    <div className="flex items-end gap-2">
+                                        <div className="flex-grow">
+                                            <Input
+                                                label="6-Digit PIN"
+                                                type="text"
+                                                value={formData.pin}
+                                                onChange={e => {
+                                                    const val = e.target.value.replace(/\D/g, '');
+                                                    if (val.length <= 6) {
+                                                        setFormData(f => ({ ...f, pin: val }));
+                                                    }
+                                                }}
+                                                maxLength={6}
+                                                pattern="\d{6}"
+                                                inputMode="numeric"
+                                                placeholder="6-digit PIN"
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={() => {
+                                                const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
+                                                setFormData(f => ({ ...f, pin: randomPin }));
+                                            }}
+                                            className="mb-1 text-xs whitespace-nowrap !py-2.5"
+                                            title="Auto-generate a random 6-digit PIN"
+                                        >
+                                            Auto-Gen
+                                        </Button>
+                                    </div>
                                     <Input label="Email" value={formData.email} onChange={e => setFormData(f => ({...f, email: e.target.value}))}/>
                                     <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData(f => ({...f, phone: e.target.value}))}/>
                                     <Input label="Address" value={formData.address} onChange={e => setFormData(f => ({...f, address: e.target.value}))}/>

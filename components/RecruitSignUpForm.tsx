@@ -102,11 +102,15 @@ I agree to standard field regulations (Min Age: ${minAge}). Requesting Command c
         setIsSaving(true);
         try {
             if (data?.addDoc) {
+                const nameParts = fullName.trim().split(/\s+/);
+                const firstName = nameParts[0] || '';
+                const surname = nameParts.slice(1).join(' ') || '';
                 const newPlayerId = `rec_${Date.now()}`;
                 await data.addDoc('players', {
                     id: newPlayerId,
-                    name: fullName.trim(),
-                    callsign: callsign.trim() || fullName.trim().split(' ')[0],
+                    name: firstName,
+                    surname: surname,
+                    callsign: callsign.trim() || firstName,
                     email: email.trim(),
                     phone: phone.trim(),
                     role: 'player',

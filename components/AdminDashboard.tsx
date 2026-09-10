@@ -64,6 +64,8 @@ const NewPlayerModal: React.FC<{
         age: '',
         idNumber: '',
     });
+    const [nameError, setNameError] = useState('');
+    const [surnameError, setSurnameError] = useState('');
     const [playerCode, setPlayerCode] = useState('');
     const [playerCodeError, setPlayerCodeError] = useState('');
     const [showPin, setShowPin] = useState(false);
@@ -80,9 +82,10 @@ const NewPlayerModal: React.FC<{
 
 
     useEffect(() => {
-        const { name, surname } = formData;
-        if (name && surname) {
-            const initials = (name.charAt(0) + surname.charAt(0)).toUpperCase();
+        const nameTrimmed = formData.name.trim();
+        const surnameTrimmed = formData.surname.trim();
+        if (nameTrimmed && surnameTrimmed) {
+            const initials = (nameTrimmed.charAt(0) + surnameTrimmed.charAt(0)).toUpperCase();
             const existingPlayersWithInitials = players.filter(p => p.playerCode?.startsWith(initials));
             let newNumber = 1;
             if (existingPlayersWithInitials.length > 0) {
@@ -111,9 +114,32 @@ const NewPlayerModal: React.FC<{
 
 
     const handleSave = async () => {
-        // Validation
+        // Validation - Mandatory First Name and Surname
+        const trimmedName = formData.name.trim();
+        const trimmedSurname = formData.surname.trim();
+        let validationFailed = false;
+
+        if (!trimmedName) {
+            setNameError('First Name is mandatory.');
+            validationFailed = true;
+        } else {
+            setNameError('');
+        }
+
+        if (!trimmedSurname) {
+            setSurnameError('Surname is mandatory.');
+            validationFailed = true;
+        } else {
+            setSurnameError('');
+        }
+
+        if (validationFailed) {
+            alert('First Name and Surname are mandatory to register a new player.');
+            return;
+        }
+
         const ageNum = Number(formData.age);
-        if (!formData.name || !formData.surname || !formData.email || !formData.pin || !formData.age || !formData.idNumber || !playerCode) {
+        if (!formData.email || !formData.pin || !formData.age || !formData.idNumber || !playerCode) {
             alert('Please fill in all required fields.');
             return;
         }
@@ -135,11 +161,11 @@ const NewPlayerModal: React.FC<{
         const allTiers = ranks.flatMap(r => r.tiers || []).filter(Boolean).sort((a,b) => a.minXp - b.minXp);
         const firstTier = allTiers.length > 0 ? allTiers[0] : UNRANKED_TIER;
        
-        const assignedCallsign = formData.callsign.trim() || formData.name.trim();
+        const assignedCallsign = formData.callsign.trim() || trimmedName;
 
         const newPlayerData: Omit<Player, 'id'> = {
-            name: formData.name,
-            surname: formData.surname,
+            name: trimmedName,
+            surname: trimmedSurname,
             playerCode: playerCode,
             email: formData.email,
             phone: formData.phone,
@@ -150,7 +176,7 @@ const NewPlayerModal: React.FC<{
             callsign: assignedCallsign,
             rank: firstTier,
             status: 'Active',
-            avatarUrl: `https://api.dicebear.com/8.x/bottts/svg?seed=${formData.name}${formData.surname}`, // Default avatar
+            avatarUrl: `https://api.dicebear.com/8.x/bottts/svg?seed=${trimmedName}${trimmedSurname}`, // Default avatar
             stats: { kills: 0, deaths: 0, headshots: 0, gamesPlayed: 0, xp: 0 },
             matchHistory: [],
             xpAdjustments: [],
@@ -200,8 +226,34 @@ const NewPlayerModal: React.FC<{
             <Modal isOpen={!newlyCreatedPlayer} onClose={onClose} title="Create New Player">
                 <div className="space-y-2 sm:space-y-4 text-xs sm:text-sm">
                      <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                        <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
-                        <Input label="Surname" value={formData.surname} onChange={e => setFormData(f => ({ ...f, surname: e.target.value }))} />
+                        <div>
+                            <Input 
+                                label="First Name *" 
+                                value={formData.name} 
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    setFormData(f => ({ ...f, name: val }));
+                                    if (val.trim()) setNameError('');
+                                }} 
+                                placeholder="e.g. John"
+                                required
+                            />
+                            {nameError && <p className="text-red-500 text-[10px] sm:text-xs mt-0.5 font-medium">{nameError}</p>}
+                        </div>
+                        <div>
+                            <Input 
+                                label="Surname *" 
+                                value={formData.surname} 
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    setFormData(f => ({ ...f, surname: val }));
+                                    if (val.trim()) setSurnameError('');
+                                }} 
+                                placeholder="e.g. Doe"
+                                required
+                            />
+                            {surnameError && <p className="text-red-500 text-[10px] sm:text-xs mt-0.5 font-medium">{surnameError}</p>}
+                        </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 sm:gap-4">
                         <Input 
@@ -212,8 +264,14 @@ const NewPlayerModal: React.FC<{
                             tooltip="Only Administrators can assign or change player callsigns."
                         />
                         <div>
-                            <Input label="Player Code" value={playerCode} onChange={handlePlayerCodeChange} />
-                            {playerCodeError && <p className="text-red-500 text-[10px] sm:text-xs mt-0.5">{playerCodeError}</p>}
+                            <Input label="Player Code *" value={playerCode} onChange={handlePlayerCodeChange} placeholder="e.g. JD01" required />
+                            {playerCodeError ? (
+                                <p className="text-red-500 text-[10px] sm:text-xs mt-0.5">{playerCodeError}</p>
+                            ) : (!formData.name.trim() || !formData.surname.trim()) ? (
+                                <p className="text-amber-400/80 text-[10px] sm:text-xs mt-0.5">Code auto-generated from name &amp; surname</p>
+                            ) : (
+                                <p className="text-emerald-400 text-[10px] sm:text-xs mt-0.5 font-mono">✓ Auto-code from initials</p>
+                            )}
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 sm:gap-4">

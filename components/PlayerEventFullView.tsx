@@ -229,10 +229,30 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
     const handleWeaponRentalToggle = (checked: boolean) => {
         setWantsWeaponRental(checked);
         if (checked) {
-            const nextAvailableWeapon = weaponRentals.find(item => {
+            // Find rental weapons specifically named 'Rental X'
+            const rentalWeapons = weaponRentals.filter(item => /Rental\s*\d+/i.test(item.name));
+            
+            // Sort rentals by the number in their name
+            const sortedRentals = rentalWeapons.sort((a, b) => {
+                const numA = parseInt(a.name.match(/Rental\s*(\d+)/i)?.[1] || '0');
+                const numB = parseInt(b.name.match(/Rental\s*(\d+)/i)?.[1] || '0');
+                return numA - numB;
+            });
+
+            // Find first available Rental X
+            let nextAvailableWeapon = sortedRentals.find(item => {
                 const availableStock = item.stock - (alreadyRentedCount[item.id] || 0);
                 return availableStock > 0;
             });
+
+            // Fallback: If no 'Rental X' available, find any other weapon
+            if (!nextAvailableWeapon) {
+                nextAvailableWeapon = weaponRentals.find(item => {
+                    const availableStock = item.stock - (alreadyRentedCount[item.id] || 0);
+                    return availableStock > 0;
+                });
+            }
+
             if (nextAvailableWeapon) {
                 setSelectedGear(prev => {
                     const filtered = prev.filter(id => {

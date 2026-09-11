@@ -142,6 +142,12 @@ ALTER TABLE public.ranks ADD COLUMN IF NOT EXISTS "maxXp" NUMERIC;
 ALTER TABLE public.ranks ADD COLUMN IF NOT EXISTS maxxp NUMERIC;
 ALTER TABLE public.ranks ADD COLUMN IF NOT EXISTS tiers JSONB DEFAULT '[]'::jsonb;
 
+-- Enable Full Replica Identity so updates and deletions broadcast complete row states in Realtime
+ALTER TABLE public.ranks REPLICA IDENTITY FULL;
+
+-- Explicitly grant permissions
+GRANT ALL ON TABLE public.ranks TO anon, authenticated, service_role;
+
 -- 4. GAMIFICATION RULES & BADGES TABLES
 CREATE TABLE IF NOT EXISTS public."gamificationSettings" (
     id TEXT PRIMARY KEY,

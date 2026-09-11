@@ -176,21 +176,10 @@ function useCollection<T extends {id: string}>(
 
             if (!isMounted) return;
 
-            if (fetchedData && fetchedData.length > 0) {
+            if (fetchedData !== null) {
                 recordDatabaseActivity('reads', fetchedData.length);
                 const normalizedFetched = fetchedData.map(row => normalizeCollectionItem<T>(collectionName, row));
-                const merged = [...(mockData || [])];
-                normalizedFetched.forEach(fetchedItem => {
-                    const idx = merged.findIndex(item => (item as any).id === (fetchedItem as any).id);
-                    if (idx > -1) {
-                        merged[idx] = fetchedItem;
-                    } else {
-                        merged.push(fetchedItem);
-                    }
-                });
-                setData(merged);
-            } else if (fetchedData && fetchedData.length === 0) {
-                setData(mockData || []);
+                setData(normalizedFetched);
             } else {
                 if (lastError) {
                     console.warn(`Live fetch notice on ${collectionName}:`, lastError.message || lastError);
@@ -220,7 +209,9 @@ function useCollection<T extends {id: string}>(
                             }));
                         } else if (payload.eventType === 'DELETE') {
                             const deletedId = (payload.old as any)?.id;
-                            setData(currentData => currentData.filter(item => (item as any).id !== deletedId));
+                            if (deletedId) {
+                                setData(currentData => currentData.filter(item => (item as any).id !== deletedId));
+                            }
                         }
                     })
                     .subscribe();
@@ -509,10 +500,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [gameTypes, setGameTypes, loadingGameTypes] = useCollection<GameType>('gameTypes', MOCK_DATA_MAP.gameTypes);
 
     const ranks = useMemo(() => {
-        if (!rawRanks || rawRanks.length === 0) {
-            return MOCK_DATA_MAP.ranks;
+        if (!IS_LIVE_DATA) {
+            return rawRanks && rawRanks.length > 0 ? rawRanks : MOCK_DATA_MAP.ranks;
         }
-        return rawRanks;
+        return rawRanks || [];
     }, [rawRanks]);
     const setRanks = setRawRanks;
 

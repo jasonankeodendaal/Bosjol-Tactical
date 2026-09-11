@@ -33,7 +33,6 @@ import { AuthContext } from '../auth/AuthContext';
 import { SendCredentialsModal } from './SendCredentialsModal';
 
 import { AdminGameTypesManager } from './AdminGameTypesManager';
-import { generateUniquePlayerCode } from '../utils/playerCodeGenerator';
 import { Eye, EyeOff, Sparkles, Search, Grid3X3, Layers, Award, ChevronRight, ChevronLeft, ArrowUpRight } from 'lucide-react';
 
 export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' | 'seedInitialData' | 'updatePlayerDoc' | 'addEventDoc' | 'deleteEventDoc' | 'updateEventDoc'> & {

@@ -11,6 +11,7 @@ import { Eye, EyeOff, Sparkles, Send, Edit3, Code, Award, Key, Copy, Check, Chev
 import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
+import { AuthContext } from '../auth/AuthContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { SendCredentialsModal } from './SendCredentialsModal';
 import { motion } from 'framer-motion';
@@ -103,6 +104,8 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
     const [isResettingPin, setIsResettingPin] = useState(false);
     const [isSendingCredentials, setIsSendingCredentials] = useState(false);
     const dataContext = useContext(DataContext);
+    const authContext = useContext(AuthContext);
+    const isAdmin = (authContext?.user as any)?.role === 'admin';
 
     useEffect(() => {
         setFormData(player);
@@ -742,14 +745,20 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
                             {isEditing ? (
                                 <div className="space-y-2.5">
                                     <div className="flex flex-col items-center">
-                                        <UrlOrUploadField
-                                            label="Avatar"
-                                            fileUrl={formData.avatarUrl}
-                                            onUrlSet={handleAvatarUpdate}
-                                            onRemove={handleRemoveAvatar}
-                                            accept="image/*"
-                                            apiServerUrl={companyDetails?.apiServerUrl}
-                                        />
+                                        {isAdmin ? (
+                                            <UrlOrUploadField
+                                                label="Avatar"
+                                                fileUrl={formData.avatarUrl}
+                                                onUrlSet={handleAvatarUpdate}
+                                                onRemove={handleRemoveAvatar}
+                                                accept="image/*"
+                                                apiServerUrl={companyDetails?.apiServerUrl}
+                                            />
+                                        ) : (
+                                            <div className="w-24 h-24 rounded-full border border-zinc-700 bg-zinc-900 flex items-center justify-center text-[10px] text-zinc-500 text-center p-2">
+                                                Profile image can only be updated by admin.
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <Input label="First Name" value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))}/>

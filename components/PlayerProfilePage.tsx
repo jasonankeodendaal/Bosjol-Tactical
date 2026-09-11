@@ -106,6 +106,7 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
     const dataContext = useContext(DataContext);
     const authContext = useContext(AuthContext);
     const isAdmin = (authContext?.user as any)?.role === 'admin';
+    console.log("PlayerProfilePage - User:", authContext?.user, "isAdmin:", isAdmin);
 
     useEffect(() => {
         setFormData(player);
@@ -755,8 +756,14 @@ export const PlayerProfilePage: React.FC<PlayerProfilePageProps> = ({ player, pl
                                                 apiServerUrl={companyDetails?.apiServerUrl}
                                             />
                                         ) : (
-                                            <div className="w-24 h-24 rounded-full border border-zinc-700 bg-zinc-900 flex items-center justify-center text-[10px] text-zinc-500 text-center p-2">
-                                                Profile image can only be updated by admin.
+                                            <div className="w-full">
+                                                <label className="block text-xs font-medium text-zinc-400 mb-1">Avatar</label>
+                                                <div className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-500 text-xs">
+                                                    <div className="flex items-center gap-1.5 text-amber-500/80">
+                                                        <span className="text-xs">🔒</span>
+                                                        <span className="font-semibold">Official Avatar: Can only be assigned or altered by an Administrator.</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>

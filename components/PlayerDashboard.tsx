@@ -1192,6 +1192,8 @@ const AchievementsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'legendary
 const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdate'>> = ({ player, onPlayerUpdate }) => {
     const [formData, setFormData] = useState({ ...player });
     const dataContext = useContext(DataContext);
+    const authContext = useContext(AuthContext);
+    const isAdmin = (authContext?.user as any)?.role === 'admin';
     const companyDetails = dataContext?.companyDetails;
 
     useEffect(() => {
@@ -1229,14 +1231,26 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
             <div className="p-6 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="md:col-span-1">
-                        <UrlOrUploadField
-                            label="Avatar"
-                            fileUrl={formData.avatarUrl}
-                            onUrlSet={handleAvatarUpdate}
-                            onRemove={handleRemoveAvatar}
-                            accept="image/*"
-                            apiServerUrl={companyDetails?.apiServerUrl}
-                        />
+                        {isAdmin ? (
+                            <UrlOrUploadField
+                                label="Avatar"
+                                fileUrl={formData.avatarUrl}
+                                onUrlSet={handleAvatarUpdate}
+                                onRemove={handleRemoveAvatar}
+                                accept="image/*"
+                                apiServerUrl={companyDetails?.apiServerUrl}
+                            />
+                        ) : (
+                            <div className="w-full">
+                                <label className="block text-sm font-medium text-zinc-400 mb-1">Avatar</label>
+                                <div className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-500 text-sm">
+                                    <div className="flex items-center gap-1.5 text-amber-500/80">
+                                        <span className="text-sm">🔒</span>
+                                        <span className="font-semibold">Official Avatar: Can only be assigned or altered by an Administrator.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <div className="md:col-span-2 space-y-4">
                         <div className="grid grid-cols-2 gap-4">

@@ -24,45 +24,49 @@ export const AboutArmory: React.FC = () => {
         <div className="space-y-6">
             {/* Tactical Armory Visual Banner */}
             <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 bg-black shadow-[0_20px_50px_rgba(0,0,0,0.85)] group">
-                <div className="relative h-44 sm:h-56 md:h-64 w-full overflow-hidden">
+                <div className="relative min-h-[260px] sm:min-h-[260px] md:min-h-[270px] w-full overflow-hidden p-3.5 sm:p-5 md:p-6 flex flex-col justify-between gap-3">
                     <img 
                         src="/images/airsoft_gear_armory_1789071700147.jpg" 
                         alt="Tactical Armory Gunsmith Workbench" 
                         referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 filter brightness-90 contrast-110"
+                        className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 filter brightness-[0.7] contrast-110 pointer-events-none"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-transparent to-black/60" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/30 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-transparent to-black/60 pointer-events-none" />
 
                     {/* HUD Tactical Tags */}
-                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-amber-500/40 backdrop-blur-md">
-                            <Wrench className="w-3.5 h-3.5 text-amber-400" />
-                            <span className="text-[9.5px] sm:text-[11px] font-mono font-bold text-amber-300 tracking-wider uppercase">GUNSMITH REQUISITION</span>
+                    <div className="relative z-10 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/75 border border-amber-500/50 backdrop-blur-md shadow-md">
+                            <Wrench className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span className="text-[9px] sm:text-[10.5px] font-mono font-bold text-amber-300 tracking-wider uppercase whitespace-nowrap">
+                                GUNSMITH REQUISITION
+                            </span>
                         </div>
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-cyan-500/40 backdrop-blur-md">
-                            <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-                            <span className="text-[9.5px] sm:text-[11px] font-mono font-bold text-cyan-300 tracking-wider">ETU &amp; HOP-UP BENCH</span>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/75 border border-cyan-500/50 backdrop-blur-md shadow-md">
+                            <Cpu className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                            <span className="text-[9px] sm:text-[10.5px] font-mono font-bold text-cyan-300 tracking-wider whitespace-nowrap">
+                                ETU &amp; HOP-UP BENCH
+                            </span>
                         </div>
                     </div>
 
                     {/* Bottom Headline */}
-                    <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
-                        <div className="space-y-1">
-                            <span className="px-2 py-0.5 rounded bg-amber-600/80 text-white font-mono text-[9px] font-bold uppercase tracking-wider">
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-2.5 sm:gap-4">
+                        <div className="space-y-1 min-w-0">
+                            <span className="px-2 py-0.5 rounded bg-amber-600/90 text-white font-mono text-[8.5px] sm:text-[9.5px] font-bold uppercase tracking-wider shadow-sm">
                                 Hardware Engineering
                             </span>
-                            <h2 className="text-lg sm:text-2xl font-black text-white uppercase tracking-wider drop-shadow-md">
+                            <h2 className="text-base sm:text-2xl font-black text-white uppercase tracking-wider leading-tight drop-shadow-md">
                                 Tactical Armory &amp; Replica Technology
                             </h2>
-                            <p className="text-[11px] sm:text-xs text-zinc-300 max-w-xl line-clamp-2 sm:line-clamp-none drop-shadow">
+                            <p className="text-[10.5px] sm:text-xs text-zinc-300 max-w-xl leading-relaxed drop-shadow">
                                 Comprehensive mechanical standards covering LiPo/Li-Ion discharge curves, gas thermodynamic pressures, R-Hop buckings, and turnkey rental systems.
                             </p>
                         </div>
-                        <div className="hidden sm:flex items-center gap-2">
-                            <div className="px-3 py-1.5 rounded-xl bg-black/70 border border-white/10 backdrop-blur-md text-right font-mono">
-                                <div className="text-[9px] text-zinc-400">RENTAL FLEET</div>
-                                <div className="text-xs font-bold text-amber-400">40+ COMBAT SETUPS</div>
+                        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                            <div className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-black/75 border border-white/15 backdrop-blur-md text-left sm:text-right font-mono shadow-md">
+                                <div className="text-[8px] sm:text-[9px] text-zinc-400 uppercase">Rental Fleet</div>
+                                <div className="text-[11px] sm:text-xs font-bold text-amber-400">40+ COMBAT SETUPS</div>
                             </div>
                         </div>
                     </div>

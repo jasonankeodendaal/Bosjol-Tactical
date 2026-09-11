@@ -94,27 +94,27 @@ export const AboutArmory: React.FC = () => {
             {/* Category Selector Tabs */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
                 {[
-                    { id: 'batteries', label: 'Battery Chemistries', icon: <BatteryCharging className="w-4 h-4" />, desc: 'LiPo, Li-Ion, C-Ratings, Voltage' },
-                    { id: 'gas', label: 'Gas & HPA Systems', icon: <Flame className="w-4 h-4" />, desc: 'Green Gas, CO2, HPA Regulators' },
-                    { id: 'hopup', label: 'Hop-Up & Barrel Tech', icon: <Target className="w-4 h-4" />, desc: 'R-Hop, Buckings, Tightbore Inner Barrels' },
-                    { id: 'rentals', label: 'Rental Packages', icon: <PackageCheck className="w-4 h-4" />, desc: 'Armory Bundles, Gear Maintenance' }
+                    { id: 'batteries', label: 'Battery Chemistries', icon: <BatteryCharging className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, desc: 'LiPo, Li-Ion, C-Ratings' },
+                    { id: 'gas', label: 'Gas & HPA Systems', icon: <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, desc: 'Green Gas, CO2, HPA Regs' },
+                    { id: 'hopup', label: 'Hop-Up & Barrel Tech', icon: <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, desc: 'R-Hop, Buckings, Tightbore' },
+                    { id: 'rentals', label: 'Rental Packages', icon: <PackageCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, desc: 'Armory Bundles & Fleet' }
                 ].map((cat) => (
                     <button
                         key={cat.id}
                         onClick={() => setSelectedCategory(cat.id as any)}
-                        className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl text-left transition-all border flex flex-col justify-between gap-1 sm:gap-1.5 ${
+                        className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl text-left transition-all border flex flex-col justify-between gap-1 sm:gap-1.5 ${
                             selectedCategory === cat.id
                                 ? 'bg-red-600 text-white font-bold border-red-500 shadow-lg shadow-red-900/40 scale-[1.02]'
                                 : 'bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 border-zinc-800/90'
                         }`}
                     >
                         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                            <div className={`p-1.5 rounded-lg shrink-0 ${selectedCategory === cat.id ? 'bg-black/30 text-white' : 'bg-zinc-950 text-red-400 border border-zinc-800'}`}>
+                            <div className={`p-1 sm:p-1.5 rounded-lg shrink-0 ${selectedCategory === cat.id ? 'bg-black/30 text-white' : 'bg-zinc-950 text-red-400 border border-zinc-800'}`}>
                                 {cat.icon}
                             </div>
-                            <span className="text-[11px] sm:text-xs font-black uppercase truncate">{cat.label}</span>
+                            <span className="text-[10px] sm:text-xs font-black uppercase leading-tight line-clamp-2">{cat.label}</span>
                         </div>
-                        <div className={`text-[9px] sm:text-[10px] truncate ${selectedCategory === cat.id ? 'text-red-100' : 'text-zinc-400'}`}>
+                        <div className={`text-[8.5px] sm:text-[9.5px] line-clamp-1 ${selectedCategory === cat.id ? 'text-red-100' : 'text-zinc-400'}`}>
                             {cat.desc}
                         </div>
                     </button>

@@ -264,21 +264,21 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
                     <div className="relative flex-grow max-w-full sm:max-w-md" ref={dropdownRef}>
                         <button
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="w-full flex items-center justify-between gap-2 px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-b from-zinc-900 to-zinc-950 hover:from-zinc-850 hover:to-zinc-900 border border-red-500/50 shadow-[0_4px_20px_rgba(239,68,68,0.2),inset_0_1px_0_rgba(255,255,255,0.15)] text-left transition-all active:scale-[0.99]"
+                            className="w-full flex items-center justify-between gap-2 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-b from-zinc-900 to-zinc-950 hover:from-zinc-850 hover:to-zinc-900 border border-red-500/50 shadow-[0_4px_20px_rgba(239,68,68,0.2),inset_0_1px_0_rgba(255,255,255,0.15)] text-left transition-all active:scale-[0.99]"
                             aria-expanded={isDropdownOpen}
                             aria-haspopup="listbox"
                         >
-                            <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <div className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl bg-red-600/25 text-red-400 border border-red-500/40 shrink-0 shadow-inner">
                                     {currentTab.icon}
                                 </div>
-                                <div className="min-w-0">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-xs sm:text-sm font-black text-white uppercase tracking-wider truncate">
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-[11.5px] sm:text-sm font-black text-white uppercase tracking-tight sm:tracking-wider leading-tight">
                                             {currentTab.label}
                                         </span>
                                         {currentTab.badge && (
-                                            <span className="text-[8.5px] sm:text-[9px] font-mono font-bold px-1.5 py-0.2 bg-red-950 text-red-400 rounded border border-red-800/60 shrink-0">
+                                            <span className="text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 bg-red-950 text-red-400 rounded border border-red-800/60 shrink-0 whitespace-nowrap">
                                                 {currentTab.badge}
                                             </span>
                                         )}
@@ -289,7 +289,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ companyDetails }) => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-1 shrink-0 text-zinc-400">
-                                <span className="text-[9.5px] sm:text-[10px] font-mono font-bold uppercase text-red-400 bg-red-950/80 px-1.5 py-0.5 rounded-lg border border-red-900/50">
+                                <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase text-red-400 bg-red-950/80 px-1.5 py-0.5 rounded-lg border border-red-900/50 whitespace-nowrap">
                                     {currentTabIndex + 1}/{subTabs.length}
                                 </span>
                                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-red-400' : ''}`} />

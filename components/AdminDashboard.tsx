@@ -34,7 +34,7 @@ import { SendCredentialsModal } from './SendCredentialsModal';
 
 import { AdminGameTypesManager } from './AdminGameTypesManager';
 import { generateUniquePlayerCode } from '../utils/playerCodeGenerator';
-import { Eye, EyeOff, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, Search, Grid3X3, Layers, Award, ChevronRight, ChevronLeft, ArrowUpRight } from 'lucide-react';
 
 export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' | 'seedInitialData' | 'updatePlayerDoc' | 'addEventDoc' | 'deleteEventDoc' | 'updateEventDoc'> & {
     onDeleteAllData: () => void;
@@ -814,6 +814,36 @@ const LeaderboardTab: React.FC<{ players: Player[] }> = ({ players }) => {
 
 const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
     const activeRanks = ranks && ranks.length > 0 ? ranks : DEFAULT_RANKS;
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedRankForInspect, setSelectedRankForInspect] = useState<Rank | null>(null);
+    const [divisionFilter, setDivisionFilter] = useState<'all' | 'entry' | 'mid' | 'elite'>('all');
+
+    const sortedRanks = useMemo(() => {
+        return [...activeRanks].sort((a, b) => {
+            const tiersA = a.tiers || [];
+            const tiersB = b.tiers || [];
+            const minXpA = tiersA.length > 0 ? Math.min(...tiersA.map(t => t.minXp)) : (a.minXp ?? 0);
+            const minXpB = tiersB.length > 0 ? Math.min(...tiersB.map(t => t.minXp)) : (b.minXp ?? 0);
+            return minXpA - minXpB;
+        });
+    }, [activeRanks]);
+
+    const filteredRanks = useMemo(() => {
+        return sortedRanks.filter((rank, idx) => {
+            const matchesSearch = rank.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (rank.tiers || []).some(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()));
+            if (!matchesSearch) return false;
+
+            if (divisionFilter === 'entry') return idx < 5;
+            if (divisionFilter === 'mid') return idx >= 5 && idx < 10;
+            if (divisionFilter === 'elite') return idx >= 10;
+            return true;
+        });
+    }, [sortedRanks, searchQuery, divisionFilter]);
+
+    const totalSubTiers = useMemo(() => {
+        return activeRanks.reduce((acc, r) => acc + (r.tiers?.length || 0), 0);
+    }, [activeRanks]);
 
     const getRangeForTier = (tier: Tier, rank: Rank, rankIndex: number) => {
         const sortedTiersInRank = [...(rank.tiers || [])].sort((a,b) => a.minXp - b.minXp);
@@ -821,34 +851,88 @@ const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
         const nextTierInRank = sortedTiersInRank[tierIndex + 1];
 
         if (nextTierInRank) {
-            return `${tier.minXp.toLocaleString()} - ${(nextTierInRank.minXp - 1).toLocaleString()} RP`;
+            return `${tier.minXp.toLocaleString()} - ${(nextTierInRank.minXp - 1).toLocaleString()} XP`;
         }
         
-        const nextRank = activeRanks[rankIndex + 1];
-        if(nextRank && nextRank.tiers && nextRank.tiers.length > 0) {
+        const nextRank = sortedRanks[rankIndex + 1];
+        if (nextRank && nextRank.tiers && nextRank.tiers.length > 0) {
             const nextRankFirstTier = [...nextRank.tiers].sort((a,b) => a.minXp - b.minXp)[0];
-            return `${tier.minXp.toLocaleString()} - ${(nextRankFirstTier.minXp - 1).toLocaleString()} RP`;
+            return `${tier.minXp.toLocaleString()} - ${(nextRankFirstTier.minXp - 1).toLocaleString()} XP`;
         }
-        return `${tier.minXp.toLocaleString()}+ RP`;
-    }
+        return `${tier.minXp.toLocaleString()}+ XP`;
+    };
 
     return (
         <div className="w-full space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800/60">
-                <div className="flex items-center gap-2">
-                    <ShieldCheckIcon className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
-                    <h2 className="text-sm sm:text-lg font-black text-white uppercase tracking-wider">Rank Structure &amp; Hierarchy</h2>
+            {/* Header & Quick Tactical Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-zinc-800/80">
+                <div>
+                    <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-red-600/20 border border-red-500/40 text-red-400">
+                            <ShieldCheckIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </div>
+                        <h2 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
+                            Rank Structure &amp; Hierarchy
+                        </h2>
+                    </div>
+                    <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5">
+                        Shrink-to-fit side-by-side squares view • <span className="text-white font-semibold">{activeRanks.length} Divisions</span> • <span className="text-red-400 font-semibold">{totalSubTiers} Sub-Tiers</span>
+                    </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    {/* Search Field */}
+                    <div className="relative flex-grow sm:w-48">
+                        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+                        <input
+                            type="text"
+                            placeholder="Filter ranks..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-8 pr-3 py-1.5 bg-zinc-900/90 border border-zinc-700/80 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+                        />
+                        {searchQuery && (
+                            <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white">
+                                <XIcon className="w-3 h-3" />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            <div className="bg-zinc-950/60 border border-zinc-800/60 p-2 sm:p-2.5 rounded-xl flex items-center gap-2 text-[10px] sm:text-xs text-zinc-300 backdrop-blur-md shadow-[0_8px_20px_rgba(0,0,0,0.5)]">
-                <InformationCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400 flex-shrink-0" />
-                <p>3D Free-View overview of rank badges and tiers. Manage progression rules and live badge updates in the <strong className="text-white">Progression</strong> tab.</p>
+            {/* Tactical Filter Chips */}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                    {[
+                        { id: 'all', label: `All Divisions (${sortedRanks.length})` },
+                        { id: 'entry', label: 'Tier I: Cadet/Entry' },
+                        { id: 'mid', label: 'Tier II: Field Special' },
+                        { id: 'elite', label: 'Tier III: Master/Elite' }
+                    ].map((btn) => (
+                        <button
+                            key={btn.id}
+                            onClick={() => setDivisionFilter(btn.id as any)}
+                            className={`px-2.5 py-1 rounded-lg text-[10.5px] sm:text-xs font-bold uppercase tracking-wider transition-all border ${
+                                divisionFilter === btn.id
+                                    ? 'bg-red-600 text-white border-red-500 shadow-md shadow-red-900/30'
+                                    : 'bg-zinc-900/80 text-zinc-400 hover:text-white border-zinc-800/80 hover:bg-zinc-800/80'
+                            }`}
+                        >
+                            {btn.label}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="hidden lg:flex items-center gap-1.5 text-[10.5px] font-mono text-zinc-400 bg-zinc-950/60 px-2.5 py-1 rounded-lg border border-zinc-800/60">
+                    <Grid3X3 className="w-3 h-3 text-red-400" />
+                    <span>Side-by-Side Square Matrix</span>
+                </div>
             </div>
 
-            {/* 3-Column Square Layout Grid with 3D Background Shadowing & Depth */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5">
-                {activeRanks.map((rank, rankIndex) => {
+            {/* Side-by-Side Squares Grid - High Density, Shrink-To-Fit, Open-Spaced */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-3">
+                {filteredRanks.map((rank) => {
+                    const rankIndex = sortedRanks.findIndex(r => r.id === rank.id);
                     const resolvedRankBadge = resolveRankIcon(rank.rankBadgeUrl, rank.name);
                     const sortedTiers = [...(rank.tiers || [])].sort((a,b) => a.minXp - b.minXp);
                     const lowestXp = sortedTiers.length > 0 ? sortedTiers[0].minXp : (rank.minXp ?? 0);
@@ -857,63 +941,210 @@ const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
                     return (
                         <div 
                             key={rank.id} 
-                            className="relative flex flex-col justify-between p-3 sm:p-3.5 rounded-2xl bg-gradient-to-b from-zinc-900/40 via-zinc-950/70 to-zinc-950/90 hover:bg-zinc-900/80 border border-zinc-800/50 hover:border-red-500/50 shadow-[0_16px_40px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.06)] hover:shadow-[0_18px_44px_rgba(220,38,38,0.2)] backdrop-blur-xl transition-all duration-300 space-y-2.5 group"
+                            onClick={() => setSelectedRankForInspect(rank)}
+                            className="group relative cursor-pointer flex flex-col justify-between p-2.5 sm:p-3 rounded-2xl bg-gradient-to-b from-zinc-900/90 via-zinc-950/80 to-black border border-zinc-800/80 hover:border-red-500/80 shadow-[0_8px_24px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.06)] hover:shadow-[0_12px_32px_rgba(239,68,68,0.25)] backdrop-blur-xl transition-all duration-300 transform hover:-translate-y-0.5"
                         >
-                            {/* 3D Top Glow Accent */}
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4/5 h-[1px] bg-gradient-to-r from-transparent via-red-500/60 to-transparent pointer-events-none" />
+                            {/* Top Red Laser Glow Line */}
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1.5px] bg-gradient-to-r from-transparent via-red-500/70 to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
 
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2.5 pb-2 border-b border-zinc-800/50">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center rounded-xl bg-gradient-to-b from-zinc-800/60 to-zinc-950 border border-zinc-700/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_12px_rgba(0,0,0,0.6)] group-hover:scale-105 transition-transform">
+                            <div>
+                                {/* Top Monospace Index & Tier Count */}
+                                <div className="flex items-center justify-between gap-1 text-[9px] font-mono pb-1.5 border-b border-zinc-800/60">
+                                    <span className="text-zinc-400 font-bold tracking-widest uppercase">
+                                        #{String(rankIndex + 1).padStart(2, '0')}
+                                    </span>
+                                    <span className="px-1.5 py-0.2 rounded bg-red-950/80 text-red-400 border border-red-900/50 font-bold text-[8.5px]">
+                                        {sortedTiers.length} TIERS
+                                    </span>
+                                </div>
+
+                                {/* Centered 3D Badge Insignia Frame */}
+                                <div className="my-2 flex flex-col items-center justify-center">
+                                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl bg-gradient-to-b from-zinc-800/70 via-zinc-900/90 to-black border border-zinc-700/60 shadow-[inset_0_1px_2px_rgba(255,255,255,0.12),0_6px_16px_rgba(0,0,0,0.7)] group-hover:border-red-500/60 group-hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all duration-300">
                                         <img 
                                             src={resolvedRankBadge} 
                                             alt={rank.name} 
                                             onError={(e) => {
                                                 (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(rank.name);
                                             }}
-                                            className="w-7 h-7 sm:w-9 sm:h-9 object-contain drop-shadow-[0_4px_8px_rgba(239,68,68,0.4)]"
+                                            className="w-10 h-10 sm:w-12 sm:h-12 object-contain filter drop-shadow-[0_4px_10px_rgba(239,68,68,0.5)] group-hover:scale-110 transition-transform duration-300"
                                         />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <h3 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider group-hover:text-red-400 transition-colors truncate">{rank.name}</h3>
-                                        <span className="inline-block bg-red-950/80 text-red-300 border border-red-800/60 text-[9px] font-mono font-bold px-1.5 py-0.2 rounded mt-0.5 shadow-xs">
-                                            {lowestXp.toLocaleString()} XP{sortedTiers.length > 1 ? ` – ${highestXp.toLocaleString()}` : '+'}
-                                        </span>
-                                        <p className="text-[9px] sm:text-[10px] text-zinc-400 truncate mt-0.5">{rank.description || 'Tactical Combat Division'}</p>
                                     </div>
                                 </div>
 
-                                <div className="space-y-1 max-h-52 overflow-y-auto pr-0.5 scrollbar-thin scrollbar-thumb-zinc-800">
-                                    {sortedTiers.map((sub) => {
-                                        const resolvedTierIcon = resolveRankIcon(sub.iconUrl, rank.name, sub.name);
-                                        return (
-                                            <div key={sub.id} className="p-1.5 rounded-xl border border-zinc-800/40 bg-zinc-900/30 hover:bg-zinc-800/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-all flex items-center gap-1.5">
-                                                <img 
-                                                    src={resolvedTierIcon} 
-                                                    alt={sub.name} 
-                                                    onError={(e) => {
-                                                        (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(sub.name || rank.name);
-                                                    }}
-                                                    className="w-4.5 h-4.5 sm:w-5 sm:h-5 flex-shrink-0 object-contain drop-shadow"
-                                                />
-                                                <div className="min-w-0 flex-grow">
-                                                    <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-0.5 xl:gap-1">
-                                                        <h4 className="font-bold text-white text-[9px] sm:text-[10px] xl:text-[11px] truncate leading-tight">{sub.name}</h4>
-                                                        <span className="text-[7.5px] sm:text-[8px] xl:text-[9px] font-mono text-green-400 font-bold bg-zinc-950 px-1 py-0.2 rounded border border-green-500/20 leading-tight w-fit">{getRangeForTier(sub, rank, rankIndex)}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                {/* Rank Title & XP Range */}
+                                <div className="text-center space-y-1">
+                                    <h3 className="text-xs sm:text-[13px] font-black text-white uppercase tracking-wider group-hover:text-red-400 transition-colors truncate">
+                                        {rank.name}
+                                    </h3>
+                                    <div className="inline-block px-2 py-0.5 rounded-full bg-zinc-900/90 border border-zinc-700/60 text-[8.5px] sm:text-[9px] font-mono font-bold text-red-300 shadow-inner truncate max-w-full">
+                                        {lowestXp.toLocaleString()} XP{sortedTiers.length > 1 ? ` – ${highestXp.toLocaleString()}` : '+'}
+                                    </div>
                                 </div>
+                            </div>
+
+                            {/* Bottom Sub-Tiers Micro Preview & Quick Inspect Prompt */}
+                            <div className="mt-2 pt-2 border-t border-zinc-800/60 flex items-center justify-between gap-1">
+                                {/* Micro dots / pips for sub-tiers */}
+                                <div className="flex items-center gap-0.5 overflow-hidden max-w-[65%]">
+                                    {sortedTiers.slice(0, 5).map((subTier, i) => (
+                                        <div 
+                                            key={subTier.id || i}
+                                            title={subTier.name}
+                                            className="w-1.5 h-1.5 rounded-full bg-red-500/80 shadow-[0_0_4px_rgba(239,68,68,0.8)]"
+                                        />
+                                    ))}
+                                    {sortedTiers.length > 5 && (
+                                        <span className="text-[7.5px] font-mono text-zinc-500 font-bold leading-none">
+                                            +{sortedTiers.length - 5}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <span className="text-[8px] sm:text-[8.5px] font-mono font-bold uppercase text-zinc-400 group-hover:text-red-400 flex items-center gap-0.5 transition-colors">
+                                    <span>Inspect</span>
+                                    <ChevronRight className="w-2.5 h-2.5 transition-transform group-hover:translate-x-0.5" />
+                                </span>
                             </div>
                         </div>
                     );
                 })}
-                {ranks.length === 0 && (
-                    <div className="col-span-full text-center text-zinc-500 py-8 text-xs sm:text-base">No ranks have been configured. Go to the 'Progression' tab to set them up.</div>
+
+                {filteredRanks.length === 0 && (
+                    <div className="col-span-full text-center text-zinc-400 py-12 bg-zinc-950/60 rounded-2xl border border-zinc-800/80">
+                        <ShieldCheckIcon className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+                        <p className="font-bold text-white text-sm">No Ranks Found</p>
+                        <p className="text-xs text-zinc-500 mt-0.5">Try adjusting your search query or filter selection.</p>
+                    </div>
                 )}
             </div>
+
+            {/* Sub-Tier Inspection Modal */}
+            <AnimatePresence>
+                {selectedRankForInspect && (
+                    <Modal
+                        isOpen={true}
+                        onClose={() => setSelectedRankForInspect(null)}
+                        title={`${selectedRankForInspect.name} — Division Breakdown`}
+                    >
+                        {(() => {
+                            const rank = selectedRankForInspect;
+                            const rankIndex = sortedRanks.findIndex(r => r.id === rank.id);
+                            const resolvedRankBadge = resolveRankIcon(rank.rankBadgeUrl, rank.name);
+                            const sortedTiers = [...(rank.tiers || [])].sort((a,b) => a.minXp - b.minXp);
+                            const lowestXp = sortedTiers.length > 0 ? sortedTiers[0].minXp : (rank.minXp ?? 0);
+                            const highestXp = sortedTiers.length > 0 ? sortedTiers[sortedTiers.length - 1].minXp : lowestXp;
+
+                            return (
+                                <div className="space-y-4">
+                                    {/* Division Header Banner */}
+                                    <div className="flex items-center gap-3 sm:gap-4 p-3.5 rounded-2xl bg-gradient-to-r from-red-950/40 via-zinc-900 to-zinc-950 border border-red-500/40 shadow-xl">
+                                        <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 flex items-center justify-center rounded-2xl bg-black/60 border border-red-500/40 shadow-[0_0_16px_rgba(239,68,68,0.3)]">
+                                            <img 
+                                                src={resolvedRankBadge} 
+                                                alt={rank.name} 
+                                                onError={(e) => {
+                                                    (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(rank.name);
+                                                }}
+                                                className="w-11 h-11 sm:w-13 sm:h-13 object-contain drop-shadow-[0_4px_10px_rgba(239,68,68,0.6)]"
+                                            />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-red-600 text-white shadow-xs">
+                                                    DIVISION #{String(rankIndex + 1).padStart(2, '0')}
+                                                </span>
+                                                <span className="text-[9px] font-mono font-bold text-zinc-300">
+                                                    {sortedTiers.length} Sub-Tiers
+                                                </span>
+                                            </div>
+                                            <h3 className="text-base sm:text-xl font-black text-white uppercase tracking-wider mt-1 truncate">
+                                                {rank.name}
+                                            </h3>
+                                            <p className="text-[11px] text-zinc-400 mt-0.5">
+                                                Overall Bracket: <strong className="text-red-400 font-mono">{lowestXp.toLocaleString()} XP{sortedTiers.length > 1 ? ` – ${highestXp.toLocaleString()} XP` : '+'}</strong>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Sub-Tiers Grid / List */}
+                                    <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-700">
+                                        <div className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider px-1">
+                                            Sub-Tier Progression Hierarchy ({sortedTiers.length})
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {sortedTiers.map((sub, tierIdx) => {
+                                                const resolvedTierIcon = resolveRankIcon(sub.iconUrl, rank.name, sub.name);
+                                                return (
+                                                    <div 
+                                                        key={sub.id || tierIdx} 
+                                                        className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-850 transition-all flex items-center gap-2.5 shadow-sm"
+                                                    >
+                                                        <div className="w-9 h-9 shrink-0 flex items-center justify-center rounded-lg bg-zinc-950 border border-zinc-800">
+                                                            <img 
+                                                                src={resolvedTierIcon} 
+                                                                alt={sub.name} 
+                                                                onError={(e) => {
+                                                                    (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(sub.name || rank.name);
+                                                                }}
+                                                                className="w-7 h-7 object-contain drop-shadow"
+                                                            />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center justify-between gap-1">
+                                                                <h4 className="text-xs font-bold text-white truncate">{sub.name}</h4>
+                                                                <span className="text-[8px] font-mono text-emerald-400 font-bold bg-zinc-950 px-1.5 py-0.5 rounded border border-emerald-500/20 whitespace-nowrap">
+                                                                    {getRangeForTier(sub, rank, rankIndex)}
+                                                                </span>
+                                                            </div>
+                                                            {sub.perks && sub.perks.length > 0 && (
+                                                                <p className="text-[9.5px] text-zinc-400 truncate mt-0.5">
+                                                                    Perks: {sub.perks.join(', ')}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Modal Footer Controls */}
+                                    <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
+                                        <div className="flex items-center gap-2">
+                                            <Button 
+                                                size="sm" 
+                                                variant="secondary"
+                                                disabled={rankIndex === 0}
+                                                onClick={() => {
+                                                    if (rankIndex > 0) setSelectedRankForInspect(sortedRanks[rankIndex - 1]);
+                                                }}
+                                                className="!px-2.5 !py-1 text-xs"
+                                            >
+                                                <ChevronLeft className="w-3.5 h-3.5 mr-0.5" /> Previous
+                                            </Button>
+                                            <Button 
+                                                size="sm" 
+                                                variant="secondary"
+                                                disabled={rankIndex === sortedRanks.length - 1}
+                                                onClick={() => {
+                                                    if (rankIndex < sortedRanks.length - 1) setSelectedRankForInspect(sortedRanks[rankIndex + 1]);
+                                                }}
+                                                className="!px-2.5 !py-1 text-xs"
+                                            >
+                                                Next <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
+                                            </Button>
+                                        </div>
+                                        <Button size="sm" onClick={() => setSelectedRankForInspect(null)} className="!px-4 !py-1 text-xs">
+                                            Close
+                                        </Button>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </Modal>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

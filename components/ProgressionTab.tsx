@@ -532,16 +532,16 @@ const RankCard: React.FC<{
                     </div>
                 </div>
 
-                {/* Centered 3D Badge Chamber */}
+                {/* Centered Badge Display (Clean Transparent / No Dark Box) */}
                 <div className="my-2 flex flex-col items-center justify-center">
-                    <div className="relative w-13 h-13 sm:w-15 sm:h-15 flex items-center justify-center rounded-2xl bg-gradient-to-b from-zinc-800/70 via-zinc-900/90 to-black border border-zinc-700/60 shadow-[inset_0_1px_2px_rgba(255,255,255,0.12),0_6px_14px_rgba(0,0,0,0.7)] group-hover:border-red-500/60 group-hover:shadow-[0_0_18px_rgba(239,68,68,0.3)] transition-all duration-300">
+                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center">
                         <img 
                             src={resolvedRankBadge} 
                             alt={rank.name} 
                             onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(rank.name);
                             }}
-                            className="w-9 h-9 sm:w-11 sm:h-11 object-contain filter drop-shadow-[0_4px_8px_rgba(239,68,68,0.45)] group-hover:scale-110 transition-transform duration-300" 
+                            className="w-12 h-12 sm:w-14 sm:h-14 object-contain filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.7)] group-hover:drop-shadow-[0_0_16px_rgba(239,68,68,0.5)] group-hover:scale-110 transition-all duration-300" 
                         />
                     </div>
                 </div>

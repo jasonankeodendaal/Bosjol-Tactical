@@ -455,14 +455,14 @@ export const PlayerRankShowcase: React.FC<PlayerRankShowcaseProps> = ({
                             {/* Active Tier Perk Showcase Tile */}
                             <div className="p-2.5 rounded-xl bg-zinc-900/30 border border-zinc-800/40 space-y-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 flex items-center justify-center rounded-lg bg-zinc-950 border border-zinc-800/60 shadow-inner">
+                                    <div className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 flex items-center justify-center">
                                         <img
                                             src={resolveRankIcon(selectedTier.iconUrl || selectedTier.rankBadgeUrl, selectedTier.rankName, selectedTier.name)}
                                             alt={selectedTier.name}
                                             onError={(e) => {
                                                 (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(selectedTier.name || selectedTier.rankName);
                                             }}
-                                            className="w-6 h-6 sm:w-7 sm:h-7 object-contain drop-shadow"
+                                            className="w-7 h-7 sm:w-8 sm:h-8 object-contain drop-shadow"
                                         />
                                     </div>
                                     <div className="overflow-hidden min-w-0">
@@ -560,14 +560,14 @@ export const PlayerRankShowcase: React.FC<PlayerRankShowcaseProps> = ({
 
                                     {/* Division Header */}
                                     <div className="flex items-center gap-2.5 pb-2 border-b border-zinc-800/50">
-                                        <div className="w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-gradient-to-b from-zinc-800/60 to-zinc-950 border border-zinc-700/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_12px_rgba(0,0,0,0.6)] group-hover:scale-105 transition-transform">
+                                        <div className="w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform">
                                             <img
                                                 src={resolveRankIcon(rank.rankBadgeUrl, rank.name)}
                                                 alt={rank.name}
                                                 onError={(e) => {
                                                     (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(rank.name);
                                                 }}
-                                                className="w-7 h-7 sm:w-8 sm:h-8 object-contain filter drop-shadow-[0_4px_8px_rgba(251,191,36,0.3)]"
+                                                className="w-9 h-9 sm:w-10 sm:h-10 object-contain filter drop-shadow-[0_4px_8px_rgba(251,191,36,0.3)]"
                                             />
                                         </div>
                                         <div className="overflow-hidden min-w-0">

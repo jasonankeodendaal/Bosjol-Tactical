@@ -957,16 +957,16 @@ const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
                                     </span>
                                 </div>
 
-                                {/* Centered 3D Badge Insignia Frame */}
+                                {/* Centered Badge Display (Clean Transparent / No Dark Box) */}
                                 <div className="my-2 flex flex-col items-center justify-center">
-                                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl bg-gradient-to-b from-zinc-800/70 via-zinc-900/90 to-black border border-zinc-700/60 shadow-[inset_0_1px_2px_rgba(255,255,255,0.12),0_6px_16px_rgba(0,0,0,0.7)] group-hover:border-red-500/60 group-hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all duration-300">
+                                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center">
                                         <img 
                                             src={resolvedRankBadge} 
                                             alt={rank.name} 
                                             onError={(e) => {
                                                 (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(rank.name);
                                             }}
-                                            className="w-10 h-10 sm:w-12 sm:h-12 object-contain filter drop-shadow-[0_4px_10px_rgba(239,68,68,0.5)] group-hover:scale-110 transition-transform duration-300"
+                                            className="w-12 h-12 sm:w-14 sm:h-14 object-contain filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.7)] group-hover:drop-shadow-[0_0_16px_rgba(239,68,68,0.5)] group-hover:scale-110 transition-all duration-300"
                                         />
                                     </div>
                                 </div>
@@ -1038,14 +1038,14 @@ const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
                                 <div className="space-y-4">
                                     {/* Division Header Banner */}
                                     <div className="flex items-center gap-3 sm:gap-4 p-3.5 rounded-2xl bg-gradient-to-r from-red-950/40 via-zinc-900 to-zinc-950 border border-red-500/40 shadow-xl">
-                                        <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 flex items-center justify-center rounded-2xl bg-black/60 border border-red-500/40 shadow-[0_0_16px_rgba(239,68,68,0.3)]">
+                                        <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 flex items-center justify-center">
                                             <img 
                                                 src={resolvedRankBadge} 
                                                 alt={rank.name} 
                                                 onError={(e) => {
                                                     (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(rank.name);
                                                 }}
-                                                className="w-11 h-11 sm:w-13 sm:h-13 object-contain drop-shadow-[0_4px_10px_rgba(239,68,68,0.6)]"
+                                                className="w-12 h-12 sm:w-14 sm:h-14 object-contain drop-shadow-[0_4px_10px_rgba(239,68,68,0.6)]"
                                             />
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -1079,14 +1079,14 @@ const AdminRanksDisplayTab: React.FC<{ ranks: Rank[] }> = ({ ranks }) => {
                                                         key={sub.id || tierIdx} 
                                                         className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-850 transition-all flex items-center gap-2.5 shadow-sm"
                                                     >
-                                                        <div className="w-9 h-9 shrink-0 flex items-center justify-center rounded-lg bg-zinc-950 border border-zinc-800">
+                                                        <div className="w-9 h-9 shrink-0 flex items-center justify-center">
                                                             <img 
                                                                 src={resolvedTierIcon} 
                                                                 alt={sub.name} 
                                                                 onError={(e) => {
                                                                     (e.currentTarget as HTMLImageElement).src = getRankBadgeSvg(sub.name || rank.name);
                                                                 }}
-                                                                className="w-7 h-7 object-contain drop-shadow"
+                                                                className="w-8 h-8 object-contain drop-shadow"
                                                             />
                                                         </div>
                                                         <div className="min-w-0 flex-1">

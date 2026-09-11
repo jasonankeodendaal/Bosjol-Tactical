@@ -220,6 +220,15 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
                locations.find(l => l.name.toLowerCase().includes(event.location.toLowerCase()));
     }, [locations, event.location]);
 
+    // Validation: Check for multiple rentals (containing "Rental")
+    const hasMultipleRentals = useMemo(() => {
+        const selectedRentalItems = selectedGear.filter(id => {
+            const item = availableGear.find(g => g.id === id);
+            return item && /Rental/i.test(item.name);
+        });
+        return selectedRentalItems.length > 1;
+    }, [selectedGear, availableGear]);
+
     const handleGearToggle = (itemId: string) => {
         setSelectedGear(prev => 
             prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
@@ -229,8 +238,8 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
     const handleWeaponRentalToggle = (checked: boolean) => {
         setWantsWeaponRental(checked);
         if (checked) {
-            // Find rental weapons specifically named 'Rental X'
-            const rentalWeapons = weaponRentals.filter(item => /Rental\s*\d+/i.test(item.name));
+            // Find rental weapons specifically named 'Rental 1', 'Rental 2', or 'Rental 3'
+            const rentalWeapons = weaponRentals.filter(item => /Rental\s*[1-3]/i.test(item.name));
             
             // Sort rentals by the number in their name
             const sortedRentals = rentalWeapons.sort((a, b) => {
@@ -239,7 +248,7 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
                 return numA - numB;
             });
 
-            // Find first available Rental X
+            // Find first available Rental 1, 2, or 3
             let nextAvailableWeapon = sortedRentals.find(item => {
                 const availableStock = item.stock - (alreadyRentedCount[item.id] || 0);
                 return availableStock > 0;
@@ -679,7 +688,12 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
                                                             <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'border-red-500 bg-red-600' : 'border-zinc-600 bg-transparent'}`}>
                                                                 {isSelected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
                                                             </div>
-                                                            <span className="truncate">{item.name}</span>
+                                                            <div className="flex flex-col min-w-0">
+                                                                <span className="truncate">{item.name}</span>
+                                                                {/Rental/i.test(item.name) && (
+                                                                    <span className="text-[9px] bg-red-500/20 text-red-300 px-1 rounded w-fit mt-0.5">Rental</span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                         <div className="text-right shrink-0">
                                                             <span className="font-mono font-bold text-white">R{item.salePrice.toFixed(2)}</span>

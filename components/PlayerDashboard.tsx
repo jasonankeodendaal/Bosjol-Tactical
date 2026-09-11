@@ -19,6 +19,7 @@ import { Loader } from './Loader';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { PlayerRankShowcase } from './PlayerRankShowcase';
 import { PlayerRulesView } from './PlayerRulesView';
+import { PlayerGameTypesView } from './PlayerGameTypesView';
 import { getRankForPlayer, getRankProgression, FALLBACK_RECRUIT_TIER } from '../utils/rankUtils';
 import { resolveRankIcon, getRankBadgeSvg } from '../utils/rankBadges';
 import { calculatePlayerPerformance } from '../utils/playerPerformanceUtils';
@@ -233,7 +234,7 @@ interface PlayerDashboardProps {
     onOpenInfoModal?: (ruleSetId?: string) => void;
 }
 
-type Tab = 'Overview' | 'Events' | 'Raffles' | 'Ranks' | 'Rules' | 'Stats' | 'Achievements' | 'Settings';
+type Tab = 'Overview' | 'Events' | 'Game Types' | 'Raffles' | 'Ranks' | 'Rules' | 'Stats' | 'Achievements' | 'Settings';
 
 const ProgressBar: React.FC<{ value: number; max: number; isThin?: boolean }> = ({ value, max, isThin=false }) => {
     const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -261,6 +262,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
     const tabs: {name: Tab, icon: React.ReactNode}[] = [
         {name: 'Overview', icon: <HomeIcon className="w-5 h-5"/>},
         {name: 'Events', icon: <CalendarIcon className="w-5 h-5"/>},
+        {name: 'Game Types', icon: <CrosshairsIcon className="w-5 h-5"/>},
         {name: 'Raffles', icon: <TicketIcon className="w-5 h-5"/>},
         {name: 'Ranks', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Rules', icon: <InformationCircleIcon className="w-5 h-5"/>},
@@ -1395,6 +1397,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                                     onSelectEvent={setSelectedEvent}
                                 />
                             )}
+                            {activeTab === 'Game Types' && <PlayerGameTypesView />}
                             {activeTab === 'Raffles' && <RafflesTab raffles={raffles} player={player} players={players} />}
                             {activeTab === 'Ranks' && <RankAndLeaderboardTab ranks={ranks} player={player} players={players} events={events} onNavigateTab={(t) => setActiveTab(t as Tab)} />}
                             {activeTab === 'Rules' && <PlayerRulesView onOpenInfoModal={onOpenInfoModal} />}

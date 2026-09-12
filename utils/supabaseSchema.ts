@@ -1003,9 +1003,19 @@ export function normalizeSignupRow(raw: any): Signup {
     const parsedGear = safeJsonParse<string[]>(rawGear, []);
     const requestedGearIds = Array.isArray(parsedGear) ? parsedGear : (Array.isArray(rawGear) ? rawGear : []);
     
-    const eventId = String(raw.eventId || raw.eventid || raw.event_id || '');
-    const playerId = String(raw.playerId || raw.playerid || raw.player_id || '');
+    let eventId = String(raw.eventId || raw.eventid || raw.event_id || '');
+    let playerId = String(raw.playerId || raw.playerid || raw.player_id || '');
     const id = String(raw.id || (eventId && playerId ? `${eventId}_${playerId}` : `signup_${Date.now()}`));
+
+    // Composite ID fallback extraction (e.g. "event123_player456")
+    if ((!eventId || !playerId) && id && id.includes('_')) {
+        const parts = id.split('_');
+        if (parts.length >= 2) {
+            if (!eventId) eventId = parts[0];
+            if (!playerId) playerId = parts.slice(1).join('_');
+        }
+    }
+
     const note = raw.note || raw.operatorNote || raw.operatornote || '';
 
     return {

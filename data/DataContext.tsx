@@ -306,14 +306,21 @@ async function safeUpsertRow(table: string, initialPayload: any): Promise<boolea
             if (match && match[1]) {
                 const missingCol = match[1];
                 let removed = false;
-                for (const k of Object.keys(currentPayload)) {
-                    if (k === missingCol || k.toLowerCase() === missingCol.toLowerCase()) {
-                        delete currentPayload[k];
+                
+                // Only delete the specific rejected key so the alternative case variant (e.g. eventid vs eventId) remains intact!
+                if (missingCol in currentPayload) {
+                    delete currentPayload[missingCol];
+                    removed = true;
+                } else {
+                    const matchedKey = Object.keys(currentPayload).find(k => k.toLowerCase() === missingCol.toLowerCase());
+                    if (matchedKey) {
+                        delete currentPayload[matchedKey];
                         removed = true;
                     }
                 }
+
                 if (removed && Object.keys(currentPayload).length > 0) {
-                    console.warn(`Supabase table '${tableName}' missing column '${missingCol}'. Stripped missing column and retrying upsert...`);
+                    console.warn(`Supabase table '${tableName}' missing column '${missingCol}'. Stripped '${missingCol}' and retrying upsert...`);
                     continue;
                 }
             }

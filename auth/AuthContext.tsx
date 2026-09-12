@@ -65,9 +65,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // Player Check: Look for ANY record in the players table with this email
             const { data: playerRows } = await supabase!.from('players').select('*').eq('email', email);
             if (playerRows && playerRows.length > 0) {
-                const playerDoc = playerRows[0];
+                const playerDoc = normalizePlayerRow(playerRows[0]);
                 setUser(playerDoc as Player);
-                sessionStorage.setItem('activePlayerId', playerDoc.id);
+                try {
+                    sessionStorage.setItem('activePlayerId', playerDoc.id);
+                    localStorage.setItem('activePlayerId', playerDoc.id);
+                } catch {}
                 return;
             }
 
@@ -100,8 +103,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             };
 
             await supabase!.from('players').upsert(newPlayer);
-            setUser(newPlayer as Player);
-            sessionStorage.setItem('activePlayerId', newPlayer.id);
+            const normalizedNew = normalizePlayerRow(newPlayer);
+            setUser(normalizedNew as Player);
+            try {
+                sessionStorage.setItem('activePlayerId', newPlayer.id);
+                localStorage.setItem('activePlayerId', newPlayer.id);
+            } catch {}
         } catch (error) {
             console.error("Error handling Supabase user:", error);
         }
@@ -122,16 +129,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 await handleSupabaseUser(session.user);
                 if (isMounted) setLoading(false);
             } else {
-                // Check if we have an active player session in current browser tab session
-                const storedPlayerId = sessionStorage.getItem('activePlayerId');
+                // Check if we have an active player session in current browser tab/storage session
+                const storedPlayerId = sessionStorage.getItem('activePlayerId') || localStorage.getItem('activePlayerId');
                 if (storedPlayerId) {
                     supabase.from('players').select('*').eq('id', storedPlayerId).single()
                     .then(({ data, error }) => {
                         if (!isMounted) return;
                         if (data && !error) {
-                            setUser(data as Player);
+                            const normalized = normalizePlayerRow(data);
+                            setUser(normalized as Player);
                         } else {
                             sessionStorage.removeItem('activePlayerId');
+                            localStorage.removeItem('activePlayerId');
                         }
                     })
                     .finally(() => {
@@ -239,7 +248,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     // Ensure the playerCode is saved in memory
                     normalized.playerCode = cleanCode;
                     setUser(normalized);
-                    sessionStorage.setItem('activePlayerId', normalized.id);
+                    try {
+                        sessionStorage.setItem('activePlayerId', normalized.id);
+                        localStorage.setItem('activePlayerId', normalized.id);
+                    } catch {}
                     return true;
                 }
             }
@@ -256,7 +268,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (IS_LIVE && supabase) {
             await supabase.auth.signOut();
         }
-        sessionStorage.removeItem('activePlayerId');
+        try {
+            sessionStorage.removeItem('activePlayerId');
+            localStorage.removeItem('activePlayerId');
+        } catch {}
         setUser(null);
         setLoading(false);
     }, [IS_LIVE]);

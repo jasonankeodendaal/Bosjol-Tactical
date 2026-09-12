@@ -79,12 +79,20 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
         return signups.find(s => s.eventId === event.id && s.playerId === player.id);
     }, [signups, event.id, player.id]);
 
-    // Attending players count
+    // Attending players count (distinct signups + attendees + team assignments)
     const attendingCount = useMemo(() => {
-        const count = signups.filter(s => s.eventId === event.id).length;
-        if (count > 0) return count;
-        return event.attendees?.length || 0;
-    }, [signups, event.id, event.attendees]);
+        const attendeePlayerIds = new Set<string>();
+        const eventSignups = signups.filter(s => s.eventId === event.id);
+        eventSignups.forEach(s => { if (s.playerId) attendeePlayerIds.add(s.playerId); });
+        (event.attendees || []).forEach(a => { if (a.playerId) attendeePlayerIds.add(a.playerId); });
+        if (event.teams && typeof event.teams === 'object') {
+            Object.values(event.teams).forEach(list => {
+                if (Array.isArray(list)) list.forEach(pid => pid && attendeePlayerIds.add(pid));
+            });
+        }
+        if (attendeePlayerIds.size > 0) return attendeePlayerIds.size;
+        return Math.max(eventSignups.length, event.attendees?.length || 0);
+    }, [signups, event.id, event.attendees, event.teams]);
 
     // Inventory and rentals
     const availableGear = useMemo(() => {

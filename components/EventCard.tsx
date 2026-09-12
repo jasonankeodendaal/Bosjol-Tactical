@@ -35,18 +35,23 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, className = '', o
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
   };
   
-  // Calculate total attending players count
-  const rawCount = signupsCount !== undefined 
-    ? signupsCount 
-    : Math.max(
-        event.attendees?.length || 0,
-        Object.values(event.teams || {}).reduce((sum, list) => sum + (Array.isArray(list) ? list.length : 0), 0)
-      );
+  // Calculate total attending players count accurately
+  const attendeePlayerIds = new Set<string>();
+  if (Array.isArray(event.attendees)) {
+    event.attendees.forEach(a => {
+      if (a?.playerId) attendeePlayerIds.add(a.playerId);
+    });
+  }
+  if (event.teams && typeof event.teams === 'object') {
+    Object.values(event.teams).forEach(list => {
+      if (Array.isArray(list)) list.forEach(pid => pid && attendeePlayerIds.add(pid));
+    });
+  }
 
-  // Fallback to a realistic count if no signups/attendees logged yet for demo items
-  const attendingCount = rawCount > 0 
-    ? rawCount 
-    : (parseInt(event.id.replace(/\D/g, '') || '8', 10) % 12) + 6;
+  const baseAttendeesCount = Math.max(attendeePlayerIds.size, event.attendees?.length || 0);
+  const attendingCount = signupsCount !== undefined 
+    ? Math.max(signupsCount, baseAttendeesCount) 
+    : baseAttendeesCount;
 
   return (
     <motion.div 
@@ -61,12 +66,6 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, className = '', o
             <CalendarIcon className="w-4 h-4 sm:w-8 sm:h-8" />
           </div>
         )}
-
-        {/* Attending Players Summary Badge Overlay */}
-        <div className="absolute top-1.5 left-1.5 px-1.5 sm:px-2 py-0.5 rounded-md bg-black/85 backdrop-blur-md border border-emerald-500/40 text-[8px] sm:text-[10px] font-bold text-emerald-400 flex items-center gap-1 shadow-lg z-10">
-          <Users className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-emerald-400 shrink-0" />
-          <span>{attendingCount} {attendingCount === 1 ? 'player' : 'players'} attending</span>
-        </div>
 
         {/* Action Buttons Overlay */}
         <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
@@ -128,8 +127,12 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, className = '', o
 
           {/* Card Footer Summary Counter */}
           <div className="mt-2 pt-1.5 border-t border-zinc-700/40 flex items-center justify-between text-[8px] sm:text-xs">
-            <span className="inline-flex items-center gap-1 font-semibold text-emerald-400 bg-emerald-950/40 px-1.5 sm:px-2 py-0.5 rounded border border-emerald-500/30">
-              <Users className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-emerald-400" />
+            <span className={`inline-flex items-center gap-1 font-semibold px-1.5 sm:px-2 py-0.5 rounded border ${
+              attendingCount > 0 
+                ? 'text-emerald-400 bg-emerald-950/40 border-emerald-500/30' 
+                : 'text-zinc-400 bg-zinc-900/60 border-zinc-700/40'
+            }`}>
+              <Users className={`w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 ${attendingCount > 0 ? 'text-emerald-400' : 'text-zinc-500'}`} />
               <span>{attendingCount} attending</span>
             </span>
             <span className="text-[8px] sm:text-[10px] text-zinc-400 uppercase font-mono tracking-wider">

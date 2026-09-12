@@ -25,8 +25,10 @@ export const EventQRCodeModal: React.FC<EventQRCodeModalProps> = ({
     });
 
     const eventSignups = signups.filter(s => s.eventId === event.id);
-    const checkedInCount = event.attendees ? event.attendees.length : 0;
-    const totalSignupsCount = eventSignups.length + checkedInCount;
+    const checkedInPlayerIds = new Set((event.attendees || []).map(a => a.playerId));
+    const checkedInCount = checkedInPlayerIds.size;
+    const registeredOnlyCount = eventSignups.filter(s => !checkedInPlayerIds.has(s.playerId)).length;
+    const totalSignupsCount = checkedInCount + registeredOnlyCount;
 
     const handleDownloadQR = () => {
         const canvas = document.querySelector('.qr-modal-container img') as HTMLImageElement;

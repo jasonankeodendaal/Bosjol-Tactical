@@ -981,14 +981,24 @@ const EventsTab: React.FC<Pick<PlayerDashboardProps, 'events' | 'player' | 'onEv
                     />
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-4 max-h-[65vh] overflow-y-auto pr-1 sm:pr-2">
-                        {eventsToShow.length > 0 ? eventsToShow.map(event => (
-                            <div key={event.id} className="cursor-pointer h-full" onClick={() => handleSelectEvent(event)}>
-                                <EventCard 
-                                    event={event} 
-                                    signupsCount={signups ? signups.filter(s => s.eventId === event.id).length : undefined} 
-                                />
-                            </div>
-                        )) : (
+                        {eventsToShow.length > 0 ? eventsToShow.map(event => {
+                            const eventSignups = (signups || []).filter(s => s.eventId === event.id);
+                            const attendeePlayerIds = new Set<string>();
+                            eventSignups.forEach(s => { if (s.playerId) attendeePlayerIds.add(s.playerId); });
+                            (event.attendees || []).forEach(a => { if (a.playerId) attendeePlayerIds.add(a.playerId); });
+                            const totalAttendance = attendeePlayerIds.size > 0 
+                                ? attendeePlayerIds.size 
+                                : Math.max(eventSignups.length, event.attendees?.length || 0);
+
+                            return (
+                                <div key={event.id} className="cursor-pointer h-full" onClick={() => handleSelectEvent(event)}>
+                                    <EventCard 
+                                        event={event} 
+                                        signupsCount={totalAttendance} 
+                                    />
+                                </div>
+                            );
+                        }) : (
                              <p className="text-center text-gray-500 py-8 col-span-full text-xs sm:text-base">No {filter} events found.</p>
                         )}
                     </div>

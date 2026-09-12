@@ -90,8 +90,16 @@ export const EventsTab: React.FC<EventsTabProps> = ({ events, signups = [], onMa
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-4 max-h-[65vh] overflow-y-auto pr-1 sm:pr-2">
                         {eventsToShow.length > 0 ? eventsToShow.map(event => {
+                            const eventSignups = (signups || []).filter(s => s.eventId === event.id);
                             const eventRentalsCount = (event.attendees || []).reduce((acc, a) => acc + (a.rentedGearIds || []).length, 0) +
-                                signups.filter(s => s.eventId === event.id).reduce((acc, s) => acc + (s.requestedGearIds || []).length, 0);
+                                eventSignups.reduce((acc, s) => acc + (s.requestedGearIds || []).length, 0);
+
+                            const attendeePlayerIds = new Set<string>();
+                            eventSignups.forEach(s => { if (s.playerId) attendeePlayerIds.add(s.playerId); });
+                            (event.attendees || []).forEach(a => { if (a.playerId) attendeePlayerIds.add(a.playerId); });
+                            const totalAttendance = attendeePlayerIds.size > 0 
+                                ? attendeePlayerIds.size 
+                                : Math.max(eventSignups.length, event.attendees?.length || 0);
 
                             return (
                                 <div key={event.id} className="cursor-pointer h-full" onClick={() => onManageEvent(event.id)}>
@@ -99,7 +107,7 @@ export const EventsTab: React.FC<EventsTabProps> = ({ events, signups = [], onMa
                                         event={event} 
                                         onShowQR={(ev) => setSelectedQREvent(ev)}
                                         onShowRentals={(ev) => setSelectedRentalEvent(ev)}
-                                        signupsCount={signups ? signups.filter(s => s.eventId === event.id).length : undefined}
+                                        signupsCount={totalAttendance}
                                         rentalsCount={eventRentalsCount}
                                     />
                                 </div>

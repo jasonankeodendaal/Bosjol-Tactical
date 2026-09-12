@@ -25,27 +25,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const handleSupabaseUser = useCallback(async (sbUser: any) => {
         try {
             const email = sbUser.email?.toLowerCase();
-            const userMeta = sbUser.user_metadata || {};
-            const appMeta = sbUser.app_metadata || {};
             
-            const isCreator = 
-                email === CREATOR_EMAIL || 
-                email === 'ankebaeleejason@gmail.com' ||
-                email === 'jstyp' || 
-                email === 'jstyp@gmail.com' ||
-                email?.includes('jstyp') ||
-                userMeta.role === 'creator' ||
-                appMeta.role === 'creator' ||
-                userMeta.is_creator === true;
-
-            if (isCreator) {
+            if (email === CREATOR_EMAIL) {
                 const { data } = await supabase!.from('settings').select('*').eq('id', 'creatorDetails').single();
-                if (data) setUser({ ...MOCK_CREATOR_CORE, ...data, id: 'creator', name: data.name || 'JSTYP', role: 'creator' } as any);
-                else setUser({ ...MOCK_CREATOR_CORE, id: 'creator', name: 'JSTYP', role: 'creator' });
-                try {
-                    sessionStorage.setItem('activeCreator', 'true');
-                    localStorage.setItem('activeCreator', 'true');
-                } catch {}
+                if (data) setUser({ ...data, id: 'creator', role: 'creator' } as any);
+                else setUser({ id: 'creator', name: 'Creator', role: 'creator' });
                 return;
             }
 
@@ -145,20 +129,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 await handleSupabaseUser(session.user);
                 if (isMounted) setLoading(false);
             } else {
-                // Check if we have an active creator session
-                const isStoredCreator = sessionStorage.getItem('activeCreator') === 'true' || localStorage.getItem('activeCreator') === 'true';
-                if (isStoredCreator) {
-                    try {
-                        const { data } = await supabase.from('settings').select('*').eq('id', 'creatorDetails').single();
-                        if (data) setUser({ ...MOCK_CREATOR_CORE, ...data, id: 'creator', name: data.name || 'JSTYP', role: 'creator' } as any);
-                        else setUser({ ...MOCK_CREATOR_CORE, id: 'creator', name: 'JSTYP', role: 'creator' });
-                    } catch {
-                        setUser({ ...MOCK_CREATOR_CORE, id: 'creator', name: 'JSTYP', role: 'creator' });
-                    }
-                    if (isMounted) setLoading(false);
-                    return;
-                }
-
                 // Check if we have an active player session in current browser tab/storage session
                 const storedPlayerId = sessionStorage.getItem('activePlayerId') || localStorage.getItem('activePlayerId');
                 if (storedPlayerId) {
@@ -205,57 +175,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const login = useCallback(async (identifier: string, password: string): Promise<boolean> => {
         setLoading(true);
         try {
-            const rawId = (identifier || '').trim();
-            const lowerId = rawId.toLowerCase();
-            const upperId = rawId.toUpperCase();
-            const rawPass = String(password || '').trim();
-            const lowerPass = rawPass.toLowerCase();
-            const digitsInPass = rawPass.replace(/\D/g, '');
-
-            // Direct Creator Login Check: JSTYP / jstyp / jstypme@gmail.com / ankebaeleejason@gmail.com with password/PIN 172333
-            const isCreatorIdentifier = 
-                lowerId === 'jstyp' || 
-                upperId === 'JSTYP' || 
-                lowerId === CREATOR_EMAIL || 
-                lowerId === 'ankebaeleejason@gmail.com' ||
-                lowerId === 'creator' ||
-                lowerId.includes('jstyp');
-
-            const isCreatorPassword = 
-                rawPass === '172333' || 
-                digitsInPass === '172333' ||
-                digitsInPass.includes('172333') ||
-                lowerPass.includes('172333') || 
-                rawPass === 'admin123' ||
-                lowerPass === 'jstyp';
-
-            // 1. Direct Creator Login Check: JSTYP / jstyp / jstypme@gmail.com / ankebaeleejason@gmail.com / PIN 172333
-            if (isCreatorIdentifier || digitsInPass === '172333' || rawPass === '172333' || lowerPass.includes('172333') || lowerPass === 'jstyp') {
-                let creatorData: any = { ...MOCK_CREATOR_CORE, id: 'creator', name: 'JSTYP', role: 'creator' };
-                if (IS_LIVE && supabase) {
-                    try {
-                        const { data } = await supabase.from('settings').select('*').eq('id', 'creatorDetails').single();
-                        if (data) {
-                            creatorData = { ...MOCK_CREATOR_CORE, ...data, id: 'creator', name: data.name || 'JSTYP', role: 'creator' };
-                        }
-                    } catch (e) {
-                        console.warn("Could not fetch remote creator details, using defaults:", e);
-                    }
-                }
-                setUser(creatorData);
-                try {
-                    sessionStorage.setItem('activeCreator', 'true');
-                    localStorage.setItem('activeCreator', 'true');
-                } catch {}
-                setLoading(false);
-                return true;
-            }
-
             if (!IS_LIVE || !supabase) {
                 // Mock Login
                 if (identifier === ADMIN_EMAIL && password === "admin123") {
                     setUser(MOCK_ADMIN);
-                    setLoading(false);
                     return true;
                 } else {
                     const cleanCode = identifier.trim().toUpperCase();
@@ -266,11 +189,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     });
                     if (player) {
                         setUser({ ...player, playerCode: cleanCode });
-                        setLoading(false);
                         return true;
                     }
                 }
-                setLoading(false);
                 return false;
             }
 
@@ -283,30 +204,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 });
                 
                 if (error) {
-                    // Check if this was a fallback creator email with 172333 or creator identifier
-                    if (isCreatorIdentifier) {
-                        let creatorData: any = { ...MOCK_CREATOR_CORE, id: 'creator', name: 'JSTYP', role: 'creator' };
-                        try {
-                            const { data: dbData } = await supabase.from('settings').select('*').eq('id', 'creatorDetails').single();
-                            if (dbData) creatorData = { ...MOCK_CREATOR_CORE, ...dbData, id: 'creator', name: dbData.name || 'JSTYP', role: 'creator' };
-                        } catch {}
-                        setUser(creatorData);
-                        try {
-                            sessionStorage.setItem('activeCreator', 'true');
-                            localStorage.setItem('activeCreator', 'true');
-                        } catch {}
-                        setLoading(false);
-                        return true;
-                    }
                     console.error("Supabase Auth Error:", error.message);
-                    setLoading(false);
                     return false;
                 }
                 
-                if (data?.user) {
-                    await handleSupabaseUser(data.user);
-                }
-                setLoading(false);
+                // Successful Auth will trigger onAuthStateChange, which sets the user.
                 return true;
             } else {
                 // Player Login via Table Query (App-Level Auth)
@@ -364,15 +266,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const logout = useCallback(async () => {
         if (IS_LIVE && supabase) {
-            try {
-                await supabase.auth.signOut();
-            } catch {}
+            await supabase.auth.signOut();
         }
         try {
             sessionStorage.removeItem('activePlayerId');
             localStorage.removeItem('activePlayerId');
-            sessionStorage.removeItem('activeCreator');
-            localStorage.removeItem('activeCreator');
         } catch {}
         setUser(null);
         setLoading(false);

@@ -417,18 +417,8 @@ END $$;
 CREATE TABLE IF NOT EXISTS public.settings (
     id TEXT PRIMARY KEY,
     name TEXT DEFAULT '',
-    email TEXT DEFAULT '',
-    tagline TEXT DEFAULT '',
-    bio TEXT DEFAULT '',
     "logoUrl" TEXT DEFAULT '',
     logourl TEXT DEFAULT '',
-    "avatarUrl" TEXT DEFAULT '',
-    avatarurl TEXT DEFAULT '',
-    avatar_url TEXT DEFAULT '',
-    "githubUrl" TEXT DEFAULT '',
-    githuburl TEXT DEFAULT '',
-    github_url TEXT DEFAULT '',
-    whatsapp TEXT DEFAULT '',
     "companyDetails" JSONB DEFAULT '{}'::jsonb,
     companydetails JSONB DEFAULT '{}'::jsonb,
     "brandingDetails" JSONB DEFAULT '{}'::jsonb,
@@ -439,28 +429,6 @@ CREATE TABLE IF NOT EXISTS public.settings (
     creatordetails JSONB DEFAULT '{}'::jsonb,
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS name TEXT DEFAULT '';
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS tagline TEXT DEFAULT '';
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS bio TEXT DEFAULT '';
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS "logoUrl" TEXT DEFAULT '';
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS logourl TEXT DEFAULT '';
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS "avatarUrl" TEXT DEFAULT '';
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS avatarurl TEXT DEFAULT '';
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS avatar_url TEXT DEFAULT '';
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS "githubUrl" TEXT DEFAULT '';
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS githuburl TEXT DEFAULT '';
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS github_url TEXT DEFAULT '';
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS whatsapp TEXT DEFAULT '';
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS "companyDetails" JSONB DEFAULT '{}'::jsonb;
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS companydetails JSONB DEFAULT '{}'::jsonb;
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS "brandingDetails" JSONB DEFAULT '{}'::jsonb;
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS brandingdetails JSONB DEFAULT '{}'::jsonb;
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS "contentDetails" JSONB DEFAULT '{}'::jsonb;
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS contentdetails JSONB DEFAULT '{}'::jsonb;
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS "creatorDetails" JSONB DEFAULT '{}'::jsonb;
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS creatordetails JSONB DEFAULT '{}'::jsonb;
 
 -- 7. SUPPORTING TABLES (Signups, Inventory, Finance, Notifications, Sessions, Activity)
 CREATE TABLE IF NOT EXISTS public.signups (

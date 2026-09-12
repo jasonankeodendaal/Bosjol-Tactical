@@ -32,8 +32,7 @@ import { PromotionCelebrationModal } from './components/PromotionCelebrationModa
 const CreatorPopup: React.FC<{
     onClose: () => void;
     creatorDetails: CreatorDetails;
-    onLoginAsCreator?: () => void;
-}> = ({ onClose, creatorDetails, onLoginAsCreator }) => {
+}> = ({ onClose, creatorDetails }) => {
     const creatorName = (creatorDetails?.name && creatorDetails.name.trim() !== '' && creatorDetails.name !== 'Creator')
         ? creatorDetails.name
         : "Jason's Solutions To Your Problems";
@@ -174,23 +173,12 @@ Thank you, I look forward to connecting.
                         Professional Digital Solutions & System Architecture
                     </p>
 
-                    <div className="pt-3 border-t border-zinc-800 flex flex-col gap-2">
-                        {onLoginAsCreator && (
-                            <button
-                                onClick={() => {
-                                    onClose();
-                                    onLoginAsCreator();
-                                }}
-                                className="w-full py-2 px-4 bg-gradient-to-r from-amber-600 via-red-600 to-amber-700 hover:from-amber-500 hover:to-red-500 text-white font-black rounded-xl transition-all flex items-center justify-center gap-2 text-xs sm:text-sm shadow-lg active:scale-95 border border-amber-400/40"
-                            >
-                                <span>⚡ Launch Creator Dashboard</span>
-                            </button>
-                        )}
+                    <div className="pt-3 border-t border-zinc-800 flex justify-center">
                         <button
                             onClick={onClose}
-                            className="w-full py-2 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-xs shadow-md active:scale-95 border border-zinc-700"
+                            className="w-full py-2.5 px-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-xs sm:text-sm shadow-md active:scale-95"
                         >
-                            <ArrowLeftIcon className="w-3.5 h-3.5" />
+                            <ArrowLeftIcon className="w-4 h-4" />
                             <span>Return to Arena</span>
                         </button>
                     </div>
@@ -734,13 +722,7 @@ const AppContent: React.FC = () => {
 
             <HelpSystem topic={helpTopic} isOpen={showHelp} onClose={() => setShowHelp(false)} />
             <AnimatePresence>
-                {showCreatorPopup && creatorDetails && (
-                    <CreatorPopup 
-                        creatorDetails={creatorDetails} 
-                        onClose={() => setShowCreatorPopup(false)} 
-                        onLoginAsCreator={() => login('jstypme@gmail.com', '172333')}
-                    />
-                )}
+                {showCreatorPopup && creatorDetails && <CreatorPopup creatorDetails={creatorDetails} onClose={() => setShowCreatorPopup(false)} />}
             </AnimatePresence>
             
             <RuleShowcaseModal 

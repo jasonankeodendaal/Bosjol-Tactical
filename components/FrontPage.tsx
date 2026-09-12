@@ -14,7 +14,6 @@ const SignUpInfoModal: React.FC<{ companyDetails: CompanyDetails, onContinue: ()
 I am interested in enlisting. Please find my details for registration below:
 
 - Full Name: 
-- Requested Callsign (Subject to Command/Admin Approval): 
 - Age: 
 - South African ID Number: 
 - Contact Number: 

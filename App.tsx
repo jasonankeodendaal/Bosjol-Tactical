@@ -646,6 +646,7 @@ const AppContent: React.FC = () => {
         const signupId = `${eventId}_${user.id}`;
         const existingSignup = signups.find(s => s.eventId === eventId && s.playerId === user.id);
         const event = events.find(e => e.id === eventId);
+        const playerObj = user as Player;
 
         if (existingSignup) {
             // Withdraw from event
@@ -661,10 +662,18 @@ const AppContent: React.FC = () => {
         } else {
             // Sign up for event
             const newSignupData = {
+                id: signupId,
                 eventId,
                 playerId: user.id,
-                requestedGearIds,
-                note,
+                requestedGearIds: requestedGearIds || [],
+                note: note || '',
+                operatorNote: note || '',
+                playerName: playerObj.name ? `${playerObj.name} ${playerObj.surname || ''}`.trim() : user.name,
+                playerCallsign: playerObj.callsign || playerObj.name || user.name,
+                playerCode: playerObj.playerCode || '',
+                paymentStatus: 'Unpaid',
+                signedUpAt: new Date().toISOString(),
+                votedGameTypeId: voteGameTypeId || '',
             };
             await setDoc('signups', signupId, newSignupData);
             

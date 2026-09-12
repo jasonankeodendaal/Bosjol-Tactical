@@ -994,6 +994,93 @@ export function normalizeGameTypeRow(raw: any): GameType {
 }
 
 /**
+ * Normalizes a raw signup row from Supabase into a fully-typed Signup object.
+ * Resolves both camelCase and lowercase Postgres column aliases so player registrations never vanish after reload.
+ */
+export function normalizeSignupRow(raw: any): Signup {
+    if (!raw) return raw;
+    const rawGear = raw.requestedGearIds ?? raw.requestedgearids ?? raw.requested_gear_ids;
+    const parsedGear = safeJsonParse<string[]>(rawGear, []);
+    const requestedGearIds = Array.isArray(parsedGear) ? parsedGear : (Array.isArray(rawGear) ? rawGear : []);
+    
+    const eventId = String(raw.eventId || raw.eventid || raw.event_id || '');
+    const playerId = String(raw.playerId || raw.playerid || raw.player_id || '');
+    const id = String(raw.id || (eventId && playerId ? `${eventId}_${playerId}` : `signup_${Date.now()}`));
+    const note = raw.note || raw.operatorNote || raw.operatornote || '';
+
+    return {
+        id,
+        eventId,
+        playerId,
+        requestedGearIds,
+        note: note || undefined,
+        operatorNote: note || undefined,
+        votedGameTypeId: raw.votedGameTypeId || raw.votedgametypeid || raw.voted_game_type_id || undefined,
+        playerName: raw.playerName || raw.playername || undefined,
+        playerCallsign: raw.playerCallsign || raw.playercallsign || undefined,
+        playerCode: raw.playerCode || raw.playercode || undefined,
+        paymentStatus: raw.paymentStatus || raw.paymentstatus || 'Unpaid',
+        signedUpAt: raw.signedUpAt || raw.signedupat || raw.created_at || undefined,
+    } as Signup;
+}
+
+/**
+ * Normalizes a raw event row from Supabase into a fully-typed GameEvent object.
+ */
+export function normalizeEventRow(raw: any): GameEvent {
+    if (!raw) return raw;
+    const fee = Number(raw.gameFee ?? raw.gamefee ?? raw.price ?? 0) || 0;
+    const winXp = raw.winXpAward !== undefined ? Number(raw.winXpAward) : (raw.winxpaward !== undefined ? Number(raw.winxpaward) : undefined);
+    const teamCount = Number(raw.teamCount ?? raw.teamcount ?? raw.team_count ?? 2) || 2;
+    const duration = raw.gameDurationSeconds !== undefined ? Number(raw.gameDurationSeconds) : (raw.gamedurationseconds !== undefined ? Number(raw.gamedurationseconds) : undefined);
+    const xpAward = Number(raw.participationXp ?? raw.participationxp ?? 100) || 100;
+    
+    const parsedAttendees = safeJsonParse<any[]>(raw.attendees, []);
+    const parsedLiveStats = safeJsonParse<any>(raw.liveStats ?? raw.livestats, {});
+    const parsedGearForRent = safeJsonParse<string[]>(raw.gearForRent ?? raw.gearforrent ?? raw.gear_for_rent, []);
+    const parsedRentalOverrides = safeJsonParse<any>(raw.rentalPriceOverrides ?? raw.rentalpriceoverrides ?? raw.rental_price_overrides, {});
+    const parsedTeams = safeJsonParse<any>(raw.teams, { alpha: [], bravo: [] });
+    const parsedXpOverrides = safeJsonParse<any>(raw.xpOverrides ?? raw.xpoverrides, {});
+    const parsedEventBadges = safeJsonParse<string[]>(raw.eventBadges ?? raw.eventbadges, []);
+    const parsedAwardedBadges = safeJsonParse<any>(raw.awardedBadges ?? raw.awardedbadges, {});
+    const parsedVotingGameTypeIds = safeJsonParse<string[]>(raw.votingGameTypeIds ?? raw.votinggametypeids, []);
+    const parsedGameTypeVotes = safeJsonParse<any>(raw.gameTypeVotes ?? raw.gametypevotes, {});
+
+    return {
+        id: String(raw.id),
+        gameTypeId: raw.gameTypeId || raw.gametypeid || raw.game_type_id || undefined,
+        title: raw.title || 'Airsoft Operation',
+        type: (raw.type || 'Mission') as EventType,
+        date: raw.date || new Date().toISOString().split('T')[0],
+        startTime: raw.startTime || raw.starttime || raw.start_time || '09:00',
+        location: raw.location || 'Bosjol Airsoft Field',
+        description: raw.description || '',
+        theme: raw.theme || 'Standard Operation',
+        rules: typeof raw.rules === 'string' ? raw.rules : (Array.isArray(raw.rules) ? raw.rules.join('\n') : ''),
+        participationXp: xpAward,
+        winXpAward: winXp,
+        winningTeamId: raw.winningTeamId || raw.winningteamid || null,
+        status: (raw.status || 'Upcoming') as EventStatus,
+        imageUrl: raw.imageUrl || raw.imageurl || undefined,
+        audioBriefingUrl: raw.audioBriefingUrl || raw.audiobriefingurl || undefined,
+        gameFee: fee,
+        gearForRent: Array.isArray(parsedGearForRent) ? parsedGearForRent : [],
+        rentalPriceOverrides: parsedRentalOverrides,
+        teamCount: teamCount,
+        teams: parsedTeams,
+        xpOverrides: parsedXpOverrides,
+        gameDurationSeconds: duration,
+        eventBadges: Array.isArray(parsedEventBadges) ? parsedEventBadges : [],
+        awardedBadges: parsedAwardedBadges,
+        votingEnabled: Boolean(raw.votingEnabled ?? raw.votingenabled ?? false),
+        votingGameTypeIds: Array.isArray(parsedVotingGameTypeIds) ? parsedVotingGameTypeIds : [],
+        gameTypeVotes: parsedGameTypeVotes,
+        attendees: Array.isArray(parsedAttendees) ? parsedAttendees : [],
+        liveStats: parsedLiveStats,
+    };
+}
+
+/**
  * Prepares a clean, Postgres/Supabase-compatible payload for writing to Supabase.
  * Supplies matching column aliases (camelCase and unquoted) and ensures JSON objects are formatted.
  */
@@ -1033,22 +1120,42 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
     }
 
     if (collectionName === 'signups') {
-        const requestedGear = Array.isArray(item.requestedGearIds) ? item.requestedGearIds : (item.requestedgearids || []);
+        const requestedGear = Array.isArray(item.requestedGearIds) 
+            ? item.requestedGearIds 
+            : (Array.isArray(item.requestedgearids) ? item.requestedgearids : []);
         const note = item.note || item.operatorNote || item.operatornote || '';
+        const eventId = String(item.eventId || item.eventid || '');
+        const playerId = String(item.playerId || item.playerid || '');
+        const votedGameTypeId = item.votedGameTypeId || item.votedgametypeid || '';
+        const playerName = item.playerName || item.playername || '';
+        const playerCallsign = item.playerCallsign || item.playercallsign || '';
+        const playerCode = item.playerCode || item.playercode || '';
+        const paymentStatus = item.paymentStatus || item.paymentstatus || 'Unpaid';
+        const signedUpAt = item.signedUpAt || item.signedupat || new Date().toISOString();
+
         return {
-            ...item,
-            id: String(item.id),
-            eventId: item.eventId || item.eventid || '',
-            eventid: item.eventId || item.eventid || '',
-            playerId: item.playerId || item.playerid || '',
-            playerid: item.playerId || item.playerid || '',
+            id: String(item.id || `${eventId}_${playerId}`),
+            eventId,
+            eventid: eventId,
+            playerId,
+            playerid: playerId,
             requestedGearIds: requestedGear,
             requestedgearids: requestedGear,
-            note: note,
+            note,
             operatorNote: note,
             operatornote: note,
-            votedGameTypeId: item.votedGameTypeId || item.votedgametypeid || '',
-            votedgametypeid: item.votedGameTypeId || item.votedgametypeid || '',
+            votedGameTypeId,
+            votedgametypeid: votedGameTypeId,
+            playerName,
+            playername: playerName,
+            playerCallsign,
+            playercallsign: playerCallsign,
+            playerCode,
+            playercode: playerCode,
+            paymentStatus,
+            paymentstatus: paymentStatus,
+            signedUpAt,
+            signedupat: signedUpAt,
         };
     }
 

@@ -163,13 +163,14 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
     const [wantsWeaponRental, setWantsWeaponRental] = useState<boolean>(false);
     const [note, setNote] = useState('');
     const [selectedVoteGameTypeId, setSelectedVoteGameTypeId] = useState<string>('');
-    const hasInitialized = useRef(false);
+    const initializedSignupIdRef = useRef<string | null>(null);
 
     // Initialize state from existing signup or defaults
     useEffect(() => {
-        if (hasInitialized.current) return;
-
         if (isSignedUp && existingSignup) {
+            if (initializedSignupIdRef.current === existingSignup.id) return;
+            initializedSignupIdRef.current = existingSignup.id;
+
             const gearIds = existingSignup.requestedGearIds || [];
             setSelectedGear(gearIds);
             const hasWeapon = gearIds.some(id => {
@@ -177,21 +178,20 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
                 return item ? isGunOrRifle(item) : false;
             });
             setWantsWeaponRental(hasWeapon);
-            if (existingSignup.note) {
-                setNote(existingSignup.note);
+            if (existingSignup.note || existingSignup.operatorNote) {
+                setNote(existingSignup.note || existingSignup.operatorNote || '');
             }
             if (event.gameTypeVotes?.[player.id]) {
                 setSelectedVoteGameTypeId(event.gameTypeVotes[player.id]);
             }
-            hasInitialized.current = true;
-        } else {
+        } else if (!isSignedUp && initializedSignupIdRef.current !== 'empty') {
+            initializedSignupIdRef.current = 'empty';
             setSelectedGear([]);
             setWantsWeaponRental(false);
             setNote('');
             if (event.votingEnabled && event.gameTypeId) {
                 setSelectedVoteGameTypeId(event.gameTypeId);
             }
-            hasInitialized.current = true;
         }
     }, [isSignedUp, existingSignup, availableGear, event.gameTypeVotes, event.votingEnabled, event.gameTypeId, player.id]);
 

@@ -11,7 +11,6 @@ import {
     Sparkles, 
     X, 
     MessageSquare, 
-    Crosshair,
     Calendar,
     Lock
 } from 'lucide-react';
@@ -33,7 +32,6 @@ export const RecruitSignUpForm: React.FC<RecruitSignUpFormProps> = ({
     const [surname, setSurname] = useState('');
     const [nameError, setNameError] = useState('');
     const [surnameError, setSurnameError] = useState('');
-    const [callsign, setCallsign] = useState('');
     const [age, setAge] = useState<string>('');
     const [idNumber, setIdNumber] = useState('');
     const [phone, setPhone] = useState('');
@@ -72,11 +70,11 @@ export const RecruitSignUpForm: React.FC<RecruitSignUpFormProps> = ({
         recon: '🟣 Recon'
     };
 
+    const fullName = `${firstName.trim()} ${surname.trim()}`.trim();
+
     // Auto-generated pre-built WhatsApp text based on form inputs
     const generatedWhatsAppMessage = useMemo(() => {
-        const fullName = `${firstName.trim()} ${surname.trim()}`.trim();
         const nameText = fullName || '[Full Name (First & Surname)]';
-        const callsignText = callsign.trim() ? `"${callsign.trim()}"` : '"[Callsign]"';
         const ageText = age ? `${age} yrs` : '[Age]';
         const idText = idNumber.trim() || '[ID/Passport]';
         const phoneText = phone.trim() || '[Phone]';
@@ -87,7 +85,6 @@ export const RecruitSignUpForm: React.FC<RecruitSignUpFormProps> = ({
 *${companyDetails.name || 'Bosjol Tactical Airsoft'}*
 ----------------------------------------
 👤 *Name:* ${nameText}
-🏷️ *Callsign:* ${callsignText}
 🎂 *Age:* ${ageText} (ID: ${idText})
 📱 *Phone:* ${phoneText}
 📧 *Email:* ${emailText}
@@ -96,7 +93,7 @@ export const RecruitSignUpForm: React.FC<RecruitSignUpFormProps> = ({
 📝 *Notes:* ${notesText}
 ----------------------------------------
 I agree to standard field regulations (Min Age: ${minAge}). Requesting Command clearance!`;
-    }, [firstName, surname, callsign, age, idNumber, phone, email, loadout, role, notes, companyDetails.name, minAge]);
+    }, [fullName, age, idNumber, phone, email, loadout, role, notes, companyDetails.name, minAge]);
 
     const whatsappHref = `https://wa.me/${formattedWhatsAppNumber}?text=${encodeURIComponent(generatedWhatsAppMessage)}`;
 
@@ -126,7 +123,7 @@ I agree to standard field regulations (Min Age: ${minAge}). Requesting Command c
                     id: newPlayerId,
                     name: firstName.trim(),
                     surname: surname.trim(),
-                    callsign: callsign.trim() || firstName.trim(),
+                    callsign: firstName.trim(),
                     email: email.trim(),
                     phone: phone.trim(),
                     role: 'player',
@@ -272,21 +269,6 @@ I agree to standard field regulations (Min Age: ${minAge}). Requesting Command c
                             />
                             {surnameError && <p className="text-red-400 text-[9px] mt-0.5 font-medium">{surnameError}</p>}
                         </div>
-                    </div>
-
-                    {/* Row 1.5: Callsign (Optional) */}
-                    <div className="min-w-0">
-                        <label className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-0.5 flex items-center gap-1 truncate">
-                            <Crosshair className="w-3 h-3 text-amber-400 shrink-0" />
-                            <span className="truncate">Callsign <span className="text-zinc-500 font-normal">(Optional / Subject to Command)</span></span>
-                        </label>
-                        <input
-                            type="text"
-                            placeholder='e.g. Maverick'
-                            value={callsign}
-                            onChange={(e) => setCallsign(e.target.value)}
-                            className="w-full min-w-0 box-border px-2.5 py-1.5 sm:py-2 rounded-xl bg-black/40 border border-white/15 focus:border-red-500 text-white placeholder-zinc-500 text-xs font-medium transition-all shadow-inner"
-                        />
                     </div>
 
                     {/* Row 2: Age, SA ID & WhatsApp Phone (Side-by-Side on Mobile!) */}

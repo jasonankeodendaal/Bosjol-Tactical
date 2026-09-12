@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import { extractAndCleanStorageUrlsFromDoc } from '../utils/storageCleaner';
 import * as mock from '../constants';
 import { getRankForPlayer } from '../utils/rankUtils';
-import { normalizePlayerRow, normalizeRankRow, normalizeGameTypeRow, prepareSupabasePayload } from '../utils/supabaseSchema';
+import { normalizePlayerRow, normalizeRankRow, normalizeGameTypeRow, normalizeSignupRow, normalizeEventRow, prepareSupabasePayload } from '../utils/supabaseSchema';
 import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters, AdminNotification, PlayerHonor, TacticalRuleSet, GameType } from '../types';
 import { AuthContext } from '../auth/AuthContext';
 
@@ -36,6 +36,12 @@ function normalizeCollectionItem<T>(collectionName: string, item: any): T {
     if (collectionName === 'players') {
         return normalizePlayerRow(item) as unknown as T;
     }
+    if (collectionName === 'events') {
+        return normalizeEventRow(item) as unknown as T;
+    }
+    if (collectionName === 'signups') {
+        return normalizeSignupRow(item) as unknown as T;
+    }
     if (collectionName === 'ranks') {
         return normalizeRankRow(item) as unknown as T;
     }
@@ -58,6 +64,23 @@ function normalizeCollectionItem<T>(collectionName: string, item: any): T {
             description: item.description || '',
             iconUrl: item.iconUrl || item.iconurl || item.icon_url || '',
             criteria: item.criteria || {},
+        } as unknown as T;
+    }
+    if (collectionName === 'inventory') {
+        const salePrice = Number(item.salePrice ?? item.saleprice ?? item.pricePerUnit ?? item.priceperunit ?? 0) || 0;
+        const stock = Number(item.stock ?? item.quantity ?? 0) || 0;
+        const isRental = !!(item.isRental ?? item.isrental ?? (item.name ? /rental/i.test(item.name) : false));
+        return {
+            ...item,
+            id: String(item.id || ''),
+            name: item.name || '',
+            category: item.category || 'Gear',
+            salePrice,
+            stock,
+            isRental,
+            type: item.type || 'Gear',
+            condition: item.condition || 'New',
+            description: item.description || '',
         } as unknown as T;
     }
     return item as T;
@@ -493,7 +516,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Protected collections (require auth)
     const [rawPlayers, setRawPlayers, loadingPlayers] = useCollection<Player>('players', MOCK_DATA_MAP.players, { isProtected: true });
-    const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', MOCK_DATA_MAP.events, { isProtected: true });
+    const [events, setEvents, loadingEvents] = useCollection<GameEvent>('events', MOCK_DATA_MAP.events);
 
     // Public collections for ranks & game types
     const [rawRanks, setRawRanks, loadingRanks] = useCollection<Rank>('ranks', MOCK_DATA_MAP.ranks);
@@ -567,7 +590,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [locations, setLocations, loadingLocations] = useCollection<Location>('locations', MOCK_DATA_MAP.locations, { isProtected: true });
     const [raffles, setRaffles, loadingRaffles] = useCollection<Raffle>('raffles', MOCK_DATA_MAP.raffles, { isProtected: true });
     const [honors, setHonors, loadingHonors] = useCollection<PlayerHonor>('honors', mock.MOCK_HONORS, { isProtected: true });
-    const [signups, setSignups, loadingSignups] = useCollection<Signup>('signups', MOCK_DATA_MAP.signups, { isProtected: true });
+    const [signups, setSignups, loadingSignups] = useCollection<Signup>('signups', MOCK_DATA_MAP.signups);
     const [sessions, setSessions, loadingSessions] = useCollection<Session>('sessions', [], { isProtected: true });
     const [activityLog, setActivityLog, loadingActivityLog] = useCollection<ActivityLog>('activityLog', [], { isProtected: true });
     const [notifications, setNotifications, loadingNotifications] = useCollection<AdminNotification>('notifications', MOCK_DATA_MAP.notifications, { isProtected: true });

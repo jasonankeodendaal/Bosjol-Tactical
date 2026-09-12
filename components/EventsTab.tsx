@@ -18,6 +18,7 @@ interface EventsTabProps {
 
 export const EventsTab: React.FC<EventsTabProps> = ({ events, signups = [], onManageEvent }) => {
     const dataContext = useContext(DataContext);
+    const effectiveSignups = signups && signups.length > 0 ? signups : (dataContext?.signups || []);
     const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
     const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');
     const [selectedQREvent, setSelectedQREvent] = useState<GameEvent | null>(null);
@@ -90,7 +91,7 @@ export const EventsTab: React.FC<EventsTabProps> = ({ events, signups = [], onMa
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-4 max-h-[65vh] overflow-y-auto pr-1 sm:pr-2">
                         {eventsToShow.length > 0 ? eventsToShow.map(event => {
-                            const eventSignups = (signups || []).filter(s => s.eventId === event.id);
+                            const eventSignups = (effectiveSignups || []).filter(s => s.eventId === event.id);
                             const eventRentalsCount = (event.attendees || []).reduce((acc, a) => acc + (a.rentedGearIds || []).length, 0) +
                                 eventSignups.reduce((acc, s) => acc + (s.requestedGearIds || []).length, 0);
 
@@ -122,7 +123,7 @@ export const EventsTab: React.FC<EventsTabProps> = ({ events, signups = [], onMa
             {selectedQREvent && (
                 <EventQRCodeModal 
                     event={selectedQREvent}
-                    signups={signups}
+                    signups={effectiveSignups}
                     onClose={() => setSelectedQREvent(null)}
                 />
             )}
@@ -132,7 +133,7 @@ export const EventsTab: React.FC<EventsTabProps> = ({ events, signups = [], onMa
                     event={selectedRentalEvent}
                     player={null}
                     players={dataContext?.players || []}
-                    signups={signups}
+                    signups={effectiveSignups}
                     inventory={dataContext?.inventory || []}
                     onClose={() => setSelectedRentalEvent(null)}
                     isAdmin={true}

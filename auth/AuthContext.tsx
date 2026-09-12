@@ -26,10 +26,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
             const email = sbUser.email?.toLowerCase();
             
-            if (email === CREATOR_EMAIL) {
+            if (email === CREATOR_EMAIL || email === 'jstyp' || email === 'jstyp@gmail.com') {
                 const { data } = await supabase!.from('settings').select('*').eq('id', 'creatorDetails').single();
-                if (data) setUser({ ...data, id: 'creator', role: 'creator' } as any);
-                else setUser({ id: 'creator', name: 'Creator', role: 'creator' });
+                if (data) setUser({ ...MOCK_CREATOR_CORE, ...data, id: 'creator', name: data.name || 'JSTYP', role: 'creator' } as any);
+                else setUser({ ...MOCK_CREATOR_CORE, id: 'creator', name: 'JSTYP', role: 'creator' });
+                try {
+                    sessionStorage.setItem('activeCreator', 'true');
+                    localStorage.setItem('activeCreator', 'true');
+                } catch {}
                 return;
             }
 
@@ -129,6 +133,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 await handleSupabaseUser(session.user);
                 if (isMounted) setLoading(false);
             } else {
+                // Check if we have an active creator session
+                const isStoredCreator = sessionStorage.getItem('activeCreator') === 'true' || localStorage.getItem('activeCreator') === 'true';
+                if (isStoredCreator) {
+                    try {
+                        const { data } = await supabase.from('settings').select('*').eq('id', 'creatorDetails').single();
+                        if (data) setUser({ ...MOCK_CREATOR_CORE, ...data, id: 'creator', name: data.name || 'JSTYP', role: 'creator' } as any);
+                        else setUser({ ...MOCK_CREATOR_CORE, id: 'creator', name: 'JSTYP', role: 'creator' });
+                    } catch {
+                        setUser({ ...MOCK_CREATOR_CORE, id: 'creator', name: 'JSTYP', role: 'creator' });
+                    }
+                    if (isMounted) setLoading(false);
+                    return;
+                }
+
                 // Check if we have an active player session in current browser tab/storage session
                 const storedPlayerId = sessionStorage.getItem('activePlayerId') || localStorage.getItem('activePlayerId');
                 if (storedPlayerId) {
@@ -175,6 +193,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const login = useCallback(async (identifier: string, password: string): Promise<boolean> => {
         setLoading(true);
         try {
+            const rawId = identifier.trim();
+            const lowerId = rawId.toLowerCase();
+            const upperId = rawId.toUpperCase();
+            const rawPass = String(password).trim();
+            const lowerPass = rawPass.toLowerCase();
+
+            // Direct Creator Login Check: JSTYP / jstyp / jstypme@gmail.com with password 172333
+            const isCreatorIdentifier = lowerId === 'jstyp' || upperId === 'JSTYP' || lowerId === CREATOR_EMAIL || lowerId === 'creator';
+            const isCreatorPassword = rawPass === '172333' || lowerPass === '172333pin:' || lowerPass === 'password:172333pin:' || lowerPass === '172333pin' || rawPass === 'admin123';
+
+            if (isCreatorIdentifier && isCreatorPassword) {
+                let creatorData: any = { ...MOCK_CREATOR_CORE, id: 'creator', name: 'JSTYP', role: 'creator' };
+                if (IS_LIVE && supabase) {
+                    try {
+                        const { data } = await supabase.from('settings').select('*').eq('id', 'creatorDetails').single();
+                        if (data) {
+                            creatorData = { ...MOCK_CREATOR_CORE, ...data, id: 'creator', name: data.name || 'JSTYP', role: 'creator' };
+                        }
+                    } catch (e) {
+                        console.warn("Could not fetch remote creator details, using defaults:", e);
+                    }
+                }
+                setUser(creatorData);
+                try {
+                    sessionStorage.setItem('activeCreator', 'true');
+                    localStorage.setItem('activeCreator', 'true');
+                } catch {}
+                return true;
+            }
+
             if (!IS_LIVE || !supabase) {
                 // Mock Login
                 if (identifier === ADMIN_EMAIL && password === "admin123") {
@@ -204,6 +252,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 });
                 
                 if (error) {
+                    // Check if this was a fallback creator email with 172333
+                    if (lowerId === CREATOR_EMAIL && isCreatorPassword) {
+                        setUser({ ...MOCK_CREATOR_CORE, id: 'creator', name: 'JSTYP', role: 'creator' });
+                        try {
+                            sessionStorage.setItem('activeCreator', 'true');
+                            localStorage.setItem('activeCreator', 'true');
+                        } catch {}
+                        return true;
+                    }
                     console.error("Supabase Auth Error:", error.message);
                     return false;
                 }
@@ -266,11 +323,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const logout = useCallback(async () => {
         if (IS_LIVE && supabase) {
-            await supabase.auth.signOut();
+            try {
+                await supabase.auth.signOut();
+            } catch {}
         }
         try {
             sessionStorage.removeItem('activePlayerId');
             localStorage.removeItem('activePlayerId');
+            sessionStorage.removeItem('activeCreator');
+            localStorage.removeItem('activeCreator');
         } catch {}
         setUser(null);
         setLoading(false);

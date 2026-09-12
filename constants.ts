@@ -56,11 +56,11 @@ export const MOCK_CONTENT_DETAILS = {
 
 export const MOCK_CREATOR_CORE = {
     id: 'creator',
-    name: "Jason's Solutions To Your Problems",
+    name: 'JSTYP',
     email: 'jstypme@gmail.com',
     whatsapp: '+27821234567',
     role: 'creator',
-    tagline: 'You think it, I build it',
+    tagline: "Jason's Solutions To Your Problems",
     bio: 'We specialise in custom website design & development, strategic social media marketing, bespoke digital strategy, and scalable software applications engineered to help your business expand, engage clients, and achieve sustained growth.',
     logoUrl: 'https://i.ibb.co/HfT2Qzz3/IMG-20260803-WA0029.jpg',
     githubUrl: 'https://github.com',

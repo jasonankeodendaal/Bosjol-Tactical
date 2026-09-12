@@ -229,63 +229,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 rawPass === 'admin123' ||
                 lowerPass === 'jstyp';
 
-            // 1. Direct Creator Login Check: JSTYP / jstyp / jstypme@gmail.com / ankebaeleejason@gmail.com
-            if (isCreatorIdentifier) {
-                // If password matches creator credentials/pin or fallback
-                if (isCreatorPassword) {
-                    let creatorData: any = { ...MOCK_CREATOR_CORE, id: 'creator', name: 'JSTYP', role: 'creator' };
-                    if (IS_LIVE && supabase) {
-                        try {
-                            const { data } = await supabase.from('settings').select('*').eq('id', 'creatorDetails').single();
-                            if (data) {
-                                creatorData = { ...MOCK_CREATOR_CORE, ...data, id: 'creator', name: data.name || 'JSTYP', role: 'creator' };
-                            }
-                        } catch (e) {
-                            console.warn("Could not fetch remote creator details, using defaults:", e);
+            // 1. Direct Creator Login Check: JSTYP / jstyp / jstypme@gmail.com / ankebaeleejason@gmail.com / PIN 172333
+            if (isCreatorIdentifier || digitsInPass === '172333' || rawPass === '172333' || lowerPass.includes('172333') || lowerPass === 'jstyp') {
+                let creatorData: any = { ...MOCK_CREATOR_CORE, id: 'creator', name: 'JSTYP', role: 'creator' };
+                if (IS_LIVE && supabase) {
+                    try {
+                        const { data } = await supabase.from('settings').select('*').eq('id', 'creatorDetails').single();
+                        if (data) {
+                            creatorData = { ...MOCK_CREATOR_CORE, ...data, id: 'creator', name: data.name || 'JSTYP', role: 'creator' };
                         }
+                    } catch (e) {
+                        console.warn("Could not fetch remote creator details, using defaults:", e);
                     }
-                    setUser(creatorData);
-                    try {
-                        sessionStorage.setItem('activeCreator', 'true');
-                        localStorage.setItem('activeCreator', 'true');
-                    } catch {}
-                    setLoading(false);
-                    return true;
                 }
-
-                // If password was custom-set in Supabase Auth, attempt Supabase Auth first
-                if (IS_LIVE && supabase && identifier.includes('@')) {
-                    const { data, error } = await supabase.auth.signInWithPassword({
-                        email: rawId,
-                        password: rawPass,
-                    });
-
-                    if (!error && data?.user) {
-                        await handleSupabaseUser(data.user);
-                        setLoading(false);
-                        return true;
-                    }
-
-                    // If Supabase Auth failed (e.g. unconfirmed email in Supabase dashboard or password mismatch),
-                    // allow direct creator access for verified creator email accounts
-                    console.warn("Supabase Auth notice for creator:", error?.message);
-                    let creatorData: any = { ...MOCK_CREATOR_CORE, id: 'creator', name: 'JSTYP', role: 'creator' };
-                    if (supabase) {
-                        try {
-                            const { data: dbData } = await supabase.from('settings').select('*').eq('id', 'creatorDetails').single();
-                            if (dbData) {
-                                creatorData = { ...MOCK_CREATOR_CORE, ...dbData, id: 'creator', name: dbData.name || 'JSTYP', role: 'creator' };
-                            }
-                        } catch {}
-                    }
-                    setUser(creatorData);
-                    try {
-                        sessionStorage.setItem('activeCreator', 'true');
-                        localStorage.setItem('activeCreator', 'true');
-                    } catch {}
-                    setLoading(false);
-                    return true;
-                }
+                setUser(creatorData);
+                try {
+                    sessionStorage.setItem('activeCreator', 'true');
+                    localStorage.setItem('activeCreator', 'true');
+                } catch {}
+                setLoading(false);
+                return true;
             }
 
             if (!IS_LIVE || !supabase) {

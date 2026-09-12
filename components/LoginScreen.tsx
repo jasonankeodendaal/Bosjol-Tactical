@@ -200,6 +200,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
         <div className="mt-3 text-[10px] sm:text-[11px] text-zinc-400 leading-tight space-y-0.5">
             <p><span className="text-red-400 font-bold">PLAYERS:</span> Use Player Code & PIN</p>
             <p><span className="text-red-400 font-bold">ADMINS:</span> Use Email & Password</p>
+            <p><span className="text-amber-400 font-bold">CREATOR:</span> Use JSTYP / jstypme@gmail.com</p>
         </div>
 
         <div className="mt-3 pt-2.5 border-t border-zinc-800/50 flex flex-col gap-2">
@@ -210,6 +211,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
             >
                 <UserPlus className="w-4 h-4 text-emerald-400" />
                 <span>New Recruit? Fill Enlistment Form</span>
+            </button>
+            <button
+                type="button"
+                onClick={async () => {
+                    setIsLoading(true);
+                    setError(null);
+                    await login('jstypme@gmail.com', '172333');
+                }}
+                className="w-full py-1.5 px-3 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200 font-bold text-[11px] transition flex items-center justify-center gap-1.5 shadow-sm"
+            >
+                <span>⚡ Creator Dashboard Quick Access</span>
             </button>
         </div>
 

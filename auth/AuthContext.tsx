@@ -25,8 +25,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const handleSupabaseUser = useCallback(async (sbUser: any) => {
         try {
             const email = sbUser.email?.toLowerCase();
+            const userMeta = sbUser.user_metadata || {};
+            const appMeta = sbUser.app_metadata || {};
             
-            if (email === CREATOR_EMAIL || email === 'jstyp' || email === 'jstyp@gmail.com') {
+            const isCreator = 
+                email === CREATOR_EMAIL || 
+                email === 'ankebaeleejason@gmail.com' ||
+                email === 'jstyp' || 
+                email === 'jstyp@gmail.com' ||
+                email?.includes('jstyp') ||
+                userMeta.role === 'creator' ||
+                appMeta.role === 'creator' ||
+                userMeta.is_creator === true;
+
+            if (isCreator) {
                 const { data } = await supabase!.from('settings').select('*').eq('id', 'creatorDetails').single();
                 if (data) setUser({ ...MOCK_CREATOR_CORE, ...data, id: 'creator', name: data.name || 'JSTYP', role: 'creator' } as any);
                 else setUser({ ...MOCK_CREATOR_CORE, id: 'creator', name: 'JSTYP', role: 'creator' });

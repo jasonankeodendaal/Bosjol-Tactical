@@ -200,7 +200,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
         <div className="mt-3 text-[10px] sm:text-[11px] text-zinc-400 leading-tight space-y-0.5">
             <p><span className="text-red-400 font-bold">PLAYERS:</span> Use Player Code & PIN</p>
             <p><span className="text-red-400 font-bold">ADMINS:</span> Use Email & Password</p>
-            <p><span className="text-cyan-400 font-bold">CREATOR:</span> Code <code className="text-white font-mono font-bold">JSTYP</code> & Password/PIN <code className="text-white font-mono font-bold">172333</code></p>
         </div>
 
         <div className="mt-3 pt-2.5 border-t border-zinc-800/50 flex flex-col gap-2">

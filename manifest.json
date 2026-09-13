@@ -1,9 +1,66 @@
-
 {
   "id": "/",
-  "short_name": "Bosjol",
   "name": "Bosjol Tactical Dashboard",
-  "description": "A comprehensive dashboard for players and administrators of Bosjol Tactical. Players can track progress, view events, gear, rankings, and admin tools.",
+  "short_name": "Bosjol",
+  "description": "Comprehensive tactical operations dashboard for airsoft players and administrators. Track player progression, ranks, leaderboards, gear rentals, upcoming operations, and tactical game rules.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui",
+    "browser"
+  ],
+  "orientation": "any",
+  "theme_color": "#b91c1c",
+  "background_color": "#09090b",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "games",
+    "sports",
+    "entertainment",
+    "utilities"
+  ],
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "launch_handler": {
+    "client_mode": [
+      "focus-existing",
+      "auto"
+    ]
+  },
+  "edge_side_panel": {
+    "preferred_width": 480
+  },
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "/",
+      "name": "Bosjol Tactical Mission File",
+      "accept": {
+        "application/json": [
+          ".json"
+        ]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+bosjol",
+      "url": "/?operation=%s"
+    }
+  ],
   "icons": [
     {
       "src": "/pwa-192x192.png",
@@ -42,122 +99,120 @@
       "purpose": "maskable"
     }
   ],
-  "start_url": "/",
-  "scope": "/",
-  "display": "standalone",
-  "display_override": [
-    "window-controls-overlay",
-    "fullscreen"
-  ],
-  "theme_color": "#b91c1c",
-  "background_color": "#0A0A0A",
-  "orientation": "portrait-primary",
   "screenshots": [
     {
-      "src": "https://i.ibb.co/whxg524c/Whats-App-Image-2025-11-14-at-11-26-19.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
-      "form_factor": "narrow",
-      "label": "Configure Progression (Admin)"
+      "src": "/screenshots/desktop-suite-1280x720.png",
+      "type": "image/png",
+      "sizes": "1280x720",
+      "form_factor": "wide",
+      "label": "Bosjol Tactical Desktop Dashboard Operations"
     },
     {
-      "src": "https://i.ibb.co/WWk7BJGY/Whats-App-Image-2025-11-14-at-11-26-20.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
-      "form_factor": "narrow",
-      "label": "Manage Players (Admin)"
+      "src": "/screenshots/desktop-dashboard-1280x720.png",
+      "type": "image/png",
+      "sizes": "1280x720",
+      "form_factor": "wide",
+      "label": "Tactical Field Briefing and Event Command Center"
     },
     {
-      "src": "https://i.ibb.co/Z1JZhPCZ/Whats-App-Image-2025-11-14-at-11-26-23.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
+      "src": "/screenshots/player-dashboard-720x1280.png",
+      "type": "image/png",
+      "sizes": "720x1280",
       "form_factor": "narrow",
-      "label": "Manage Events (Admin)"
+      "label": "Player Profile, XP Progression, and Rank Badges"
     },
     {
-      "src": "https://i.ibb.co/Q7YBwHq5/Whats-App-Image-2025-11-14-at-11-26-21.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
+      "src": "/screenshots/events-view-720x1280.png",
+      "type": "image/png",
+      "sizes": "720x1280",
       "form_factor": "narrow",
-      "label": "Customize Your Profile"
+      "label": "Live Tactical Operations and Airsoft Events"
     },
     {
-      "src": "https://i.ibb.co/Y7xdvrYY/Whats-App-Image-2025-11-14-at-11-26-25.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
+      "src": "/screenshots/leaderboard-720x1280.png",
+      "type": "image/png",
+      "sizes": "720x1280",
       "form_factor": "narrow",
-      "label": "Unlock Badges and Commendations"
+      "label": "Global Player Leaderboard and Tactical Statistics"
     },
     {
-      "src": "https://i.ibb.co/j9NXjht1/Whats-App-Image-2025-11-14-at-11-26-33.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
+      "src": "/screenshots/mobile-overview-720x1280.png",
+      "type": "image/png",
+      "sizes": "720x1280",
       "form_factor": "narrow",
-      "label": "Enter Raffles to Win Prizes"
-    },
-    {
-      "src": "https://i.ibb.co/S4HFgvkc/Whats-App-Image-2025-11-14-at-11-26-36.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
-      "form_factor": "narrow",
-      "label": "Browse Upcoming Events"
-    },
-    {
-      "src": "https://i.ibb.co/CjWH3mV/Whats-App-Image-2025-11-14-at-11-26-34.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
-      "form_factor": "narrow",
-      "label": "Global Player Leaderboard"
-    },
-    {
-      "src": "https://i.ibb.co/tpZ29v4H/Whats-App-Image-2025-11-14-at-11-26-43.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
-      "form_factor": "narrow",
-      "label": "Secure Login Screen"
-    },
-    {
-      "src": "https://i.ibb.co/DSN8krs/Whats-App-Image-2025-11-14-at-11-26-40.jpg",
-      "type": "image/jpeg",
-      "sizes": "720x1600",
-      "form_factor": "narrow",
-      "label": "Player Dashboard Overview"
+      "label": "Field Mobile Interface and Quick Access"
     }
   ],
   "shortcuts": [
     {
-      "name": "View Events",
+      "name": "Tactical Events",
       "short_name": "Events",
-      "description": "Check upcoming and past events",
+      "description": "Check upcoming airsoft ops and game briefings",
       "url": "/?tab=Events",
       "icons": [
         {
-          "src": "https://img.icons8.com/ios-filled/96/ffffff/calendar.png",
-          "sizes": "96x96"
+          "src": "/shortcuts/events-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        },
+        {
+          "src": "/shortcuts/events-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
     {
-      "name": "Leaderboard",
-      "short_name": "Ranks",
-      "description": "See how you stack up against other players",
+      "name": "Player Leaderboard",
+      "short_name": "Leaderboard",
+      "description": "View player rankings and top combat statistics",
       "url": "/?tab=Leaderboard",
       "icons": [
         {
-          "src": "https://img.icons8.com/ios-filled/96/ffffff/trophy.png",
-          "sizes": "96x96"
+          "src": "/shortcuts/leaderboard-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        },
+        {
+          "src": "/shortcuts/leaderboard-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
     {
-      "name": "My Stats",
+      "name": "Operational Stats",
       "short_name": "Stats",
-      "description": "Review your performance statistics",
+      "description": "Review combat XP, gear, and commendations",
       "url": "/?tab=Stats",
       "icons": [
         {
-          "src": "https://img.icons8.com/ios-filled/96/ffffff/bar-chart.png",
-          "sizes": "96x96"
+          "src": "/shortcuts/stats-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        },
+        {
+          "src": "/shortcuts/stats-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Tactical Rules",
+      "short_name": "Rules",
+      "description": "Browse airsoft rules, safety guidelines and game types",
+      "url": "/?tab=Rules",
+      "icons": [
+        {
+          "src": "/shortcuts/rules-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        },
+        {
+          "src": "/shortcuts/rules-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     }

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const STATIC_CACHE_NAME = `bosjol-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `bosjol-dynamic-${CACHE_VERSION}`;
 const IMAGE_CACHE_NAME = `bosjol-images-${CACHE_VERSION}`;
@@ -13,6 +13,20 @@ const STATIC_ASSETS = [
   '/apple-touch-icon.png',
   '/favicon.png',
   '/icon.svg',
+  '/screenshots/desktop-suite-1280x720.png',
+  '/screenshots/desktop-dashboard-1280x720.png',
+  '/screenshots/player-dashboard-720x1280.png',
+  '/screenshots/events-view-720x1280.png',
+  '/screenshots/leaderboard-720x1280.png',
+  '/screenshots/mobile-overview-720x1280.png',
+  '/shortcuts/events-96x96.png',
+  '/shortcuts/events-192x192.png',
+  '/shortcuts/leaderboard-96x96.png',
+  '/shortcuts/leaderboard-192x192.png',
+  '/shortcuts/stats-96x96.png',
+  '/shortcuts/stats-192x192.png',
+  '/shortcuts/rules-96x96.png',
+  '/shortcuts/rules-192x192.png',
   'https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap'

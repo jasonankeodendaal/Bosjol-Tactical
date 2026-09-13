@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <rect width="512" height="512" fill="#0a0a0a" rx="64"/>
+  <circle cx="256" cy="256" r="230" fill="none" stroke="#dc2626" stroke-width="4" stroke-opacity="0.4"/>
+  <g fill="#f4f4f5">
+    <!-- Stylized Deer Skull Antlers -->
+    <path d="M120 130 C110 90, 140 60, 170 80 C185 90, 180 110, 170 125 C190 105, 220 110, 225 135 C230 160, 210 180, 195 200 C215 185, 235 195, 235 220 C230 250, 205 270, 180 280 C190 260, 175 240, 160 230 C150 245, 140 260, 125 270 C140 240, 140 210, 130 185 C120 200, 105 210, 90 215 C105 190, 115 160, 120 130 Z"/>
+    <path d="M392 130 C402 90, 372 60, 342 80 C327 90, 332 110, 342 125 C322 105, 292 110, 287 135 C282 160, 302 180, 317 200 C297 185, 277 195, 277 220 C282 250, 307 270, 332 280 C322 260, 337 240, 352 230 C362 245, 372 260, 387 270 C372 240, 372 210, 382 185 C392 200, 407 210, 422 215 C407 190, 397 160, 392 130 Z"/>
+    <!-- Skull Cranium -->
+    <path d="M200 210 C200 170, 312 170, 312 210 C312 235, 305 255, 290 270 C310 275, 325 295, 320 320 C315 345, 290 355, 285 385 C280 415, 265 440, 256 450 C247 440, 232 415, 227 385 C222 355, 197 345, 192 320 C187 295, 202 275, 222 270 C207 255, 200 235, 200 210 Z"/>
+    <!-- Skull Eye Sockets -->
+    <path d="M220 235 C230 230, 245 240, 240 255 C235 265, 220 260, 215 250 C212 242, 215 237, 220 235 Z" fill="#0a0a0a"/>
+    <path d="M292 235 C282 230, 267 240, 272 255 C277 265, 292 260, 297 250 C300 242, 297 237, 292 235 Z" fill="#0a0a0a"/>
+    <!-- Nasal cavity & teeth slats -->
+    <path d="M256 270 L250 295 L262 295 Z" fill="#0a0a0a"/>
+    <rect x="236" y="325" width="6" height="28" rx="2" fill="#0a0a0a"/>
+    <rect x="246" y="325" width="6" height="34" rx="2" fill="#0a0a0a"/>
+    <rect x="256" y="325" width="6" height="34" rx="2" fill="#0a0a0a"/>
+    <rect x="266" y="325" width="6" height="34" rx="2" fill="#0a0a0a"/>
+    <rect x="276" y="325" width="6" height="28" rx="2" fill="#0a0a0a"/>
+  </g>
+  <!-- Tactical Text -->
+  <text x="256" y="485" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-weight="900" font-size="28" fill="#ef4444" letter-spacing="4">BOSJOL TACTICAL</text>
+</svg>

@@ -26,6 +26,8 @@ import { CreatorDashboard } from './components/CreatorDashboard';
 import { ThemeInjector } from './components/ThemeInjector';
 import { RuleShowcaseModal } from './components/RuleShowcaseModal';
 import { PromotionCelebrationModal } from './components/PromotionCelebrationModal';
+import { PWAInstallButton } from './components/PWAInstallButton';
+import { PWAOfflineIndicator } from './components/PWAOfflineIndicator';
 
 
 // --- Creator Popup Component and Icons ---
@@ -193,6 +195,11 @@ const PublicPageFloatingIcons: React.FC<{
     onCreatorClick: () => void,
 }> = ({ onOpenRulesAndHelp, onCreatorClick }) => (
     <>
+        {/* PWA In-App Install Floating Button */}
+        <div className="fixed top-4 right-4 z-30 flex items-center gap-2">
+            <PWAInstallButton />
+        </div>
+
         {/* Merged Help & Tactical Rules Icon Button */}
         <motion.button
             onClick={onOpenRulesAndHelp}
@@ -231,12 +238,13 @@ const PublicPageFloatingIcons: React.FC<{
 
 const Footer: React.FC<{ details: CompanyDetails, apiServerUrl?: string }> = ({ details, apiServerUrl }) => (
     <footer className="mt-auto pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] px-4 bg-zinc-950/90 border-t border-zinc-800/80 text-xs text-gray-500 relative z-0 shrink-0 w-full pointer-events-auto select-none">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
                 <img src={details.logoUrl} alt={details.name} className="h-7 w-auto rounded object-contain shrink-0"/>
                 <p className="hidden sm:block truncate text-zinc-400">© 2026 Bosjol Tactical Nelspruit Airsoft. All rights reserved. • build by JSTYP.me</p>
             </div>
-            <div className="shrink-0">
+            <div className="flex items-center gap-3 shrink-0">
+                <PWAInstallButton />
                 <StorageStatusIndicator apiServerUrl={apiServerUrl} />
             </div>
         </div>
@@ -708,6 +716,7 @@ const AppContent: React.FC = () => {
     return (
         <div className="bg-zinc-950 text-gray-100 font-sans min-h-screen flex flex-col antialiased">
             <ThemeInjector themeColors={companyDetails?.themeColors} />
+            <PWAOfflineIndicator />
             <AnimatePresence>
                 {isSeeding && (
                     <Loader 

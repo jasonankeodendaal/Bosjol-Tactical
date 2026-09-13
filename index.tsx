@@ -15,16 +15,26 @@ root.render(
   </React.StrictMode>
 );
 
-/*
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js')
       .then(registration => {
-        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        console.log('[PWA] ServiceWorker registered with scope:', registration.scope);
+
+        // Check for updates periodically
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('[PWA] New version available! Refresh to update.');
+              }
+            });
+          }
+        });
       })
       .catch(err => {
-        console.log('ServiceWorker registration failed: ', err);
+        console.warn('[PWA] ServiceWorker registration failed:', err);
       });
   });
 }
-*/

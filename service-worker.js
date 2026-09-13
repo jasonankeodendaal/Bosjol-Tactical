@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const STATIC_CACHE_NAME = `bosjol-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `bosjol-dynamic-${CACHE_VERSION}`;
 const IMAGE_CACHE_NAME = `bosjol-images-${CACHE_VERSION}`;

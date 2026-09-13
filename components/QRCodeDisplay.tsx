@@ -23,8 +23,11 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
         let isMounted = true;
         if (!value) return;
 
+        // Render at double resolution for crisp display on high-DPI displays
+        const renderResolution = Math.max(size * 2, 480);
+
         QRCode.toDataURL(value, {
-            width: size,
+            width: renderResolution,
             margin: 1.5,
             color: {
                 dark: darkColor,
@@ -58,19 +61,25 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
 
     if (!qrDataUrl) {
         return (
-            <div className={`flex items-center justify-center bg-zinc-900 rounded-xl animate-pulse ${className}`} style={{ width: size, height: size }}>
+            <div 
+                className={`flex items-center justify-center bg-zinc-900 rounded-xl animate-pulse aspect-square ${className}`} 
+                style={{ width: size, maxWidth: '100%' }}
+            >
                 <span className="text-xs text-zinc-500 font-mono">Generating QR...</span>
             </div>
         );
     }
 
     return (
-        <div className={`relative flex items-center justify-center p-2.5 bg-white rounded-2xl shadow-[0_0_25px_rgba(255,255,255,0.15)] ${className}`}>
+        <div 
+            className={`relative flex items-center justify-center p-2 sm:p-3 bg-white rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.2)] aspect-square ${className}`}
+            style={{ width: '100%', maxWidth: `${size}px`, maxHeight: `${size}px` }}
+        >
             <img 
                 src={qrDataUrl} 
-                alt="Event Check-In QR Code" 
-                className="w-full h-full object-contain rounded-lg"
-                style={{ maxWidth: size, maxHeight: size }}
+                alt="Tactical QR Code" 
+                className="w-full h-full object-contain rounded-lg select-none"
+                draggable={false}
             />
         </div>
     );

@@ -44,23 +44,27 @@ export const EventQRCodeModal: React.FC<EventQRCodeModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-xl animate-fade-in overflow-hidden">
+        <div 
+            onClick={onClose}
+            className="fixed inset-0 z-[99999] flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-xl animate-fade-in overflow-y-auto"
+        >
             {/* Ambient Background Glow */}
             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-600/15 rounded-full blur-[130px] pointer-events-none -z-10" />
             <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-500/15 rounded-full blur-[130px] pointer-events-none -z-10" />
 
             <div 
-                className={`relative w-full transition-all duration-300 bg-zinc-950/95 border border-red-500/30 rounded-2xl sm:rounded-3xl shadow-[0_0_60px_rgba(220,38,38,0.25)] flex flex-col overflow-hidden text-zinc-100 qr-modal-container ${
+                onClick={(e) => e.stopPropagation()}
+                className={`relative w-full my-auto transition-all duration-300 bg-zinc-950/95 border border-red-500/30 rounded-2xl sm:rounded-3xl shadow-[0_0_60px_rgba(220,38,38,0.25)] flex flex-col text-zinc-100 qr-modal-container overflow-hidden ${
                     isFullScreen 
-                        ? 'max-w-none h-full rounded-none border-none' 
-                        : 'max-w-lg max-h-[90vh]'
+                        ? 'max-w-none h-full rounded-none border-none my-0 max-h-none' 
+                        : 'max-w-md sm:max-w-lg max-h-[92dvh]'
                 }`}
             >
                 {/* 3D Top Accent Bar */}
-                <div className="h-1 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 shadow-[0_0_15px_#ef4444]" />
+                <div className="h-1 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 shadow-[0_0_15px_#ef4444] shrink-0" />
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-white/10 bg-white/[0.03] backdrop-blur-md">
+                <div className="flex items-center justify-between p-3 sm:p-4 border-b border-white/10 bg-white/[0.03] backdrop-blur-md shrink-0">
                     <div className="flex items-center gap-2.5 min-w-0">
                         <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-400 shadow-[0_0_12px_rgba(220,38,38,0.3)] shrink-0">
                             <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -92,8 +96,8 @@ export const EventQRCodeModal: React.FC<EventQRCodeModalProps> = ({
                         <button
                             onClick={onClose}
                             className="p-1.5 rounded-xl bg-white/[0.05] hover:bg-red-950/60 hover:text-red-400 border border-white/10 text-zinc-300 transition"
-                            aria-label="Minimize and Close"
-                            title="Minimize & Proceed"
+                            aria-label="Close"
+                            title="Close"
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -101,19 +105,19 @@ export const EventQRCodeModal: React.FC<EventQRCodeModalProps> = ({
                 </div>
 
                 {/* Main Body */}
-                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-center flex flex-col items-center justify-center custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-3.5 sm:p-5 space-y-3.5 text-center flex flex-col items-center custom-scrollbar">
                     
                     {/* Pulsing Tactical Badge */}
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/15 border border-red-500/40 text-red-400 text-xs font-bold tracking-wider uppercase animate-pulse">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/15 border border-red-500/40 text-red-400 text-[11px] sm:text-xs font-bold tracking-wider uppercase animate-pulse">
                         <Sparkles className="w-3.5 h-3.5" />
                         <span>Scan On-Site to Check In</span>
                     </div>
 
                     {/* Auto-Generated QR Code Display */}
-                    <div className="relative group p-2">
+                    <div className="relative group p-1 flex flex-col items-center">
                         <QRCodeDisplay 
                             value={qrPayload} 
-                            size={isFullScreen ? 340 : 250}
+                            size={isFullScreen ? 320 : 205}
                             className="mx-auto border-2 border-red-500/40"
                         />
                         <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-zinc-400 font-mono">
@@ -123,7 +127,7 @@ export const EventQRCodeModal: React.FC<EventQRCodeModalProps> = ({
                     </div>
 
                     {/* Event Details Overview */}
-                    <div className="w-full grid grid-cols-2 gap-2 text-left bg-white/[0.03] border border-white/10 p-3 rounded-2xl backdrop-blur-md">
+                    <div className="w-full grid grid-cols-2 gap-2 text-left bg-white/[0.03] border border-white/10 p-2.5 sm:p-3 rounded-2xl backdrop-blur-md">
                         <div className="flex items-center gap-2 text-xs text-zinc-300">
                             <Calendar className="w-3.5 h-3.5 text-red-400 shrink-0" />
                             <span className="truncate">{new Date(event.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
@@ -139,7 +143,7 @@ export const EventQRCodeModal: React.FC<EventQRCodeModalProps> = ({
                     </div>
 
                     {/* Check-In Attendance Live Metric */}
-                    <div className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-black/60 border border-white/10">
+                    <div className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-black/60 border border-white/10">
                         <div className="flex items-center gap-2 text-xs text-zinc-400">
                             <Users className="w-4 h-4 text-zinc-400" />
                             <span>Checked-In Attendance</span>

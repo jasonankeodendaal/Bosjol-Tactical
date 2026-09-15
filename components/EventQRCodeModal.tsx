@@ -14,7 +14,7 @@ export const EventQRCodeModal: React.FC<EventQRCodeModalProps> = ({
     signups = [],
     onClose
 }) => {
-    const [isFullScreen, setIsFullScreen] = useState(false);
+    const [isFullScreen, setIsFullScreen] = useState(true);
 
     // Encode payload into QR code
     const qrPayload = JSON.stringify({
@@ -46,7 +46,7 @@ export const EventQRCodeModal: React.FC<EventQRCodeModalProps> = ({
     return (
         <div 
             onClick={onClose}
-            className="fixed inset-0 z-[99999] flex items-center justify-center sm:p-4 bg-black/85 backdrop-blur-xl animate-fade-in sm:overflow-y-auto"
+            className={`fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-xl animate-fade-in sm:overflow-y-auto ${isFullScreen ? 'p-0' : 'sm:p-4'}`}
         >
             {/* Ambient Background Glow */}
             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-600/15 rounded-full blur-[130px] pointer-events-none -z-10" />

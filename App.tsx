@@ -431,9 +431,16 @@ const AppContent: React.FC = () => {
     const checkForPromotions = useCallback((player: Player) => {
         if (promotion || !ranks || ranks.length === 0) return;
     
-        const lastSeenXp = parseInt(sessionStorage.getItem(`lastSeenXp_${player.id}`) || '0', 10);
-        const lastSeenTierId = sessionStorage.getItem(`lastSeenTierId_${player.id}`);
-        const lastSeenBadges: string[] = JSON.parse(sessionStorage.getItem(`lastSeenBadges_${player.id}`) || '[]');
+        const lastSeenXpStr = localStorage.getItem(`lastSeenXp_${player.id}`);
+        if (lastSeenXpStr === null) {
+            localStorage.setItem(`lastSeenXp_${player.id}`, String(player.stats.xp));
+            localStorage.setItem(`lastSeenTierId_${player.id}`, player.rank?.id || '');
+            localStorage.setItem(`lastSeenBadges_${player.id}`, JSON.stringify((player.badges || []).map(b => b.id)));
+            return;
+        }
+        const lastSeenXp = parseInt(lastSeenXpStr, 10);
+        const lastSeenTierId = localStorage.getItem(`lastSeenTierId_${player.id}`);
+        const lastSeenBadges: string[] = JSON.parse(localStorage.getItem(`lastSeenBadges_${player.id}`) || '[]');
     
         if (player.stats.xp > lastSeenXp) {
             const oldTier = lastSeenTierId ? (ranks.flatMap(r => r.tiers || []).find(t => t?.id === lastSeenTierId) || getTierForXp(lastSeenXp, ranks)) : getTierForXp(lastSeenXp, ranks);
@@ -494,10 +501,10 @@ const AppContent: React.FC = () => {
                 
                 updateDoc('players', updatedPlayer);
                 
-                sessionStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(finalXp));
-                sessionStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify((updatedPlayer.badges || []).map(b => b.id)));
+                localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(finalXp));
+                localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify((updatedPlayer.badges || []).map(b => b.id)));
                 if (finalTier) {
-                    sessionStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
+                    localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
                 }
             } else {
                 const finalTier = newTier || getTierForXp(currentPlayer.stats.xp, ranks) || currentPlayer.rank;
@@ -507,10 +514,10 @@ const AppContent: React.FC = () => {
                         rank: finalTier,
                     });
                 }
-                sessionStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(currentPlayer.stats.xp));
-                sessionStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify((currentPlayer.badges || []).map(b => b.id)));
+                localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(currentPlayer.stats.xp));
+                localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify((currentPlayer.badges || []).map(b => b.id)));
                 if (finalTier) {
-                    sessionStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
+                    localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
                 }
             }
         }

@@ -349,7 +349,7 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[120] bg-black/90 backdrop-blur-md flex items-center justify-center sm:p-4 sm:overflow-y-auto"
+            className="fixed inset-0 z-[120] bg-black/90 backdrop-blur-md flex items-center justify-center sm:overflow-y-auto"
             onClick={onClose}
         >
             <motion.div
@@ -358,7 +358,7 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
                 exit={{ scale: 0.95, y: 15 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-zinc-950 sm:border border-white/15 sm:rounded-2xl shadow-2xl w-full h-[100dvh] sm:h-auto sm:my-auto sm:max-w-4xl sm:max-h-[92vh] flex flex-col overflow-hidden text-zinc-100 relative"
+                className="bg-zinc-950 shadow-2xl w-full h-[100dvh] flex flex-col overflow-hidden text-zinc-100 relative"
             >
                 {/* Header with Title & Tab Navigation */}
                 <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-white/10 bg-zinc-900/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">

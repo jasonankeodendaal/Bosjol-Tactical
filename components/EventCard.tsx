@@ -68,20 +68,20 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, className = '', o
         )}
 
         {/* Action Buttons Overlay */}
-        <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
+        <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-10">
           {onShowRentals && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onShowRentals(event);
               }}
-              className="px-1.5 py-0.5 rounded-lg bg-black/80 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-white/20 backdrop-blur-md text-[9px] font-bold transition-all shadow-md flex items-center gap-1"
+              className="px-2 py-1 rounded-lg bg-black/85 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-white/20 backdrop-blur-md text-[10px] font-bold transition-all shadow-md flex items-center gap-1"
               title="Equipment Rentals Summary & Manifest"
             >
-              <ClipboardList className="w-3 h-3 text-red-400" />
-              <span className="hidden sm:inline">Rentals</span>
+              <ClipboardList className="w-3.5 h-3.5 text-red-400 shrink-0" />
+              <span>Rentals</span>
               {rentalsCount !== undefined && rentalsCount > 0 && (
-                <span className="text-red-400 font-mono">({rentalsCount})</span>
+                <span className="text-red-400 font-mono font-bold">({rentalsCount})</span>
               )}
             </button>
           )}
@@ -92,11 +92,11 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, className = '', o
                 e.stopPropagation();
                 onShowQR(event);
               }}
-              className="px-1.5 py-0.5 rounded-lg bg-black/80 hover:bg-red-600 text-zinc-200 hover:text-white border border-red-500/40 backdrop-blur-md text-[9px] font-bold transition-all shadow-md flex items-center gap-1"
+              className="px-2 py-1 rounded-lg bg-black/85 hover:bg-red-600 text-zinc-200 hover:text-white border border-red-500/40 backdrop-blur-md text-[10px] font-bold transition-all shadow-md flex items-center gap-1"
               title="Enlarge Event QR Code for Check-In"
             >
-              <QrCode className="w-3 h-3 text-red-400" />
-              <span className="hidden sm:inline">QR Pass</span>
+              <QrCode className="w-3.5 h-3.5 text-red-400 shrink-0" />
+              <span>QR Pass</span>
             </button>
           )}
         </div>

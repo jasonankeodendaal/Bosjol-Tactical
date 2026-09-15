@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import type { GameEvent, Signup } from '../types';
 import { QRCodeDisplay } from './QRCodeDisplay';
 import { X, QrCode, Calendar, MapPin, Clock, Users, CheckCircle, Download, Printer, Sparkles, ShieldCheck } from 'lucide-react';
@@ -29,10 +30,10 @@ export const EventQRCodeModal: React.FC<EventQRCodeModalProps> = ({
     const totalSignupsCount = checkedInCount + registeredOnlyCount;
 
     const handleDownloadQR = () => {
-        const canvas = document.querySelector('.qr-modal-container img') as HTMLImageElement;
-        if (!canvas || !canvas.src) return;
+        const img = document.querySelector('.qr-modal-container img') as HTMLImageElement;
+        if (!img || !img.src) return;
         const link = document.createElement('a');
-        link.href = canvas.src;
+        link.href = img.src;
         link.download = `QR_CheckIn_${event.title.replace(/\s+/g, '_')}_${event.date}.png`;
         link.click();
     };
@@ -41,7 +42,7 @@ export const EventQRCodeModal: React.FC<EventQRCodeModalProps> = ({
         window.print();
     };
 
-    return (
+    const modalContent = (
         <div 
             className="fixed inset-0 z-[99999] w-full h-[100dvh] bg-zinc-950 flex flex-col text-zinc-100 qr-modal-container overflow-hidden select-none animate-fade-in"
         >
@@ -84,30 +85,30 @@ export const EventQRCodeModal: React.FC<EventQRCodeModalProps> = ({
             </div>
 
             {/* Main Body - Shrink to fit layout on mobile, side-by-side on desktop */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6 flex flex-col sm:flex-row gap-3 sm:gap-8 items-center sm:items-stretch justify-center custom-scrollbar">
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6 flex flex-col md:flex-row gap-4 md:gap-8 items-center justify-start md:justify-center custom-scrollbar">
                 
-                {/* QR Code Section (Shrinks to fit vertical space on mobile) */}
-                <div className="w-full sm:w-1/2 flex-1 min-h-0 flex flex-col items-center justify-center space-y-2 sm:space-y-4">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/15 border border-red-500/40 text-red-400 text-[10px] sm:text-xs font-bold tracking-wider uppercase animate-pulse shrink-0">
+                {/* QR Code Section */}
+                <div className="w-full md:w-1/2 flex flex-col items-center justify-center space-y-2.5 shrink-0">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/15 border border-red-500/40 text-red-400 text-[10px] sm:text-xs font-bold tracking-wider uppercase animate-pulse">
                         <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         <span>Scan On-Site to Check In</span>
                     </div>
 
-                    <div className="relative group w-full flex-1 min-h-0 flex flex-col items-center justify-center max-h-[32vh] sm:max-h-[48vh]">
+                    <div className="flex flex-col items-center justify-center p-2">
                         <QRCodeDisplay 
                             value={qrPayload} 
-                            size={360}
-                            className="mx-auto border-2 border-red-500/40 max-h-[28vh] sm:max-h-[42vh] max-w-[240px] xs:max-w-[280px] sm:max-w-[360px] aspect-square"
+                            size={220}
+                            className="border-2 border-red-500/40 w-[190px] h-[190px] xs:w-[220px] xs:h-[220px] sm:w-[260px] sm:h-[260px]"
                         />
-                        <div className="mt-2 flex items-center justify-center gap-1.5 text-[10px] sm:text-xs text-zinc-400 font-mono shrink-0">
-                            <ShieldCheck className="w-3.5 h-3.5 text-green-400" />
+                        <div className="mt-2.5 flex items-center justify-center gap-1.5 text-[10px] sm:text-xs text-zinc-400 font-mono">
+                            <ShieldCheck className="w-3.5 h-3.5 text-green-400 shrink-0" />
                             <span>Auto-Verified Bosjol Event Token</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Event Details Section */}
-                <div className="w-full sm:w-1/2 shrink-0 sm:shrink flex flex-col justify-center space-y-2.5 sm:space-y-4 max-w-md sm:max-w-none">
+                <div className="w-full md:w-1/2 flex flex-col justify-center space-y-2.5 sm:space-y-4 max-w-md">
                     <div className="w-full grid grid-cols-2 gap-2 text-left bg-white/[0.03] border border-white/10 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl backdrop-blur-md">
                         <div className="flex items-center gap-2 text-xs sm:text-sm text-zinc-300">
                             <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400 shrink-0" />
@@ -176,4 +177,6 @@ export const EventQRCodeModal: React.FC<EventQRCodeModalProps> = ({
             </div>
         </div>
     );
+
+    return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

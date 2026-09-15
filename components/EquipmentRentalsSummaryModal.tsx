@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, 
@@ -344,13 +345,13 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
         window.print();
     };
 
-    return (
+    const modalContent = (
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="fixed inset-0 z-[120] w-full h-[100dvh] bg-zinc-950 flex flex-col overflow-hidden text-zinc-100"
+            className="fixed inset-0 z-[99999] w-full h-[100dvh] bg-zinc-950 flex flex-col overflow-hidden text-zinc-100"
         >
             {/* Header with Title & Tab Navigation */}
             <div className="px-3 py-2.5 sm:px-6 sm:py-3.5 border-b border-white/10 bg-zinc-900/95 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 shrink-0">
@@ -669,32 +670,32 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
                     {activeTab === 'admin-manifest' && (
                         <div className="space-y-6">
                             {/* Manifest KPI Overview Bar */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-                                <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                                    <p className="text-[10px] font-mono uppercase text-zinc-400">Total Items Reserved</p>
-                                    <p className="text-lg sm:text-2xl font-black text-white mt-0.5">{totalItemsRentedCount}</p>
-                                    <p className="text-[9px] text-zinc-500">Across all signups & attendees</p>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                                <div className="p-2.5 sm:p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                                    <p className="text-[9px] sm:text-[10px] font-mono uppercase text-zinc-400 truncate">Total Reserved</p>
+                                    <p className="text-base sm:text-2xl font-black text-white mt-0.5">{totalItemsRentedCount}</p>
+                                    <p className="text-[9px] text-zinc-500 truncate">Across all signups</p>
                                 </div>
-                                <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                                    <p className="text-[10px] font-mono uppercase text-zinc-400">Operators Renting</p>
-                                    <p className="text-lg sm:text-2xl font-black text-white mt-0.5">{totalRentingOperatorsCount}</p>
-                                    <p className="text-[9px] text-emerald-400 font-mono">
+                                <div className="p-2.5 sm:p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                                    <p className="text-[9px] sm:text-[10px] font-mono uppercase text-zinc-400 truncate">Operators Renting</p>
+                                    <p className="text-base sm:text-2xl font-black text-white mt-0.5">{totalRentingOperatorsCount}</p>
+                                    <p className="text-[9px] text-emerald-400 font-mono truncate">
                                         {event.attendees?.length || 0} checked in
                                     </p>
                                 </div>
-                                <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                                    <p className="text-[10px] font-mono uppercase text-zinc-400">Projected Rental Revenue</p>
-                                    <p className="text-lg sm:text-2xl font-black text-emerald-400 font-mono mt-0.5">
+                                <div className="p-2.5 sm:p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                                    <p className="text-[9px] sm:text-[10px] font-mono uppercase text-zinc-400 truncate">Rental Revenue</p>
+                                    <p className="text-base sm:text-2xl font-black text-emerald-400 font-mono mt-0.5">
                                         R{totalRentalRevenue.toFixed(2)}
                                     </p>
-                                    <p className="text-[9px] text-zinc-500">Excluding battlefield entry fees</p>
+                                    <p className="text-[9px] text-zinc-500 truncate">Gear rentals only</p>
                                 </div>
-                                <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                                    <p className="text-[10px] font-mono uppercase text-zinc-400">Available Stock Buffer</p>
-                                    <p className="text-lg sm:text-2xl font-black text-amber-400 font-mono mt-0.5">
+                                <div className="p-2.5 sm:p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                                    <p className="text-[9px] sm:text-[10px] font-mono uppercase text-zinc-400 truncate">Armory Buffer</p>
+                                    <p className="text-base sm:text-2xl font-black text-amber-400 font-mono mt-0.5">
                                         {aggregatedGearSummary.reduce((sum, item) => sum + item.remainingStock, 0)} Units
                                     </p>
-                                    <p className="text-[9px] text-zinc-500">Remaining in Armory</p>
+                                    <p className="text-[9px] text-zinc-500 truncate">Remaining in armory</p>
                                 </div>
                             </div>
 
@@ -710,20 +711,20 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
                                     </span>
                                 </div>
 
-                                <div className="overflow-x-auto rounded-xl border border-white/10 bg-black/40">
-                                    <table className="w-full text-left text-xs border-collapse">
+                                <div className="overflow-x-auto rounded-xl border border-white/10 bg-black/40 custom-scrollbar">
+                                    <table className="w-full text-left text-xs border-collapse min-w-[500px]">
                                         <thead>
-                                            <tr className="bg-white/[0.04] border-b border-white/10 text-[10px] uppercase font-mono text-zinc-400">
-                                                <th className="py-2.5 px-3">Equipment Item</th>
-                                                <th className="py-2.5 px-3">Category</th>
-                                                <th className="py-2.5 px-3 text-center">Reserved</th>
-                                                <th className="py-2.5 px-3 text-center">Total Stock</th>
-                                                <th className="py-2.5 px-3 text-center">Remaining</th>
-                                                <th className="py-2.5 px-3 text-right">Unit Price</th>
-                                                <th className="py-2.5 px-3 text-right">Total Revenue</th>
+                                            <tr className="bg-white/[0.04] border-b border-white/10 text-[10px] uppercase font-mono text-zinc-400 whitespace-nowrap">
+                                                <th className="py-2 px-2.5 sm:px-3">Equipment Item</th>
+                                                <th className="py-2 px-2.5 sm:px-3">Category</th>
+                                                <th className="py-2 px-2.5 sm:px-3 text-center">Reserved</th>
+                                                <th className="py-2 px-2.5 sm:px-3 text-center">Total Stock</th>
+                                                <th className="py-2 px-2.5 sm:px-3 text-center">Remaining</th>
+                                                <th className="py-2 px-2.5 sm:px-3 text-right">Unit Price</th>
+                                                <th className="py-2 px-2.5 sm:px-3 text-right">Total Revenue</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-white/5 font-mono">
+                                        <tbody className="divide-y divide-white/5 font-mono whitespace-nowrap">
                                             {aggregatedGearSummary.map(item => {
                                                 const isDepleted = item.remainingStock === 0 && item.stock > 0;
                                                 const isLowStock = item.remainingStock > 0 && item.remainingStock <= 2;
@@ -922,4 +923,6 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
                 </div>
         </motion.div>
     );
+
+    return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

@@ -53,7 +53,7 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
 
     if (error) {
         return (
-            <div className={`flex flex-col items-center justify-center bg-zinc-900 border border-red-500/40 rounded-xl p-4 text-center ${className}`}>
+            <div className={`flex flex-col items-center justify-center bg-zinc-900 border border-red-500/40 rounded-xl p-4 text-center aspect-square ${className}`} style={{ width: `${size}px`, height: `${size}px`, maxWidth: '100%', maxHeight: '100%' }}>
                 <p className="text-xs text-red-400 font-semibold">QR Generation Error</p>
             </div>
         );
@@ -62,8 +62,8 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
     if (!qrDataUrl) {
         return (
             <div 
-                className={`flex items-center justify-center bg-zinc-900 rounded-xl animate-pulse aspect-square ${className}`} 
-                style={{ width: size, maxWidth: '100%' }}
+                className={`flex items-center justify-center bg-zinc-900 rounded-xl animate-pulse aspect-square shrink-0 ${className}`} 
+                style={{ width: `${size}px`, height: `${size}px`, maxWidth: '100%', maxHeight: '100%' }}
             >
                 <span className="text-xs text-zinc-500 font-mono">Generating QR...</span>
             </div>
@@ -72,13 +72,20 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
 
     return (
         <div 
-            className={`relative flex items-center justify-center p-2 sm:p-3 bg-white rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.2)] max-w-full max-h-full aspect-square transition-all ${className}`}
-            style={{ width: '100%', maxWidth: `${size}px`, maxHeight: `${size}px`, aspectRatio: '1/1' }}
+            className={`relative flex items-center justify-center p-2.5 sm:p-3 bg-white rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.2)] aspect-square shrink-0 transition-all ${className}`}
+            style={{ 
+                width: `${size}px`, 
+                height: `${size}px`, 
+                maxWidth: '100%', 
+                maxHeight: '100%', 
+                aspectRatio: '1 / 1' 
+            }}
         >
             <img 
                 src={qrDataUrl} 
                 alt="Tactical QR Code" 
-                className="w-full h-full max-h-full max-w-full object-contain rounded-lg select-none"
+                className="w-full h-full object-contain rounded-lg select-none block pointer-events-none"
+                style={{ aspectRatio: '1 / 1' }}
                 draggable={false}
             />
         </div>

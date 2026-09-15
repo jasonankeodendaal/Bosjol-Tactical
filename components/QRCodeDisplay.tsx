@@ -72,8 +72,8 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
 
     return (
         <div 
-            className={`relative flex items-center justify-center p-2 sm:p-3 bg-white rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.2)] aspect-square ${className}`}
-            style={{ width: '100%', maxWidth: `${size}px`, maxHeight: `${size}px` }}
+            className={`relative flex items-center justify-center p-2 sm:p-3 bg-white rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.2)] shrink-0 ${className}`}
+            style={{ width: '100%', maxWidth: `${size}px`, aspectRatio: '1/1' }}
         >
             <img 
                 src={qrDataUrl} 

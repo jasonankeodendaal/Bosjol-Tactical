@@ -803,33 +803,48 @@
     </style>
     <style>
       @media print {
-        body * {
-          visibility: hidden;
-        }
-        #printable-report, #printable-report * {
-          visibility: visible;
-        }
-        #printable-report {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
-          color: black;
-          background: white;
-        }
         @page {
           size: auto;
-          margin: 0.5in;
+          margin: 10mm;
         }
+
+        /* Ensure clean white paper and dark typography for printing */
+        html, body {
+          background: #ffffff !important;
+          color: #000000 !important;
+          height: auto !important;
+          overflow: visible !important;
+        }
+
+        /* When a dedicated printable report is active, isolate it and hide standard UI */
+        body.printing-report #root,
+        body:has(#printable-report) #root {
+          display: none !important;
+        }
+
+        #printable-report-container {
+          display: block !important;
+          position: static !important;
+          width: 100% !important;
+          background: #ffffff !important;
+          color: #000000 !important;
+        }
+
+        #printable-report, #printable-report * {
+          visibility: visible !important;
+          color: #000000 !important;
+        }
+
+        /* Hide non-printable interactive UI controls */
         .no-print {
-            display: none !important;
+          display: none !important;
         }
       }
     </style>
 </head>
   <body class="bg-zinc-950 h-full">
     <div id="root" class="h-full"></div>
-    <div id="printable-report-container" class="no-print"></div>
+    <div id="printable-report-container"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

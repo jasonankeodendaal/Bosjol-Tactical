@@ -14,6 +14,7 @@ import {
     Search, 
     Printer, 
     Copy, 
+    Download,
     Calendar, 
     Clock, 
     MapPin, 
@@ -341,9 +342,345 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
         setTimeout(() => setCopiedNotification(null), 3000);
     };
 
-    const handlePrint = () => {
-        window.print();
+    // State for printing
+    const [printingMode, setPrintingMode] = useState<'receipt' | 'manifest' | null>(null);
+
+    const downloadTextFile = (filename: string, content: string) => {
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
     };
+
+    const handleSavePlayerReceipt = () => {
+        const text = [
+            `================================================================`,
+            `           BOSJOL AIRSOFT - EQUIPMENT RENTAL RECEIPT            `,
+            `================================================================`,
+            `Operator:     ${player?.callsign || player?.name || 'Operator'} (${player?.playerCode || 'ID'})`,
+            `Event:        ${event.title}`,
+            `Date & Time:  ${new Date(event.date).toLocaleDateString()} @ ${event.startTime || 'TBD'}`,
+            `Location:     ${event.location}`,
+            `Status:       ${playerStatus}`,
+            `----------------------------------------------------------------`,
+            `RESERVED EQUIPMENT:`,
+            ...(playerReservedItems.length > 0 
+                ? playerReservedItems.map((item, idx) => `  ${idx + 1}. ${item.name.padEnd(35)} [${item.category}]   R${item.price.toFixed(2)}`)
+                : ['  No rental gear reserved (Playing with personal equipment)']),
+            `----------------------------------------------------------------`,
+            `FINANCIAL BREAKDOWN:`,
+            `  Equipment Rentals Subtotal:        R${playerTotalGearCost.toFixed(2)}`,
+            `  Field Match Entry Fee:             R${event.gameFee.toFixed(2)}`,
+            `  --------------------------------------------------------------`,
+            `  GRAND TOTAL DUE AT REGISTRATION:   R${playerGrandTotal.toFixed(2)}`,
+            `----------------------------------------------------------------`,
+            operatorNote ? `Note to Armory: "${operatorNote}"\n----------------------------------------------------------------` : '',
+            `ARMORY PROTOCOL:`,
+            `  1. Arrive 15 minutes before mission briefing.`,
+            `  2. Present this receipt or your Player Pass at the Armory Desk.`,
+            `  3. Chronograph inspection required prior to staging entry.`,
+            `  4. Return all replicas and safety equipment at match conclusion.`,
+            `================================================================`,
+            `Generated on: ${new Date().toLocaleString()}`,
+            `Bosjol Tactical Operations System`
+        ].filter(Boolean).join('\n');
+
+        const cleanName = (player?.callsign || player?.name || 'Operator').replace(/[^a-zA-Z0-9_-]/g, '_');
+        downloadTextFile(`Equipment_Rental_Receipt_${cleanName}_${event.date}.txt`, text);
+    };
+
+    const handleSaveAdminManifest = () => {
+        const text = [
+            `================================================================================`,
+            `                     BOSJOL AIRSOFT - ARMORY RENTAL MANIFEST                    `,
+            `================================================================================`,
+            `Event:        ${event.title}`,
+            `Date & Time:  ${new Date(event.date).toLocaleDateString()} @ ${event.startTime || 'TBD'}`,
+            `Location:     ${event.location}`,
+            `--------------------------------------------------------------------------------`,
+            `EXECUTIVE SUMMARY:`,
+            `  Total Rented Gear Units:     ${totalItemsRentedCount}`,
+            `  Operators Renting Gear:      ${totalRentingOperatorsCount}`,
+            `  Projected Rental Revenue:    R${totalRentalRevenue.toFixed(2)}`,
+            `--------------------------------------------------------------------------------`,
+            `INVENTORY ALLOCATION BREAKDOWN:`,
+            `  ${'Equipment'.padEnd(32)} ${'Reserved'.padEnd(10)} ${'Total Stock'.padEnd(12)} ${'Remaining'.padEnd(10)} ${'Unit Price'.padEnd(12)} Revenue`,
+            `  ${'-'.repeat(78)}`,
+            ...aggregatedGearSummary.map(item => {
+                return `  ${item.name.slice(0, 30).padEnd(32)} ${String(item.reservedCount).padEnd(10)} ${String(item.stock).padEnd(12)} ${String(item.remainingStock).padEnd(10)} R${item.price.toFixed(2).padEnd(11)} R${item.totalRevenue.toFixed(2)}`;
+            }),
+            `--------------------------------------------------------------------------------`,
+            `OPERATOR ALLOCATION ROSTER:`,
+            `  ${'Operator / Callsign'.padEnd(25)} ${'Status'.padEnd(14)} ${'Payment'.padEnd(10)} Items Reserved`,
+            `  ${'-'.repeat(78)}`,
+            ...allOperatorRentals.map(op => {
+                const name = (op.player?.callsign || op.player?.name || 'Operator').slice(0, 23);
+                const itemsStr = op.gearIds.map(id => getItemDetails(id).name).join(', ') || 'None';
+                return `  ${name.padEnd(25)} ${op.status.padEnd(14)} ${(op.paymentStatus || 'Unpaid').padEnd(10)} ${itemsStr} (R${op.totalGearCost.toFixed(2)})${op.note ? ` [Note: ${op.note}]` : ''}`;
+            }),
+            `================================================================================`,
+            `Field Marshal Sign-off: ________________________   Date: ________________________`,
+            `Armory Officer Sign-off: _______________________   Date: ________________________`,
+            `Generated on: ${new Date().toLocaleString()}`,
+            `Bosjol Tactical Operations System`
+        ].join('\n');
+
+        const cleanTitle = event.title.replace(/[^a-zA-Z0-9_-]/g, '_');
+        downloadTextFile(`Armory_Rental_Manifest_${cleanTitle}_${event.date}.txt`, text);
+    };
+
+    const handlePrintReceipt = () => {
+        setPrintingMode('receipt');
+        document.body.classList.add('printing-report');
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => {
+                setPrintingMode(null);
+                document.body.classList.remove('printing-report');
+            }, 800);
+        }, 200);
+    };
+
+    const handlePrintManifest = () => {
+        setPrintingMode('manifest');
+        document.body.classList.add('printing-report');
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => {
+                setPrintingMode(null);
+                document.body.classList.remove('printing-report');
+            }, 800);
+        }, 200);
+    };
+
+    const printableReceipt = (
+        <div id="printable-report" className="p-8 font-sans text-black bg-white max-w-3xl mx-auto border-2 border-black">
+            <div className="border-b-4 border-black pb-4 flex justify-between items-start">
+                <div>
+                    <h1 className="text-3xl font-black uppercase tracking-wider">Bosjol Airsoft</h1>
+                    <h2 className="text-xl font-bold uppercase mt-1">Equipment Rental Receipt</h2>
+                    <p className="text-sm text-gray-700 mt-1">Tactical Battlefield Armory Division</p>
+                </div>
+                <div className="text-right text-xs">
+                    <span className="block font-mono font-bold text-sm">RECEIPT #{event.id.slice(0, 6).toUpperCase()}</span>
+                    <span className="block text-gray-600">Date: {new Date().toLocaleDateString()}</span>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 my-6 text-sm">
+                <div className="p-3 border border-gray-300 rounded bg-gray-50">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-gray-500 mb-1">Operator Info</h3>
+                    <p className="font-bold text-base">{player?.callsign || player?.name || 'Operator'}</p>
+                    <p className="text-xs text-gray-700">Player ID: {player?.playerCode || player?.id?.slice(0, 8) || 'N/A'}</p>
+                    <p className="text-xs mt-1"><strong>Reservation Status:</strong> {playerStatus}</p>
+                </div>
+                <div className="p-3 border border-gray-300 rounded bg-gray-50">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-gray-500 mb-1">Event Details</h3>
+                    <p className="font-bold text-base">{event.title}</p>
+                    <p className="text-xs text-gray-700">{new Date(event.date).toLocaleDateString()} @ {event.startTime || 'TBD'}</p>
+                    <p className="text-xs mt-1"><strong>Location:</strong> {event.location}</p>
+                </div>
+            </div>
+
+            <div className="my-6">
+                <h3 className="text-sm font-bold uppercase tracking-wider mb-2">Reserved Equipment Breakdown</h3>
+                <table className="w-full text-left text-sm border border-collapse border-black">
+                    <thead className="bg-gray-100 border-b-2 border-black">
+                        <tr>
+                            <th className="p-2 border border-black">#</th>
+                            <th className="p-2 border border-black">Equipment Name</th>
+                            <th className="p-2 border border-black">Category</th>
+                            <th className="p-2 border border-black text-right">Rental Fee</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {playerReservedItems.length > 0 ? (
+                            playerReservedItems.map((item, idx) => (
+                                <tr key={idx} className="border-b border-gray-300">
+                                    <td className="p-2 border border-black text-center">{idx + 1}</td>
+                                    <td className="p-2 border border-black font-semibold">{item.name}</td>
+                                    <td className="p-2 border border-black">{item.category}</td>
+                                    <td className="p-2 border border-black text-right font-mono">R{item.price.toFixed(2)}</td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={4} className="p-4 text-center text-gray-500 italic border border-black">
+                                    No rental equipment selected (Personal gear in use)
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            <div className="flex justify-end my-6">
+                <div className="w-72 space-y-1.5 text-sm">
+                    <div className="flex justify-between py-1 border-b border-gray-300">
+                        <span>Equipment Rental Subtotal:</span>
+                        <span className="font-mono font-bold">R{playerTotalGearCost.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-gray-300">
+                        <span>Field Entry Fee:</span>
+                        <span className="font-mono font-bold">R{event.gameFee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b-2 border-black text-base font-black">
+                        <span>Total Due At Desk:</span>
+                        <span className="font-mono text-lg">R{playerGrandTotal.toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+
+            {operatorNote && (
+                <div className="p-3 border border-gray-300 rounded bg-gray-50 my-4 text-xs">
+                    <strong>Special Armory Note:</strong> <em>"{operatorNote}"</em>
+                </div>
+            )}
+
+            <div className="mt-8 border-t-2 border-black pt-4">
+                <h4 className="font-bold text-xs uppercase tracking-wider mb-2">Armory Marshal Inspection & Check-off</h4>
+                <div className="grid grid-cols-4 gap-2 text-xs text-center border border-black p-3 bg-gray-50">
+                    <div>[ ] Gear Issued</div>
+                    <div>[ ] Chrono Passed (____ FPS)</div>
+                    <div>[ ] Eye Pro Verified</div>
+                    <div>[ ] Gear Returned</div>
+                </div>
+                <div className="grid grid-cols-2 gap-8 mt-6 text-xs">
+                    <div className="border-t border-black pt-2">
+                        <span>Operator Signature: _______________________</span>
+                    </div>
+                    <div className="border-t border-black pt-2 text-right">
+                        <span>Armory Marshal: _______________________</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="text-[10px] text-gray-500 mt-6 text-center">
+                Printed on {new Date().toLocaleString()} • Bosjol Airsoft Operations System
+            </div>
+        </div>
+    );
+
+    const printableManifest = (
+        <div id="printable-report" className="p-8 font-sans text-black bg-white max-w-4xl mx-auto border-2 border-black">
+            <div className="border-b-4 border-black pb-4 flex justify-between items-start">
+                <div>
+                    <h1 className="text-3xl font-black uppercase tracking-wider">Bosjol Airsoft</h1>
+                    <h2 className="text-xl font-bold uppercase mt-1">Armory Equipment Manifest</h2>
+                    <p className="text-sm text-gray-700 mt-1">Official Event Logistics & Armory Allocation</p>
+                </div>
+                <div className="text-right text-xs">
+                    <span className="block font-mono font-bold text-sm">EVENT #{event.id.slice(0, 8).toUpperCase()}</span>
+                    <span className="block text-gray-600">Printed: {new Date().toLocaleDateString()}</span>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-4 my-6 text-center text-sm border-2 border-black p-3 bg-gray-50">
+                <div>
+                    <span className="text-xs text-gray-600 block uppercase font-bold">Total Rented Units</span>
+                    <span className="text-2xl font-black">{totalItemsRentedCount}</span>
+                </div>
+                <div>
+                    <span className="text-xs text-gray-600 block uppercase font-bold">Renting Operators</span>
+                    <span className="text-2xl font-black">{totalRentingOperatorsCount}</span>
+                </div>
+                <div>
+                    <span className="text-xs text-gray-600 block uppercase font-bold">Projected Revenue</span>
+                    <span className="text-2xl font-black">R{totalRentalRevenue.toFixed(2)}</span>
+                </div>
+                <div>
+                    <span className="text-xs text-gray-600 block uppercase font-bold">Event Date</span>
+                    <span className="text-base font-bold">{new Date(event.date).toLocaleDateString()}</span>
+                </div>
+            </div>
+
+            <div className="my-6">
+                <h3 className="text-sm font-bold uppercase tracking-wider mb-2">1. Inventory Allocation Summary</h3>
+                <table className="w-full text-left text-xs border border-collapse border-black">
+                    <thead className="bg-gray-100 border-b-2 border-black">
+                        <tr>
+                            <th className="p-1.5 border border-black">Equipment Name</th>
+                            <th className="p-1.5 border border-black">Category</th>
+                            <th className="p-1.5 border border-black text-center">Reserved</th>
+                            <th className="p-1.5 border border-black text-center">Stock</th>
+                            <th className="p-1.5 border border-black text-center">Remaining</th>
+                            <th className="p-1.5 border border-black text-right">Unit Price</th>
+                            <th className="p-1.5 border border-black text-right">Total Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {aggregatedGearSummary.map((item, idx) => (
+                            <tr key={idx} className="border-b border-gray-300">
+                                <td className="p-1.5 border border-black font-semibold">{item.name}</td>
+                                <td className="p-1.5 border border-black">{item.category}</td>
+                                <td className="p-1.5 border border-black text-center font-bold">{item.reservedCount}</td>
+                                <td className="p-1.5 border border-black text-center">{item.stock}</td>
+                                <td className="p-1.5 border border-black text-center font-semibold">{item.remainingStock}</td>
+                                <td className="p-1.5 border border-black text-right font-mono">R{item.price.toFixed(2)}</td>
+                                <td className="p-1.5 border border-black text-right font-mono font-bold">R{item.totalRevenue.toFixed(2)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            <div className="my-6">
+                <h3 className="text-sm font-bold uppercase tracking-wider mb-2">2. Operator Roster & Gear Allocation</h3>
+                <table className="w-full text-left text-xs border border-collapse border-black">
+                    <thead className="bg-gray-100 border-b-2 border-black">
+                        <tr>
+                            <th className="p-1.5 border border-black">Operator</th>
+                            <th className="p-1.5 border border-black">Status</th>
+                            <th className="p-1.5 border border-black">Payment</th>
+                            <th className="p-1.5 border border-black">Rented Equipment</th>
+                            <th className="p-1.5 border border-black text-right">Gear Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {allOperatorRentals.map((op, idx) => {
+                            const itemsStr = op.gearIds.map(id => getItemDetails(id).name).join(', ') || 'None';
+                            return (
+                                <tr key={idx} className="border-b border-gray-300">
+                                    <td className="p-1.5 border border-black font-bold">
+                                        {op.player?.callsign || op.player?.name || 'Operator'}
+                                    </td>
+                                    <td className="p-1.5 border border-black">{op.status}</td>
+                                    <td className="p-1.5 border border-black font-semibold">{op.paymentStatus || 'Unpaid'}</td>
+                                    <td className="p-1.5 border border-black">
+                                        {itemsStr}
+                                        {op.note && <span className="block text-[10px] text-gray-600 italic">Note: {op.note}</span>}
+                                    </td>
+                                    <td className="p-1.5 border border-black text-right font-mono font-bold">
+                                        R{op.totalGearCost.toFixed(2)}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            <div className="mt-8 border-t-2 border-black pt-4">
+                <div className="grid grid-cols-2 gap-8 text-xs">
+                    <div className="border-t border-black pt-2">
+                        <span>Field Marshal: _______________________ Date: _________</span>
+                    </div>
+                    <div className="border-t border-black pt-2 text-right">
+                        <span>Armory Officer: _______________________ Date: _________</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="text-[10px] text-gray-500 mt-6 text-center">
+                Printed on {new Date().toLocaleString()} • Bosjol Airsoft Operations System
+            </div>
+        </div>
+    );
 
     const modalContent = (
         <motion.div
@@ -645,10 +982,21 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
                                         <span>Copy Gear List</span>
                                     </Button>
                                     <Button
-                                        onClick={handlePrint}
+                                        onClick={handleSavePlayerReceipt}
                                         size="sm"
                                         variant="secondary"
                                         className="!px-3 !py-1.5 !text-xs font-bold flex items-center gap-1.5"
+                                        title="Download Equipment Rental Receipt (.txt)"
+                                    >
+                                        <Download className="w-3.5 h-3.5 text-red-400" />
+                                        <span>Save Receipt</span>
+                                    </Button>
+                                    <Button
+                                        onClick={handlePrintReceipt}
+                                        size="sm"
+                                        variant="secondary"
+                                        className="!px-3 !py-1.5 !text-xs font-bold flex items-center gap-1.5"
+                                        title="Print Formatted Equipment Receipt"
                                     >
                                         <Printer className="w-3.5 h-3.5 text-zinc-400" />
                                         <span>Print Receipt</span>
@@ -900,10 +1248,21 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
                                         <span>Copy Full Manifest</span>
                                     </Button>
                                     <Button
-                                        onClick={handlePrint}
+                                        onClick={handleSaveAdminManifest}
                                         size="sm"
                                         variant="secondary"
                                         className="!px-3 !py-1.5 !text-xs font-bold flex items-center gap-1.5"
+                                        title="Download Full Armory Manifest (.txt)"
+                                    >
+                                        <Download className="w-3.5 h-3.5 text-amber-400" />
+                                        <span>Save Manifest</span>
+                                    </Button>
+                                    <Button
+                                        onClick={handlePrintManifest}
+                                        size="sm"
+                                        variant="secondary"
+                                        className="!px-3 !py-1.5 !text-xs font-bold flex items-center gap-1.5"
+                                        title="Print Formatted Armory Manifest Sheet"
                                     >
                                         <Printer className="w-3.5 h-3.5 text-zinc-400" />
                                         <span>Print Armory Sheet</span>
@@ -924,5 +1283,13 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
         </motion.div>
     );
 
-    return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
+    return (
+        <>
+            {typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent}
+            {printingMode && typeof document !== 'undefined' && document.getElementById('printable-report-container') && createPortal(
+                printingMode === 'receipt' ? printableReceipt : printableManifest,
+                document.getElementById('printable-report-container')!
+            )}
+        </>
+    );
 };

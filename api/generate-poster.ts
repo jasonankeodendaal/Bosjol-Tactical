@@ -9,6 +9,34 @@ const FALLBACK_TACTICAL_IMAGES: Record<string, string> = {
   heavy_juggernaut: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80'
 };
 
+function formatGeminiErrorMessage(raw: any): string {
+  if (!raw) return 'Tactical base plate active.';
+  let str = typeof raw === 'string' ? raw : (raw?.message || JSON.stringify(raw));
+  try {
+    const parsed = typeof raw === 'string' && raw.trim().startsWith('{') ? JSON.parse(raw) : (typeof raw === 'object' ? raw : null);
+    if (parsed?.error?.message) {
+      str = parsed.error.message;
+    } else if (parsed?.message) {
+      str = parsed.message;
+    }
+  } catch {
+    // not JSON
+  }
+
+  if (str.includes('429') || str.includes('quota') || str.includes('RESOURCE_EXHAUSTED')) {
+    if (str.includes('limit: 0')) {
+      return 'Google Gemini Free Tier Quota (429): Free tier API keys have a limit of 0 requests for image generation models unless billing is enabled in Google AI Studio. We loaded a high-definition tactical base plate. To generate bespoke AI images, link billing in Google AI Studio or upload a custom field image.';
+    }
+    return 'Google Gemini Rate Limit (429): Per-minute quota exceeded. Tactical base plate active. You can retry in a few moments or upload your own field photo.';
+  }
+
+  if (str.includes('API_KEY_INVALID') || str.includes('403') || str.includes('PERMISSION_DENIED')) {
+    return 'Invalid Gemini API Key: Please verify the GEMINI_API_KEY entered in your Vercel Environment Variables.';
+  }
+
+  return str.replace(/https?:\/\/\S+/g, '').replace(/[\n\r]+/g, ' ').trim();
+}
+
 export default async function handler(req: any, res: any) {
   // CORS Headers for Vercel serverless deployment
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -214,7 +242,7 @@ Lighting: Volumetric tactical smoke, neon accents, dramatic rim lighting, extrem
 
     if (!imageUrl) {
       const fallbackImage = FALLBACK_TACTICAL_IMAGES[subjectType] || FALLBACK_TACTICAL_IMAGES.tactical_operator;
-      const errorMsg = lastError?.message || 'Quota limit reached or service busy. Using high-definition tactical base plate.';
+      const errorMsg = formatGeminiErrorMessage(lastError);
       return res.status(200).json({
         success: true,
         imageUrl: fallbackImage,

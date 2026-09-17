@@ -105,6 +105,34 @@ const CLIENT_TACTICAL_BASEPLATES: Record<string, string> = {
   heavy_juggernaut: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80'
 };
 
+function formatGeminiErrorMessage(raw: any): string {
+  if (!raw) return 'Tactical base plate active.';
+  let str = typeof raw === 'string' ? raw : (raw?.message || JSON.stringify(raw));
+  try {
+    const parsed = typeof raw === 'string' && raw.trim().startsWith('{') ? JSON.parse(raw) : (typeof raw === 'object' ? raw : null);
+    if (parsed?.error?.message) {
+      str = parsed.error.message;
+    } else if (parsed?.message) {
+      str = parsed.message;
+    }
+  } catch {
+    // not JSON
+  }
+
+  if (str.includes('429') || str.includes('quota') || str.includes('RESOURCE_EXHAUSTED')) {
+    if (str.includes('limit: 0')) {
+      return 'Google Gemini Free Tier Quota (429): Free tier API keys have a limit of 0 for image generation models unless billing is linked in Google AI Studio. We loaded a high-definition tactical base plate and rendered your full 3D poster. To unlock bespoke AI artwork generation, enable billing on your Google Cloud/AI Studio project or upload a custom field image.';
+    }
+    return 'Google Gemini Rate Limit (429): Per-minute generation limit reached. High-definition tactical base plate active. You can retry in a few moments or upload your own field photo.';
+  }
+
+  if (str.includes('API_KEY_INVALID') || str.includes('403') || str.includes('PERMISSION_DENIED')) {
+    return 'Invalid Gemini API Key: Please verify the GEMINI_API_KEY entered in your Vercel Environment Variables.';
+  }
+
+  return str.replace(/https?:\/\/\S+/g, '').replace(/[\n\r]+/g, ' ').trim();
+}
+
 export const EventPosterModal: React.FC<EventPosterModalProps> = ({
   event,
   inventory,
@@ -215,10 +243,10 @@ export const EventPosterModal: React.FC<EventPosterModalProps> = ({
       if (data && data.imageUrl) {
         setPosterBgUrl(data.imageUrl);
         if (data.apiKeyConfigured === false) {
-          setAiNotice(data.notice || 'Tactical base plate active. Set GEMINI_API_KEY in your environment to generate custom AI artwork.');
+          setAiNotice(formatGeminiErrorMessage(data.notice || 'Tactical base plate active. Set GEMINI_API_KEY in your environment to generate custom AI artwork.'));
           setSaveSuccessMsg('✓ Tactical 3D Master ready!');
         } else if (data.fallbackUsed) {
-          setAiNotice(data.notice);
+          setAiNotice(formatGeminiErrorMessage(data.notice));
           setSaveSuccessMsg('✓ 3D Master ready with tactical plate!');
         } else {
           setSaveSuccessMsg('✓ 3D Cinematic Poster synthesized successfully!');
@@ -262,6 +290,7 @@ export const EventPosterModal: React.FC<EventPosterModalProps> = ({
           }
         } catch (clientErr: any) {
           console.warn('Client-side Gemini generation attempt failed:', clientErr);
+          setAiNotice(formatGeminiErrorMessage(clientErr));
         }
       }
 
@@ -272,14 +301,14 @@ export const EventPosterModal: React.FC<EventPosterModalProps> = ({
           'Vercel Deployment Notice: The serverless endpoint /api/generate-poster was not found on this deployment. We have added /api/generate-poster.ts and vercel.json to the repository. Please commit these files and set GEMINI_API_KEY in Vercel Project Settings > Environment Variables, then redeploy.'
         );
       } else {
-        setAiNotice('High-definition tactical base plate active. Set GEMINI_API_KEY in Vercel Project Settings > Environment Variables.');
+        setAiNotice(formatGeminiErrorMessage(data?.notice || 'High-definition tactical base plate active. Set GEMINI_API_KEY in Vercel Project Settings > Environment Variables.'));
       }
       setSaveSuccessMsg('✓ Tactical 3D Master ready with base plate!');
       setTimeout(() => setSaveSuccessMsg(null), 3500);
     } catch (err: any) {
       console.warn('Poster generation handler error:', err?.message || err);
       setPosterBgUrl(clientFallback);
-      setAiNotice('Tactical base plate active.');
+      setAiNotice(formatGeminiErrorMessage(err));
     } finally {
       setIsGeneratingAi(false);
     }
@@ -1304,11 +1333,32 @@ export const EventPosterModal: React.FC<EventPosterModalProps> = ({
                 </button>
 
                 {aiNotice && (
-                  <div className="p-2.5 rounded-lg bg-amber-950/60 border border-amber-500/40 text-amber-200 text-xs flex items-start gap-2">
+                  <div className="p-3 rounded-xl bg-amber-950/70 border border-amber-500/40 text-amber-200 text-xs flex items-start gap-2.5 shadow-md">
                     <Info className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                    <div className="space-y-0.5">
-                      <p className="font-bold text-amber-300">Tactical Preset Active</p>
-                      <p className="text-[11px] text-zinc-300 leading-snug">{aiNotice}</p>
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold text-amber-300 uppercase tracking-wide text-[11px]">
+                          Tactical Master Plate Active
+                        </p>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-900/60 border border-amber-600/40 text-amber-300 font-bold">
+                          HD READY
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-300 leading-relaxed">{aiNotice}</p>
+                      {(aiNotice.includes('429') || aiNotice.includes('Quota') || aiNotice.includes('free tier') || aiNotice.includes('limit: 0')) && (
+                        <div className="pt-1 flex items-center gap-2">
+                          <label className="cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 border border-amber-500/30 text-[11px] font-medium text-amber-300 transition hover:border-amber-400">
+                            <Upload className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Upload Custom Arena Photo</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleFileUpload}
+                            />
+                          </label>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

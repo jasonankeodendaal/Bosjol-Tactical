@@ -1,20 +1,99 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { GameEvent, InventoryItem, CompanyDetails } from '../types';
 import { 
-  X, Download, Sparkles, Calendar, MapPin, Clock, DollarSign, Shield, Info, 
-  Image as ImageIcon, Loader2, Flame, Crosshair, Palette, Sliders, Users, Check,
-  Upload, Save, RefreshCw, Edit3, ChevronDown, ChevronUp
+  Sparkles, Download, Save, Upload, Image as ImageIcon, 
+  Edit3, ChevronDown, ChevronUp, Check, 
+  X, Loader2, Info, Shield, Crosshair, Flame, Zap, 
+  RefreshCw, Layers, Eye, FileText, Skull, Award, Target, Flag,
+  Calendar, Clock, MapPin, DollarSign, Radio
 } from 'lucide-react';
+import { EventItem, InventoryItem, CompanyDetails } from '../types';
 
 interface EventPosterModalProps {
-  event: GameEvent;
+  event: EventItem;
   inventory: InventoryItem[];
   companyDetails: CompanyDetails;
   onClose: () => void;
-  onUpdateEventImage?: (newImageUrl: string) => void;
+  onUpdateEventImage?: (newUrl: string) => void;
 }
 
-export type PosterTheme = 'red_vs_blue' | 'toxic_juggernaut' | 'crimson_warfare' | 'cyber_cobalt';
+// Intelligent Auto-Detection Engine based on Bosjol Tactical Airsoft Specifications
+export function autoDetectEventIntel(event: EventItem, inventory: InventoryItem[] = []) {
+  const combinedText = `${event.title || ''} ${event.operationalTheme || ''} ${event.themeName || ''} ${event.description || ''} ${event.rules || ''}`.toLowerCase();
+  
+  let scenario = 'CQB Operator Warfare';
+  let theme: 'neon_lime' | 'red_vs_blue' | 'crimson_flare' | 'cyber_cobalt' = 'neon_lime';
+  let subject: 'tactical_operator' | 'tactical_ape' | 'ghillie_sniper' | 'heavy_juggernaut' | 'dual_faceoff' = 'tactical_operator';
+  let layout: 'symmetrical' | 'asymmetrical' = 'symmetrical';
+  let hype = 'RUN HIDE REVIVE';
+  let catchphrase = 'MORE THAN A GAME';
+  let dogTagLeft = 'DRINKS AVAILABLE AT THE FIELD';
+  let dogTagRight = 'CAPTURE REPLACE DOMINATE';
+  let missionBrief = event.description || 'Eliminate hostile squad presence, secure tactical containers, and achieve operational dominance.';
+  let standardRules = '1. Full face protection mandatory under 18\n2. Biodegradable BBs only on field\n3. Chrono limit 1.5 Joules max\n4. Honor system: call your hits';
+  let variantRules = '• Biohazard / Virus infection mode enabled\n• 2-minute bleedout / buddy revive\n• Designated squad medic per fireteam\n• Semi-auto only inside fortress';
+
+  // Check for Fort / Flag / Red vs Blue / War / Base
+  if (/fort|base|flag|capture|two team|red vs blue|versus|showdown|wars|dominat/.test(combinedText)) {
+    scenario = 'Dual Fortress Showdown (Red vs Blue Wars)';
+    theme = 'red_vs_blue';
+    subject = 'dual_faceoff';
+    layout = 'symmetrical';
+    hype = 'CAPTURE REPLACE DOMINATE';
+    catchphrase = 'MORE THAN A GAME';
+    dogTagLeft = 'DRINKS AVAILABLE AT THE FIELD';
+    dogTagRight = 'CAPTURE REPLACE DOMINATE';
+    missionBrief = event.description || "TWO TEAMS WITH THE OBJECTIVE OF REPLACING THE OTHER TEAM'S FLAG AT THE BASE WITH YOUR OWN.";
+  } 
+  // Check for Monkey / Ape / Middle / Chimp / Jungle / Primate
+  else if (/monkey|ape|chimp|primate|middle|jungle|beast/.test(combinedText)) {
+    scenario = 'Operation Monkey in the Middle';
+    theme = 'neon_lime';
+    subject = 'tactical_ape';
+    layout = 'asymmetrical';
+    hype = 'RUN HIDE REVIVE TAKE OVER';
+    catchphrase = "BB'S FUEL FUN";
+    dogTagLeft = 'DRINKS AVAILABLE AT THE FIELD';
+    dogTagRight = 'AIRSOFT = FAMILY';
+    standardRules = '1. Full face protection mandatory under 18\n2. Biodegradable BBs only on field\n3. Chrono limit 1.5 Joules max\n4. Honor system: call your hits';
+    variantRules = '• Biohazard / Virus infection mode enabled\n• 2-minute bleedout / buddy revive\n• Designated squad medic per fireteam\n• Semi-auto only inside fortress';
+  }
+  // Check for Ghillie / Sniper / Recon / Woodland / Scout
+  else if (/sniper|ghillie|recon|woodland|marksman|ghost|scout/.test(combinedText)) {
+    scenario = 'Ghost Recon Ghillie Ops';
+    theme = 'cyber_cobalt';
+    subject = 'ghillie_sniper';
+    layout = 'symmetrical';
+    hype = 'ONE SHOT ONE HIT';
+    catchphrase = 'SILENT ACCURACY';
+    dogTagLeft = 'HIGH-PRECISION OPS';
+    dogTagRight = 'ONE SHOT ONE HIT';
+  }
+  // Check for Juggernaut / Heavy / Bomb / Biohazard / Outbreak
+  else if (/juggernaut|heavy|bomb|biohazard|virus|infection|outbreak|hazard/.test(combinedText)) {
+    scenario = 'Biohazard Juggernaut Outbreak';
+    theme = 'crimson_flare';
+    subject = 'heavy_juggernaut';
+    layout = 'asymmetrical';
+    hype = 'SURVIVE THE INFESTATION';
+    catchphrase = 'CONTAIN THE OUTBREAK';
+    dogTagLeft = 'HAZMAT PROTOCOL';
+    dogTagRight = 'QUARANTINE ZONE';
+  }
+
+  return {
+    scenario,
+    theme,
+    subject,
+    layout,
+    hype,
+    catchphrase,
+    dogTagLeft,
+    dogTagRight,
+    missionBrief,
+    standardRules,
+    variantRules
+  };
+}
 
 export const EventPosterModal: React.FC<EventPosterModalProps> = ({
   event,
@@ -25,101 +104,119 @@ export const EventPosterModal: React.FC<EventPosterModalProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const autoGeneratedRef = useRef<boolean>(false);
 
-  // Compute rental gear names and default prices from inventory
-  const rentalGearIds = event.gearForRent || [];
-  const rentalItems = inventory.filter(i => rentalGearIds.includes(i.id));
-  const rentalGearNames = rentalItems.length > 0 
-    ? rentalItems.map(i => i.name).join(', ') 
-    : 'Standard AEG Rifle, Thermal Mask & Bio BBs';
+  // Auto-detect initial intel from event data
+  const initialIntel = autoDetectEventIntel(event, inventory);
 
-  const initialRentalPrice = rentalItems.length > 0 
-    ? (event.rentalPriceOverrides?.[rentalItems[0].id] ?? rentalItems[0].salePrice) 
-    : 350;
-
-  // --- STATEFUL DISPLAY FIELDS (Editable right inside the Poster Studio!) ---
-  const [posterTitle, setPosterTitle] = useState<string>(event.title || 'TACTICAL AIRSOFT MISSION');
+  // Form & Poster State
+  const [posterTitle, setPosterTitle] = useState<string>(event.title || 'OPERATION FORT WARS');
+  const [posterHypeText, setPosterHypeText] = useState<string>(initialIntel.hype);
+  const [posterCatchphrase, setPosterCatchphrase] = useState<string>(initialIntel.catchphrase);
   const [posterType, setPosterType] = useState<string>(event.type || 'Mission');
-  const [posterThemeName, setPosterThemeName] = useState<string>(event.theme || 'CQB Operations');
+  const [posterThemeName, setPosterThemeName] = useState<string>(event.themeName || event.operationalTheme || initialIntel.scenario);
   const [posterDate, setPosterDate] = useState<string>(event.date || new Date().toISOString().split('T')[0]);
-  const [posterStartTime, setPosterStartTime] = useState<string>(event.startTime || '10:00');
-  const [posterLocation, setPosterLocation] = useState<string>(event.location || companyDetails.address || 'BOSJOL AIRSOFT ARENA');
-  const [posterGameFee, setPosterGameFee] = useState<number>(event.gameFee !== undefined ? event.gameFee : 50);
-  const [posterRentalFee, setPosterRentalFee] = useState<number>(initialRentalPrice);
-  const [posterRules, setPosterRules] = useState<string>(
-    event.rules || event.description || 'Full face protection mandatory for under 18s. Biodegradable BBs only. Chrono limit 1.5J.'
-  );
+  const [posterStartTime, setPosterStartTime] = useState<string>(event.startTime || '12:00');
+  const [posterBriefingTime, setPosterBriefingTime] = useState<string>(event.briefingTime || '11:30');
+  const [posterLocation, setPosterLocation] = useState<string>(event.location || 'Bosjol Arena - Pretoria');
+  const [posterGameFee, setPosterGameFee] = useState<number>(event.gameFee ?? 100);
+  const [posterRentalFee, setPosterRentalFee] = useState<number>(event.rentalFee ?? 350);
+  const [posterMissionBrief, setPosterMissionBrief] = useState<string>(initialIntel.missionBrief);
+  const [posterStandardRules, setPosterStandardRules] = useState<string>(initialIntel.standardRules);
+  const [posterVariantRules, setPosterVariantRules] = useState<string>(initialIntel.variantRules);
 
-  // Studio UI Controls
-  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  // Visual Theme & Layout State (Auto-Detected)
+  const [visualTheme, setVisualTheme] = useState<'neon_lime' | 'red_vs_blue' | 'crimson_flare' | 'cyber_cobalt'>(initialIntel.theme);
+  const [subjectPreset, setSubjectPreset] = useState<'tactical_operator' | 'tactical_ape' | 'ghillie_sniper' | 'heavy_juggernaut' | 'dual_faceoff'>(initialIntel.subject);
+  const [layoutStyle, setLayoutStyle] = useState<'symmetrical' | 'asymmetrical'>(initialIntel.layout);
+  const [viewMode, setViewMode] = useState<'composite' | 'raw'>('composite');
+  const [showVectorOverlay, setShowVectorOverlay] = useState<boolean>(true);
+
+  // Background artwork & AI generator state
+  const [posterBgUrl, setPosterBgUrl] = useState<string>(event.imageUrl || '');
+  const [isGeneratingAi, setIsGeneratingAi] = useState<boolean>(false);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [showApiKeyGuide, setShowApiKeyGuide] = useState(false);
-  const [posterBgUrl, setPosterBgUrl] = useState<string>(event.imageUrl || companyDetails.logoUrl || '');
-  const [customThemePrompt, setCustomThemePrompt] = useState<string>('');
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
-  const [showTextEditor, setShowTextEditor] = useState<boolean>(true);
+  const [showTextEditor, setShowTextEditor] = useState<boolean>(false);
 
-  // Auto-detect color theme based on text keywords
-  const detectBestTheme = (): PosterTheme => {
-    const combinedStr = `${posterTitle} ${posterThemeName} ${posterType} ${posterRules}`.toLowerCase();
-    if (combinedStr.includes('toxic') || combinedStr.includes('juggernaut') || combinedStr.includes('zombie') || combinedStr.includes('bio')) {
-      return 'toxic_juggernaut';
+  // Available rental gear summary
+  const rentalGearNames = inventory
+    .filter(i => i.isRental)
+    .map(i => i.name)
+    .slice(0, 3)
+    .join(', ') || 'AEG Rifle, Face Mask, Ammo';
+
+  // AI Generation Handler: calls backend endpoint with auto-detected event intel
+  const handleGenerateAiPoster = async (overrideSubject?: any) => {
+    setIsGeneratingAi(true);
+    setAiError(null);
+
+    const activeSubject = overrideSubject || subjectPreset;
+
+    try {
+      const res = await fetch('/api/generate-poster', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: '',
+          title: posterTitle,
+          theme: posterThemeName,
+          type: posterType,
+          location: posterLocation,
+          description: posterMissionBrief,
+          rules: posterStandardRules,
+          rentalInfo: rentalGearNames,
+          bgImageUrl: posterBgUrl,
+          gameFee: posterGameFee,
+          rentalFee: posterRentalFee,
+          date: posterDate,
+          startTime: posterStartTime,
+          briefingTime: posterBriefingTime,
+          subjectType: activeSubject,
+          hypeText: posterHypeText,
+          layoutStyle: layoutStyle,
+          generateMode: 'full_poster'
+        })
+      });
+
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        throw new Error(`Server returned non-JSON response (${res.status}).`);
+      }
+
+      if (!res.ok || data.success === false || data.error) {
+        throw new Error(data.error || 'Failed to generate 3D poster artwork');
+      }
+
+      if (data.imageUrl) {
+        setPosterBgUrl(data.imageUrl);
+        setSaveSuccessMsg('✓ 3D Cinematic Poster synthesized successfully!');
+        setTimeout(() => setSaveSuccessMsg(null), 3500);
+      }
+    } catch (err: any) {
+      console.error('Poster generation failed:', err);
+      setAiError(err.message || 'Image generation failed. Verify GEMINI_API_KEY in environment secrets.');
+    } finally {
+      setIsGeneratingAi(false);
     }
-    if (combinedStr.includes('night') || combinedStr.includes('crimson') || combinedStr.includes('dark') || combinedStr.includes('flare')) {
-      return 'crimson_warfare';
-    }
-    if (combinedStr.includes('cyber') || combinedStr.includes('cobalt') || combinedStr.includes('spec ops')) {
-      return 'cyber_cobalt';
-    }
-    return 'red_vs_blue';
   };
 
-  const [visualStyleTheme, setVisualStyleTheme] = useState<PosterTheme>(detectBestTheme());
-  const [showTeamBanners, setShowTeamBanners] = useState<boolean>(true);
-  const [showParticles, setShowParticles] = useState<boolean>(true);
-  const [showHudReticle, setShowHudReticle] = useState<boolean>(true);
-  const [entryLabel, setEntryLabel] = useState<string>('PER PERSON');
-  const [rentalLabel, setRentalLabel] = useState<string>('RENTALS');
-
-  // Dynamic Prompt generator derived directly from current event state
-  const buildDynamicEventPrompt = (customStyleOverride?: string) => {
-    return `Masterpiece, top class modern high-end professional 3D effect image design. Hyper-realistic photorealistic tactical airsoft promotional poster background art. Exceptional intricate detail, macro-level fabric textures, dirt and grime weathering on gear, custom decal stickers, combined with vibrant abstract color art splashes and dynamic paint splatters blending into the action. Unreal Engine 5 render aesthetic, 8k resolution.
-Event Title: "${posterTitle}".
-Game Mode / Type: ${posterType}.
-Theme Scenario: "${posterThemeName}".
-Field Location: "${posterLocation}".
-Mission Briefing: "${posterRules}".
-Visual Style: ${customStyleOverride || 'Cinematic, ultra-photorealistic rendering, tactical airsoft operators in combat gear, intense atmospheric lighting, flying white airsoft BBs, wet reflective ground, surrounded by energetic abstract color art splashes, masterpiece 3D design'}. Aspect ratio 3:4 portrait. NO text overlays, NO words, NO letters.`;
-  };
-
-  // Dynamically synthesized AI Presets matching current event details
-  const promptPresets = [
-    {
-      name: `🎯 Tactical Sniper (Abstract Splash)`,
-      prompt: buildDynamicEventPrompt('Hyper-photorealistic sniper operator in full detailed ghillie suit aiming a scoped rifle. Interwoven with vibrant neon green and yellow abstract color art splashes. White airsoft BBs flying through the air, wet muddy ground, cinematic lighting, high-end promotional sports aesthetic.')
-    },
-    {
-      name: `☣️ Heavy Juggernaut (Explosive Paint)`,
-      prompt: buildDynamicEventPrompt('Ultra-detailed photorealistic heavy airsoft juggernaut operator in full bomb suit armor wielding a minigun. Framed by explosive toxic green and black abstract paint splatters and art splashes. Dense glowing smoke, flying white BB pellets, wet reflective ground, masterpiece.')
-    },
-    {
-      name: `⚔️ Team Deathmatch (Red/Blue Splash)`,
-      prompt: buildDynamicEventPrompt('Dual team split artwork. Hyper-realistic tactical airsoft operators facing off. Chaotic, highly energetic abstract color art splashes of vibrant crimson red and neon blue paint colliding in the center. Flying white airsoft BBs, epic showdown, 3D high-end render.')
-    },
-    {
-      name: `🔥 Dynamic CQB (Kinetic Colors)`,
-      prompt: buildDynamicEventPrompt('Dynamic high-action photorealistic airsoft combat scene. Operators in elite tactical gear breaching a room, accentuated by kinetic, vibrant abstract color art splashes trailing their movement. Muzzle flashes, flying white BBs, cinematic rim lighting, 8k resolution, ultra-detailed.')
-    }
-  ];
-
-  // Auto-trigger AI Artwork Generation on open if event has no custom artwork image
+  // Auto-trigger generation on mount if no artwork exists
   useEffect(() => {
-    if (!event.imageUrl || event.imageUrl === companyDetails.logoUrl) {
-      handleGenerateAiPoster();
+    if (!autoGeneratedRef.current) {
+      autoGeneratedRef.current = true;
+      if (!event.imageUrl || event.imageUrl === companyDetails.logoUrl) {
+        handleGenerateAiPoster();
+      }
     }
   }, []);
 
-  // Handle Local Custom Image File Upload
+  // Handle custom image upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -135,492 +232,18 @@ Visual Style: ${customStyleOverride || 'Cinematic, ultra-photorealistic renderin
     reader.readAsDataURL(file);
   };
 
-  // Save current poster background image as default event image
+  // Save to default event image
   const handleSaveToEventImage = () => {
-    if (posterBgUrl && onUpdateEventImage) {
-      onUpdateEventImage(posterBgUrl);
+    const canvas = canvasRef.current;
+    const urlToSave = showVectorOverlay && canvas ? canvas.toDataURL('image/jpeg', 0.95) : posterBgUrl;
+    if (urlToSave && onUpdateEventImage) {
+      onUpdateEventImage(urlToSave);
       setSaveSuccessMsg('✓ Saved as default Event Image!');
       setTimeout(() => setSaveSuccessMsg(null), 3000);
     }
   };
 
-  // Draw 3D High Definition Razor Sharp Poster onto Canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // High Definition Poster Dimensions (1200 x 1600 px)
-    canvas.width = 1200;
-    canvas.height = 1600;
-
-    const drawPosterContent = (bgImg?: HTMLImageElement) => {
-      // 1. THEME COLOR CONFIGURATIONS
-      let primaryColor = '#ef4444'; // Red
-      let secondaryColor = '#3b82f6'; // Blue
-      let accentGlow = '#f59e0b'; // Gold
-      let darkBase = '#09090b';
-
-      if (visualStyleTheme === 'toxic_juggernaut') {
-        primaryColor = '#22c55e'; // Toxic Green
-        secondaryColor = '#10b981'; // Emerald
-        accentGlow = '#eab308'; // Amber Gold
-        darkBase = '#051b0d';
-      } else if (visualStyleTheme === 'crimson_warfare') {
-        primaryColor = '#dc2626'; // Dark Crimson
-        secondaryColor = '#f97316'; // Orange Flare
-        accentGlow = '#eab308';
-        darkBase = '#180505';
-      } else if (visualStyleTheme === 'cyber_cobalt') {
-        primaryColor = '#06b6d4'; // Cyan
-        secondaryColor = '#3b82f6'; // Cobalt Blue
-        accentGlow = '#f59e0b';
-        darkBase = '#03131d';
-      }
-
-      // Base Canvas Fill
-      ctx.fillStyle = darkBase;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // 2. BACKGROUND IMAGE OR PROCEDURAL BACKDROP
-      if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
-        ctx.save();
-        const scale = Math.max(canvas.width / bgImg.naturalWidth, canvas.height / bgImg.naturalHeight);
-        const x = (canvas.width - bgImg.naturalWidth * scale) / 2;
-        const y = (canvas.height - bgImg.naturalHeight * scale) / 2;
-        ctx.drawImage(bgImg, x, y, bgImg.naturalWidth * scale, bgImg.naturalHeight * scale);
-
-        // Dark Vignette Overlay for Text Readability
-        const overlay = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        overlay.addColorStop(0, 'rgba(9, 9, 11, 0.82)');
-        overlay.addColorStop(0.35, 'rgba(9, 9, 11, 0.50)');
-        overlay.addColorStop(0.7, 'rgba(9, 9, 11, 0.88)');
-        overlay.addColorStop(1, 'rgba(9, 9, 11, 0.98)');
-        ctx.fillStyle = overlay;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Theme Lighting Overlay
-        if (visualStyleTheme === 'red_vs_blue') {
-          const leftGlow = ctx.createRadialGradient(0, 800, 100, 0, 800, 700);
-          leftGlow.addColorStop(0, 'rgba(239, 68, 68, 0.28)');
-          leftGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          ctx.fillStyle = leftGlow;
-          ctx.fillRect(0, 0, canvas.width / 2, canvas.height);
-
-          const rightGlow = ctx.createRadialGradient(1200, 800, 100, 1200, 800, 700);
-          rightGlow.addColorStop(0, 'rgba(59, 130, 246, 0.28)');
-          rightGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          ctx.fillStyle = rightGlow;
-          ctx.fillRect(canvas.width / 2, 0, canvas.width / 2, canvas.height);
-        } else if (visualStyleTheme === 'toxic_juggernaut') {
-          const greenGlow = ctx.createRadialGradient(600, 1000, 100, 600, 1000, 900);
-          greenGlow.addColorStop(0, 'rgba(34, 197, 94, 0.30)');
-          greenGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          ctx.fillStyle = greenGlow;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-        ctx.restore();
-      } else {
-        // Fallback Procedural Background
-        const grad = ctx.createRadialGradient(600, 800, 100, 600, 800, 1000);
-        grad.addColorStop(0, '#1c1917');
-        grad.addColorStop(1, darkBase);
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-
-      // 3. ATMOSPHERIC 3D SMOKE & BB PARTICLE OVERLAY
-      if (showParticles) {
-        ctx.save();
-        const drawSmokePuff = (sx: number, sy: number, radius: number, colorStr: string) => {
-          const smokeGrad = ctx.createRadialGradient(sx, sy, radius * 0.1, sx, sy, radius);
-          smokeGrad.addColorStop(0, colorStr);
-          smokeGrad.addColorStop(0.6, colorStr.replace(/[^,]+(?=\))/, '0.15'));
-          smokeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          ctx.fillStyle = smokeGrad;
-          ctx.beginPath();
-          ctx.arc(sx, sy, radius, 0, Math.PI * 2);
-          ctx.fill();
-        };
-
-        if (visualStyleTheme === 'red_vs_blue') {
-          drawSmokePuff(150, 400, 320, 'rgba(239, 68, 68, 0.35)');
-          drawSmokePuff(1050, 400, 320, 'rgba(59, 130, 246, 0.35)');
-          drawSmokePuff(200, 1100, 280, 'rgba(220, 38, 38, 0.25)');
-          drawSmokePuff(1000, 1100, 280, 'rgba(37, 99, 235, 0.25)');
-        } else if (visualStyleTheme === 'toxic_juggernaut') {
-          drawSmokePuff(600, 1200, 450, 'rgba(34, 197, 94, 0.35)');
-          drawSmokePuff(300, 500, 280, 'rgba(16, 185, 129, 0.25)');
-        } else {
-          drawSmokePuff(200, 600, 350, 'rgba(220, 38, 38, 0.3)');
-          drawSmokePuff(1000, 600, 350, 'rgba(220, 38, 38, 0.2)');
-        }
-
-        // Flying 3D White Airsoft BB Spheres
-        const bbSeeds = [
-          { x: 120, y: 320, r: 12 }, { x: 280, y: 780, r: 8 }, { x: 180, y: 1350, r: 14 },
-          { x: 1050, y: 280, r: 10 }, { x: 920, y: 820, r: 15 }, { x: 1120, y: 1250, r: 9 },
-          { x: 520, y: 180, r: 7 }, { x: 680, y: 1420, r: 11 }, { x: 420, y: 950, r: 13 }
-        ];
-
-        bbSeeds.forEach(bb => {
-          const bbGrad = ctx.createRadialGradient(bb.x - bb.r * 0.3, bb.y - bb.r * 0.3, bb.r * 0.1, bb.x, bb.y, bb.r);
-          bbGrad.addColorStop(0, '#ffffff');
-          bbGrad.addColorStop(0.7, '#e4e4e7');
-          bbGrad.addColorStop(1, '#71717a');
-          ctx.fillStyle = bbGrad;
-          ctx.beginPath();
-          ctx.arc(bb.x, bb.y, bb.r, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-        });
-        ctx.restore();
-      }
-
-      // 4. TACTICAL GRID MESH & HUD FRAME
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-      ctx.lineWidth = 1;
-      for (let x = 0; x < canvas.width; x += 80) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-      }
-      for (let y = 0; y < canvas.height; y += 80) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-      }
-
-      // Double Frame
-      ctx.strokeStyle = primaryColor;
-      ctx.lineWidth = 5;
-      ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
-
-      ctx.strokeStyle = secondaryColor;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(35, 35, canvas.width - 70, canvas.height - 70);
-
-      // Corner Crosshairs
-      const drawCrosshairTarget = (cx: number, cy: number, color: string) => {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 14, 0, Math.PI * 2);
-        ctx.moveTo(cx - 22, cy); ctx.lineTo(cx + 22, cy);
-        ctx.moveTo(cx, cy - 22); ctx.lineTo(cx, cy + 22);
-        ctx.stroke();
-      };
-      drawCrosshairTarget(45, 45, primaryColor);
-      drawCrosshairTarget(canvas.width - 45, 45, secondaryColor);
-      drawCrosshairTarget(45, canvas.height - 45, secondaryColor);
-      drawCrosshairTarget(canvas.width - 45, canvas.height - 45, primaryColor);
-
-      // Weapon Scope Reticle
-      if (showHudReticle) {
-        ctx.save();
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(canvas.width / 2, 160, 65, 0, Math.PI * 2);
-        ctx.moveTo(canvas.width / 2 - 80, 160); ctx.lineTo(canvas.width / 2 + 80, 160);
-        ctx.moveTo(canvas.width / 2, 160 - 80); ctx.lineTo(canvas.width / 2, 160 + 80);
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      // 5. HEADER COMPANY BRANDING BANNER
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
-      ctx.fillRect(50, 50, canvas.width - 100, 100);
-      ctx.strokeStyle = primaryColor;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(50, 50, canvas.width - 100, 100);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 36px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.shadowColor = primaryColor;
-      ctx.shadowBlur = 15;
-      ctx.fillText((companyDetails.name || 'BOSJOL TACTICAL AIRSOFT').toUpperCase(), canvas.width / 2, 95);
-      ctx.shadowBlur = 0;
-
-      ctx.fillStyle = accentGlow;
-      ctx.font = 'bold 16px monospace';
-      ctx.fillText(`★ OFFICIAL ${posterType.toUpperCase()} POSTER ★`, canvas.width / 2, 128);
-
-      // 6. MAIN EVENT TITLE (3D STENCIL)
-      const titleText = (posterTitle || 'AIRSOFT TACTICAL MATCH').toUpperCase();
-      const titleWords = titleText.split(' ');
-      let line1 = '';
-      let line2 = '';
-      for (const word of titleWords) {
-        if ((line1 + ' ' + word).length <= 16) {
-          line1 += (line1 ? ' ' : '') + word;
-        } else {
-          line2 += (line2 ? ' ' : '') + word;
-        }
-      }
-
-      const draw3dTitleText = (txt: string, ty: number) => {
-        ctx.font = '900 76px sans-serif';
-        ctx.textAlign = 'center';
-
-        ctx.fillStyle = '#000000';
-        ctx.fillText(txt, canvas.width / 2 + 6, ty + 6);
-
-        ctx.shadowColor = visualStyleTheme === 'red_vs_blue' ? '#ef4444' : primaryColor;
-        ctx.shadowBlur = 35;
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(txt, canvas.width / 2, ty);
-        ctx.shadowBlur = 0;
-
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(txt, canvas.width / 2, ty);
-
-        ctx.strokeStyle = 'rgba(0,0,0,0.8)';
-        ctx.lineWidth = 3;
-        ctx.strokeText(txt, canvas.width / 2, ty);
-      };
-
-      let titleY = 250;
-      if (line2) {
-        draw3dTitleText(line1, titleY);
-        draw3dTitleText(line2, titleY + 85);
-        titleY += 170;
-      } else {
-        draw3dTitleText(line1, titleY + 30);
-        titleY += 120;
-      }
-
-      // Theme Subtitle
-      if (posterThemeName) {
-        const themeSub = posterThemeName.toUpperCase();
-        ctx.fillStyle = primaryColor;
-        ctx.font = 'bold 22px monospace';
-        ctx.textAlign = 'center';
-        const displaySub = themeSub.length > 40 ? themeSub.substring(0, 40) + '...' : themeSub;
-        ctx.fillText(`THEME: "${displaySub}"`, canvas.width / 2, titleY + 10);
-        titleY += 45;
-      }
-
-      // 7. TEAM DIVISION FLAGS
-      let nextY = titleY + 20;
-
-      if (showTeamBanners) {
-        const flagWidth = 240;
-        const flagHeight = 110;
-
-        // Left Red Flag
-        ctx.save();
-        ctx.fillStyle = 'rgba(220, 38, 38, 0.85)';
-        ctx.fillRect(70, nextY, flagWidth, flagHeight);
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(70, nextY, flagWidth, flagHeight);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('☠ RED', 70 + flagWidth / 2, nextY + 45);
-        ctx.fillText('TEAM', 70 + flagWidth / 2, nextY + 80);
-        ctx.restore();
-
-        // Right Blue Flag
-        ctx.save();
-        ctx.fillStyle = 'rgba(37, 99, 235, 0.85)';
-        ctx.fillRect(canvas.width - 70 - flagWidth, nextY, flagWidth, flagHeight);
-        ctx.strokeStyle = '#3b82f6';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(canvas.width - 70 - flagWidth, nextY, flagWidth, flagHeight);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('☠ BLUE', canvas.width - 70 - flagWidth / 2, nextY + 45);
-        ctx.fillText('TEAM', canvas.width - 70 - flagWidth / 2, nextY + 80);
-        ctx.restore();
-
-        // VS Emblem
-        ctx.fillStyle = '#f59e0b';
-        ctx.font = '900 38px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.shadowColor = '#000000';
-        ctx.shadowBlur = 10;
-        ctx.fillText('VS', canvas.width / 2, nextY + 68);
-        ctx.shadowBlur = 0;
-
-        nextY += flagHeight + 35;
-      } else {
-        nextY += 15;
-      }
-
-      // 8. LOGISTICS BADGES (TIME & LOCATION)
-      const badgeBoxWidth = 540;
-      const badgeBoxHeight = 65;
-
-      // Time Badge Container
-      const timeBoxX = (canvas.width - badgeBoxWidth) / 2;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-      ctx.beginPath();
-      ctx.roundRect(timeBoxX, nextY, badgeBoxWidth, badgeBoxHeight, 12);
-      ctx.fill();
-      ctx.strokeStyle = primaryColor;
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-
-      ctx.fillStyle = primaryColor;
-      ctx.beginPath();
-      ctx.arc(timeBoxX + 45, nextY + badgeBoxHeight / 2, 22, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 20px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('⏰', timeBoxX + 45, nextY + badgeBoxHeight / 2 + 7);
-
-      ctx.font = '900 28px sans-serif';
-      ctx.textAlign = 'center';
-      const eventDateStr = posterDate 
-        ? new Date(posterDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()
-        : 'SUN, 12 SEP';
-      const timeStr = `${eventDateStr} • ${posterStartTime}`;
-      ctx.fillText(timeStr, canvas.width / 2 + 20, nextY + 43);
-
-      nextY += badgeBoxHeight + 20;
-
-      // Location Badge Container
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-      ctx.beginPath();
-      ctx.roundRect(timeBoxX, nextY, badgeBoxWidth, badgeBoxHeight, 12);
-      ctx.fill();
-      ctx.strokeStyle = secondaryColor;
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-
-      ctx.fillStyle = secondaryColor;
-      ctx.beginPath();
-      ctx.arc(timeBoxX + 45, nextY + badgeBoxHeight / 2, 22, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 20px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('📍', timeBoxX + 45, nextY + badgeBoxHeight / 2 + 7);
-
-      ctx.font = '900 26px sans-serif';
-      ctx.textAlign = 'center';
-      const locStr = posterLocation.toUpperCase();
-      ctx.fillText(locStr.length > 25 ? locStr.substring(0, 25) + '...' : locStr, canvas.width / 2 + 20, nextY + 43);
-
-      nextY += badgeBoxHeight + 40;
-
-      // 9. HIGH-CONTRAST 3D PRICING BADGES
-      const pillWidth = 480;
-      const pillHeight = 110;
-      const leftPillX = (canvas.width / 2) - pillWidth - 20;
-      const rightPillX = (canvas.width / 2) + 20;
-
-      // ENTRY FEE BADGE (LEFT PILL)
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-      ctx.beginPath();
-      ctx.roundRect(leftPillX, nextY, pillWidth, pillHeight, 16);
-      ctx.fill();
-      ctx.strokeStyle = primaryColor;
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.fillStyle = primaryColor;
-      ctx.beginPath();
-      ctx.arc(leftPillX + 55, nextY + pillHeight / 2, 32, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 28px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('👤', leftPillX + 55, nextY + pillHeight / 2 + 9);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 48px monospace';
-      ctx.textAlign = 'left';
-      const entryFeeVal = posterGameFee > 0 ? `R${posterGameFee}` : 'FREE';
-      ctx.fillText(entryFeeVal, leftPillX + 110, nextY + 62);
-
-      ctx.fillStyle = primaryColor;
-      ctx.font = '900 18px sans-serif';
-      ctx.fillText(entryLabel.toUpperCase(), leftPillX + 110, nextY + 92);
-
-      // RENTAL FEE BADGE (RIGHT PILL)
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-      ctx.beginPath();
-      ctx.roundRect(rightPillX, nextY, pillWidth, pillHeight, 16);
-      ctx.fill();
-      ctx.strokeStyle = secondaryColor;
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.fillStyle = secondaryColor;
-      ctx.beginPath();
-      ctx.arc(rightPillX + 55, nextY + pillHeight / 2, 32, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 28px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('🥽', rightPillX + 55, nextY + pillHeight / 2 + 9);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 48px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(`R${posterRentalFee}`, rightPillX + 110, nextY + 62);
-
-      ctx.fillStyle = secondaryColor;
-      ctx.font = '900 18px sans-serif';
-      ctx.fillText(rentalLabel.toUpperCase(), rightPillX + 110, nextY + 92);
-
-      nextY += pillHeight + 35;
-
-      // 10. MATCH SAFETY & EQUIPMENT NOTES
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
-      ctx.fillRect(70, nextY, canvas.width - 140, 110);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(70, nextY, canvas.width - 140, 110);
-
-      ctx.fillStyle = accentGlow;
-      ctx.font = '900 18px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText('⚠ SAFETY RULES & CHRONO CHECK MANDATORY ON SITE', 90, nextY + 35);
-
-      ctx.fillStyle = '#d4d4d8';
-      ctx.font = '16px sans-serif';
-      const ruleText = posterRules || 'Full face protection mandatory for under 18s. Biodegradable BBs only. Chrono limit 1.5J.';
-      ctx.fillText(ruleText.length > 85 ? ruleText.substring(0, 85) + '...' : ruleText, 90, nextY + 72);
-
-      // 11. FOOTER BRANDING
-      ctx.fillStyle = '#a1a1aa';
-      ctx.font = '900 18px monospace';
-      ctx.textAlign = 'center';
-      const websiteStr = companyDetails.website || 'WWW.BOSJOLAIRSOFT.CO.ZA';
-      ctx.fillText(`${(companyDetails.name || 'BOSJOL AIRSOFT').toUpperCase()} • CONTACT: ${companyDetails.contactNumber || '082 123 4567'} • ${websiteStr.toUpperCase()}`, canvas.width / 2, canvas.height - 40);
-    };
-
-    if (posterBgUrl) {
-      const bgImg = new Image();
-      bgImg.crossOrigin = 'anonymous';
-      bgImg.src = posterBgUrl;
-      bgImg.onload = () => drawPosterContent(bgImg);
-      bgImg.onerror = () => drawPosterContent();
-    } else {
-      drawPosterContent();
-    }
-  }, [
-    posterTitle, posterType, posterThemeName, posterDate, posterStartTime, 
-    posterLocation, posterGameFee, posterRentalFee, posterRules, companyDetails,
-    posterBgUrl, visualStyleTheme, showTeamBanners, showParticles, showHudReticle, 
-    entryLabel, rentalLabel
-  ]);
-
-  // Download Razor-Sharp High-Res JPG Poster
+  // Download high-resolution JPG
   const handleDownloadJpg = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -628,77 +251,812 @@ Visual Style: ${customStyleOverride || 'Cinematic, ultra-photorealistic renderin
     const dataUrl = canvas.toDataURL('image/jpeg', 0.98);
     const link = document.createElement('a');
     const safeTitle = posterTitle.replace(/[^a-zA-Z0-9_-]/g, '_');
-    link.download = `Bosjol_3D_Poster_${safeTitle}.jpg`;
+    link.download = `Bosjol_Tactical_Poster_${safeTitle}.jpg`;
     link.href = dataUrl;
     link.click();
   };
 
-  // Trigger Gemini AI Poster Art Generation using Event Details & Upload Reference
-  const handleGenerateAiPoster = async (overridePrompt?: string) => {
-    setIsGeneratingAi(true);
-    setAiError(null);
+  // 1200 x 1600 Ultra HD Canvas Rendering Loop
+  useEffect(() => {
+    let isCancelled = false;
 
-    try {
-      const promptText = overridePrompt || customThemePrompt || buildDynamicEventPrompt();
-
-      const res = await fetch('/api/generate-poster', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          prompt: promptText,
-          title: posterTitle,
-          theme: posterThemeName,
-          type: posterType,
-          location: posterLocation,
-          description: posterRules,
-          rules: posterRules,
-          rentalInfo: rentalGearNames,
-          bgImageUrl: posterBgUrl
-        })
-      });
-
-      const text = await res.text();
-      let data;
+    const runRender = async () => {
       try {
-        data = JSON.parse(text);
-      } catch (err) {
-        console.error('Invalid JSON response:', text.substring(0, 200));
-        throw new Error(`Server returned an invalid response (${res.status}). Please try a smaller image or shorter prompt.`);
+        await document.fonts.ready;
+      } catch (e) {
+        // Fallback
       }
 
-      if (!res.ok || data.success === false || data.error) {
-        throw new Error(data.error || 'Failed to generate AI poster artwork');
-      }
+      if (isCancelled) return;
 
-      if (data.imageUrl) {
-        setPosterBgUrl(data.imageUrl);
-        setSaveSuccessMsg('✓ AI Artwork generated directly from event details!');
-        setTimeout(() => setSaveSuccessMsg(null), 3000);
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      canvas.width = 1200;
+      canvas.height = 1600;
+
+      const renderPoster = (bgImg?: HTMLImageElement) => {
+        // 1. Color Palettes
+        let primaryAccent = '#22c55e'; // Neon Lime Green
+        let secondaryAccent = '#ffffff';
+        let darkBase = '#090a0f';
+        let neonBorder = 'rgba(34, 197, 94, 0.55)';
+
+        if (visualTheme === 'red_vs_blue') {
+          primaryAccent = '#ef4444'; // Bright Red
+          secondaryAccent = '#3b82f6'; // Bright Blue
+          darkBase = '#0a0910';
+          neonBorder = 'rgba(239, 68, 68, 0.55)';
+        } else if (visualTheme === 'crimson_flare') {
+          primaryAccent = '#dc2626';
+          secondaryAccent = '#f97316';
+          darkBase = '#120505';
+          neonBorder = 'rgba(220, 38, 38, 0.6)';
+        } else if (visualTheme === 'cyber_cobalt') {
+          primaryAccent = '#06b6d4';
+          secondaryAccent = '#3b82f6';
+          darkBase = '#03111b';
+          neonBorder = 'rgba(6, 182, 212, 0.6)';
+        }
+
+        // Base Canvas Fill
+        ctx.fillStyle = darkBase;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 2. Background Image Rendering with Gritty Military Grade Effects
+        if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
+          ctx.save();
+          const scale = Math.max(canvas.width / bgImg.naturalWidth, canvas.height / bgImg.naturalHeight);
+          const x = (canvas.width - bgImg.naturalWidth * scale) / 2;
+          const y = (canvas.height - bgImg.naturalHeight * scale) / 2;
+          ctx.drawImage(bgImg, x, y, bgImg.naturalWidth * scale, bgImg.naturalHeight * scale);
+
+          // If Vector Overlay is disabled, show the direct raw 3D AI poster artwork
+          if (!showVectorOverlay) {
+            ctx.restore();
+            return;
+          }
+
+          // Gritty Atmospheric Vignette for Typography Legibility
+          const vignette = ctx.createLinearGradient(0, 0, 0, canvas.height);
+          vignette.addColorStop(0, 'rgba(7, 8, 12, 0.90)');
+          vignette.addColorStop(0.18, 'rgba(7, 8, 12, 0.35)');
+          vignette.addColorStop(0.55, 'rgba(7, 8, 12, 0.55)');
+          vignette.addColorStop(0.82, 'rgba(7, 8, 12, 0.88)');
+          vignette.addColorStop(1, 'rgba(5, 6, 10, 0.98)');
+          ctx.fillStyle = vignette;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Symmetrical Red vs Blue Tactical Lighting Smoke
+          if (visualTheme === 'red_vs_blue') {
+            const redGlow = ctx.createRadialGradient(0, 550, 40, 0, 550, 650);
+            redGlow.addColorStop(0, 'rgba(239, 68, 68, 0.35)');
+            redGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = redGlow;
+            ctx.fillRect(0, 0, canvas.width / 2, canvas.height);
+
+            const blueGlow = ctx.createRadialGradient(1200, 550, 40, 1200, 550, 650);
+            blueGlow.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
+            blueGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = blueGlow;
+            ctx.fillRect(canvas.width / 2, 0, canvas.width / 2, canvas.height);
+          } else {
+            const centerGlow = ctx.createRadialGradient(600, 520, 50, 600, 520, 700);
+            centerGlow.addColorStop(0, visualTheme === 'neon_lime' ? 'rgba(34, 197, 94, 0.28)' : 'rgba(220, 38, 38, 0.28)');
+            centerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = centerGlow;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
+          ctx.restore();
+        } else {
+          // Procedural Gritty Backdrop
+          const grad = ctx.createRadialGradient(600, 650, 100, 600, 650, 1000);
+          grad.addColorStop(0, '#1a2219');
+          grad.addColorStop(1, darkBase);
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        if (!showVectorOverlay) return;
+
+        // 3. Floating Angled Hype Graffiti / Stamp (Background Depth)
+        ctx.save();
+        ctx.translate(canvas.width / 2, 380);
+        ctx.rotate((-10 * Math.PI) / 180);
+        ctx.textAlign = 'center';
+        ctx.font = '900 96px "Permanent Marker", "Black Ops One", Impact, sans-serif';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.strokeStyle = visualTheme === 'red_vs_blue' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)';
+        ctx.lineWidth = 3;
+        const hypeText = (posterHypeText || 'CAPTURE REPLACE DOMINATE').toUpperCase();
+        ctx.fillText(hypeText, 0, 0);
+        ctx.strokeText(hypeText, 0, 0);
+        ctx.restore();
+
+        // Secondary aggressive brush-stroke catchphrase
+        ctx.save();
+        ctx.translate(canvas.width - 240, 240);
+        ctx.rotate((8 * Math.PI) / 180);
+        ctx.textAlign = 'center';
+        ctx.font = '900 28px "Permanent Marker", cursive, sans-serif';
+        ctx.fillStyle = '#f59e0b';
+        ctx.shadowColor = '#000000';
+        ctx.shadowBlur = 8;
+        ctx.fillText(`"${(posterCatchphrase || 'MORE THAN A GAME').toUpperCase()}"`, 0, 0);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+
+        // 4. Outer Precision Tactical Frame & Corner Crosshairs
+        ctx.strokeStyle = primaryAccent;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
+
+        const drawCrosshair = (cx: number, cy: number, color: string) => {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+          ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy);
+          ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy + 20);
+          ctx.stroke();
+        };
+        drawCrosshair(55, 55, primaryAccent);
+        drawCrosshair(canvas.width - 55, 55, visualTheme === 'red_vs_blue' ? secondaryAccent : primaryAccent);
+        drawCrosshair(55, canvas.height - 55, primaryAccent);
+        drawCrosshair(canvas.width - 55, canvas.height - 55, visualTheme === 'red_vs_blue' ? secondaryAccent : primaryAccent);
+
+        // 5. HEADER & TEAM FLAGS (Dual Fortress or Insignia)
+        if (visualTheme === 'red_vs_blue') {
+          // Red Team Flag (Top Left)
+          ctx.save();
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.moveTo(65, 55);
+          ctx.lineTo(155, 55);
+          ctx.lineTo(155, 115);
+          ctx.lineTo(110, 95);
+          ctx.lineTo(65, 115);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '900 13px "Chakra Petch", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('RED TEAM', 110, 80);
+          ctx.restore();
+
+          // Blue Team Flag (Top Right)
+          ctx.save();
+          ctx.fillStyle = '#3b82f6';
+          ctx.beginPath();
+          ctx.moveTo(canvas.width - 155, 55);
+          ctx.lineTo(canvas.width - 65, 55);
+          ctx.lineTo(canvas.width - 65, 115);
+          ctx.lineTo(canvas.width - 110, 95);
+          ctx.lineTo(canvas.width - 155, 115);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '900 13px "Chakra Petch", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('BLUE TEAM', canvas.width - 110, 80);
+          ctx.restore();
+        } else {
+          // Tactical Shield Crest (Top Left)
+          ctx.save();
+          const crestX = 85;
+          const crestY = 75;
+          ctx.fillStyle = primaryAccent;
+          ctx.beginPath();
+          ctx.moveTo(crestX, crestY - 16);
+          ctx.lineTo(crestX + 16, crestY - 8);
+          ctx.lineTo(crestX + 16, crestY + 12);
+          ctx.lineTo(crestX, crestY + 22);
+          ctx.lineTo(crestX - 16, crestY + 12);
+          ctx.lineTo(crestX - 16, crestY - 8);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          ctx.fillStyle = '#090a0f';
+          ctx.font = '900 13px "Chakra Petch", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('B', crestX, crestY + 4);
+          ctx.restore();
+        }
+
+        // Centered Header Text
+        ctx.textAlign = 'center';
+        ctx.font = '900 21px "Chakra Petch", sans-serif';
+        ctx.letterSpacing = '8px';
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = primaryAccent;
+        ctx.shadowBlur = 14;
+        ctx.fillText('B O S J O L   T A C T I C A L   A I R S O F T   P R E S E N T S', canvas.width / 2, 85);
+        ctx.shadowBlur = 0;
+        ctx.letterSpacing = '0px';
+
+        // Glowing divider bar
+        const lineGrad = ctx.createLinearGradient(140, 105, canvas.width - 140, 105);
+        lineGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        lineGrad.addColorStop(0.5, primaryAccent);
+        lineGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.strokeStyle = lineGrad;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(140, 105);
+        ctx.lineTo(canvas.width - 140, 105);
+        ctx.stroke();
+
+        // Category Tag
+        ctx.fillStyle = primaryAccent;
+        ctx.font = '900 15px monospace';
+        ctx.fillText(`★ OFFICIAL ${posterType.toUpperCase()} // ${posterThemeName.toUpperCase()} ★`, canvas.width / 2, 135);
+
+        // 6. HERO TITLE (Heavily Textured 3D Stencil)
+        const rawTitle = (posterTitle || 'OPERATION FORT WARS').toUpperCase();
+        let heroY = 240;
+
+        // Custom Layout for Red vs Blue (Fort Wars)
+        if (visualTheme === 'red_vs_blue' && rawTitle.includes('FORT') && rawTitle.includes('WARS')) {
+          // Line 1: OPERATION: (White)
+          ctx.font = '900 68px "Black Ops One", Impact, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#000000';
+          ctx.fillText('OPERATION:', canvas.width / 2 + 5, heroY + 5);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText('OPERATION:', canvas.width / 2, heroY);
+
+          heroY += 100;
+
+          // Line 2: FORT (Red) and WARS (Blue)
+          ctx.font = '900 100px "Black Ops One", Impact, sans-serif';
+          const fortWidth = ctx.measureText('FORT ').width;
+          const warsWidth = ctx.measureText('WARS').width;
+          const totalWidth = fortWidth + warsWidth;
+          const startTitleX = (canvas.width - totalWidth) / 2;
+
+          ctx.textAlign = 'left';
+          // FORT Shadow & Glow
+          ctx.shadowColor = '#ef4444';
+          ctx.shadowBlur = 24;
+          ctx.fillStyle = '#ef4444';
+          ctx.fillText('FORT ', startTitleX, heroY);
+          ctx.shadowBlur = 0;
+
+          // WARS Shadow & Glow
+          ctx.shadowColor = '#3b82f6';
+          ctx.shadowBlur = 24;
+          ctx.fillStyle = '#3b82f6';
+          ctx.fillText('WARS', startTitleX + fortWidth, heroY);
+          ctx.shadowBlur = 0;
+
+          heroY += 120;
+        } 
+        // Custom Layout for Monkey in the Middle
+        else if (rawTitle.includes('MONKEY')) {
+          // Line 1: OPERATION
+          ctx.font = '900 52px "Black Ops One", Impact, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText('OPERATION', canvas.width / 2, heroY);
+          heroY += 95;
+
+          // Line 2: MONKEY (Huge Neon Lime)
+          ctx.font = '900 110px "Black Ops One", Impact, sans-serif';
+          ctx.shadowColor = '#22c55e';
+          ctx.shadowBlur = 28;
+          ctx.fillStyle = '#22c55e';
+          ctx.fillText('MONKEY', canvas.width / 2, heroY);
+          ctx.shadowBlur = 0;
+          heroY += 75;
+
+          // Line 3: IN THE MIDDLE
+          ctx.font = '900 52px "Black Ops One", Impact, sans-serif';
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText('IN THE MIDDLE', canvas.width / 2, heroY);
+          heroY += 55;
+
+          // Line 4: AIRSOFT GAME
+          ctx.font = '900 32px "Chakra Petch", monospace';
+          ctx.letterSpacing = '8px';
+          ctx.fillStyle = '#22c55e';
+          ctx.fillText('AIRSOFT GAME', canvas.width / 2, heroY);
+          ctx.letterSpacing = '0px';
+          heroY += 75;
+        } 
+        // Standard Contrasting 2-Line Title
+        else {
+          const words = rawTitle.split(' ');
+          let line1 = words[0] || 'TACTICAL';
+          let line2 = words.slice(1).join(' ') || 'MISSION';
+
+          ctx.font = '900 86px "Black Ops One", Impact, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#000000';
+          ctx.fillText(line1, canvas.width / 2 + 5, heroY + 5);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(line1, canvas.width / 2, heroY);
+
+          heroY += 95;
+          ctx.shadowColor = primaryAccent;
+          ctx.shadowBlur = 24;
+          ctx.fillStyle = primaryAccent;
+          ctx.fillText(line2, canvas.width / 2, heroY);
+          ctx.shadowBlur = 0;
+          heroY += 120;
+        }
+
+        // 7. FLANKING ANCHORS & BADGES
+        // Left Anchor: Red Splatter "5XP" Arcade Badge
+        ctx.save();
+        const xpX = 140;
+        const xpY = heroY - 95;
+        
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.arc(xpX, xpY, 46, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.arc(xpX, xpY, 40, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#fef08a';
+        ctx.font = '900 32px "Black Ops One", "Chakra Petch", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('5XP', xpX, xpY + 10);
+        ctx.font = '900 11px monospace';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('+100 RP', xpX, xpY + 26);
+        ctx.restore();
+
+        // Right Anchor: Hanging Metallic Engraved Steel Dog Tags
+        ctx.save();
+        const tagX = canvas.width - 140;
+        const tagY = heroY - 95;
+
+        ctx.strokeStyle = '#a1a1aa';
+        ctx.lineWidth = 2.5;
+        for (let c = tagY - 65; c < tagY - 30; c += 10) {
+          ctx.beginPath();
+          ctx.arc(tagX, c, 4, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        const tagGrad = ctx.createLinearGradient(tagX - 35, tagY - 35, tagX + 35, tagY + 45);
+        tagGrad.addColorStop(0, '#3f3f46');
+        tagGrad.addColorStop(0.5, '#27272a');
+        tagGrad.addColorStop(1, '#18181b');
+        ctx.fillStyle = tagGrad;
+        ctx.beginPath();
+        ctx.roundRect(tagX - 35, tagY - 32, 70, 78, 12);
+        ctx.fill();
+
+        ctx.strokeStyle = '#71717a';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#090a0f';
+        ctx.beginPath();
+        ctx.arc(tagX, tagY - 20, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 12px "Black Ops One", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('BOSJOL', tagX, tagY + 10);
+        ctx.fillStyle = primaryAccent;
+        ctx.fillText('WARS', tagX, tagY + 28);
+        ctx.restore();
+
+        // Left Hanging Dog Tag: "DRINKS AVAILABLE AT THE FIELD"
+        ctx.save();
+        const drinkTagX = 140;
+        const drinkTagY = heroY + 45;
+        ctx.fillStyle = 'rgba(12, 16, 24, 0.94)';
+        ctx.beginPath();
+        ctx.roundRect(drinkTagX - 60, drinkTagY - 24, 120, 48, 8);
+        ctx.fill();
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#fef08a';
+        ctx.font = '900 11px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('🥤 DRINKS AVAILABLE', drinkTagX, drinkTagY - 4);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 9px monospace';
+        ctx.fillText('AT THE FIELD', drinkTagX, drinkTagY + 12);
+        ctx.restore();
+
+        // Right Hanging Tag: "CAPTURE REPLACE DOMINATE"
+        ctx.save();
+        const capTagX = canvas.width - 140;
+        const capTagY = heroY + 45;
+        ctx.fillStyle = 'rgba(12, 16, 24, 0.94)';
+        ctx.beginPath();
+        ctx.roundRect(capTagX - 60, capTagY - 24, 120, 48, 8);
+        ctx.fill();
+        ctx.strokeStyle = visualTheme === 'red_vs_blue' ? '#3b82f6' : primaryAccent;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 11px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚡ CAPTURE', capTagX, capTagY - 4);
+        ctx.fillStyle = visualTheme === 'red_vs_blue' ? '#60a5fa' : primaryAccent;
+        ctx.font = 'bold 9px monospace';
+        ctx.fillText('REPLACE DOMINATE', capTagX, capTagY + 12);
+        ctx.restore();
+
+        // Operational Mode Tag Banner
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
+        const subBoxWidth = 560;
+        ctx.beginPath();
+        ctx.roundRect((canvas.width - subBoxWidth) / 2, heroY + 25, subBoxWidth, 42, 8);
+        ctx.fill();
+        ctx.strokeStyle = primaryAccent;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 18px monospace';
+        ctx.fillText(`OPERATIONAL MODE: [ ${posterThemeName.toUpperCase()} ]`, canvas.width / 2, heroY + 52);
+
+        heroY += 105;
+
+        // 8. INFORMATION MODULES (MID-SECTION)
+        const numBoxes = 4;
+        const boxWidth = 260;
+        const boxHeight = 122;
+        const totalBoxesWidth = numBoxes * boxWidth;
+        const boxGap = (canvas.width - 120 - totalBoxesWidth) / (numBoxes - 1);
+        const startX = 60;
+        const midSectionY = heroY;
+
+        // Minimalist Vector Icon Drawers
+        const drawVectorCalendar = (x: number, y: number, color: string) => {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(x - 14, y - 12, 28, 26);
+          ctx.fillStyle = color;
+          ctx.fillRect(x - 8, y - 17, 3, 6);
+          ctx.fillRect(x + 5, y - 17, 3, 6);
+          ctx.beginPath();
+          ctx.moveTo(x - 14, y - 4);
+          ctx.lineTo(x + 14, y - 4);
+          ctx.stroke();
+        };
+
+        const drawVectorClock = (x: number, y: number, color: string) => {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(x, y, 14, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x, y - 8);
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + 7, y);
+          ctx.stroke();
+        };
+
+        const drawVectorMapPin = (x: number, y: number, color: string) => {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(x, y - 4, 9, 0, Math.PI * 2);
+          ctx.moveTo(x - 9, y - 4);
+          ctx.lineTo(x, y + 14);
+          ctx.lineTo(x + 9, y - 4);
+          ctx.stroke();
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(x, y - 4, 3, 0, Math.PI * 2);
+          ctx.fill();
+        };
+
+        const drawVectorPricing = (x: number, y: number, color: string) => {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(x - 6, y, 10, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x + 6, y, 10, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = color;
+          ctx.font = '900 13px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('R', x, y + 4);
+        };
+
+        const formattedDate = posterDate
+          ? new Date(posterDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()
+          : 'SAT, 24 OCT';
+
+        const infoModules = [
+          {
+            label: 'EVENT DATE',
+            mainText: formattedDate,
+            subText: 'OFFICIAL MATCHDAY',
+            drawIcon: drawVectorCalendar,
+            color: primaryAccent
+          },
+          {
+            label: 'HOURS & BRIEFING',
+            mainText: `${posterStartTime} OPS`,
+            subText: `${posterBriefingTime} BRIEFING`,
+            drawIcon: drawVectorClock,
+            color: '#ffffff'
+          },
+          {
+            label: 'ARENA LOCATION',
+            mainText: posterLocation.length > 15 ? posterLocation.substring(0, 15) + '..' : posterLocation.toUpperCase(),
+            subText: 'CQB & FIELD ACCESS',
+            drawIcon: drawVectorMapPin,
+            color: visualTheme === 'red_vs_blue' ? secondaryAccent : primaryAccent
+          },
+          {
+            label: 'ZAR PRICING',
+            mainText: `R${posterGameFee} / R${posterRentalFee}`,
+            subText: 'OWN GEAR / RENTAL',
+            drawIcon: drawVectorPricing,
+            color: '#f59e0b'
+          }
+        ];
+
+        infoModules.forEach((mod, idx) => {
+          const boxX = startX + idx * (boxWidth + boxGap);
+          
+          ctx.fillStyle = 'rgba(10, 14, 22, 0.92)';
+          ctx.beginPath();
+          ctx.roundRect(boxX, midSectionY, boxWidth, boxHeight, 14);
+          ctx.fill();
+
+          ctx.strokeStyle = mod.color;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          mod.drawIcon(boxX + 32, midSectionY + 32, mod.color);
+
+          ctx.textAlign = 'left';
+          ctx.fillStyle = mod.color;
+          ctx.font = '900 12px monospace';
+          ctx.fillText(mod.label, boxX + 58, midSectionY + 36);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '900 20px "Chakra Petch", sans-serif';
+          ctx.fillText(mod.mainText, boxX + 22, midSectionY + 77);
+
+          ctx.fillStyle = '#a1a1aa';
+          ctx.font = 'bold 12px monospace';
+          ctx.fillText(mod.subText, boxX + 22, midSectionY + 103);
+        });
+
+        // 9. BODY CONTENT (RULES & MISSION BRIEFS)
+        const bodyY = midSectionY + boxHeight + 35;
+        const bodyWidth = canvas.width - 120;
+
+        if (layoutStyle === 'symmetrical') {
+          // Symmetrical Centralized Mission Brief Box
+          ctx.fillStyle = 'rgba(9, 12, 18, 0.94)';
+          ctx.beginPath();
+          ctx.roundRect(60, bodyY, bodyWidth, 230, 16);
+          ctx.fill();
+          ctx.strokeStyle = neonBorder;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = primaryAccent;
+          ctx.textAlign = 'center';
+          ctx.font = '900 24px "Chakra Petch", sans-serif';
+          ctx.fillText('━  M I S S I O N   B R I E F I N G   &   F I E L D   R U L E S  ━', canvas.width / 2, bodyY + 45);
+
+          ctx.fillStyle = '#e4e4e7';
+          ctx.font = 'bold 20px sans-serif';
+          ctx.textAlign = 'center';
+          
+          const wordsDesc = posterMissionBrief.split(' ');
+          let dLine1 = '';
+          let dLine2 = '';
+          for (const w of wordsDesc) {
+            if ((dLine1 + ' ' + w).length <= 55) {
+              dLine1 += (dLine1 ? ' ' : '') + w;
+            } else {
+              dLine2 += (dLine2 ? ' ' : '') + w;
+            }
+          }
+          ctx.fillText(dLine1, canvas.width / 2, bodyY + 95);
+          if (dLine2) {
+            ctx.fillText(dLine2, canvas.width / 2, bodyY + 128);
+          }
+
+          ctx.strokeStyle = primaryAccent;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(120, bodyY + 155);
+          ctx.lineTo(canvas.width - 120, bodyY + 155);
+          ctx.stroke();
+
+          ctx.fillStyle = '#facc15';
+          ctx.font = '900 15px monospace';
+          ctx.fillText('⚠ FULL FACE PROTECTION MANDATORY UNDER 18 • CHRONO LIMIT 1.5J • BIODEGRADABLE BBS ONLY', canvas.width / 2, bodyY + 195);
+        } else {
+          // Asymmetrical Two Split Columns (Standard Rules vs Special Ops)
+          const colWidth = (bodyWidth - 30) / 2;
+
+          // Left: Standard Game Rules
+          ctx.fillStyle = 'rgba(9, 12, 18, 0.94)';
+          ctx.beginPath();
+          ctx.roundRect(60, bodyY, colWidth, 230, 16);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(34, 197, 94, 0.45)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = primaryAccent;
+          ctx.font = '900 20px "Chakra Petch", sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText('🛡 STANDARD GAME RULES', 85, bodyY + 40);
+
+          ctx.fillStyle = '#d4d4d8';
+          ctx.font = '15px sans-serif';
+          const ruleLines = posterStandardRules.split('\n');
+          ruleLines.slice(0, 4).forEach((rLine, rIdx) => {
+            ctx.fillText(rLine, 85, bodyY + 80 + rIdx * 34);
+          });
+
+          // Right: Special Ops / VIRUS RULES
+          const rightColX = 60 + colWidth + 30;
+          ctx.fillStyle = 'rgba(18, 8, 8, 0.94)';
+          ctx.beginPath();
+          ctx.roundRect(rightColX, bodyY, colWidth, 230, 16);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ef4444';
+          ctx.font = '900 20px "Chakra Petch", sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText('☣ SPECIAL OPS / VARIANT RULES', rightColX + 25, bodyY + 40);
+
+          ctx.fillStyle = '#fca5a5';
+          ctx.font = '15px sans-serif';
+          const variantLines = posterVariantRules.split('\n');
+          variantLines.slice(0, 4).forEach((vLine, vIdx) => {
+            ctx.fillText(vLine, rightColX + 25, bodyY + 80 + vIdx * 34);
+          });
+        }
+
+        // 10. FOOTER & CORE VALUES
+        const footerY = canvas.height - 120;
+
+        // Operator silhouettes in the lower third
+        ctx.save();
+        ctx.fillStyle = 'rgba(5, 6, 8, 0.95)';
+        
+        // Operator Left (Aiming)
+        ctx.beginPath();
+        ctx.moveTo(50, canvas.height);
+        ctx.lineTo(50, footerY - 50);
+        ctx.lineTo(85, footerY - 70);
+        ctx.lineTo(110, footerY - 65);
+        ctx.lineTo(135, footerY - 45);
+        ctx.lineTo(190, footerY - 50);
+        ctx.lineTo(240, footerY - 50);
+        ctx.lineTo(240, footerY - 40);
+        ctx.lineTo(180, footerY - 35);
+        ctx.lineTo(150, footerY - 15);
+        ctx.lineTo(165, canvas.height);
+        ctx.closePath();
+        ctx.fill();
+
+        // Operator Right (Sniper)
+        ctx.beginPath();
+        ctx.moveTo(canvas.width - 50, canvas.height);
+        ctx.lineTo(canvas.width - 50, footerY - 35);
+        ctx.lineTo(canvas.width - 95, footerY - 60);
+        ctx.lineTo(canvas.width - 130, footerY - 45);
+        ctx.lineTo(canvas.width - 210, footerY - 45);
+        ctx.lineTo(canvas.width - 210, footerY - 38);
+        ctx.lineTo(canvas.width - 140, footerY - 32);
+        ctx.lineTo(canvas.width - 120, footerY - 10);
+        ctx.lineTo(canvas.width - 160, canvas.height);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // Minimal Black Bar
+        ctx.fillStyle = 'rgba(4, 5, 8, 0.96)';
+        ctx.fillRect(40, footerY, canvas.width - 80, 85);
+        ctx.strokeStyle = primaryAccent;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(40, footerY, canvas.width - 80, 85);
+
+        // Core Values
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 20px "Chakra Petch", sans-serif';
+        ctx.fillText('🎯  TEAMWORK      •      ⚡  STRATEGY      •      🚩  OBJECTIVE      •      ⭐  VICTORY', canvas.width / 2, footerY + 38);
+
+        // Brand and Contact details
+        ctx.fillStyle = '#a1a1aa';
+        ctx.font = 'bold 14px monospace';
+        const web = companyDetails.website || 'WWW.BOSJOLAIRSOFT.CO.ZA';
+        const phone = companyDetails.contactNumber || '082 123 4567';
+        ctx.fillText(`${(companyDetails.name || 'BOSJOL TACTICAL AIRSOFT').toUpperCase()}  |  ${web.toUpperCase()}  |  TEL: ${phone}`, canvas.width / 2, footerY + 66);
+      };
+
+      if (posterBgUrl) {
+        const bgImg = new Image();
+        bgImg.crossOrigin = 'anonymous';
+        bgImg.src = posterBgUrl;
+        bgImg.onload = () => {
+          if (!isCancelled) renderPoster(bgImg);
+        };
+        bgImg.onerror = () => {
+          if (!isCancelled) renderPoster();
+        };
+      } else {
+        renderPoster();
       }
-    } catch (err: any) {
-      console.error('Poster generation failed:', err);
-      setAiError(err.message || 'Image generation failed. Check GEMINI_API_KEY environment variable.');
-    } finally {
-      setIsGeneratingAi(false);
-    }
-  };
+    };
+
+    runRender();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    posterTitle, posterHypeText, posterCatchphrase, posterType, posterThemeName,
+    posterDate, posterStartTime, posterBriefingTime, posterLocation, posterGameFee,
+    posterRentalFee, posterMissionBrief, posterStandardRules, posterVariantRules,
+    visualTheme, layoutStyle, showVectorOverlay, posterBgUrl, companyDetails
+  ]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-5 overflow-y-auto">
-      <div className="bg-zinc-900 border border-zinc-700/90 rounded-2xl max-w-6xl w-full my-auto overflow-hidden shadow-2xl flex flex-col max-h-[95vh]">
-        {/* Header */}
+    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-zinc-900 border border-zinc-700/90 rounded-2xl max-w-7xl w-full my-auto overflow-hidden shadow-2xl flex flex-col max-h-[96vh]">
+        
+        {/* Modal Header */}
         <div className="p-3.5 sm:p-5 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-red-600/20 border border-red-500/40 text-red-500">
+            <div className="p-2.5 rounded-xl bg-red-600/20 border border-red-500/40 text-red-500">
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-base sm:text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
-                3D Airsoft Poster Studio
+                Bosjol Tactical 3D Poster Studio
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/40">
+                  AUTO-DETECT V2
+                </span>
               </h2>
-              <p className="text-xs text-zinc-400">Live Event Data Engine • Editable Display Info • 1200x1600 Ultra HD Export</p>
+              <p className="text-xs text-zinc-400">Hyper-Realistic 8K Octane Visuals • Auto-Detected Event Intelligence • 1200x1600 Ultra HD</p>
             </div>
           </div>
           <button
@@ -711,30 +1069,100 @@ Visual Style: ${customStyleOverride || 'Cinematic, ultra-photorealistic renderin
 
         {/* Modal Body */}
         <div className="p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-y-auto flex-grow">
-          {/* Left Column: Interactive Poster Canvas Preview */}
-          <div className="lg:col-span-7 flex flex-col items-center justify-center bg-zinc-950/90 p-3 sm:p-4 rounded-xl border border-zinc-800">
-            <div className="relative max-w-full max-h-[68vh] aspect-[3/4] shadow-[0_0_50px_rgba(220,38,38,0.25)] rounded-lg overflow-hidden border border-zinc-700">
+          
+          {/* Left Column: Live High-Definition Canvas & View Modes */}
+          <div className="lg:col-span-7 flex flex-col items-center justify-center bg-zinc-950/90 p-3 sm:p-4 rounded-xl border border-zinc-800 relative">
+            
+            {/* Live AI Synthesis Radar Sweep Overlay */}
+            {isGeneratingAi && (
+              <div className="absolute inset-0 z-30 bg-black/85 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center p-6 text-center">
+                <div className="relative mb-5">
+                  <div className="w-20 h-20 rounded-full border-2 border-emerald-500/40 border-t-emerald-400 animate-spin flex items-center justify-center">
+                    <Crosshair className="w-8 h-8 text-emerald-400 animate-pulse" />
+                  </div>
+                </div>
+                <div className="space-y-2 max-w-md">
+                  <p className="text-sm font-black text-white uppercase tracking-wider flex items-center justify-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400 animate-bounce" />
+                    Synthesizing 3D Cinematic Poster
+                  </p>
+                  <p className="text-xs text-emerald-400 font-mono font-bold">
+                    [ AUTO-DETECTED: {initialIntel.scenario.toUpperCase()} ]
+                  </p>
+                  <p className="text-[11px] text-zinc-400 font-mono leading-relaxed">
+                    Rendering 8K Octane Textures, Volumetric Symmetrical Lighting & Integrated Marketing Details...
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Poster Frame */}
+            <div className="relative max-w-full max-h-[70vh] aspect-[3/4] shadow-[0_0_50px_rgba(34,197,94,0.2)] rounded-lg overflow-hidden border border-zinc-700">
               <canvas
                 ref={canvasRef}
                 className="w-full h-full object-contain block rounded"
               />
             </div>
-            
+
+            {/* Success Notification */}
             {saveSuccessMsg && (
               <p className="text-xs font-bold text-emerald-400 mt-2 bg-emerald-950/90 px-3 py-1 rounded-full border border-emerald-500/50">
                 {saveSuccessMsg}
               </p>
             )}
 
-            <p className="text-[11px] font-mono text-zinc-400 mt-2.5 text-center flex items-center gap-1">
-              <Check className="w-3.5 h-3.5 text-emerald-400 inline" />
-              <span>1200x1600 Vector Rendering • Real-Time Event Data Sync • Ultra HD JPG Export</span>
-            </p>
+            {/* View Mode Switcher: Composite vs Raw AI Image */}
+            <div className="flex items-center gap-2 mt-3 p-1 bg-zinc-900/90 rounded-xl border border-zinc-800">
+              <button
+                onClick={() => {
+                  setViewMode('composite');
+                  setShowVectorOverlay(true);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  showVectorOverlay
+                    ? 'bg-emerald-950 border border-emerald-500 text-emerald-300'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                <span>3D Master Composite Poster</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setViewMode('raw');
+                  setShowVectorOverlay(false);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  !showVectorOverlay
+                    ? 'bg-blue-950 border border-blue-500 text-blue-300'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <ImageIcon className="w-3.5 h-3.5 text-blue-400" />
+                <span>Raw 3D Generated Artwork</span>
+              </button>
+            </div>
+
+            {/* Specs Footer */}
+            <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] font-mono text-zinc-400 mt-2 text-center">
+              <span className="flex items-center gap-1 text-emerald-400">
+                <Check className="w-3.5 h-3.5" /> 1200x1600 Ultra HD
+              </span>
+              <span className="text-zinc-600">•</span>
+              <span className="flex items-center gap-1 text-blue-400">
+                <Layers className="w-3.5 h-3.5" /> 4-Module Mid-Section
+              </span>
+              <span className="text-zinc-600">•</span>
+              <span className="flex items-center gap-1 text-amber-400">
+                <Shield className="w-3.5 h-3.5" /> 3D Stencil Titles & Badges
+              </span>
+            </div>
           </div>
 
-          {/* Right Column: Customization Controls & AI Artwork Generator */}
+          {/* Right Column: Auto-Detected Tactical Intelligence HUD */}
           <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
-            <div className="space-y-4 overflow-y-auto max-h-[68vh] pr-1">
+            <div className="space-y-4 overflow-y-auto max-h-[72vh] pr-1">
               
               {/* Primary Actions: Download JPG & Save to Event */}
               <div className="bg-gradient-to-br from-emerald-950/70 to-zinc-900 p-3.5 rounded-xl border border-emerald-500/40 space-y-2">
@@ -743,7 +1171,7 @@ Visual Style: ${customStyleOverride || 'Cinematic, ultra-photorealistic renderin
                   className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-[0_0_25px_rgba(16,185,129,0.4)] transition transform hover:scale-[1.01] active:scale-[0.98] flex items-center justify-center gap-2"
                 >
                   <Download className="w-5 h-5" />
-                  <span>Download High-Res 3D Poster (JPG)</span>
+                  <span>Download Ultra HD Poster (JPG)</span>
                 </button>
 
                 {onUpdateEventImage && (
@@ -752,20 +1180,125 @@ Visual Style: ${customStyleOverride || 'Cinematic, ultra-photorealistic renderin
                     className="w-full py-2 px-3 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-emerald-500/50 text-emerald-400 font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2"
                   >
                     <Save className="w-4 h-4 text-emerald-400" />
-                    <span>Save Artwork as Default Event Image</span>
+                    <span>Save Artwork as Event Default Image</span>
                   </button>
                 )}
               </div>
 
-              {/* Collapsible Section: EDIT POSTER DISPLAY TEXT */}
+              {/* Auto-Generation & Instant Re-Roll Card */}
+              <div className="bg-zinc-950/90 p-3.5 rounded-xl border border-zinc-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-xs font-black text-white uppercase tracking-wider">
+                      Auto-Detected 3D Tactical Intel
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700 text-zinc-300">
+                    ZERO CONFIG
+                  </span>
+                </div>
+
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  All event parameters, arena pricing, schedule, and tactical rules have been automatically analyzed to generate this 3D cinematic masterpiece.
+                </p>
+
+                <button
+                  onClick={() => handleGenerateAiPoster()}
+                  disabled={isGeneratingAi}
+                  className="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-black text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+                >
+                  {isGeneratingAi ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Synthesizing 3D Artwork...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                      <span>⚡ Regenerate 3D Cinematic Poster</span>
+                    </>
+                  )}
+                </button>
+
+                {aiError && (
+                  <div className="p-2.5 rounded bg-red-950/80 border border-red-500/50 text-red-200 text-xs flex items-start gap-2">
+                    <Info className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Generation Notice</p>
+                      <p className="text-[11px] text-red-300">{aiError}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Auto-Detected Tactical Intelligence Readout HUD */}
+              <div className="bg-zinc-950/90 rounded-xl border border-zinc-800 p-3.5 space-y-3">
+                <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Target className="w-4 h-4 text-amber-400" />
+                  Auto-Detected Event Intelligence HUD
+                </h3>
+
+                <div className="grid grid-cols-1 gap-2 text-xs">
+                  <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-800 flex items-start justify-between">
+                    <div>
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase block">Tactical Scenario</span>
+                      <span className="font-bold text-emerald-400">{initialIntel.scenario}</span>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+                      {visualTheme.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-800">
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase block">Match Schedule</span>
+                      <span className="font-bold text-white text-xs">{posterDate}</span>
+                      <span className="text-[11px] text-zinc-400 block">{posterBriefingTime} Brief | {posterStartTime} Game</span>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-800">
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase block">Combat Arena</span>
+                      <span className="font-bold text-white text-xs truncate block">{posterLocation}</span>
+                      <span className="text-[11px] text-zinc-400 block">CQB & Field Access</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-800">
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase block">Pricing Structure</span>
+                      <span className="font-bold text-amber-400 text-xs">R{posterGameFee} Own / R{posterRentalFee} Rental</span>
+                      <span className="text-[11px] text-zinc-400 block">ZAR Official Entry</span>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-800">
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase block">Tournament Rewards</span>
+                      <span className="font-bold text-red-400 text-xs">5XP Tournament Bounty</span>
+                      <span className="text-[11px] text-zinc-400 block">+100 RP Match Bonus</span>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-800">
+                    <span className="text-[10px] font-mono text-zinc-500 uppercase block">Mission Directive</span>
+                    <p className="text-xs text-zinc-300 italic line-clamp-2">
+                      "{posterMissionBrief}"
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Collapsible: Quick Adjust Event Details */}
               <div className="bg-zinc-950/80 rounded-xl border border-zinc-800 overflow-hidden">
                 <button
                   onClick={() => setShowTextEditor(!showTextEditor)}
                   className="w-full p-3 bg-zinc-900/90 hover:bg-zinc-800/90 text-left flex items-center justify-between border-b border-zinc-800 transition"
                 >
-                  <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
                     <Edit3 className="w-4 h-4 text-amber-400" />
-                    Edit Event Poster Info & Display Text
+                    Fine-Tune Event Details (Optional)
                   </span>
                   {showTextEditor ? (
                     <ChevronUp className="w-4 h-4 text-zinc-400" />
@@ -775,43 +1308,15 @@ Visual Style: ${customStyleOverride || 'Cinematic, ultra-photorealistic renderin
                 </button>
 
                 {showTextEditor && (
-                  <div className="p-3.5 space-y-2.5 text-xs">
+                  <div className="p-3.5 space-y-3 text-xs">
                     <div>
-                      <label className="block text-[10px] text-zinc-400 font-mono mb-0.5">Event Title:</label>
+                      <label className="block text-[10px] text-zinc-400 font-mono mb-0.5">Hero Title:</label>
                       <input
                         type="text"
                         value={posterTitle}
                         onChange={(e) => setPosterTitle(e.target.value)}
                         className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-xs text-white font-bold"
-                        placeholder="e.g. NIGHT RAID OPS"
                       />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[10px] text-zinc-400 font-mono mb-0.5">Game Type:</label>
-                        <select
-                          value={posterType}
-                          onChange={(e) => setPosterType(e.target.value)}
-                          className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-xs text-white font-bold"
-                        >
-                          <option value="Mission">Mission</option>
-                          <option value="Training">Training</option>
-                          <option value="Briefing">Briefing</option>
-                          <option value="Maintenance">Maintenance</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] text-zinc-400 font-mono mb-0.5">Theme / Scenario:</label>
-                        <input
-                          type="text"
-                          value={posterThemeName}
-                          onChange={(e) => setPosterThemeName(e.target.value)}
-                          className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-xs text-white"
-                          placeholder="e.g. CQB Warfare"
-                        />
-                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
@@ -824,58 +1329,44 @@ Visual Style: ${customStyleOverride || 'Cinematic, ultra-photorealistic renderin
                           className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-xs text-white"
                         />
                       </div>
-
                       <div>
-                        <label className="block text-[10px] text-zinc-400 font-mono mb-0.5">Start Time:</label>
+                        <label className="block text-[10px] text-zinc-400 font-mono mb-0.5">Game Time:</label>
                         <input
                           type="text"
                           value={posterStartTime}
                           onChange={(e) => setPosterStartTime(e.target.value)}
                           className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-xs text-white"
-                          placeholder="10:00"
                         />
                       </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] text-zinc-400 font-mono mb-0.5">Field Location:</label>
-                      <input
-                        type="text"
-                        value={posterLocation}
-                        onChange={(e) => setPosterLocation(e.target.value)}
-                        className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-xs text-white"
-                        placeholder="e.g. Bosjol Arena"
-                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-[10px] text-zinc-400 font-mono mb-0.5">Entry Fee (R):</label>
+                        <label className="block text-[10px] text-zinc-400 font-mono mb-0.5">Own Gear Fee (R):</label>
                         <input
                           type="number"
                           value={posterGameFee}
                           onChange={(e) => setPosterGameFee(Number(e.target.value))}
-                          className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-xs text-white font-mono"
+                          className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-xs text-white"
                         />
                       </div>
-
                       <div>
                         <label className="block text-[10px] text-zinc-400 font-mono mb-0.5">Rental Fee (R):</label>
                         <input
                           type="number"
                           value={posterRentalFee}
                           onChange={(e) => setPosterRentalFee(Number(e.target.value))}
-                          className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-xs text-white font-mono"
+                          className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-xs text-white"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[10px] text-zinc-400 font-mono mb-0.5">Safety & Rules Text:</label>
+                      <label className="block text-[10px] text-zinc-400 font-mono mb-0.5">Mission Brief:</label>
                       <textarea
                         rows={2}
-                        value={posterRules}
-                        onChange={(e) => setPosterRules(e.target.value)}
+                        value={posterMissionBrief}
+                        onChange={(e) => setPosterMissionBrief(e.target.value)}
                         className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-xs text-white"
                       />
                     </div>
@@ -883,11 +1374,11 @@ Visual Style: ${customStyleOverride || 'Cinematic, ultra-photorealistic renderin
                 )}
               </div>
 
-              {/* Uploads & Background Image Sources */}
-              <div className="bg-zinc-950/80 p-3.5 rounded-xl border border-zinc-800 space-y-2.5">
-                <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+              {/* Custom Artwork Upload */}
+              <div className="bg-zinc-950/80 p-3.5 rounded-xl border border-zinc-800 space-y-2">
+                <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
                   <Upload className="w-4 h-4 text-amber-400" />
-                  Artwork Upload & Image Sources
+                  Custom Photo Source
                 </h3>
                 
                 <input
@@ -904,7 +1395,7 @@ Visual Style: ${customStyleOverride || 'Cinematic, ultra-photorealistic renderin
                     className="p-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-amber-500/50 text-amber-300 font-bold transition flex items-center justify-center gap-2"
                   >
                     <Upload className="w-4 h-4 text-amber-400" />
-                    <span>Upload Custom Photo</span>
+                    <span>Upload Photo</span>
                   </button>
 
                   {event.imageUrl && (
@@ -913,202 +1404,24 @@ Visual Style: ${customStyleOverride || 'Cinematic, ultra-photorealistic renderin
                       className="p-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold transition flex items-center justify-center gap-2"
                     >
                       <ImageIcon className="w-4 h-4 text-blue-400" />
-                      <span>Use Event Upload</span>
+                      <span>Use Event Image</span>
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Poster Theme Preset Selector */}
-              <div className="bg-zinc-950/80 p-3.5 rounded-xl border border-zinc-800 space-y-2.5">
-                <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Palette className="w-4 h-4 text-amber-400" />
-                  Visual Theme & Color Preset
-                </h3>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <button
-                    onClick={() => setVisualStyleTheme('red_vs_blue')}
-                    className={`p-2 rounded-lg border text-left font-bold transition flex items-center gap-2 ${
-                      visualStyleTheme === 'red_vs_blue'
-                        ? 'bg-red-950/80 border-red-500 text-white shadow-md'
-                        : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <span className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-blue-500" />
-                    <span>Red vs Blue Split</span>
-                  </button>
-
-                  <button
-                    onClick={() => setVisualStyleTheme('toxic_juggernaut')}
-                    className={`p-2 rounded-lg border text-left font-bold transition flex items-center gap-2 ${
-                      visualStyleTheme === 'toxic_juggernaut'
-                        ? 'bg-emerald-950/80 border-emerald-500 text-white shadow-md'
-                        : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <span className="w-3 h-3 rounded-full bg-emerald-500" />
-                    <span>Toxic Juggernaut</span>
-                  </button>
-
-                  <button
-                    onClick={() => setVisualStyleTheme('crimson_warfare')}
-                    className={`p-2 rounded-lg border text-left font-bold transition flex items-center gap-2 ${
-                      visualStyleTheme === 'crimson_warfare'
-                        ? 'bg-red-950/80 border-red-600 text-white shadow-md'
-                        : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <span className="w-3 h-3 rounded-full bg-red-600" />
-                    <span>Crimson Flare</span>
-                  </button>
-
-                  <button
-                    onClick={() => setVisualStyleTheme('cyber_cobalt')}
-                    className={`p-2 rounded-lg border text-left font-bold transition flex items-center gap-2 ${
-                      visualStyleTheme === 'cyber_cobalt'
-                        ? 'bg-cyan-950/80 border-cyan-500 text-white shadow-md'
-                        : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <span className="w-3 h-3 rounded-full bg-cyan-400" />
-                    <span>Cyber Cobalt</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Layout Toggles */}
-              <div className="bg-zinc-950/80 p-3.5 rounded-xl border border-zinc-800 space-y-2.5">
-                <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Sliders className="w-4 h-4 text-amber-400" />
-                  Poster Elements & Badges
-                </h3>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <label className="flex items-center gap-2 p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={showTeamBanners}
-                      onChange={(e) => setShowTeamBanners(e.target.checked)}
-                      className="rounded accent-red-500"
-                    />
-                    <span>Red vs Blue Flags</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={showParticles}
-                      onChange={(e) => setShowParticles(e.target.checked)}
-                      className="rounded accent-red-500"
-                    />
-                    <span>3D BBs & Smoke</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* AI Artwork Generator Tool */}
-              <div className="bg-zinc-950/80 p-3.5 rounded-xl border border-zinc-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-red-400" />
-                    AI 3D Artwork Generator
-                  </h3>
-                  <button
-                    onClick={() => setShowApiKeyGuide(!showApiKeyGuide)}
-                    className="text-[10px] text-zinc-400 hover:text-amber-300 underline flex items-center gap-1"
-                  >
-                    <Info className="w-3 h-3" />
-                    <span>API Setup</span>
-                  </button>
-                </div>
-
-                {/* Event Details Presets */}
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-mono text-zinc-400">Presets (Derived from Event Details):</label>
-                  <div className="space-y-1">
-                    {promptPresets.map((pr, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          setCustomThemePrompt(pr.prompt);
-                          handleGenerateAiPoster(pr.prompt);
-                        }}
-                        disabled={isGeneratingAi}
-                        className="w-full text-left p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-[11px] font-bold text-zinc-200 hover:text-amber-300 transition flex items-center justify-between"
-                      >
-                        <span className="truncate pr-2">{pr.name}</span>
-                        <Sparkles className="w-3 h-3 text-amber-400 flex-shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-mono text-zinc-400 mb-1">
-                    Custom Prompt:
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder={`Describe custom 3D airsoft artwork...`}
-                    value={customThemePrompt}
-                    onChange={(e) => setCustomThemePrompt(e.target.value)}
-                    className="w-full p-2 rounded-lg bg-zinc-900 border border-zinc-700 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500"
-                  />
-                </div>
-
-                <button
-                  onClick={() => handleGenerateAiPoster()}
-                  disabled={isGeneratingAi}
-                  className="w-full py-2.5 px-3 rounded-lg bg-red-600 hover:bg-red-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-bold text-xs transition flex items-center justify-center gap-2 shadow-md"
-                >
-                  {isGeneratingAi ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin text-white" />
-                      <span>Generating 3D Artwork from Event Details...</span>
-                    </>
-                  ) : (
-                    <>
-                      <ImageIcon className="w-4 h-4" />
-                      <span>Generate 3D AI Artwork From Event Details</span>
-                    </>
-                  )}
-                </button>
-
-                {aiError && (
-                  <div className="p-2.5 rounded-lg bg-red-950/80 border border-red-800 text-[11px] text-red-300 space-y-1">
-                    <p className="font-bold">⚠️ AI Generation Notice:</p>
-                    <p>{aiError}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* API Key Guide */}
-              {showApiKeyGuide && (
-                <div className="p-3 rounded-xl bg-zinc-950 border border-amber-500/40 text-zinc-300 text-xs space-y-2">
-                  <h4 className="font-bold text-amber-400 flex items-center gap-1.5">
-                    <Info className="w-4 h-4 text-amber-400" />
-                    How to Configure GEMINI_API_KEY:
-                  </h4>
-                  <ol className="list-decimal pl-4 space-y-1 text-[11px] text-zinc-300">
-                    <li>
-                      Environment variable name: <code className="bg-zinc-900 px-1 py-0.5 rounded text-amber-300 font-mono">GEMINI_API_KEY</code>
-                    </li>
-                    <li>
-                      Set in Google AI Studio <strong>Settings &gt; Secrets</strong>.
-                    </li>
-                  </ol>
-                </div>
-              )}
             </div>
 
-            {/* Quick Summary Footer */}
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs space-y-1 text-zinc-400">
+            {/* Quick Summary Bar */}
+            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-400">
               <div className="grid grid-cols-2 gap-1 text-[11px]">
-                <div><span className="text-zinc-500">Title:</span> <span className="text-white font-bold">{posterTitle}</span></div>
-                <div><span className="text-zinc-500">Type:</span> <span className="text-amber-400 font-bold">{posterType}</span></div>
-                <div><span className="text-zinc-500">Theme:</span> <span className="text-emerald-400 font-bold">{posterThemeName}</span></div>
-                <div><span className="text-zinc-500">Field:</span> <span className="text-blue-400 font-bold">{posterLocation}</span></div>
+                <div><span className="text-zinc-500">Poster:</span> <span className="text-white font-bold">{posterTitle}</span></div>
+                <div><span className="text-zinc-500">Theme:</span> <span className="text-emerald-400 font-bold">{initialIntel.scenario}</span></div>
+                <div><span className="text-zinc-500">Date:</span> <span className="text-zinc-300">{posterDate} @ {posterStartTime}</span></div>
+                <div><span className="text-zinc-500">Entry:</span> <span className="text-amber-400 font-bold">R{posterGameFee} / R{posterRentalFee}</span></div>
               </div>
             </div>
+
           </div>
         </div>
       </div>

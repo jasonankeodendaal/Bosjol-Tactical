@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { GoogleGenAI } from '@google/genai';
 import { 
   Sparkles, Download, Save, Upload, Image as ImageIcon, 
   Edit3, ChevronDown, ChevronUp, Check, 
@@ -167,6 +168,8 @@ export const EventPosterModal: React.FC<EventPosterModalProps> = ({
 
     try {
       let res: Response | null = null;
+      let networkError = false;
+
       try {
         res = await fetch('/api/generate-poster', {
           method: 'POST',
@@ -195,7 +198,8 @@ export const EventPosterModal: React.FC<EventPosterModalProps> = ({
           })
         });
       } catch (networkErr) {
-        console.warn('Network call failed, using client tactical plate:', networkErr);
+        networkError = true;
+        console.warn('Network call to /api/generate-poster failed:', networkErr);
       }
 
       let data: any = null;
@@ -207,10 +211,11 @@ export const EventPosterModal: React.FC<EventPosterModalProps> = ({
         }
       }
 
+      // Case 1: Endpoint returned valid image
       if (data && data.imageUrl) {
         setPosterBgUrl(data.imageUrl);
         if (data.apiKeyConfigured === false) {
-          setAiNotice(data.notice || 'High-definition tactical base plate active. Set GEMINI_API_KEY in AI Studio Settings > Secrets to enable bespoke AI artwork generation.');
+          setAiNotice(data.notice || 'Tactical base plate active. Set GEMINI_API_KEY in your environment to generate custom AI artwork.');
           setSaveSuccessMsg('✓ Tactical 3D Master ready!');
         } else if (data.fallbackUsed) {
           setAiNotice(data.notice);
@@ -219,15 +224,60 @@ export const EventPosterModal: React.FC<EventPosterModalProps> = ({
           setSaveSuccessMsg('✓ 3D Cinematic Poster synthesized successfully!');
         }
         setTimeout(() => setSaveSuccessMsg(null), 3500);
-      } else {
-        // Smoothly fall back to client tactical image
-        setPosterBgUrl(clientFallback);
-        setAiNotice('High-definition tactical base plate active. Set GEMINI_API_KEY in AI Studio Settings > Secrets to generate custom AI artwork.');
-        setSaveSuccessMsg('✓ Tactical 3D Master ready!');
-        setTimeout(() => setSaveSuccessMsg(null), 3500);
+        return;
       }
+
+      // Case 2: Attempt client-side direct generation if VITE_GEMINI_API_KEY is configured in Vercel
+      const clientApiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+      if (clientApiKey) {
+        try {
+          const ai = new GoogleGenAI({ apiKey: clientApiKey });
+          const response = await ai.models.generateContent({
+            model: 'gemini-3.1-flash-image',
+            contents: {
+              parts: [{
+                text: `Masterpiece promotional marketing event poster for "Bosjol Tactical Airsoft", 3D cinematic realism, 8k resolution, octane render, extreme depth of field, dramatic volumetric atmospheric lighting, heavy grunge textures. Title: "${posterTitle}". Scenario: ${posterThemeName}. Mode: ${posterType}. Date: ${posterDate}. Aspect ratio 3:4.`
+              }]
+            },
+            config: {
+              imageConfig: { aspectRatio: '3:4', imageSize: '1K' }
+            } as any
+          });
+
+          let clientImg = '';
+          if (response.candidates?.[0]?.content?.parts) {
+            for (const part of response.candidates[0].content.parts) {
+              if (part.inlineData) {
+                clientImg = `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
+                break;
+              }
+            }
+          }
+
+          if (clientImg) {
+            setPosterBgUrl(clientImg);
+            setSaveSuccessMsg('✓ 3D Cinematic Poster synthesized via client AI!');
+            setTimeout(() => setSaveSuccessMsg(null), 3500);
+            return;
+          }
+        } catch (clientErr: any) {
+          console.warn('Client-side Gemini generation attempt failed:', clientErr);
+        }
+      }
+
+      // Case 3: Fallback smoothly to scenario tactical base plate with clear Vercel configuration guidance
+      setPosterBgUrl(clientFallback);
+      if (res?.status === 404 || networkError) {
+        setAiNotice(
+          'Vercel Deployment Notice: The serverless endpoint /api/generate-poster was not found on this deployment. We have added /api/generate-poster.ts and vercel.json to the repository. Please commit these files and set GEMINI_API_KEY in Vercel Project Settings > Environment Variables, then redeploy.'
+        );
+      } else {
+        setAiNotice('High-definition tactical base plate active. Set GEMINI_API_KEY in Vercel Project Settings > Environment Variables.');
+      }
+      setSaveSuccessMsg('✓ Tactical 3D Master ready with base plate!');
+      setTimeout(() => setSaveSuccessMsg(null), 3500);
     } catch (err: any) {
-      console.warn('Poster generation status notice:', err?.message || err);
+      console.warn('Poster generation handler error:', err?.message || err);
       setPosterBgUrl(clientFallback);
       setAiNotice('Tactical base plate active.');
     } finally {

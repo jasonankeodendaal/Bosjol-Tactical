@@ -317,9 +317,9 @@ const RaffleEditorModal: React.FC<{
     };
 
     const addPrize = () => {
-        const place = (prizes.length + 1) as (1 | 2 | 3);
-        if (prizes.length >= 5) return;
-        setPrizes([...prizes, { id: `p_${Date.now()}_${place}`, name: '', place: (place > 3 ? 3 : place) as any }]);
+        const place = prizes.length + 1;
+        if (prizes.length >= 20) return;
+        setPrizes([...prizes, { id: `p_${Date.now()}_${place}`, name: '', place }]);
     };
 
     const removePrize = (index: number) => {
@@ -446,16 +446,19 @@ const RaffleEditorModal: React.FC<{
 
                 <div className="border-t border-zinc-800 pt-3">
                     <div className="flex justify-between items-center mb-2">
-                        <h4 className="font-bold text-xs uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                            <TrophyIcon className="w-4 h-4"/> Raffle Prizes (Ordered by Place)
-                        </h4>
-                        {prizes.length < 5 && (
+                        <div>
+                            <h4 className="font-bold text-xs uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                                <TrophyIcon className="w-4 h-4"/> Raffle Prizes & Winner Spots ({prizes.length})
+                            </h4>
+                            <p className="text-[11px] text-zinc-400">Each prize listed below will produce 1 winning player during the live draw</p>
+                        </div>
+                        {prizes.length < 20 && (
                             <button 
                                 type="button" 
                                 onClick={addPrize} 
-                                className="text-xs text-red-400 hover:text-red-300 font-semibold flex items-center gap-1"
+                                className="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-lg border border-amber-500/30 transition-colors"
                             >
-                                <PlusIcon className="w-3.5 h-3.5"/> Add Prize
+                                <PlusIcon className="w-3.5 h-3.5"/> Add Prize Spot
                             </button>
                         )}
                     </div>
@@ -642,39 +645,98 @@ const LiveRaffleDrawArena: React.FC<{
     const tickets = raffle.tickets || [];
     const isTopTicketsMode = !!raffle.alwaysChooseMostTickets;
 
-    // Eligible tickets (excluding already winning tickets to ensure one win per ticket)
+    // Eligible tickets (excluding already winning tickets so each ticket wins once)
     const availableTickets = useMemo(() => {
         const winningTicketIds = new Set(localWinners.map(w => w.ticketId));
         return tickets.filter(t => !winningTicketIds.has(t.id));
     }, [tickets, localWinners]);
 
+    // Already winning players in this raffle session (excluding current prize if re-drawing)
+    const currentPrize = prizes[currentPrizeIndex] || prizes[0];
+    const otherWonPlayerIds = useMemo(() => {
+        return new Set(localWinners.filter(w => w.prizeId !== currentPrize?.id).map(w => w.playerId));
+    }, [localWinners, currentPrize?.id]);
+
     // Compute ticket statistics per player in the available ticket pool
+    // Prioritizes players who have not won a prize yet so each prize spot goes to a distinct top buyer
     const playerTicketStats = useMemo(() => {
-        const counts = new Map<string, { count: number; tickets: RaffleTicketDoc[]; player: Player | undefined }>();
+        const counts = new Map<string, { count: number; tickets: RaffleTicketDoc[]; player: Player | undefined; hasWonAnotherPrize: boolean }>();
         availableTickets.forEach(t => {
+            const hasWon = otherWonPlayerIds.has(t.playerId);
             const existing = counts.get(t.playerId);
             if (existing) {
                 existing.count++;
                 existing.tickets.push(t);
             } else {
                 const player = players.find(p => p.id === t.playerId);
-                counts.set(t.playerId, { count: 1, tickets: [t], player });
+                counts.set(t.playerId, { count: 1, tickets: [t], player, hasWonAnotherPrize: hasWon });
             }
         });
 
-        const sortedStats = Array.from(counts.values()).sort((a, b) => b.count - a.count);
-        const maxCount = sortedStats[0]?.count || 0;
-        const topHolders = sortedStats.filter(s => s.count === maxCount);
+        const allSortedStats = Array.from(counts.values()).sort((a, b) => b.count - a.count);
+        // Preferred candidate pool: players who haven't won a prize yet
+        const unawardedStats = allSortedStats.filter(s => !s.hasWonAnotherPrize);
+        const activePool = unawardedStats.length > 0 ? unawardedStats : allSortedStats;
+
+        const maxCount = activePool[0]?.count || 0;
+        const topHolders = activePool.filter(s => s.count === maxCount);
 
         return {
-            sortedStats,
+            allSortedStats,
+            unawardedStats,
+            activePool,
             maxCount,
             topHolders
         };
-    }, [availableTickets, players]);
+    }, [availableTickets, otherWonPlayerIds, players]);
 
-    const currentPrize = prizes[currentPrizeIndex] || prizes[0];
     const isPrizeDrawn = localWinners.some(w => w.prizeId === currentPrize?.id);
+    const undrawnPrizesCount = prizes.filter(p => !localWinners.some(w => w.prizeId === p.id)).length;
+
+    // Helper function to pick winning ticket for a given prize
+    const selectWinnerTicket = (prize: Prize, currentWinnersList: RaffleWinnerDoc[]): RaffleTicketDoc | null => {
+        const drawnTicketIds = new Set(currentWinnersList.map(w => w.ticketId));
+        const pool = tickets.filter(t => !drawnTicketIds.has(t.id));
+        if (pool.length === 0) return null;
+
+        if (isTopTicketsMode) {
+            const alreadyWonPlayerIds = new Set(currentWinnersList.filter(w => w.prizeId !== prize.id).map(w => w.playerId));
+            
+            // Count tickets per player in pool
+            const counts = new Map<string, { count: number; tickets: RaffleTicketDoc[] }>();
+            pool.forEach(t => {
+                const existing = counts.get(t.playerId);
+                if (existing) {
+                    existing.count++;
+                    existing.tickets.push(t);
+                } else {
+                    counts.set(t.playerId, { count: 1, tickets: [t] });
+                }
+            });
+
+            // Filter for players who haven't won another prize first
+            const sortedCounts = Array.from(counts.entries()).map(([playerId, val]) => ({
+                playerId,
+                count: val.count,
+                tickets: val.tickets,
+                hasWon: alreadyWonPlayerIds.has(playerId)
+            })).sort((a, b) => b.count - a.count);
+
+            const unawarded = sortedCounts.filter(s => !s.hasWon);
+            const candidates = unawarded.length > 0 ? unawarded : sortedCounts;
+            const highestCount = candidates[0]?.count || 0;
+            const topCandidates = candidates.filter(c => c.count === highestCount);
+
+            const selected = topCandidates[Math.floor(Math.random() * topCandidates.length)];
+            return selected.tickets[Math.floor(Math.random() * selected.tickets.length)] || pool[0];
+        } else {
+            // Standard random draw: prefer players who haven't won yet
+            const alreadyWonPlayerIds = new Set(currentWinnersList.filter(w => w.prizeId !== prize.id).map(w => w.playerId));
+            const freshTickets = pool.filter(t => !alreadyWonPlayerIds.has(t.playerId));
+            const finalPool = freshTickets.length > 0 ? freshTickets : pool;
+            return finalPool[Math.floor(Math.random() * finalPool.length)];
+        }
+    };
 
     const startDraw = () => {
         if (availableTickets.length === 0) {
@@ -686,8 +748,8 @@ const LiveRaffleDrawArena: React.FC<{
         setJustWon(null);
 
         let spinCount = 0;
-        const totalSpins = 35; // Number of cycles
-        let speed = 40; // Initial interval ms
+        const totalSpins = 32;
+        let speed = 40;
 
         const spinInterval = () => {
             const randomTicket = availableTickets[Math.floor(Math.random() * availableTickets.length)];
@@ -696,22 +758,10 @@ const LiveRaffleDrawArena: React.FC<{
             spinCount++;
 
             if (spinCount < totalSpins) {
-                // Gradually decelerate
                 speed = 40 + Math.pow(spinCount / totalSpins, 3) * 220;
                 setTimeout(spinInterval, speed);
             } else {
-                // Final Lock on Winner
-                let finalWinningTicket: RaffleTicketDoc;
-                
-                if (isTopTicketsMode && playerTicketStats.topHolders.length > 0) {
-                    // Choose from the player(s) with the most tickets in this raffle
-                    const selectedTopHolder = playerTicketStats.topHolders[Math.floor(Math.random() * playerTicketStats.topHolders.length)];
-                    finalWinningTicket = selectedTopHolder.tickets[Math.floor(Math.random() * selectedTopHolder.tickets.length)] || availableTickets[0];
-                } else {
-                    // Standard uniform random ticket draw
-                    finalWinningTicket = availableTickets[Math.floor(Math.random() * availableTickets.length)];
-                }
-
+                const finalWinningTicket = selectWinnerTicket(currentPrize, localWinners) || availableTickets[0];
                 const winningPlayer = players.find(p => p.id === finalWinningTicket.playerId);
                 const playerTicketsCount = tickets.filter(t => t.playerId === finalWinningTicket.playerId).length;
                 
@@ -735,12 +785,16 @@ const LiveRaffleDrawArena: React.FC<{
 
                 // Trigger celebration notification
                 if (winningPlayer) {
+                    const fullName = `${winningPlayer.name} ${winningPlayer.surname || ''}`.trim();
+                    const callsignFormatted = winningPlayer.callsign ? ` ("${winningPlayer.callsign}")` : '';
+                    const winnerDisplayName = `${fullName}${callsignFormatted}`;
+
                     dataContext?.createNotification?.({
-                        title: `🎉 Raffle Winner: ${winningPlayer.name}!`,
-                        message: `${winningPlayer.name} (${winningPlayer.callsign || winningPlayer.playerCode}) won "${currentPrize.name}" in ${raffle.name}! ${isTopTicketsMode ? `(Top Ticket Holder: ${playerTicketsCount} tickets)` : `Ticket: ${finalWinningTicket.code}`}`,
+                        title: `🎉 Raffle Winner: ${winnerDisplayName}!`,
+                        message: `${winnerDisplayName} won "${currentPrize.name}" in ${raffle.name}! ${isTopTicketsMode ? `(Top Ticket Buyer: ${playerTicketsCount} tickets)` : `Ticket: ${finalWinningTicket.code}`}`,
                         type: 'raffle_winner',
                         playerId: winningPlayer.id,
-                        playerName: `${winningPlayer.name} ${winningPlayer.surname || ''}`.trim(),
+                        playerName: fullName,
                         playerCallsign: winningPlayer.callsign,
                         playerCode: winningPlayer.playerCode,
                         playerAvatarUrl: winningPlayer.avatarUrl,
@@ -752,6 +806,67 @@ const LiveRaffleDrawArena: React.FC<{
         };
 
         spinInterval();
+    };
+
+    // Auto draw all remaining undrawn prizes
+    const handleAutoDrawAll = () => {
+        if (availableTickets.length === 0) {
+            alert('No eligible tickets left to draw!');
+            return;
+        }
+
+        let updatedWinners = [...localWinners];
+        const newWinnersList: { prize: Prize; winner: RaffleWinnerDoc; player: Player | undefined; count: number }[] = [];
+
+        prizes.forEach(prize => {
+            const alreadyDrawn = updatedWinners.some(w => w.prizeId === prize.id);
+            if (!alreadyDrawn) {
+                const winningTicket = selectWinnerTicket(prize, updatedWinners);
+                if (winningTicket) {
+                    const winningDoc: RaffleWinnerDoc = {
+                        id: `rw_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+                        raffleId: raffle.id,
+                        prizeId: prize.id,
+                        ticketId: winningTicket.id,
+                        playerId: winningTicket.playerId
+                    };
+                    updatedWinners = [...updatedWinners, winningDoc];
+                    const player = players.find(p => p.id === winningTicket.playerId);
+                    const count = tickets.filter(t => t.playerId === winningTicket.playerId).length;
+                    newWinnersList.push({ prize, winner: winningDoc, player, count });
+
+                    if (player) {
+                        const fullName = `${player.name} ${player.surname || ''}`.trim();
+                        const callsignFormatted = player.callsign ? ` ("${player.callsign}")` : '';
+                        const winnerDisplayName = `${fullName}${callsignFormatted}`;
+
+                        dataContext?.createNotification?.({
+                            title: `🎉 Raffle Winner: ${winnerDisplayName}!`,
+                            message: `${winnerDisplayName} won "${prize.name}" in ${raffle.name}!`,
+                            type: 'raffle_winner',
+                            playerId: player.id,
+                            playerName: fullName,
+                            playerCallsign: player.callsign,
+                            playerCode: player.playerCode,
+                            playerAvatarUrl: player.avatarUrl,
+                            eventId: raffle.id,
+                            eventTitle: raffle.name,
+                        });
+                    }
+                }
+            }
+        });
+
+        setLocalWinners(updatedWinners);
+        if (newWinnersList.length > 0) {
+            const lastOne = newWinnersList[newWinnersList.length - 1];
+            setJustWon({
+                prize: lastOne.prize,
+                winner: lastOne.winner,
+                player: lastOne.player,
+                totalTicketsHeld: lastOne.count
+            });
+        }
     };
 
     const handleSaveAndExit = () => {
@@ -915,14 +1030,25 @@ const LiveRaffleDrawArena: React.FC<{
                     )}
 
                     {/* Action Controls */}
-                    <div className="flex flex-col sm:flex-row justify-center gap-3">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 flex-wrap">
                         <Button 
                             onClick={startDraw} 
                             disabled={isSpinning || availableTickets.length === 0}
                             className="font-black text-base py-3 px-8 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white shadow-xl"
                         >
-                            {isSpinning ? '🎲 Decrypting Tickets...' : isPrizeDrawn ? '🔄 Re-Draw Winner' : '🎯 Spin & Draw Winner'}
+                            {isSpinning ? '🎲 Decrypting Tickets...' : isPrizeDrawn ? '🔄 Re-Draw This Prize' : `🎯 Draw Place #${currentPrizeIndex + 1}`}
                         </Button>
+
+                        {undrawnPrizesCount > 1 && (
+                            <Button 
+                                variant="secondary"
+                                onClick={handleAutoDrawAll}
+                                disabled={isSpinning || availableTickets.length === 0}
+                                className="text-sm font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30"
+                            >
+                                ⚡ Auto-Draw All {undrawnPrizesCount} Winners
+                            </Button>
+                        )}
 
                         {currentPrizeIndex < prizes.length - 1 && (
                             <Button 
@@ -940,26 +1066,38 @@ const LiveRaffleDrawArena: React.FC<{
                 {/* Drawn Winners Summary */}
                 {localWinners.length > 0 && (
                     <div className="bg-zinc-900/60 p-4 rounded-xl border border-zinc-800 text-left">
-                        <h4 className="font-bold text-xs uppercase tracking-wider text-amber-400 mb-3 flex items-center gap-2">
-                            <TrophyIcon className="w-4 h-4"/> Official Draw Results ({localWinners.length} of {prizes.length} Prizes Claimed)
-                        </h4>
+                        <div className="flex justify-between items-center mb-3">
+                            <h4 className="font-bold text-xs uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                                <TrophyIcon className="w-4 h-4"/> Official Winners Roster ({localWinners.length} of {prizes.length} Prizes Awarded)
+                            </h4>
+                            {localWinners.length === prizes.length && (
+                                <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
+                                    ✓ All Winners Determined
+                                </span>
+                            )}
+                        </div>
                         <div className="space-y-2">
-                            {localWinners.map(w => {
+                            {localWinners.map((w, wIdx) => {
                                 const prize = prizes.find(p => p.id === w.prizeId);
                                 const player = players.find(p => p.id === w.playerId);
                                 const ticket = tickets.find(t => t.id === w.ticketId);
+                                const place = prize?.place || (wIdx + 1);
+                                const medal = place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : '🎖️';
                                 return (
                                     <div key={w.id} className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-950/80 border border-zinc-800/80">
                                         <div className="flex items-center gap-2.5">
-                                            <span className="font-bold text-amber-400 text-xs w-6">#{prize?.place || 1}</span>
+                                            <span className="text-base">{medal}</span>
                                             <div>
-                                                <span className="font-semibold text-white text-xs">{prize?.name}</span>
-                                                <p className="text-[11px] text-zinc-400">
-                                                    {player?.name} {player?.surname || ''} ({player?.callsign || player?.playerCode || 'Operator'})
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-white text-xs">{prize?.name || `Prize #${place}`}</span>
+                                                    <span className="text-[10px] text-amber-400/80 font-mono">Place #{place}</span>
+                                                </div>
+                                                <p className="text-[11px] text-zinc-300">
+                                                    {player?.name} {player?.surname || ''} <span className="text-amber-400 font-mono">({player?.callsign || player?.playerCode || 'Operator'})</span>
                                                 </p>
                                             </div>
                                         </div>
-                                        <span className="font-mono text-xs font-bold text-red-400 px-2 py-0.5 rounded bg-red-950/60 border border-red-900/50">
+                                        <span className="font-mono text-xs font-bold text-red-400 px-2.5 py-1 rounded-md bg-red-950/60 border border-red-900/50">
                                             {ticket?.code || 'TICKET'}
                                         </span>
                                     </div>
@@ -1484,8 +1622,13 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                                                 <span className="text-zinc-200">{p.name}</span>
                                                             </div>
                                                             {winnerPlayer ? (
-                                                                <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                                                                    <span>🏆 {winnerPlayer.name}</span>
+                                                                <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1.5">
+                                                                    <span>🏆 {winnerPlayer.name} {winnerPlayer.surname || ''}</span>
+                                                                    {winnerPlayer.callsign && (
+                                                                        <span className="text-amber-400 font-mono font-bold">
+                                                                            ("{winnerPlayer.callsign}")
+                                                                        </span>
+                                                                    )}
                                                                 </span>
                                                             ) : (
                                                                 <span className="text-[10px] text-zinc-500">Unclaimed</span>

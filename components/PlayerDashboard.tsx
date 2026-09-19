@@ -1010,61 +1010,148 @@ const EventsTab: React.FC<Pick<PlayerDashboardProps, 'events' | 'player' | 'onEv
 
 const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'players'>> = ({ raffles, player, players }) => {
     const safeRaffles = raffles || [];
-    const myTickets = safeRaffles.flatMap(r => (r.tickets || []).filter(t => t.playerId === player.id).map(t => ({...t, raffleName: r.name})));
+    const myTickets = safeRaffles.flatMap(r => (r.tickets || []).filter(t => t.playerId === player.id).map(t => ({...t, raffleName: r.name, raffleStatus: r.status})));
     const pastRaffles = safeRaffles.filter(r => r.status === 'Completed');
-    const myWins = pastRaffles.flatMap(r => (r.winners || []).filter(w => w.playerId === player.id).map(w => ({...w, raffleName: r.name, prize: (r.prizes || []).find(p => p.id === w.prizeId)})));
+    const myWins = pastRaffles.flatMap(r => (r.winners || []).filter(w => w.playerId === player.id).map(w => {
+        const prize = (r.prizes || []).find(p => p.id === w.prizeId);
+        const ticket = (r.tickets || []).find(t => t.id === w.ticketId);
+        return { ...w, raffleName: r.name, prize, ticket };
+    }));
 
     return (
         <div className="space-y-6">
             {myWins.length > 0 && (
-// FIX: The RafflesTab component was truncated. It has been completed to correctly display raffle information.
-                <DashboardCard title="Raffle Wins" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
-                    <div className="p-4 space-y-2">
-                        {myWins.map(win => (
-                            <div key={win.id} className="bg-amber-900/50 p-3 rounded-lg border border-amber-700/50">
-                                <p className="font-bold text-amber-300">You won: {win.prize?.name}</p>
-                                <p className="text-sm text-amber-400">in the "{win.raffleName}" raffle!</p>
-                            </div>
-                        ))}
+                <DashboardCard title="Raffle Victories & Claimed Prizes" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
+                    <div className="p-4 space-y-3">
+                        {myWins.map((win, idx) => {
+                            const place = win.prize?.place || (idx + 1);
+                            const medal = place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : '🎖️';
+                            return (
+                                <div key={win.id || idx} className="bg-gradient-to-r from-amber-950/60 to-zinc-900/80 p-3.5 rounded-xl border border-amber-500/40 flex items-center justify-between shadow-lg">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-2xl">{medal}</span>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-black text-amber-300 text-sm sm:text-base">{win.prize?.name || `Place #${place} Prize`}</p>
+                                                <span className="text-[10px] bg-amber-500/20 text-amber-300 font-mono px-2 py-0.5 rounded border border-amber-500/30">
+                                                    Place #{place}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-zinc-300 mt-0.5">
+                                                Winner: <span className="text-white font-bold">{player.name} {player.surname || ''}</span>
+                                                {player.callsign && <span className="text-amber-400 font-mono font-bold ml-1.5">"{player.callsign}"</span>}
+                                                <span className="text-zinc-400 ml-2">in raffle <strong className="text-zinc-200">{win.raffleName}</strong></span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {win.ticket?.code && (
+                                        <div className="text-right">
+                                            <span className="text-[10px] uppercase font-mono text-zinc-400 block">Winning Ticket</span>
+                                            <span className="font-mono text-xs font-bold text-red-400 bg-red-950/70 px-2 py-0.5 rounded border border-red-900/60">
+                                                {win.ticket.code}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </DashboardCard>
             )}
-            <DashboardCard title="My Raffle Tickets" icon={<TicketIcon className="w-6 h-6" />}>
+
+            <DashboardCard title="My Active Raffle Tickets" icon={<TicketIcon className="w-6 h-6 text-red-500" />}>
                 <div className="p-4 space-y-2 max-h-60 overflow-y-auto">
                     {myTickets.length > 0 ? myTickets.map(ticket => (
-                        <div key={ticket.id} className="bg-zinc-800/50 p-3 rounded-md flex justify-between items-center">
-                            <div>
-                                <p className="font-semibold text-white">{ticket.raffleName}</p>
-                                <p className="text-xs text-gray-400 font-mono">{ticket.code}</p>
+                        <div key={ticket.id} className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 flex justify-between items-center hover:border-zinc-700 transition-colors">
+                            <div className="flex items-center gap-2.5">
+                                <TicketIcon className="w-4 h-4 text-red-400 shrink-0" />
+                                <div>
+                                    <p className="font-bold text-white text-sm">{ticket.raffleName}</p>
+                                    <p className="text-xs text-red-400 font-mono font-bold tracking-wider">{ticket.code}</p>
+                                </div>
                             </div>
-                            <p className="text-xs text-gray-500">{new Date(ticket.purchaseDate).toLocaleDateString()}</p>
+                            <div className="text-right">
+                                <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${ticket.raffleStatus === 'Active' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-zinc-800 text-zinc-400'}`}>
+                                    {ticket.raffleStatus || 'Active'}
+                                </span>
+                                <p className="text-[10px] text-zinc-500 mt-0.5">{new Date(ticket.purchaseDate).toLocaleDateString()}</p>
+                            </div>
                         </div>
                     )) : (
-                        <p className="text-center text-gray-500 py-4">You have no active raffle tickets.</p>
+                        <p className="text-center text-gray-500 py-6 text-sm">You have no active raffle tickets in upcoming events.</p>
                     )}
                 </div>
             </DashboardCard>
-            <DashboardCard title="Past Raffle Results" icon={<TicketIcon className="w-6 h-6" />}>
-                 <div className="p-4 space-y-4 max-h-80 overflow-y-auto">
-                    {pastRaffles.length > 0 ? pastRaffles.map(raffle => (
-                         <div key={raffle.id} className="bg-zinc-800/50 p-3 rounded-md">
-                            <h4 className="font-bold text-white">{raffle.name}</h4>
-                            <p className="text-xs text-gray-400 mb-2">Drawn on: {new Date(raffle.drawDate).toLocaleDateString()}</p>
-                            <ul className="text-sm space-y-1">
-                                {raffle.winners.map(winner => {
-                                    const prize = raffle.prizes.find(p => p.id === winner.prizeId);
-                                    const winnerPlayer = players.find(p => p.id === winner.playerId);
-                                    return (
-                                        <li key={winner.id} className="flex justify-between">
-                                            <span className="text-gray-300">{prize?.place}. {prize?.name}</span>
-                                            <span className="font-semibold text-amber-300">{winnerPlayer?.name}</span>
-                                        </li>
-                                    )
-                                })}
-                            </ul>
-                        </div>
-                    )) : (
-                        <p className="text-center text-gray-500 py-4">No past raffles.</p>
+
+            <DashboardCard title="Past Raffle Results & Winners" icon={<TrophyIcon className="w-6 h-6 text-amber-500" />}>
+                 <div className="p-4 space-y-4 max-h-96 overflow-y-auto">
+                    {pastRaffles.length > 0 ? pastRaffles.map(raffle => {
+                        const winners = raffle.winners || [];
+                        const prizes = (raffle.prizes || []).sort((a, b) => a.place - b.place);
+                        return (
+                            <div key={raffle.id} className="bg-zinc-900/70 p-3.5 rounded-xl border border-zinc-800">
+                                <div className="flex justify-between items-start mb-2.5 pb-2 border-b border-zinc-800">
+                                    <div>
+                                        <h4 className="font-black text-white text-sm sm:text-base">{raffle.name}</h4>
+                                        <p className="text-xs text-zinc-400">
+                                            Drawn on {raffle.drawDate ? new Date(raffle.drawDate).toLocaleDateString() : 'N/A'} • {winners.length} winner{winners.length === 1 ? '' : 's'} awarded
+                                        </p>
+                                    </div>
+                                    {raffle.alwaysChooseMostTickets && (
+                                        <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                                            👑 Top Ticket Priority
+                                        </span>
+                                    )}
+                                </div>
+
+                                {winners.length > 0 ? (
+                                    <div className="space-y-1.5">
+                                        {winners.map((winner, idx) => {
+                                            const prize = prizes.find(p => p.id === winner.prizeId);
+                                            const winnerPlayer = players.find(p => p.id === winner.playerId);
+                                            const ticket = (raffle.tickets || []).find(t => t.id === winner.ticketId);
+                                            const place = prize?.place || (idx + 1);
+                                            const medal = place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : '🎖️';
+                                            const isMe = winner.playerId === player.id;
+                                            return (
+                                                <div key={winner.id || idx} className={`flex items-center justify-between p-2 rounded-lg text-xs ${isMe ? 'bg-amber-950/40 border border-amber-500/40 font-bold' : 'bg-zinc-950/50 border border-zinc-800/60'}`}>
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{medal}</span>
+                                                        <span className="text-zinc-300">{prize?.name || `Place #${place}`}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={isMe ? 'text-amber-300 font-black' : 'text-zinc-200 font-semibold'}>
+                                                            {winnerPlayer ? (
+                                                                <>
+                                                                    <span>{winnerPlayer.name} {winnerPlayer.surname || ''}</span>
+                                                                    {winnerPlayer.callsign && (
+                                                                        <span className="text-amber-400 font-mono font-bold ml-1.5">
+                                                                            "{winnerPlayer.callsign}"
+                                                                        </span>
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <span>Unknown Operator</span>
+                                                            )}
+                                                            {isMe && <span className="ml-1 text-amber-400 font-bold">(You)</span>}
+                                                        </span>
+                                                        {ticket?.code && (
+                                                            <span className="font-mono text-[10px] text-red-400 bg-red-950/40 px-1.5 py-0.5 rounded border border-red-900/30">
+                                                                {ticket.code}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-zinc-500 italic">No winners recorded for this draw.</p>
+                                )}
+                            </div>
+                        );
+                    }) : (
+                        <p className="text-center text-gray-500 py-6 text-sm">No completed raffle draws on record yet.</p>
                     )}
                 </div>
             </DashboardCard>

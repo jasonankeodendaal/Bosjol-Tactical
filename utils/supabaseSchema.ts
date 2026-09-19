@@ -1355,6 +1355,41 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
         };
     }
 
+    if (collectionName === 'raffles') {
+        const id = String(item.id || `raffle_${Date.now()}`);
+        const name = item.name || item.title || 'Tactical Raffle';
+        const alwaysTop = Boolean(item.alwaysChooseMostTickets ?? item.alwayschoosemosttickets ?? false);
+        const ticketPrice = Number(item.ticketPrice ?? item.ticketprice ?? 0) || 0;
+        const totalTickets = Number(item.totalTickets ?? item.totaltickets ?? 100) || 100;
+        const prizes = Array.isArray(item.prizes) ? item.prizes : [];
+        const tickets = Array.isArray(item.tickets) ? item.tickets : [];
+        const winners = Array.isArray(item.winners) ? item.winners : [];
+
+        return {
+            id,
+            name: name,
+            title: name,
+            description: item.description || '',
+            location: item.location || 'Main Tactical Arena',
+            contactPhone: item.contactPhone || item.contactphone || '',
+            contactphone: item.contactPhone || item.contactphone || '',
+            ticketPrice: ticketPrice,
+            ticketprice: ticketPrice,
+            totalTickets: totalTickets,
+            totaltickets: totalTickets,
+            prizes: prizes,
+            tickets: tickets,
+            winners: winners,
+            status: item.status || 'Upcoming',
+            drawDate: item.drawDate || item.drawdate || '',
+            drawdate: item.drawDate || item.drawdate || '',
+            alwaysChooseMostTickets: alwaysTop,
+            alwayschoosemosttickets: alwaysTop,
+            createdAt: item.createdAt || new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        };
+    }
+
     return payload;
 }
 
@@ -1615,5 +1650,72 @@ DROP POLICY IF EXISTS "Allow public read and login on players" ON public.players
 CREATE POLICY "Allow public read and login on players" ON public.players FOR ALL USING (true) WITH CHECK (true);
 GRANT ALL ON TABLE public.players TO anon, authenticated, service_role;
 `;
+
+export const RAFFLES_SQL_SCHEMA_MIGRATION = `-- =========================================================================
+-- BOSJOL TACTICAL AIRSOFT - RAFFLE SYSTEM & MULTI-WINNER SQL MIGRATION
+-- Run this in your Supabase SQL Editor (SQL Editor -> New query -> Paste -> Run)
+-- Supports: Multiple Winners, Ordered Prizes (1st, 2nd, 3rd, 4th, etc.), and Top-Ticket Mode
+-- =========================================================================
+
+-- 1. Create or ensure raffles table exists
+CREATE TABLE IF NOT EXISTS public.raffles (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    title TEXT,
+    location TEXT DEFAULT 'Main Tactical Arena',
+    "contactPhone" TEXT DEFAULT '',
+    contactphone TEXT DEFAULT '',
+    description TEXT DEFAULT '',
+    "ticketPrice" NUMERIC DEFAULT 0,
+    ticketprice NUMERIC DEFAULT 0,
+    "totalTickets" NUMERIC DEFAULT 100,
+    totaltickets NUMERIC DEFAULT 100,
+    tickets JSONB DEFAULT '[]'::jsonb,
+    "soldTickets" JSONB DEFAULT '[]'::jsonb,
+    soldtickets JSONB DEFAULT '[]'::jsonb,
+    winners JSONB DEFAULT '[]'::jsonb,
+    status TEXT DEFAULT 'Upcoming',
+    "drawDate" TEXT,
+    drawdate TEXT,
+    prizes JSONB DEFAULT '[]'::jsonb,
+    "alwaysChooseMostTickets" BOOLEAN DEFAULT FALSE,
+    alwayschoosemosttickets BOOLEAN DEFAULT FALSE,
+    "createdAt" TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. Add columns if table already existed (idempotent migration)
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS title TEXT;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '';
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS location TEXT DEFAULT 'Main Tactical Arena';
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS "contactPhone" TEXT DEFAULT '';
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS contactphone TEXT DEFAULT '';
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS "ticketPrice" NUMERIC DEFAULT 0;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS ticketprice NUMERIC DEFAULT 0;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS "totalTickets" NUMERIC DEFAULT 100;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS totaltickets NUMERIC DEFAULT 100;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS tickets JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS "soldTickets" JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS soldtickets JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS winners JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Upcoming';
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS "drawDate" TEXT;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS drawdate TEXT;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS prizes JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS "alwaysChooseMostTickets" BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS alwayschoosemosttickets BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS "createdAt" TEXT;
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.raffles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+-- 3. Row Level Security & Permissions
+ALTER TABLE public.raffles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read and write on raffles" ON public.raffles;
+CREATE POLICY "Allow public read and write on raffles" ON public.raffles FOR ALL USING (true) WITH CHECK (true);
+GRANT ALL ON TABLE public.raffles TO anon, authenticated, service_role;
+`;
+
 
 

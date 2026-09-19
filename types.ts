@@ -281,7 +281,7 @@ export interface Voucher extends VoucherCore {
 export interface Prize {
     id: string;
     name: string;
-    place: 1 | 2 | 3;
+    place: number;
 }
 
 // Sub-collection doc

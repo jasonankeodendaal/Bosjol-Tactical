@@ -275,15 +275,33 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
     const isCurrentPrizeDrawn = localWinners.some(w => w.prizeId === currentPrize?.id);
     const undrawnPrizesCount = prizes.filter(p => !localWinners.some(w => w.prizeId === p.id)).length;
 
-    // Player specific tickets in this raffle
+    // Player specific tickets in this raffle (matching both id and playerCode)
     const myTickets = useMemo(() => {
         if (!currentPlayer) return [];
-        return tickets.filter(t => t.playerId === currentPlayer.id);
+        const cid = String(currentPlayer.id || '').trim().toLowerCase();
+        const ccode = String(currentPlayer.playerCode || '').trim().toLowerCase();
+        return tickets.filter(t => {
+            const tid = String(t.playerId || '').trim().toLowerCase();
+            const tcode = String(t.playerCode || '').trim().toLowerCase();
+            return (cid && tid === cid) || (ccode && (tid === ccode || tcode === ccode));
+        });
     }, [tickets, currentPlayer]);
+
+    // Enforce player privacy: Ensure non-admin users cannot access the Contenders Radar tab
+    useEffect(() => {
+        if (!isAdmin && activeTab === 'leaderboard') {
+            setActiveTab('stage');
+        }
+    }, [isAdmin, activeTab]);
 
     const myWinCount = useMemo(() => {
         if (!currentPlayer) return 0;
-        return localWinners.filter(w => w.playerId === currentPlayer.id).length;
+        const cid = String(currentPlayer.id || '').trim().toLowerCase();
+        const ccode = String(currentPlayer.playerCode || '').trim().toLowerCase();
+        return localWinners.filter(w => {
+            const wid = String(w.playerId || '').trim().toLowerCase();
+            return (cid && wid === cid) || (ccode && wid === ccode);
+        }).length;
     }, [localWinners, currentPlayer]);
 
     // Leaderboard stats
@@ -763,17 +781,19 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                         <span>🏆 Vault ({prizes.length})</span>
                     </button>
 
-                    <button
-                        onClick={() => setActiveTab('leaderboard')}
-                        className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm ${
-                            activeTab === 'leaderboard'
-                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/20 border border-amber-400'
-                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60 border border-transparent'
-                        }`}
-                    >
-                        <UserGroupIcon className="w-3.5 h-3.5" />
-                        <span>📊 Radar</span>
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={() => setActiveTab('leaderboard')}
+                            className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm ${
+                                activeTab === 'leaderboard'
+                                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/20 border border-amber-400'
+                                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60 border border-transparent'
+                            }`}
+                        >
+                            <UserGroupIcon className="w-3.5 h-3.5" />
+                            <span>📊 Radar (Admin)</span>
+                        </button>
+                    )}
 
                     <button
                         onClick={() => setActiveTab('tickets')}
@@ -784,7 +804,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                         }`}
                     >
                         <TicketIcon className="w-3.5 h-3.5" />
-                        <span>🎟️ My Tix {currentPlayer ? `(${myTickets.length})` : `(${tickets.length})`}</span>
+                        <span>🎟️ {isAdmin ? `All Tickets (${tickets.length})` : `My Tickets (${myTickets.length})`}</span>
                     </button>
                 </div>
 
@@ -937,7 +957,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                         </span>
                                     </div>
 
-                                    {justWon.totalTicketsHeld > 0 && (
+                                    {isAdmin && justWon.totalTicketsHeld > 0 && (
                                         <p className="text-[10px] sm:text-[11px] text-amber-300/80 font-mono mt-1.5 sm:mt-2">
                                             Operator held {justWon.totalTicketsHeld} ticket{justWon.totalTicketsHeld === 1 ? '' : 's'} in this raffle pool
                                         </p>
@@ -1219,9 +1239,9 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                 )}
 
                 {/* ==================================================== */}
-                {/* TAB 3: CONTENDERS LEADERBOARD & RADAR */}
+                {/* TAB 3: CONTENDERS LEADERBOARD & RADAR (ADMIN ONLY) */}
                 {/* ==================================================== */}
-                {activeTab === 'leaderboard' && (
+                {activeTab === 'leaderboard' && isAdmin && (
                     <div className="max-w-4xl mx-auto w-full space-y-4">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                             <div>
@@ -1232,7 +1252,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                     Total ticket distribution across {leaderboardStats.length} participating operators
                                 </p>
                             </div>
-                            {isTopTicketsMode && isAdmin && (
+                            {isTopTicketsMode && (
                                 <span className="text-xs font-bold bg-amber-500/20 text-amber-300 px-3 py-1 rounded-lg border border-amber-500/40">
                                     👑 Top Buyers Priority (Admin Only)
                                 </span>
@@ -1310,101 +1330,152 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                 )}
 
                 {/* ==================================================== */}
-                {/* TAB 4: TICKET STASH (PERSONAL & SEARCHABLE) */}
+                {/* TAB 4: TICKET STASH (PERSONAL FOR PLAYERS, AUDIT FOR ADMIN) */}
                 {/* ==================================================== */}
                 {activeTab === 'tickets' && (
                     <div className="max-w-4xl mx-auto w-full space-y-4">
-                        {/* Player Summary Card */}
-                        {currentPlayer && (
-                            <div className="p-4 rounded-2xl bg-gradient-to-r from-zinc-900 via-amber-950/40 to-zinc-900 border border-amber-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                                <div>
-                                    <span className="text-xs font-mono uppercase font-bold text-amber-400 block">
-                                        Your Personal Raffle Stash
-                                    </span>
-                                    <p className="text-lg font-black text-white mt-0.5">
-                                        {myTickets.length} Tickets Held
-                                        <span className="text-xs text-zinc-400 font-normal ml-2">
-                                            ({tickets.length > 0 ? ((myTickets.length / tickets.length) * 100).toFixed(1) : 0}% Draw Probability)
+                        {!isAdmin ? (
+                            /* Player View: Private Personal Stash Only */
+                            <div className="space-y-4">
+                                <div className="p-4 rounded-2xl bg-gradient-to-r from-zinc-900 via-amber-950/40 to-zinc-900 border border-amber-500/40 flex items-center justify-between">
+                                    <div>
+                                        <span className="text-xs font-mono uppercase font-bold text-amber-400 block">
+                                            Your Personal Raffle Tickets
                                         </span>
-                                    </p>
+                                        <p className="text-lg font-black text-white mt-0.5">
+                                            {myTickets.length} Ticket{myTickets.length === 1 ? '' : 's'} Held
+                                        </p>
+                                    </div>
+                                    <span className="text-xs font-mono text-zinc-400 bg-zinc-950 px-3 py-1.5 rounded-xl border border-zinc-800">
+                                        Status: {raffle.status}
+                                    </span>
                                 </div>
-                                {onIssueTickets && (
-                                    <Button 
-                                        size="sm"
-                                        onClick={() => onIssueTickets(raffle)}
-                                        className="bg-amber-600 hover:bg-amber-500 text-xs font-bold"
-                                    >
-                                        + Request / Add Tickets
-                                    </Button>
+
+                                {myTickets.length === 0 ? (
+                                    <div className="p-12 text-center bg-zinc-950/60 rounded-2xl border border-zinc-800/80">
+                                        <TicketIcon className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+                                        <p className="text-sm font-semibold text-zinc-300">You do not hold any tickets for this raffle yet.</p>
+                                        <p className="text-xs text-zinc-500 mt-1">Tickets assigned to your callsign/profile will appear here securely.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-96 overflow-y-auto p-1">
+                                        {myTickets.map(ticket => {
+                                            const isWinningTicket = localWinners.some(w => w.ticketId === ticket.id);
+                                            return (
+                                                <div
+                                                    key={ticket.id}
+                                                    className={`p-3.5 rounded-xl border flex flex-col justify-between transition-all ${
+                                                        isWinningTicket
+                                                            ? 'bg-gradient-to-b from-amber-950/80 to-zinc-900 border-amber-400 shadow-md shadow-amber-500/20'
+                                                            : 'bg-zinc-900/90 border-amber-500/40'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="font-mono text-sm font-black text-amber-400">
+                                                            {ticket.code}
+                                                        </span>
+                                                        {isWinningTicket ? (
+                                                            <span className="text-xs bg-amber-500 text-black font-black px-2 py-0.5 rounded-full">
+                                                                WINNER 🏆
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                                                                {ticket.paymentStatus || 'Valid'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[11px] text-zinc-400 font-mono">
+                                                        Issued: {new Date(ticket.purchaseDate).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 )}
                             </div>
-                        )}
-
-                        {/* Search & Filter */}
-                        <div className="flex items-center justify-between gap-3">
-                            <input
-                                type="text"
-                                placeholder="Search ticket serial code (e.g. TKT-)..."
-                                value={ticketSearch}
-                                onChange={(e) => setTicketSearch(e.target.value)}
-                                className="w-full max-w-sm px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-amber-500"
-                            />
-                            <span className="text-xs font-mono text-zinc-400 shrink-0">
-                                {tickets.length} total in pool
-                            </span>
-                        </div>
-
-                        {/* Ticket Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-96 overflow-y-auto p-1">
-                            {tickets
-                                .filter(t => {
-                                    if (!ticketSearch) return true;
-                                    const q = ticketSearch.toLowerCase();
-                                    const owner = players.find(p => p.id === t.playerId || (p.playerCode && t.playerId === p.playerCode) || (t.playerCode && p.playerCode === t.playerCode));
-                                    const nameMatch = t.playerName && t.playerName.toLowerCase().includes(q);
-                                    const ownerMatch = owner && (
-                                        owner.name.toLowerCase().includes(q) ||
-                                        (owner.surname && owner.surname.toLowerCase().includes(q)) ||
-                                        (owner.callsign && owner.callsign.toLowerCase().includes(q)) ||
-                                        (owner.playerCode && owner.playerCode.toLowerCase().includes(q))
-                                    );
-                                    return t.code.toLowerCase().includes(q) || Boolean(nameMatch) || Boolean(ownerMatch);
-                                })
-                                .map(ticket => {
-                                    const isMine = currentPlayer && (
-                                        ticket.playerId === currentPlayer.id ||
-                                        (Boolean(currentPlayer.playerCode) && ticket.playerId === currentPlayer.playerCode) ||
-                                        (Boolean(ticket.playerCode && currentPlayer.playerCode) && ticket.playerCode === currentPlayer.playerCode)
-                                    );
-                                    const isWinningTicket = localWinners.some(w => w.ticketId === ticket.id);
-                                    const owner = players.find(p => p.id === ticket.playerId || (p.playerCode && ticket.playerId === p.playerCode) || (ticket.playerCode && p.playerCode === ticket.playerCode));
-                                    const ownerName = owner ? `${owner.name} ${owner.surname || ''}`.trim() : (ticket.playerName || 'Operator');
-                                    const ownerCallsign = owner?.callsign || ticket.playerCallsign;
-
-                                    return (
-                                        <div
-                                            key={ticket.id}
-                                            className={`p-2.5 rounded-xl border flex flex-col justify-between transition-all ${
-                                                isWinningTicket
-                                                    ? 'bg-gradient-to-b from-amber-950/80 to-zinc-900 border-amber-400 shadow-md shadow-amber-500/20'
-                                                    : isMine
-                                                        ? 'bg-zinc-900/90 border-amber-500/50'
-                                                        : 'bg-zinc-950/70 border-zinc-800/80'
-                                            }`}
+                        ) : (
+                            /* Admin View: Full Pool Audit & Management */
+                            <div className="space-y-4">
+                                <div className="p-4 rounded-2xl bg-gradient-to-r from-zinc-900 via-amber-950/40 to-zinc-900 border border-amber-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                    <div>
+                                        <span className="text-xs font-mono uppercase font-bold text-amber-400 block">
+                                            Admin Raffle Pool Stash
+                                        </span>
+                                        <p className="text-lg font-black text-white mt-0.5">
+                                            {tickets.length} Total Tickets in Pool
+                                        </p>
+                                    </div>
+                                    {onIssueTickets && (
+                                        <Button 
+                                            size="sm"
+                                            onClick={() => onIssueTickets(raffle)}
+                                            className="bg-amber-600 hover:bg-amber-500 text-xs font-bold"
                                         >
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="font-mono text-xs font-black text-red-400">
-                                                    {ticket.code}
-                                                </span>
-                                                {isWinningTicket && <span className="text-xs">🏆</span>}
-                                            </div>
-                                            <p className="text-[11px] text-zinc-300 truncate font-semibold">
-                                                {ownerName} {ownerCallsign ? `("${ownerCallsign}")` : ''}
-                                            </p>
-                                        </div>
-                                    );
-                                })}
-                        </div>
+                                            + Issue Tickets
+                                        </Button>
+                                    )}
+                                </div>
+
+                                {/* Search & Filter */}
+                                <div className="flex items-center justify-between gap-3">
+                                    <input
+                                        type="text"
+                                        placeholder="Search ticket serial code or operator..."
+                                        value={ticketSearch}
+                                        onChange={(e) => setTicketSearch(e.target.value)}
+                                        className="w-full max-w-sm px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-amber-500"
+                                    />
+                                    <span className="text-xs font-mono text-zinc-400 shrink-0">
+                                        {tickets.length} total in pool
+                                    </span>
+                                </div>
+
+                                {/* Ticket Grid for Admin */}
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-96 overflow-y-auto p-1">
+                                    {tickets
+                                        .filter(t => {
+                                            if (!ticketSearch) return true;
+                                            const q = ticketSearch.toLowerCase();
+                                            const owner = players.find(p => p.id === t.playerId || (p.playerCode && t.playerId === p.playerCode) || (t.playerCode && p.playerCode === t.playerCode));
+                                            const nameMatch = t.playerName && t.playerName.toLowerCase().includes(q);
+                                            const ownerMatch = owner && (
+                                                owner.name.toLowerCase().includes(q) ||
+                                                (owner.surname && owner.surname.toLowerCase().includes(q)) ||
+                                                (owner.callsign && owner.callsign.toLowerCase().includes(q)) ||
+                                                (owner.playerCode && owner.playerCode.toLowerCase().includes(q))
+                                            );
+                                            return t.code.toLowerCase().includes(q) || Boolean(nameMatch) || Boolean(ownerMatch);
+                                        })
+                                        .map(ticket => {
+                                            const isWinningTicket = localWinners.some(w => w.ticketId === ticket.id);
+                                            const owner = players.find(p => p.id === ticket.playerId || (p.playerCode && ticket.playerId === p.playerCode) || (ticket.playerCode && p.playerCode === ticket.playerCode));
+                                            const ownerName = owner ? `${owner.name} ${owner.surname || ''}`.trim() : (ticket.playerName || 'Operator');
+                                            const ownerCallsign = owner?.callsign || ticket.playerCallsign;
+
+                                            return (
+                                                <div
+                                                    key={ticket.id}
+                                                    className={`p-2.5 rounded-xl border flex flex-col justify-between transition-all ${
+                                                        isWinningTicket
+                                                            ? 'bg-gradient-to-b from-amber-950/80 to-zinc-900 border-amber-400 shadow-md shadow-amber-500/20'
+                                                            : 'bg-zinc-950/70 border-zinc-800/80'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="font-mono text-xs font-black text-amber-400">
+                                                            {ticket.code}
+                                                        </span>
+                                                        {isWinningTicket && <span className="text-xs">🏆</span>}
+                                                    </div>
+                                                    <p className="text-[11px] text-zinc-300 truncate font-semibold">
+                                                        {ownerName} {ownerCallsign ? `("${ownerCallsign}")` : ''}
+                                                    </p>
+                                                </div>
+                                            );
+                                        })}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </main>

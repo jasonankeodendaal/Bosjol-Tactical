@@ -7,6 +7,7 @@ import { TicketIcon, PlusIcon, PencilIcon, TrashIcon, TrophyIcon, UserIcon, Chec
 import { useData } from '../data/DataContext';
 import { RaffleEventDashboard } from './RaffleEventDashboard';
 import { RAFFLES_SQL_SCHEMA_MIGRATION } from '../utils/supabaseSchema';
+import { supabase } from '../supabaseClient';
 
 interface VouchersRafflesTabProps {
     vouchers: Voucher[];
@@ -518,48 +519,57 @@ const IssueTicketsModal: React.FC<{
     onClose: () => void;
     onIssue: (raffleId: string, newTickets: RaffleTicketDoc[], selectedPlayer?: Player) => void;
 }> = ({ raffle, players, onClose, onIssue }) => {
-    const [selectedPlayerId, setSelectedPlayerId] = useState<string>(players[0]?.id || '');
+    // Sort players alphabetically for predictable selection
+    const sortedPlayers = useMemo(() => {
+        return [...players].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }, [players]);
+
+    const [selectedPlayerId, setSelectedPlayerId] = useState<string>(() => {
+        return players[0]?.id ? String(players[0].id) : '';
+    });
     const [quantity, setQuantity] = useState<number>(1);
     const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('Paid (Cash)');
     const [searchFilter, setSearchFilter] = useState('');
 
-    // Ensure selectedPlayerId stays valid if players load asynchronously
+    // Ensure initial selection is set when players load asynchronously if empty
     useEffect(() => {
-        if ((!selectedPlayerId || !players.some(p => p.id === selectedPlayerId)) && players.length > 0) {
-            setSelectedPlayerId(players[0].id);
+        if (!selectedPlayerId && sortedPlayers.length > 0) {
+            setSelectedPlayerId(String(sortedPlayers[0].id));
         }
-    }, [players, selectedPlayerId]);
+    }, [sortedPlayers, selectedPlayerId]);
 
     const filteredPlayers = useMemo(() => {
-        if (!searchFilter.trim()) return players;
-        const q = searchFilter.toLowerCase();
-        return players.filter(p => 
+        if (!searchFilter.trim()) return sortedPlayers;
+        const q = searchFilter.toLowerCase().trim();
+        return sortedPlayers.filter(p => 
             (p.name && p.name.toLowerCase().includes(q)) || 
             (p.surname && p.surname.toLowerCase().includes(q)) ||
             (p.callsign && p.callsign.toLowerCase().includes(q)) ||
             (p.playerCode && p.playerCode.toLowerCase().includes(q)) ||
-            (p.id && p.id.toLowerCase().includes(q))
+            (p.id && String(p.id).toLowerCase().includes(q))
         );
-    }, [players, searchFilter]);
+    }, [sortedPlayers, searchFilter]);
 
-    // CRITICAL FIX: When user types into searchFilter, automatically sync selectedPlayerId to the 
-    // top filtered result if current selection is not in the filtered set.
-    // This prevents the visual mismatch where user searches for Player B but tickets get issued to Player A.
-    useEffect(() => {
-        if (filteredPlayers.length > 0 && !filteredPlayers.some(p => p.id === selectedPlayerId)) {
-            setSelectedPlayerId(filteredPlayers[0].id);
-        }
-    }, [filteredPlayers, selectedPlayerId]);
-
-    // Resolved recipient player object
+    // Resolved recipient player object: strictly matches the chosen player without falling back to players[0]
     const selectedPlayer = useMemo(() => {
-        return players.find(p => p.id === selectedPlayerId) || filteredPlayers[0] || players[0] || null;
-    }, [players, selectedPlayerId, filteredPlayers]);
+        if (!selectedPlayerId) return null;
+        const target = String(selectedPlayerId).trim().toLowerCase();
+        return players.find(p => 
+            String(p.id).trim().toLowerCase() === target ||
+            (p.playerCode && String(p.playerCode).trim().toLowerCase() === target)
+        ) || null;
+    }, [players, selectedPlayerId]);
 
-    // Current ticket count for this specific player in this raffle
+    // Current ticket count for this specific chosen player in this raffle
     const currentHeldCount = useMemo(() => {
         if (!selectedPlayer) return 0;
-        return (raffle.tickets || []).filter(t => t.playerId === selectedPlayer.id).length;
+        const pid = String(selectedPlayer.id).trim().toLowerCase();
+        const pcode = String(selectedPlayer.playerCode || '').trim().toLowerCase();
+        return (raffle.tickets || []).filter(t => {
+            const tid = String(t.playerId || '').trim().toLowerCase();
+            const tcode = String(t.playerCode || '').trim().toLowerCase();
+            return (pid && tid === pid) || (pcode && (tid === pcode || tcode === pcode));
+        }).length;
     }, [raffle.tickets, selectedPlayer]);
 
     const existingCount = (raffle.tickets || []).length;
@@ -568,7 +578,7 @@ const IssueTicketsModal: React.FC<{
 
     const handleIssueConfirm = () => {
         if (!selectedPlayer) {
-            alert('Please select a player.');
+            alert('Please select an operator to issue tickets to.');
             return;
         }
         if (quantity < 1) {
@@ -582,9 +592,9 @@ const IssueTicketsModal: React.FC<{
             const paddedNum = ticketNumber.toString().padStart(4, '0');
             newTickets.push({
                 id: `tkt_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 7)}`,
-                raffleId: raffle.id,
+                raffleId: String(raffle.id),
                 code: `BT-RAF-${paddedNum}`,
-                playerId: selectedPlayer.id,
+                playerId: String(selectedPlayer.id),
                 playerName: `${selectedPlayer.name} ${selectedPlayer.surname || ''}`.trim(),
                 playerCallsign: selectedPlayer.callsign || '',
                 playerCode: selectedPlayer.playerCode || '',
@@ -593,7 +603,7 @@ const IssueTicketsModal: React.FC<{
             });
         }
 
-        onIssue(raffle.id, newTickets, selectedPlayer);
+        onIssue(String(raffle.id), newTickets, selectedPlayer);
     };
 
     return (
@@ -619,20 +629,38 @@ const IssueTicketsModal: React.FC<{
                 <div>
                     <div className="flex items-center justify-between mb-1.5">
                         <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider">
-                            Choose Recipient Player
+                            Choose Recipient Operator
                         </label>
                         <span className="text-[11px] text-zinc-500 font-mono">
-                            {filteredPlayers.length} of {players.length} players
+                            {players.length} registered operators
                         </span>
                     </div>
 
+                    {/* Direct Native Dropdown Selection */}
+                    <div className="mb-2">
+                        <select
+                            id="raffle-issue-player-select"
+                            value={selectedPlayerId}
+                            onChange={(e) => setSelectedPlayerId(e.target.value)}
+                            className="w-full bg-zinc-950 border border-zinc-700 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
+                        >
+                            <option value="" disabled>-- Select Operator from Roster --</option>
+                            {sortedPlayers.map(p => (
+                                <option key={p.id} value={String(p.id)}>
+                                    {p.name} {p.surname || ''} {p.callsign ? `("${p.callsign}")` : ''} {p.playerCode ? `[${p.playerCode}]` : ''}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Quick Search Box for Quick Filter */}
                     <div className="relative mb-2">
                         <input 
                             type="text" 
-                            placeholder="Type player name, callsign (e.g. VIPER), or code..." 
+                            placeholder="Filter roster by name, callsign, or code..." 
                             value={searchFilter} 
                             onChange={e => setSearchFilter(e.target.value)}
-                            className="w-full bg-zinc-950 border border-zinc-700 focus:border-amber-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                            className="w-full bg-zinc-950/80 border border-zinc-700/80 focus:border-amber-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
                         />
                         {searchFilter && (
                             <button 
@@ -647,15 +675,20 @@ const IssueTicketsModal: React.FC<{
                     {/* Scrollable Quick-Select Player Roster Cards */}
                     <div className="max-h-40 overflow-y-auto space-y-1.5 p-1 bg-zinc-950/60 rounded-xl border border-zinc-800/80 mb-2">
                         {filteredPlayers.length === 0 ? (
-                            <p className="text-center py-4 text-xs text-zinc-500">No players match "{searchFilter}"</p>
+                            <p className="text-center py-4 text-xs text-zinc-500">No operators match "{searchFilter}"</p>
                         ) : (
                             filteredPlayers.map(p => {
-                                const isSelected = selectedPlayer?.id === p.id;
-                                const pTicketsCount = (raffle.tickets || []).filter(t => t.playerId === p.id).length;
+                                const isSelected = selectedPlayer?.id === p.id || String(selectedPlayerId) === String(p.id);
+                                const pTicketsCount = (raffle.tickets || []).filter(t => {
+                                    const tid = String(t.playerId || '').trim().toLowerCase();
+                                    const pid = String(p.id).trim().toLowerCase();
+                                    const pcode = String(p.playerCode || '').trim().toLowerCase();
+                                    return (pid && tid === pid) || (pcode && (tid === pcode || String(t.playerCode || '').trim().toLowerCase() === pcode));
+                                }).length;
                                 return (
                                     <div
                                         key={p.id}
-                                        onClick={() => setSelectedPlayerId(p.id)}
+                                        onClick={() => setSelectedPlayerId(String(p.id))}
                                         className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all border ${
                                             isSelected 
                                                 ? 'bg-amber-500/15 border-amber-500 text-white shadow-sm' 
@@ -669,7 +702,7 @@ const IssueTicketsModal: React.FC<{
                                                 {p.avatarUrl ? (
                                                     <img src={p.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" />
                                                 ) : (
-                                                    p.name.charAt(0)
+                                                    (p.name || 'O').charAt(0)
                                                 )}
                                             </div>
                                             <div className="truncate">
@@ -682,7 +715,7 @@ const IssueTicketsModal: React.FC<{
                                                     )}
                                                 </p>
                                                 <p className="text-[10px] text-zinc-400 font-mono">
-                                                    ID: {p.id.slice(0, 8)}... {p.playerCode ? `• Code: [${p.playerCode}]` : ''}
+                                                    ID: {String(p.id).slice(0, 8)}... {p.playerCode ? `• Code: [${p.playerCode}]` : ''}
                                                 </p>
                                             </div>
                                         </div>
@@ -715,7 +748,7 @@ const IssueTicketsModal: React.FC<{
                                     {selectedPlayer.avatarUrl ? (
                                         <img src={selectedPlayer.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" />
                                     ) : (
-                                        selectedPlayer.name.charAt(0)
+                                        (selectedPlayer.name || 'O').charAt(0)
                                     )}
                                 </div>
                                 <div>
@@ -1504,6 +1537,26 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
         };
 
         await updateDoc('raffles', updatedRaffle);
+
+        // Also sync to Supabase raffle_tickets table if available
+        if (supabase) {
+            try {
+                const targetPlayerId = String(selectedPlayer?.id || newTickets[0]?.playerId || '');
+                const ticketRows = newTickets.map(t => ({
+                    id: t.id,
+                    raffle_id: String(raffle.id),
+                    player_id: targetPlayerId,
+                    player_code: selectedPlayer?.playerCode || t.playerCode || '',
+                    player_name: t.playerName,
+                    code: t.code,
+                    payment_status: t.paymentStatus || 'Paid (Cash)',
+                    purchase_date: t.purchaseDate || new Date().toISOString()
+                }));
+                await supabase.from('raffle_tickets').upsert(ticketRows, { onConflict: 'id' });
+            } catch (err) {
+                console.warn('Optional raffle_tickets relational sync note:', err);
+            }
+        }
 
         // Real-time in-app notification & activity log for the recipient player
         const targetPlayer = selectedPlayer || (newTickets.length > 0 ? players.find(p => p.id === newTickets[0].playerId) : null);

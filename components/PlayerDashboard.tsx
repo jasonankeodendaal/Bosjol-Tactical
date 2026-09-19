@@ -1046,8 +1046,6 @@ const EmbeddedLiveRaffleCard: React.FC<{
                (Boolean(t.playerCode && player.playerCode) && t.playerCode === player.playerCode);
     };
     const userTickets = (raffle.tickets || []).filter(isPlayerTicket);
-    const totalTix = (raffle.tickets || []).length;
-    const odds = totalTix > 0 ? ((userTickets.length / totalTix) * 100).toFixed(1) : '0.0';
     const prizes = raffle.prizes || [];
     const winners = raffle.winners || [];
     const isCompleted = raffle.status === 'Completed';
@@ -1055,7 +1053,7 @@ const EmbeddedLiveRaffleCard: React.FC<{
     // Simulated active radar ticker for realism
     const [scrambledCode, setScrambledCode] = useState<string>('TKT-SCANNING');
     useEffect(() => {
-        if (isCompleted || totalTix === 0) return;
+        if (isCompleted || (raffle.tickets || []).length === 0) return;
         const interval = setInterval(() => {
             const randomTkt = (raffle.tickets || [])[Math.floor(Math.random() * (raffle.tickets || []).length)];
             if (randomTkt) {
@@ -1063,7 +1061,7 @@ const EmbeddedLiveRaffleCard: React.FC<{
             }
         }, 800);
         return () => clearInterval(interval);
-    }, [raffle, isCompleted, totalTix]);
+    }, [raffle, isCompleted]);
 
     return (
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-zinc-900/95 via-zinc-900/90 to-black/95 p-4 sm:p-6 border border-amber-500/40 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(251,191,36,0.2)] backdrop-blur-xl group transition-all duration-300">
@@ -1075,7 +1073,7 @@ const EmbeddedLiveRaffleCard: React.FC<{
             <div className="absolute inset-0 bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
 
             <div className="relative z-10 space-y-4">
-                {/* Header Badge & Live Radar */}
+                {/* Header Badge & Stage Info */}
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                         <span className="relative flex h-3 w-3">
@@ -1094,8 +1092,8 @@ const EmbeddedLiveRaffleCard: React.FC<{
                     </div>
 
                     <div className="text-[11px] font-mono text-zinc-400 bg-black/60 px-3 py-1 rounded-full border border-zinc-800/80 shadow-inner flex items-center gap-2">
-                        <span className="text-zinc-500">POOL:</span>
-                        <strong className="text-amber-400">{totalTix} Tickets</strong>
+                        <span className="text-zinc-500">PRIZES:</span>
+                        <strong className="text-amber-400">{prizes.length} Items</strong>
                     </div>
                 </div>
 
@@ -1175,8 +1173,8 @@ const EmbeddedLiveRaffleCard: React.FC<{
                                 <span className="text-base font-mono font-black text-amber-400">{userTickets.length}</span>
                             </div>
                             <div className="p-2 rounded-xl bg-black/50 border border-zinc-800">
-                                <span className="text-[9px] font-mono uppercase text-zinc-400 block">Win Odds</span>
-                                <span className="text-base font-mono font-black text-emerald-400">{odds}%</span>
+                                <span className="text-[9px] font-mono uppercase text-zinc-400 block">Stage Status</span>
+                                <span className="text-sm font-mono font-bold text-emerald-400">{isCompleted ? 'Concluded' : 'Active'}</span>
                             </div>
                         </div>
 
@@ -1266,8 +1264,6 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {safeRaffles.map(raffle => {
                                 const userTickets = (raffle.tickets || []).filter(isMyTicket);
-                                const totalTix = (raffle.tickets || []).length;
-                                const odds = totalTix > 0 ? ((userTickets.length / totalTix) * 100).toFixed(1) : '0.0';
                                 const prizes = raffle.prizes || [];
                                 const isCompleted = raffle.status === 'Completed';
 
@@ -1298,19 +1294,15 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                                                 <p className="text-xs text-zinc-400 mb-3 line-clamp-2">{raffle.description}</p>
                                             )}
 
-                                            {/* Tactical Stats Matrix */}
-                                            <div className="grid grid-cols-3 gap-2 p-2.5 rounded-2xl bg-black/50 border border-zinc-800/80 mb-3 text-center">
+                                            {/* Tactical Stats Matrix (Player-facing: shows personal tickets only) */}
+                                            <div className="grid grid-cols-2 gap-2 p-2.5 rounded-2xl bg-black/50 border border-zinc-800/80 mb-3 text-center">
                                                 <div>
                                                     <span className="text-[10px] text-zinc-500 uppercase font-mono block">Your Tickets</span>
                                                     <span className="text-xs font-mono font-bold text-amber-400">{userTickets.length} held</span>
                                                 </div>
                                                 <div>
-                                                    <span className="text-[10px] text-zinc-500 uppercase font-mono block">Total Pool</span>
-                                                    <span className="text-xs font-mono font-bold text-white">{totalTix} tix</span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-[10px] text-zinc-500 uppercase font-mono block">Win Odds</span>
-                                                    <span className="text-xs font-mono font-bold text-emerald-400">{odds}%</span>
+                                                    <span className="text-[10px] text-zinc-500 uppercase font-mono block">Prize Spots</span>
+                                                    <span className="text-xs font-mono font-bold text-emerald-400">{prizes.length} available</span>
                                                 </div>
                                             </div>
 

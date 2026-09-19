@@ -1756,14 +1756,22 @@ END $$;
 CREATE TABLE IF NOT EXISTS public.raffle_tickets (
     id TEXT PRIMARY KEY,
     raffle_id TEXT REFERENCES public.raffles(id) ON DELETE CASCADE,
-    player_id TEXT REFERENCES public.players(id) ON DELETE CASCADE,
+    player_id TEXT,
+    player_code TEXT DEFAULT '',
+    player_name TEXT DEFAULT '',
     code TEXT NOT NULL,
     payment_status TEXT DEFAULT 'Paid (Cash)',
     purchase_date TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE public.raffle_tickets ADD COLUMN IF NOT EXISTS player_code TEXT DEFAULT '';
+ALTER TABLE public.raffle_tickets ADD COLUMN IF NOT EXISTS player_name TEXT DEFAULT '';
+ALTER TABLE public.raffle_tickets ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'Paid (Cash)';
+ALTER TABLE public.raffle_tickets ADD COLUMN IF NOT EXISTS purchase_date TIMESTAMPTZ DEFAULT NOW();
+
 CREATE INDEX IF NOT EXISTS idx_raffle_tickets_player_id ON public.raffle_tickets(player_id);
+CREATE INDEX IF NOT EXISTS idx_raffle_tickets_player_code ON public.raffle_tickets(player_code);
 CREATE INDEX IF NOT EXISTS idx_raffle_tickets_raffle_id ON public.raffle_tickets(raffle_id);
 CREATE INDEX IF NOT EXISTS idx_raffle_tickets_code ON public.raffle_tickets(code);
 
@@ -1791,33 +1799,42 @@ DECLARE
     v_i INT;
     v_code TEXT;
     v_ticket_obj JSONB;
+    v_ticket_id TEXT;
     v_now TEXT := TO_CHAR(NOW(), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
 BEGIN
-    -- Verify raffle exists
+    -- 1. Verify raffle exists
     SELECT * INTO v_raffle FROM public.raffles WHERE id = p_raffle_id;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Raffle with ID % not found', p_raffle_id;
     END IF;
 
-    -- Verify player exists
-    SELECT * INTO v_player FROM public.players WHERE id = p_player_id;
+    -- 2. Verify player exists: support matching by id, UUID, or playerCode/playercode
+    SELECT * INTO v_player FROM public.players 
+    WHERE id::text = p_player_id 
+       OR COALESCE("playerCode", playercode, '') = p_player_id
+       OR LOWER(COALESCE("playerCode", playercode, '')) = LOWER(p_player_id)
+    LIMIT 1;
+
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'Player with ID % not found', p_player_id;
+        RAISE EXCEPTION 'Player with ID or Code % not found in database', p_player_id;
     END IF;
 
-    -- Get current tickets array
+    -- 3. Get current tickets array
     v_tickets := COALESCE(v_raffle.tickets, v_raffle.soldtickets, '[]'::jsonb);
     v_current_count := jsonb_array_length(v_tickets);
 
-    -- Generate requested quantity of tickets
+    -- 4. Generate requested quantity of tickets assigned directly to the chosen player
     FOR v_i IN 1..p_quantity LOOP
         v_code := 'BT-RAF-' || LPAD((v_current_count + v_i)::TEXT, 4, '0');
+        v_ticket_id := 'tkt_' || EXTRACT(EPOCH FROM NOW())::BIGINT || '_' || v_i || '_' || FLOOR(RANDOM()*10000)::INT;
         v_ticket_obj := jsonb_build_object(
-            'id', 'tkt_' || EXTRACT(EPOCH FROM NOW())::BIGINT || '_' || v_i,
+            'id', v_ticket_id,
             'raffleId', p_raffle_id,
             'code', v_code,
-            'playerId', p_player_id,
-            'playerName', COALESCE(v_player.name, '') || ' ' || COALESCE(v_player.surname, ''),
+            'playerId', v_player.id::TEXT,
+            'playerid', v_player.id::TEXT,
+            'player_id', v_player.id::TEXT,
+            'playerName', TRIM(COALESCE(v_player.name, '') || ' ' || COALESCE(v_player.surname, '')),
             'playerCallsign', COALESCE(v_player.callsign, ''),
             'playerCode', COALESCE(v_player."playerCode", v_player.playercode, ''),
             'purchaseDate', v_now,
@@ -1827,19 +1844,25 @@ BEGIN
         v_new_tickets := v_new_tickets || jsonb_build_array(v_ticket_obj);
 
         -- Also record into relational table if present
-        INSERT INTO public.raffle_tickets (id, raffle_id, player_id, code, payment_status, purchase_date)
-        VALUES (
-            'tkt_' || EXTRACT(EPOCH FROM NOW())::BIGINT || '_' || v_i,
-            p_raffle_id,
-            p_player_id,
-            v_code,
-            p_payment_status,
-            NOW()
-        )
-        ON CONFLICT (id) DO NOTHING;
+        BEGIN
+            INSERT INTO public.raffle_tickets (id, raffle_id, player_id, player_code, player_name, code, payment_status, purchase_date)
+            VALUES (
+                v_ticket_id,
+                p_raffle_id,
+                v_player.id::TEXT,
+                COALESCE(v_player."playerCode", v_player.playercode, ''),
+                TRIM(COALESCE(v_player.name, '') || ' ' || COALESCE(v_player.surname, '')),
+                v_code,
+                p_payment_status,
+                NOW()
+            )
+            ON CONFLICT (id) DO NOTHING;
+        EXCEPTION WHEN OTHERS THEN
+            NULL;
+        END;
     END LOOP;
 
-    -- Update raffle record
+    -- 5. Update raffle record
     UPDATE public.raffles
     SET tickets = v_tickets,
         "soldTickets" = v_tickets,
@@ -1852,7 +1875,7 @@ BEGIN
 END;
 $$;
 
--- 8. Helper function: Get all raffle tickets held by a player
+-- 8. Helper function: Get all raffle tickets held by a player (supports id or playerCode)
 CREATE OR REPLACE FUNCTION public.get_player_raffle_tickets(p_player_id TEXT)
 RETURNS TABLE (
     raffle_id TEXT,
@@ -1878,6 +1901,9 @@ AS $$
          jsonb_array_elements(COALESCE(r.tickets, '[]'::jsonb)) AS t
     WHERE t->>'playerId' = p_player_id
        OR t->>'playerid' = p_player_id
+       OR t->>'player_id' = p_player_id
+       OR LOWER(COALESCE(t->>'playerCode', '')) = LOWER(p_player_id)
+       OR LOWER(COALESCE(t->>'playercode', '')) = LOWER(p_player_id)
     ORDER BY r.drawdate DESC NULLS LAST;
 $$;
 `;

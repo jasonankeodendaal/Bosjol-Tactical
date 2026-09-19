@@ -17,6 +17,7 @@ import {
 import { Button } from './Button';
 import { Modal } from './Modal';
 import { DashboardCard } from './DashboardCard';
+import { MobileNotificationManager } from './MobileNotificationManager';
 
 interface AdminNotificationsTabProps {
     notifications: AdminNotification[];
@@ -156,6 +157,9 @@ export const AdminNotificationsTab: React.FC<AdminNotificationsTabProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* Mobile Push Notification Setup & Broadcast Diagnostics */}
+            <MobileNotificationManager variant="card" />
 
             {/* Filters & Search Toolbar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">

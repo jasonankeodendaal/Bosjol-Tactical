@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import type { Raffle, Player, Prize, RaffleTicketDoc, RaffleWinnerDoc } from '../types';
 import { useData } from '../data/DataContext';
 import { Button } from './Button';
+import { notifyLiveRaffleStart, notifyRaffleWin } from '../utils/notificationService';
 import { 
     Trophy as TrophyIcon, 
     Ticket as TicketIcon, 
@@ -497,6 +498,9 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
         setIsSpinning(true);
         setJustWon(null);
 
+        // Notify subscribers that live draw has started
+        notifyLiveRaffleStart(raffle.name, targetPrize.name, raffle.id).catch(() => {});
+
         let spinCount = 0;
         const totalSpins = 36;
         let speed = 40;
@@ -545,6 +549,9 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                 setIsSpinning(false);
                 soundEngine.playVictoryFanfare();
                 fireConfetti();
+
+                // Dispatch mobile notification for raffle win
+                notifyRaffleWin(raffle.name, targetPrize.name, winningTicket.code || 'WINNER', raffle.id).catch(() => {});
 
                 // Trigger celebration notification
                 if (winningPlayer) {
@@ -1350,11 +1357,29 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                         {/* Ticket Grid */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-96 overflow-y-auto p-1">
                             {tickets
-                                .filter(t => !ticketSearch || t.code.toLowerCase().includes(ticketSearch.toLowerCase()))
+                                .filter(t => {
+                                    if (!ticketSearch) return true;
+                                    const q = ticketSearch.toLowerCase();
+                                    const owner = players.find(p => p.id === t.playerId || (p.playerCode && t.playerId === p.playerCode) || (t.playerCode && p.playerCode === t.playerCode));
+                                    const nameMatch = t.playerName && t.playerName.toLowerCase().includes(q);
+                                    const ownerMatch = owner && (
+                                        owner.name.toLowerCase().includes(q) ||
+                                        (owner.surname && owner.surname.toLowerCase().includes(q)) ||
+                                        (owner.callsign && owner.callsign.toLowerCase().includes(q)) ||
+                                        (owner.playerCode && owner.playerCode.toLowerCase().includes(q))
+                                    );
+                                    return t.code.toLowerCase().includes(q) || Boolean(nameMatch) || Boolean(ownerMatch);
+                                })
                                 .map(ticket => {
-                                    const isMine = currentPlayer && ticket.playerId === currentPlayer.id;
+                                    const isMine = currentPlayer && (
+                                        ticket.playerId === currentPlayer.id ||
+                                        (Boolean(currentPlayer.playerCode) && ticket.playerId === currentPlayer.playerCode) ||
+                                        (Boolean(ticket.playerCode && currentPlayer.playerCode) && ticket.playerCode === currentPlayer.playerCode)
+                                    );
                                     const isWinningTicket = localWinners.some(w => w.ticketId === ticket.id);
-                                    const owner = players.find(p => p.id === ticket.playerId);
+                                    const owner = players.find(p => p.id === ticket.playerId || (p.playerCode && ticket.playerId === p.playerCode) || (ticket.playerCode && p.playerCode === ticket.playerCode));
+                                    const ownerName = owner ? `${owner.name} ${owner.surname || ''}`.trim() : (ticket.playerName || 'Operator');
+                                    const ownerCallsign = owner?.callsign || ticket.playerCallsign;
 
                                     return (
                                         <div
@@ -1373,8 +1398,8 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                                 </span>
                                                 {isWinningTicket && <span className="text-xs">🏆</span>}
                                             </div>
-                                            <p className="text-[11px] text-zinc-300 truncate">
-                                                {owner?.name} {owner?.callsign ? `("${owner.callsign}")` : ''}
+                                            <p className="text-[11px] text-zinc-300 truncate font-semibold">
+                                                {ownerName} {ownerCallsign ? `("${ownerCallsign}")` : ''}
                                             </p>
                                         </div>
                                     );

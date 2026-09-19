@@ -140,10 +140,36 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// MESSAGE: Allow clients to manually trigger skipWaiting
+// MESSAGE: Allow clients to manually trigger skipWaiting or request rich notifications
 self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+  if (!event.data) return;
+  if (event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+  if (event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, options } = event.data;
+    const notificationOptions = {
+      body: options?.body || 'Tactical alert notification',
+      icon: options?.icon || '/pwa-192x192.png',
+      badge: options?.badge || '/pwa-192x192.png',
+      image: options?.image,
+      tag: options?.tag || `bosjol-alert-${Date.now()}`,
+      renotify: options?.renotify !== undefined ? options.renotify : true,
+      requireInteraction: options?.requireInteraction || false,
+      vibrate: options?.vibrate || [200, 100, 200, 100, 200],
+      actions: options?.actions || [
+        { action: 'open', title: 'View Ops' },
+        { action: 'close', title: 'Dismiss' }
+      ],
+      data: {
+        url: options?.data?.url || '/',
+        dateOfArrival: Date.now(),
+        ...(options?.data || {})
+      }
+    };
+    event.waitUntil(
+      self.registration.showNotification(title || 'Bosjol Tactical Alert', notificationOptions)
+    );
   }
 });
 
@@ -161,12 +187,18 @@ self.addEventListener('sync', event => {
   }
 });
 
-// PUSH NOTIFICATIONS: Handle push notifications for event reminders or announcements
+// PUSH NOTIFICATIONS: Handle incoming push notifications for mobile devices
 self.addEventListener('push', event => {
-  let data = { title: 'Bosjol Tactical', body: 'New tactical updates are available.' };
+  let data = { 
+    title: 'Bosjol Tactical Alert', 
+    body: 'New tactical updates or event reminders are available.',
+    url: '/',
+    tag: 'bosjol-push'
+  };
+
   if (event.data) {
     try {
-      data = event.data.json();
+      data = { ...data, ...event.data.json() };
     } catch {
       data.body = event.data.text();
     }
@@ -174,32 +206,62 @@ self.addEventListener('push', event => {
 
   const options = {
     body: data.body,
-    icon: '/pwa-192x192.png',
-    badge: '/pwa-192x192.png',
-    vibrate: [100, 50, 100],
+    icon: data.icon || '/pwa-192x192.png',
+    badge: data.badge || '/pwa-192x192.png',
+    image: data.image,
+    tag: data.tag || 'bosjol-tactical-notification',
+    renotify: true,
+    vibrate: data.vibrate || [200, 100, 200, 100, 200],
+    requireInteraction: data.requireInteraction || false,
+    actions: data.actions || [
+      { action: 'open', title: 'View Alert' },
+      { action: 'close', title: 'Dismiss' }
+    ],
     data: {
+      url: data.url || '/',
       dateOfArrival: Date.now(),
-      primaryKey: 1
+      ...data.data
     }
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Bosjol Tactical', options)
+    self.registration.showNotification(data.title || 'Bosjol Tactical Alert', options)
   );
 });
 
+// NOTIFICATION CLICK: Handle notification clicks & mobile deep-links
 self.addEventListener('notificationclick', event => {
   event.notification.close();
+  
+  if (event.action === 'close') {
+    return;
+  }
+
+  const targetUrl = event.notification?.data?.url || '/';
+
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      // Check if there is already a window open with this URL
       for (const client of clientList) {
-        if (client.url === '/' && 'focus' in client) {
-          return client.focus();
+        if ('focus' in client) {
+          if (client.url.includes(targetUrl) || targetUrl === '/') {
+            client.postMessage({
+              type: 'NAVIGATE_TO',
+              url: targetUrl,
+              notificationData: event.notification.data
+            });
+            return client.focus();
+          }
         }
       }
+      // If no matching window is open, open a new window
       if (self.clients.openWindow) {
-        return self.clients.openWindow('/');
+        return self.clients.openWindow(targetUrl);
       }
     })
   );
+});
+
+self.addEventListener('notificationclose', event => {
+  console.log('[SW] Notification dismissed:', event.notification.tag);
 });

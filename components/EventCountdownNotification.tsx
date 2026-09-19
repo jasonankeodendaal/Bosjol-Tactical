@@ -10,6 +10,7 @@ import {
     isValid 
 } from 'date-fns';
 import type { GameEvent, Player, Signup } from '../types';
+import { notifyEventReminder } from '../utils/notificationService';
 import { 
     Clock, 
     AlertTriangle, 
@@ -421,6 +422,23 @@ export const EventCountdownNotification: React.FC<EventCountdownNotificationProp
         const ms = timeRemaining.totalMs;
         return ms > 0 && ms <= 24 * 60 * 60 * 1000;
     }, [activeEvent, timeRemaining]);
+
+    // Dispatch background mobile device notification once when inside 24h window
+    useEffect(() => {
+        if (isWithin24Hours && activeEvent) {
+            const notifKey = `notif_24h_sent_${activeEvent.id}`;
+            const alreadySent = localStorage.getItem(notifKey);
+            if (!alreadySent) {
+                notifyEventReminder(
+                    activeEvent.title, 
+                    activeEvent.date, 
+                    activeEvent.startTime || '09:00 AM', 
+                    activeEvent.id
+                ).catch(() => {});
+                localStorage.setItem(notifKey, new Date().toISOString());
+            }
+        }
+    }, [isWithin24Hours, activeEvent]);
 
     const formattedEventDate = useMemo(() => {
         if (!activeEventDate || !isValid(activeEventDate)) return '';

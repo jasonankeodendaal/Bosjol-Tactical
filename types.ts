@@ -299,6 +299,9 @@ export interface RaffleTicketDoc {
     raffleId: string; // parent id
     code: string;
     playerId: string;
+    playerName?: string;
+    playerCallsign?: string;
+    playerCode?: string;
     purchaseDate: string;
     paymentStatus: PaymentStatus;
 }
@@ -307,8 +310,12 @@ export interface RaffleTicketDoc {
 export interface RaffleCore {
     id: string;
     name: string; // Raffle event name
+    title?: string;
+    description?: string;
     location: string;
     contactPhone: string;
+    ticketPrice?: number;
+    totalTickets?: number;
     prizes: Prize[];
     drawDate: string; // ISO date string
     status: 'Upcoming' | 'Active' | 'Completed';

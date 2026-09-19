@@ -1362,8 +1362,28 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
         const ticketPrice = Number(item.ticketPrice ?? item.ticketprice ?? 0) || 0;
         const totalTickets = Number(item.totalTickets ?? item.totaltickets ?? 100) || 100;
         const prizes = Array.isArray(item.prizes) ? item.prizes : [];
-        const tickets = Array.isArray(item.tickets) ? item.tickets : [];
-        const winners = Array.isArray(item.winners) ? item.winners : [];
+        const rawTickets = Array.isArray(item.tickets) ? item.tickets : (item.soldTickets || item.soldtickets || []);
+        const tickets = rawTickets.map((t: any, idx: number) => ({
+            id: String(t.id || `tkt_${Date.now()}_${idx}`),
+            raffleId: String(t.raffleId || t.raffleid || id),
+            code: String(t.code || `BT-RAF-${String(idx + 1).padStart(4, '0')}`),
+            playerId: String(t.playerId || t.playerid || t.player_id || ''),
+            playerid: String(t.playerId || t.playerid || t.player_id || ''),
+            player_id: String(t.playerId || t.playerid || t.player_id || ''),
+            playerName: t.playerName || t.playername || '',
+            playerCallsign: t.playerCallsign || t.playercallsign || '',
+            playerCode: t.playerCode || t.playercode || '',
+            purchaseDate: t.purchaseDate || t.purchasedate || t.purchase_date || new Date().toISOString(),
+            paymentStatus: t.paymentStatus || t.paymentstatus || 'Paid (Cash)',
+        }));
+        const rawWinners = Array.isArray(item.winners) ? item.winners : [];
+        const winners = rawWinners.map((w: any) => ({
+            ...w,
+            playerId: String(w.playerId || w.playerid || w.player_id || ''),
+            playerid: String(w.playerId || w.playerid || w.player_id || ''),
+            prizeId: String(w.prizeId || w.prizeid || w.prize_id || ''),
+            ticketId: String(w.ticketId || w.ticketid || w.ticket_id || ''),
+        }));
 
         return {
             id,
@@ -1379,6 +1399,8 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
             totaltickets: totalTickets,
             prizes: prizes,
             tickets: tickets,
+            soldTickets: tickets,
+            soldtickets: tickets,
             winners: winners,
             status: item.status || 'Upcoming',
             drawDate: item.drawDate || item.drawdate || '',
@@ -1729,6 +1751,135 @@ BEGIN
         WHEN OTHERS THEN NULL;
     END;
 END $$;
+
+-- 6. Optional Relational raffle_tickets Table (for normalized queries and player ticket auditing)
+CREATE TABLE IF NOT EXISTS public.raffle_tickets (
+    id TEXT PRIMARY KEY,
+    raffle_id TEXT REFERENCES public.raffles(id) ON DELETE CASCADE,
+    player_id TEXT REFERENCES public.players(id) ON DELETE CASCADE,
+    code TEXT NOT NULL,
+    payment_status TEXT DEFAULT 'Paid (Cash)',
+    purchase_date TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_raffle_tickets_player_id ON public.raffle_tickets(player_id);
+CREATE INDEX IF NOT EXISTS idx_raffle_tickets_raffle_id ON public.raffle_tickets(raffle_id);
+CREATE INDEX IF NOT EXISTS idx_raffle_tickets_code ON public.raffle_tickets(code);
+
+ALTER TABLE public.raffle_tickets ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read and write on raffle_tickets" ON public.raffle_tickets;
+CREATE POLICY "Allow public read and write on raffle_tickets" ON public.raffle_tickets FOR ALL USING (true) WITH CHECK (true);
+GRANT ALL ON TABLE public.raffle_tickets TO anon, authenticated, service_role;
+
+-- 7. PostgreSQL Stored Procedure: Atomically issue tickets to player in JSONB array
+CREATE OR REPLACE FUNCTION public.issue_raffle_tickets(
+    p_raffle_id TEXT,
+    p_player_id TEXT,
+    p_quantity INT DEFAULT 1,
+    p_payment_status TEXT DEFAULT 'Paid (Cash)'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_raffle RECORD;
+    v_player RECORD;
+    v_tickets JSONB;
+    v_current_count INT;
+    v_new_tickets JSONB := '[]'::jsonb;
+    v_i INT;
+    v_code TEXT;
+    v_ticket_obj JSONB;
+    v_now TEXT := TO_CHAR(NOW(), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+BEGIN
+    -- Verify raffle exists
+    SELECT * INTO v_raffle FROM public.raffles WHERE id = p_raffle_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Raffle with ID % not found', p_raffle_id;
+    END IF;
+
+    -- Verify player exists
+    SELECT * INTO v_player FROM public.players WHERE id = p_player_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Player with ID % not found', p_player_id;
+    END IF;
+
+    -- Get current tickets array
+    v_tickets := COALESCE(v_raffle.tickets, v_raffle.soldtickets, '[]'::jsonb);
+    v_current_count := jsonb_array_length(v_tickets);
+
+    -- Generate requested quantity of tickets
+    FOR v_i IN 1..p_quantity LOOP
+        v_code := 'BT-RAF-' || LPAD((v_current_count + v_i)::TEXT, 4, '0');
+        v_ticket_obj := jsonb_build_object(
+            'id', 'tkt_' || EXTRACT(EPOCH FROM NOW())::BIGINT || '_' || v_i,
+            'raffleId', p_raffle_id,
+            'code', v_code,
+            'playerId', p_player_id,
+            'playerName', COALESCE(v_player.name, '') || ' ' || COALESCE(v_player.surname, ''),
+            'playerCallsign', COALESCE(v_player.callsign, ''),
+            'playerCode', COALESCE(v_player."playerCode", v_player.playercode, ''),
+            'purchaseDate', v_now,
+            'paymentStatus', p_payment_status
+        );
+        v_tickets := v_tickets || jsonb_build_array(v_ticket_obj);
+        v_new_tickets := v_new_tickets || jsonb_build_array(v_ticket_obj);
+
+        -- Also record into relational table if present
+        INSERT INTO public.raffle_tickets (id, raffle_id, player_id, code, payment_status, purchase_date)
+        VALUES (
+            'tkt_' || EXTRACT(EPOCH FROM NOW())::BIGINT || '_' || v_i,
+            p_raffle_id,
+            p_player_id,
+            v_code,
+            p_payment_status,
+            NOW()
+        )
+        ON CONFLICT (id) DO NOTHING;
+    END LOOP;
+
+    -- Update raffle record
+    UPDATE public.raffles
+    SET tickets = v_tickets,
+        "soldTickets" = v_tickets,
+        soldtickets = v_tickets,
+        status = CASE WHEN status = 'Upcoming' THEN 'Active' ELSE status END,
+        updated_at = NOW()
+    WHERE id = p_raffle_id;
+
+    RETURN v_new_tickets;
+END;
+$$;
+
+-- 8. Helper function: Get all raffle tickets held by a player
+CREATE OR REPLACE FUNCTION public.get_player_raffle_tickets(p_player_id TEXT)
+RETURNS TABLE (
+    raffle_id TEXT,
+    raffle_name TEXT,
+    raffle_status TEXT,
+    ticket_id TEXT,
+    ticket_code TEXT,
+    purchase_date TEXT,
+    payment_status TEXT
+)
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT 
+        r.id AS raffle_id,
+        COALESCE(r.name, r.title, 'Raffle') AS raffle_name,
+        r.status AS raffle_status,
+        t->>'id' AS ticket_id,
+        t->>'code' AS ticket_code,
+        t->>'purchaseDate' AS purchase_date,
+        t->>'paymentStatus' AS payment_status
+    FROM public.raffles r,
+         jsonb_array_elements(COALESCE(r.tickets, '[]'::jsonb)) AS t
+    WHERE t->>'playerId' = p_player_id
+       OR t->>'playerid' = p_player_id
+    ORDER BY r.drawdate DESC NULLS LAST;
+$$;
 `;
 
 

@@ -24,12 +24,13 @@ import { RaffleEventDashboard } from './RaffleEventDashboard';
 import { getRankForPlayer, getRankProgression, FALLBACK_RECRUIT_TIER } from '../utils/rankUtils';
 import { resolveRankIcon, getRankBadgeSvg } from '../utils/rankBadges';
 import { calculatePlayerPerformance } from '../utils/playerPerformanceUtils';
-import { QrCode, Camera, ShieldCheck, LayoutGrid, CalendarDays } from 'lucide-react';
+import { QrCode, Camera, ShieldCheck, LayoutGrid, CalendarDays, Bell } from 'lucide-react';
 import { EventQRScannerModal } from './EventQRScannerModal';
 import { EventCalendarView } from './EventCalendarView';
 import { EventCountdownNotification } from './EventCountdownNotification';
 import { PlayerEventFullView } from './PlayerEventFullView';
 import { PlayerXpGrowthChart } from './PlayerXpGrowthChart';
+import { MobileNotificationManager } from './MobileNotificationManager';
 
 const SponsorModal: React.FC<{ sponsor: Sponsor, onClose: () => void, onImageClick: (url: string) => void, backgroundUrl?: string }> = ({ sponsor, onClose, onImageClick, backgroundUrl }) => {
     const defaultBg = "https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png";
@@ -1037,7 +1038,14 @@ const EmbeddedLiveRaffleCard: React.FC<{
     players: Player[];
     onOpenArena: (r: Raffle) => void;
 }> = ({ raffle, player, players, onOpenArena }) => {
-    const userTickets = (raffle.tickets || []).filter(t => t.playerId === player.id);
+    const isPlayerTicket = (t: RaffleTicketDoc) => {
+        if (!t) return false;
+        const tid = String(t.playerId || '').trim();
+        return tid === player.id || 
+               (Boolean(player.playerCode) && tid === player.playerCode) ||
+               (Boolean(t.playerCode && player.playerCode) && t.playerCode === player.playerCode);
+    };
+    const userTickets = (raffle.tickets || []).filter(isPlayerTicket);
     const totalTix = (raffle.tickets || []).length;
     const odds = totalTix > 0 ? ((userTickets.length / totalTix) * 100).toFixed(1) : '0.0';
     const prizes = raffle.prizes || [];
@@ -1196,11 +1204,22 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
         ? (safeRaffles.find(r => r.id === selectedRaffleForDashboard.id) || selectedRaffleForDashboard)
         : null;
 
-    const myTickets = safeRaffles.flatMap(r => (r.tickets || []).filter(t => t.playerId === player.id).map(t => ({...t, raffleName: r.name, raffleStatus: r.status})));
+    const isMyTicket = (t: RaffleTicketDoc) => {
+        if (!t) return false;
+        const tid = String(t.playerId || '').trim();
+        return tid === player.id || 
+               (Boolean(player.playerCode) && tid === player.playerCode) ||
+               (Boolean(t.playerCode && player.playerCode) && t.playerCode === player.playerCode);
+    };
+
+    const myTickets = safeRaffles.flatMap(r => (r.tickets || []).filter(isMyTicket).map(t => ({...t, raffleName: r.name, raffleStatus: r.status})));
     const pastRaffles = safeRaffles.filter(r => r.status === 'Completed');
     const activeRaffles = safeRaffles.filter(r => r.status !== 'Completed');
 
-    const myWins = pastRaffles.flatMap(r => (r.winners || []).filter(w => w.playerId === player.id).map(w => {
+    const myWins = pastRaffles.flatMap(r => (r.winners || []).filter(w => {
+        const wid = String(w.playerId || '').trim();
+        return wid === player.id || (Boolean(player.playerCode) && wid === player.playerCode);
+    }).map(w => {
         const prize = (r.prizes || []).find(p => p.id === w.prizeId);
         const ticket = (r.tickets || []).find(t => t.id === w.ticketId);
         return { ...w, raffleName: r.name, prize, ticket, raffle: r };
@@ -1246,7 +1265,7 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                     {safeRaffles.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {safeRaffles.map(raffle => {
-                                const userTickets = (raffle.tickets || []).filter(t => t.playerId === player.id);
+                                const userTickets = (raffle.tickets || []).filter(isMyTicket);
                                 const totalTix = (raffle.tickets || []).length;
                                 const odds = totalTix > 0 ? ((userTickets.length / totalTix) * 100).toFixed(1) : '0.0';
                                 const prizes = raffle.prizes || [];
@@ -1731,6 +1750,11 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
                     </div>
                 </div>
 
+                {/* Mobile & Device Push Notifications Configuration */}
+                <div className="pt-4 border-t border-zinc-700/50">
+                    <MobileNotificationManager variant="card" />
+                </div>
+
                 <div className="pt-4">
                     <Button onClick={handleSave} className="w-full">Save Changes</Button>
                 </div>
@@ -1744,6 +1768,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
     const { player, players, sponsors, events, onEventSignUp, legendaryBadges, raffles, ranks, locations, signups, onPlayerUpdate, onOpenInfoModal } = props;
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
     const [showQRScanner, setShowQRScanner] = useState<boolean>(false);
+    const [showNotificationModal, setShowNotificationModal] = useState<boolean>(false);
     const [selectedEvent, setSelectedEvent] = useState<GameEvent | null>(null);
     const [activeRaffleModal, setActiveRaffleModal] = useState<Raffle | null>(null);
     const auth = useContext(AuthContext);
@@ -1786,6 +1811,13 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
 
                 <div className="flex items-center gap-2 flex-shrink-0">
                     <button
+                        onClick={() => setShowNotificationModal(true)}
+                        className="p-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-red-400 border border-zinc-800 transition flex items-center justify-center shadow-sm"
+                        title="Mobile Push Notifications & Alerts"
+                    >
+                        <Bell className="w-4 h-4" />
+                    </button>
+                    <button
                         onClick={() => setShowQRScanner(true)}
                         className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold text-xs shadow-[0_0_15px_rgba(220,38,38,0.3)] transition flex items-center gap-1.5 border border-red-500/30"
                         title="Scan Event QR Code for Check-In"
@@ -1810,6 +1842,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                             }
                         }} 
                     />
+                    <MobileNotificationManager variant="banner" />
                     <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
                     <AnimatePresence mode="wait">
                         <motion.div
@@ -1876,6 +1909,18 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                     deleteDoc={data.deleteDoc}
                     setDoc={data.setDoc}
                 />
+            )}
+
+            {showNotificationModal && (
+                <Modal
+                    isOpen={showNotificationModal}
+                    onClose={() => setShowNotificationModal(false)}
+                    title="Mobile & Push Notifications"
+                >
+                    <div className="p-2 sm:p-4">
+                        <MobileNotificationManager variant="full" onClose={() => setShowNotificationModal(false)} />
+                    </div>
+                </Modal>
             )}
 
             <AnimatePresence>

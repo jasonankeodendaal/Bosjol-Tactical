@@ -83,6 +83,74 @@ function normalizeCollectionItem<T>(collectionName: string, item: any): T {
             description: item.description || '',
         } as unknown as T;
     }
+    if (collectionName === 'raffles') {
+        let tickets = item.tickets || item.soldTickets || item.soldtickets || [];
+        if (typeof tickets === 'string') {
+            try { tickets = JSON.parse(tickets); } catch (e) { tickets = []; }
+        }
+        if (!Array.isArray(tickets)) tickets = [];
+
+        const normalizedTickets = tickets.map((t: any, idx: number) => ({
+            id: String(t.id || `tkt_${Date.now()}_${idx}`),
+            raffleId: String(t.raffleId || t.raffleid || item.id || ''),
+            code: String(t.code || `BT-RAF-${String(idx + 1).padStart(4, '0')}`),
+            playerId: String(t.playerId || t.playerid || t.player_id || ''),
+            playerName: t.playerName || t.playername || '',
+            playerCallsign: t.playerCallsign || t.playercallsign || '',
+            playerCode: t.playerCode || t.playercode || '',
+            purchaseDate: t.purchaseDate || t.purchasedate || t.purchase_date || new Date().toISOString(),
+            paymentStatus: t.paymentStatus || t.paymentstatus || 'Paid (Cash)',
+        }));
+
+        let prizes = item.prizes || [];
+        if (typeof prizes === 'string') {
+            try { prizes = JSON.parse(prizes); } catch (e) { prizes = []; }
+        }
+        if (!Array.isArray(prizes)) prizes = [];
+
+        let winners = item.winners || [];
+        if (typeof winners === 'string') {
+            try { winners = JSON.parse(winners); } catch (e) { winners = []; }
+        }
+        if (!Array.isArray(winners)) winners = [];
+        const normalizedWinners = winners.map((w: any) => ({
+            ...w,
+            playerId: String(w.playerId || w.playerid || w.player_id || ''),
+            prizeId: String(w.prizeId || w.prizeid || w.prize_id || ''),
+            ticketId: String(w.ticketId || w.ticketid || w.ticket_id || ''),
+        }));
+
+        const alwaysChooseMostTickets = Boolean(item.alwaysChooseMostTickets ?? item.alwayschoosemosttickets ?? false);
+        const ticketPrice = Number(item.ticketPrice ?? item.ticketprice ?? 0) || 0;
+        const totalTickets = Number(item.totalTickets ?? item.totaltickets ?? 100) || 100;
+        const name = item.name || item.title || 'Tactical Raffle';
+
+        return {
+            ...item,
+            id: String(item.id || ''),
+            name,
+            title: name,
+            description: item.description || '',
+            location: item.location || 'Main Tactical Arena',
+            contactPhone: item.contactPhone || item.contactphone || '',
+            contactphone: item.contactPhone || item.contactphone || '',
+            ticketPrice,
+            ticketprice: ticketPrice,
+            totalTickets,
+            totaltickets: totalTickets,
+            prizes,
+            tickets: normalizedTickets,
+            soldTickets: normalizedTickets,
+            soldtickets: normalizedTickets,
+            winners: normalizedWinners,
+            status: item.status || 'Upcoming',
+            drawDate: item.drawDate || item.drawdate || '',
+            drawdate: item.drawDate || item.drawdate || '',
+            alwaysChooseMostTickets,
+            alwayschoosemosttickets: alwaysChooseMostTickets,
+            createdAt: item.createdAt || item.created_at || new Date().toISOString(),
+        } as unknown as T;
+    }
     return item as T;
 }
 

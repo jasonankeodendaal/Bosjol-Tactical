@@ -3,9 +3,10 @@ import type { Voucher, Raffle, Prize, Player, GameEvent, VoucherRedemption, Raff
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
-import { TicketIcon, PlusIcon, PencilIcon, TrashIcon, TrophyIcon, UserIcon, CheckCircleIcon, SparklesIcon } from './icons/Icons';
+import { TicketIcon, PlusIcon, PencilIcon, TrashIcon, TrophyIcon, UserIcon, CheckCircleIcon, SparklesIcon, ClipboardListIcon } from './icons/Icons';
 import { useData } from '../data/DataContext';
 import { RaffleEventDashboard } from './RaffleEventDashboard';
+import { RAFFLES_SQL_SCHEMA_MIGRATION } from '../utils/supabaseSchema';
 
 interface VouchersRafflesTabProps {
     vouchers: Voucher[];
@@ -515,26 +516,58 @@ const IssueTicketsModal: React.FC<{
     raffle: Raffle;
     players: Player[];
     onClose: () => void;
-    onIssue: (raffleId: string, newTickets: RaffleTicketDoc[]) => void;
+    onIssue: (raffleId: string, newTickets: RaffleTicketDoc[], selectedPlayer?: Player) => void;
 }> = ({ raffle, players, onClose, onIssue }) => {
     const [selectedPlayerId, setSelectedPlayerId] = useState<string>(players[0]?.id || '');
     const [quantity, setQuantity] = useState<number>(1);
     const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('Paid (Cash)');
     const [searchFilter, setSearchFilter] = useState('');
 
+    // Ensure selectedPlayerId stays valid if players load asynchronously
+    useEffect(() => {
+        if ((!selectedPlayerId || !players.some(p => p.id === selectedPlayerId)) && players.length > 0) {
+            setSelectedPlayerId(players[0].id);
+        }
+    }, [players, selectedPlayerId]);
+
     const filteredPlayers = useMemo(() => {
         if (!searchFilter.trim()) return players;
         const q = searchFilter.toLowerCase();
         return players.filter(p => 
-            p.name.toLowerCase().includes(q) || 
+            (p.name && p.name.toLowerCase().includes(q)) || 
             (p.surname && p.surname.toLowerCase().includes(q)) ||
             (p.callsign && p.callsign.toLowerCase().includes(q)) ||
-            (p.playerCode && p.playerCode.toLowerCase().includes(q))
+            (p.playerCode && p.playerCode.toLowerCase().includes(q)) ||
+            (p.id && p.id.toLowerCase().includes(q))
         );
     }, [players, searchFilter]);
 
+    // CRITICAL FIX: When user types into searchFilter, automatically sync selectedPlayerId to the 
+    // top filtered result if current selection is not in the filtered set.
+    // This prevents the visual mismatch where user searches for Player B but tickets get issued to Player A.
+    useEffect(() => {
+        if (filteredPlayers.length > 0 && !filteredPlayers.some(p => p.id === selectedPlayerId)) {
+            setSelectedPlayerId(filteredPlayers[0].id);
+        }
+    }, [filteredPlayers, selectedPlayerId]);
+
+    // Resolved recipient player object
+    const selectedPlayer = useMemo(() => {
+        return players.find(p => p.id === selectedPlayerId) || filteredPlayers[0] || players[0] || null;
+    }, [players, selectedPlayerId, filteredPlayers]);
+
+    // Current ticket count for this specific player in this raffle
+    const currentHeldCount = useMemo(() => {
+        if (!selectedPlayer) return 0;
+        return (raffle.tickets || []).filter(t => t.playerId === selectedPlayer.id).length;
+    }, [raffle.tickets, selectedPlayer]);
+
+    const existingCount = (raffle.tickets || []).length;
+    const previewStartCode = `BT-RAF-${(existingCount + 1).toString().padStart(4, '0')}`;
+    const previewEndCode = `BT-RAF-${(existingCount + quantity).toString().padStart(4, '0')}`;
+
     const handleIssueConfirm = () => {
-        if (!selectedPlayerId) {
+        if (!selectedPlayer) {
             alert('Please select a player.');
             return;
         }
@@ -544,90 +577,300 @@ const IssueTicketsModal: React.FC<{
         }
 
         const newTickets: RaffleTicketDoc[] = [];
-        const existingCount = (raffle.tickets || []).length;
-        
         for (let i = 0; i < quantity; i++) {
             const ticketNumber = existingCount + i + 1;
             const paddedNum = ticketNumber.toString().padStart(4, '0');
             newTickets.push({
-                id: `tkt_${Date.now()}_${i}`,
+                id: `tkt_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 7)}`,
                 raffleId: raffle.id,
                 code: `BT-RAF-${paddedNum}`,
-                playerId: selectedPlayerId,
+                playerId: selectedPlayer.id,
+                playerName: `${selectedPlayer.name} ${selectedPlayer.surname || ''}`.trim(),
+                playerCallsign: selectedPlayer.callsign || '',
+                playerCode: selectedPlayer.playerCode || '',
                 purchaseDate: new Date().toISOString(),
                 paymentStatus: paymentStatus
             });
         }
 
-        onIssue(raffle.id, newTickets);
+        onIssue(raffle.id, newTickets, selectedPlayer);
     };
 
     return (
         <Modal isOpen={true} onClose={onClose} title={`Issue Tickets: ${raffle.name}`}>
             <div className="space-y-4 text-left">
-                <div className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 flex items-center justify-between">
+                {/* Current Raffle Summary */}
+                <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex items-center justify-between">
                     <div>
-                        <p className="text-xs text-zinc-400 font-semibold uppercase">Current Tickets Issued</p>
-                        <p className="text-xl font-bold text-white">{(raffle.tickets || []).length} Tickets</p>
+                        <p className="text-[11px] text-zinc-400 font-semibold uppercase tracking-wider">Current Tickets Issued</p>
+                        <p className="text-xl font-black text-white">{existingCount} Tickets in Pool</p>
                     </div>
-                    <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                        {raffle.status}
-                    </span>
+                    <div className="text-right">
+                        <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                            {raffle.status}
+                        </span>
+                        {raffle.ticketPrice !== undefined && raffle.ticketPrice > 0 && (
+                            <p className="text-xs text-zinc-400 mt-1 font-mono">R {raffle.ticketPrice} / ticket</p>
+                        )}
+                    </div>
                 </div>
 
+                {/* Player Search & Interactive Selection */}
                 <div>
-                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
-                        Select Player
-                    </label>
-                    <input 
-                        type="text" 
-                        placeholder="Search player..." 
-                        value={searchFilter} 
-                        onChange={e => setSearchFilter(e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white mb-2 focus:outline-none focus:ring-1 focus:ring-red-500"
-                    />
-                    <select 
-                        value={selectedPlayerId} 
-                        onChange={e => setSelectedPlayerId(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3.5 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
-                    >
-                        {filteredPlayers.map(p => (
-                            <option key={p.id} value={p.id}>
-                                {p.playerCode ? `[${p.playerCode}] ` : ''}{p.name} {p.surname || ''} {p.callsign ? `("${p.callsign}")` : ''}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider">
+                            Choose Recipient Player
+                        </label>
+                        <span className="text-[11px] text-zinc-500 font-mono">
+                            {filteredPlayers.length} of {players.length} players
+                        </span>
+                    </div>
+
+                    <div className="relative mb-2">
+                        <input 
+                            type="text" 
+                            placeholder="Type player name, callsign (e.g. VIPER), or code..." 
+                            value={searchFilter} 
+                            onChange={e => setSearchFilter(e.target.value)}
+                            className="w-full bg-zinc-950 border border-zinc-700 focus:border-amber-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                        />
+                        {searchFilter && (
+                            <button 
+                                onClick={() => setSearchFilter('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-xs font-bold"
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Scrollable Quick-Select Player Roster Cards */}
+                    <div className="max-h-40 overflow-y-auto space-y-1.5 p-1 bg-zinc-950/60 rounded-xl border border-zinc-800/80 mb-2">
+                        {filteredPlayers.length === 0 ? (
+                            <p className="text-center py-4 text-xs text-zinc-500">No players match "{searchFilter}"</p>
+                        ) : (
+                            filteredPlayers.map(p => {
+                                const isSelected = selectedPlayer?.id === p.id;
+                                const pTicketsCount = (raffle.tickets || []).filter(t => t.playerId === p.id).length;
+                                return (
+                                    <div
+                                        key={p.id}
+                                        onClick={() => setSelectedPlayerId(p.id)}
+                                        className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all border ${
+                                            isSelected 
+                                                ? 'bg-amber-500/15 border-amber-500 text-white shadow-sm' 
+                                                : 'bg-zinc-900/70 border-zinc-800 hover:border-zinc-700 text-zinc-300'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                                                isSelected ? 'bg-amber-500 text-black' : 'bg-zinc-800 text-zinc-400'
+                                            }`}>
+                                                {p.avatarUrl ? (
+                                                    <img src={p.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" />
+                                                ) : (
+                                                    p.name.charAt(0)
+                                                )}
+                                            </div>
+                                            <div className="truncate">
+                                                <p className="text-xs font-bold leading-tight truncate">
+                                                    {p.name} {p.surname || ''}
+                                                    {p.callsign && (
+                                                        <span className="text-amber-400 ml-1.5 font-mono">
+                                                            "{p.callsign}"
+                                                        </span>
+                                                    )}
+                                                </p>
+                                                <p className="text-[10px] text-zinc-400 font-mono">
+                                                    ID: {p.id.slice(0, 8)}... {p.playerCode ? `• Code: [${p.playerCode}]` : ''}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {pTicketsCount > 0 && (
+                                                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">
+                                                    {pTicketsCount} held
+                                                </span>
+                                            )}
+                                            {isSelected ? (
+                                                <span className="w-4 h-4 rounded-full bg-amber-500 text-black flex items-center justify-center text-[10px] font-black">
+                                                    ✓
+                                                </span>
+                                            ) : (
+                                                <span className="w-4 h-4 rounded-full border border-zinc-700" />
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+
+                    {/* Prominent Target Recipient Verification Banner */}
+                    {selectedPlayer && (
+                        <div className="bg-gradient-to-r from-amber-950/40 via-zinc-900 to-zinc-900 border border-amber-500/50 rounded-xl p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-amber-500 text-black font-black flex items-center justify-center text-sm shadow">
+                                    {selectedPlayer.avatarUrl ? (
+                                        <img src={selectedPlayer.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" />
+                                    ) : (
+                                        selectedPlayer.name.charAt(0)
+                                    )}
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] uppercase tracking-wider font-bold text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/40">
+                                            Assigned Recipient
+                                        </span>
+                                        {selectedPlayer.playerCode && (
+                                            <span className="text-[10px] font-mono text-zinc-400">
+                                                [{selectedPlayer.playerCode}]
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs font-bold text-white mt-0.5">
+                                        {selectedPlayer.name} {selectedPlayer.surname || ''} {selectedPlayer.callsign ? `("${selectedPlayer.callsign}")` : ''}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="text-right font-mono">
+                                <p className="text-[10px] text-zinc-400">Tickets in Raffle</p>
+                                <p className="text-xs font-bold text-white">
+                                    <span className="text-zinc-400">{currentHeldCount}</span>
+                                    <span className="text-amber-400 mx-1">➔</span>
+                                    <span className="text-emerald-400 font-black">{currentHeldCount + quantity} (+{quantity})</span>
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <Input 
-                        label="Number of Tickets" 
-                        type="number" 
-                        value={quantity} 
-                        onChange={e => setQuantity(Math.max(1, Math.min(50, Number(e.target.value))))} 
-                    />
+                {/* Ticket Quantity & Payment */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">Payment Method</label>
+                        <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
+                            Number of Tickets
+                        </label>
+                        <div className="flex items-center gap-2">
+                            <input 
+                                type="number" 
+                                min={1} 
+                                max={100}
+                                value={quantity} 
+                                onChange={e => setQuantity(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
+                                className="w-24 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 text-center font-bold"
+                            />
+                            <div className="flex gap-1">
+                                {[1, 5, 10, 20].map(amt => (
+                                    <button
+                                        key={amt}
+                                        type="button"
+                                        onClick={() => setQuantity(amt)}
+                                        className={`px-2.5 py-2 text-xs font-bold rounded-lg border transition-all ${
+                                            quantity === amt 
+                                                ? 'bg-amber-500 text-black border-amber-500 font-black' 
+                                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                                        }`}
+                                    >
+                                        +{amt}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
+                            Payment Method
+                        </label>
                         <select 
                             value={paymentStatus} 
                             onChange={e => setPaymentStatus(e.target.value as any)}
-                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3.5 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs"
                         >
                             <option value="Paid (Cash)">Paid (Cash)</option>
-                            <option value="Paid (Card)">Paid (Card)</option>
-                            <option value="Unpaid">Unpaid / Promo</option>
+                            <option value="Paid (Card)">Paid (Card / POS)</option>
+                            <option value="EFT / Transfer">EFT / Bank Transfer</option>
+                            <option value="Unpaid">Unpaid / Promo / Comp</option>
                         </select>
                     </div>
+                </div>
+
+                {/* Serial Codes Preview */}
+                <div className="bg-zinc-950/80 p-2.5 rounded-xl border border-zinc-800/80 flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-500">Ticket Serial Range:</span>
+                    <span className="text-amber-400 font-bold">
+                        {quantity === 1 ? previewStartCode : `${previewStartCode} ➔ ${previewEndCode} (${quantity} tickets)`}
+                    </span>
                 </div>
             </div>
 
             <div className="mt-6 pt-4 border-t border-zinc-800 flex gap-3">
-                <Button variant="secondary" onClick={onClose} className="w-1/2">
+                <Button variant="secondary" onClick={onClose} className="w-1/3">
                     Cancel
                 </Button>
-                <Button onClick={handleIssueConfirm} className="w-1/2 font-bold">
-                    Generate & Assign ({quantity}) Tickets
+                <Button 
+                    onClick={handleIssueConfirm} 
+                    className="w-2/3 font-bold bg-amber-600 hover:bg-amber-500 text-black flex items-center justify-center gap-2"
+                >
+                    <TicketIcon className="w-4 h-4" />
+                    <span>Assign {quantity} Ticket{quantity > 1 ? 's' : ''} to {selectedPlayer ? selectedPlayer.name : 'Player'}</span>
                 </Button>
+            </div>
+        </Modal>
+    );
+};
+
+// ==========================================
+// SUPABASE RAFFLE SQL SCHEMA & MIGRATION MODAL
+// ==========================================
+const RaffleSqlModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(RAFFLES_SQL_SCHEMA_MIGRATION);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+    };
+
+    return (
+        <Modal isOpen={true} onClose={onClose} title="Supabase SQL Setup for Tactical Raffles">
+            <div className="space-y-4 text-left">
+                <div className="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3 text-xs text-amber-200">
+                    <p className="font-bold mb-1">⚡ Complete PostgreSQL Setup for Tactical Raffles</p>
+                    <p className="text-zinc-400">
+                        Run this SQL script in your Supabase SQL Editor (<strong>SQL Editor → New Query → Run</strong>). It provisions the <code>raffles</code> table, tickets JSONB columns, relational <code>raffle_tickets</code> table, RLS policies, realtime publication, and the atomic <code>issue_raffle_tickets</code> stored procedure.
+                    </p>
+                </div>
+
+                <div className="relative">
+                    <pre className="p-3 bg-zinc-950 rounded-xl border border-zinc-800 text-[11px] font-mono text-zinc-300 max-h-80 overflow-y-auto overflow-x-auto whitespace-pre leading-relaxed">
+                        {RAFFLES_SQL_SCHEMA_MIGRATION}
+                    </pre>
+                    <button
+                        onClick={handleCopy}
+                        className="absolute top-2 right-2 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow transition-all flex items-center gap-1.5"
+                    >
+                        {copied ? (
+                            <>
+                                <CheckCircleIcon className="w-3.5 h-3.5 text-emerald-300" />
+                                <span>Copied!</span>
+                            </>
+                        ) : (
+                            <>
+                                <ClipboardListIcon className="w-3.5 h-3.5" />
+                                <span>Copy SQL Snippet</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                    <Button onClick={onClose} variant="secondary">
+                        Close
+                    </Button>
+                </div>
             </div>
         </Modal>
     );
@@ -1156,6 +1399,7 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
     const [drawingRaffle, setDrawingRaffle] = useState<Raffle | null>(null);
     const [viewingRedemptionsVoucherId, setViewingRedemptionsVoucherId] = useState<string | null>(null);
     const [viewingTicketsRaffleId, setViewingTicketsRaffleId] = useState<string | null>(null);
+    const [isViewingRaffleSql, setIsViewingRaffleSql] = useState(false);
 
     // Save Voucher Handler
     const handleSaveVoucher = async (voucher: Voucher | Omit<Voucher, 'id'>) => {
@@ -1246,17 +1490,41 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
     };
 
     // Issue Tickets to Player
-    const handleIssueTickets = async (raffleId: string, newTickets: RaffleTicketDoc[]) => {
+    const handleIssueTickets = async (raffleId: string, newTickets: RaffleTicketDoc[], selectedPlayer?: Player) => {
         const raffle = raffles.find(r => r.id === raffleId);
         if (!raffle) return;
 
+        const mergedTickets = [...(raffle.tickets || []), ...newTickets];
         const updatedRaffle = {
             ...raffle,
-            tickets: [...(raffle.tickets || []), ...newTickets],
+            tickets: mergedTickets,
+            soldTickets: mergedTickets,
+            soldtickets: mergedTickets,
             status: raffle.status === 'Upcoming' ? 'Active' as const : raffle.status
         };
 
         await updateDoc('raffles', updatedRaffle);
+
+        // Real-time in-app notification & activity log for the recipient player
+        const targetPlayer = selectedPlayer || (newTickets.length > 0 ? players.find(p => p.id === newTickets[0].playerId) : null);
+        if (targetPlayer) {
+            const targetName = `${targetPlayer.name} ${targetPlayer.surname || ''}`.trim();
+            const callsignTxt = targetPlayer.callsign ? ` ("${targetPlayer.callsign}")` : '';
+            dataContext?.createNotification?.({
+                title: `🎟️ ${newTickets.length} Raffle Ticket${newTickets.length > 1 ? 's' : ''} Issued!`,
+                message: `${targetName}${callsignTxt}, you have been assigned ${newTickets.length} ticket(s) in "${raffle.name}"! Serial: ${newTickets[0]?.code}${newTickets.length > 1 ? ` - ${newTickets[newTickets.length - 1]?.code}` : ''}`,
+                type: 'system',
+                playerId: targetPlayer.id,
+                playerName: targetName,
+                playerCallsign: targetPlayer.callsign,
+                playerCode: targetPlayer.playerCode,
+                playerAvatarUrl: targetPlayer.avatarUrl,
+                eventId: raffle.id,
+                eventTitle: raffle.name,
+            });
+            dataContext?.logActivity?.(`Issued ${newTickets.length} raffle ticket(s) for "${raffle.name}" to player ${targetName}${callsignTxt} (ID: ${targetPlayer.id})`);
+        }
+
         setIssuingTicketsRaffle(null);
     };
 
@@ -1353,6 +1621,10 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                 />
             )}
 
+            {isViewingRaffleSql && (
+                <RaffleSqlModal onClose={() => setIsViewingRaffleSql(false)} />
+            )}
+
             {/* Top Navigation Toggle */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
                 <div className="flex items-center gap-3">
@@ -1393,9 +1665,20 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                             <PlusIcon className="w-4 h-4 mr-1.5"/> Create New Voucher
                         </Button>
                     ) : (
-                        <Button onClick={() => setIsEditingRaffle({})} size="sm" className="bg-amber-600 hover:bg-amber-500">
-                            <PlusIcon className="w-4 h-4 mr-1.5"/> Create New Raffle
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Button 
+                                onClick={() => setIsViewingRaffleSql(true)} 
+                                size="sm" 
+                                variant="secondary"
+                                className="border-amber-500/40 text-amber-400 hover:bg-amber-950/40 text-xs flex items-center gap-1.5"
+                                title="View and copy Supabase SQL migration for Raffles"
+                            >
+                                <ClipboardListIcon className="w-4 h-4"/> Supabase SQL Setup
+                            </Button>
+                            <Button onClick={() => setIsEditingRaffle({})} size="sm" className="bg-amber-600 hover:bg-amber-500">
+                                <PlusIcon className="w-4 h-4 mr-1.5"/> Create New Raffle
+                            </Button>
+                        </div>
                     )}
                 </div>
             </div>
@@ -1679,12 +1962,19 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                                     <p className="text-zinc-500 italic py-1">No tickets issued yet. Click "Issue Tickets" below.</p>
                                                 ) : (
                                                     tickets.map((t, i) => {
-                                                        const p = players.find(player => player.id === t.playerId);
+                                                        const p = players.find(player => player.id === t.playerId || (player.playerCode && t.playerId === player.playerCode) || (t.playerCode && player.playerCode === t.playerCode));
+                                                        const displayName = p ? `${p.name} ${p.surname || ''}`.trim() : (t.playerName || 'Operator');
+                                                        const callsign = p?.callsign || t.playerCallsign;
+                                                        const pCode = p?.playerCode || t.playerCode;
                                                         return (
-                                                            <div key={t.id || i} className="flex items-center justify-between py-1 border-b border-zinc-800/60 last:border-0">
-                                                                <span className="font-mono text-red-400 font-bold">{t.code}</span>
+                                                            <div key={t.id || i} className="flex items-center justify-between py-1.5 border-b border-zinc-800/60 last:border-0 hover:bg-zinc-900/40 px-1 rounded transition-colors">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-mono text-amber-400 font-bold text-xs bg-amber-950/40 px-2 py-0.5 rounded border border-amber-900/40">{t.code}</span>
+                                                                    {pCode && <span className="text-[10px] text-zinc-500 font-mono">[{pCode}]</span>}
+                                                                </div>
                                                                 <div className="text-right">
-                                                                    <span className="text-white font-semibold">{p?.name || 'Operator'}</span>
+                                                                    <span className="text-white font-semibold text-xs">{displayName}</span>
+                                                                    {callsign && <span className="text-amber-400 font-mono text-[10px] ml-1">("{callsign}")</span>}
                                                                     <span className="text-zinc-500 ml-1.5 text-[10px]">({t.paymentStatus})</span>
                                                                 </div>
                                                             </div>

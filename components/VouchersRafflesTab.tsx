@@ -298,7 +298,12 @@ const RaffleEditorModal: React.FC<{
         contactPhone: raffle.contactPhone || '+27821234567',
         drawDate: raffle.drawDate ? raffle.drawDate.split('T')[0] : new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
         status: raffle.status || 'Upcoming' as 'Upcoming' | 'Active' | 'Completed',
-        alwaysChooseMostTickets: raffle.alwaysChooseMostTickets ?? false,
+        alwaysChooseMostTickets: Boolean(
+            raffle.alwaysChooseMostTickets === true || 
+            (raffle as any)?.alwayschoosemosttickets === true ||
+            String(raffle.alwaysChooseMostTickets) === 'true' ||
+            String((raffle as any)?.alwayschoosemosttickets) === 'true'
+        ),
     });
     
     const [prizes, setPrizes] = useState<Prize[]>(
@@ -339,6 +344,8 @@ const RaffleEditorModal: React.FC<{
             createdAt: raffle.createdAt || new Date().toISOString(), 
             ...raffle, 
             ...formData, 
+            alwaysChooseMostTickets: formData.alwaysChooseMostTickets,
+            alwayschoosemosttickets: formData.alwaysChooseMostTickets,
             prizes,
             drawDate: new Date(formData.drawDate).toISOString()
         };
@@ -644,7 +651,12 @@ const LiveRaffleDrawArena: React.FC<{
 
     const prizes = useMemo(() => [...raffle.prizes].sort((a, b) => a.place - b.place), [raffle.prizes]);
     const tickets = raffle.tickets || [];
-    const isTopTicketsMode = !!raffle.alwaysChooseMostTickets;
+    const isTopTicketsMode = Boolean(
+        raffle.alwaysChooseMostTickets === true || 
+        (raffle as any)?.alwayschoosemosttickets === true ||
+        String(raffle.alwaysChooseMostTickets) === 'true' ||
+        String((raffle as any)?.alwayschoosemosttickets) === 'true'
+    );
 
     // Eligible tickets (excluding already winning tickets so each ticket wins once)
     const availableTickets = useMemo(() => {
@@ -701,35 +713,41 @@ const LiveRaffleDrawArena: React.FC<{
         if (pool.length === 0) return null;
 
         if (isTopTicketsMode) {
-            const alreadyWonPlayerIds = new Set(currentWinnersList.filter(w => w.prizeId !== prize.id).map(w => w.playerId));
-            
-            // Count tickets per player in pool
-            const counts = new Map<string, { count: number; tickets: RaffleTicketDoc[] }>();
-            pool.forEach(t => {
-                const existing = counts.get(t.playerId);
+            // 1. Calculate overall total ticket volume per player in this raffle
+            const playerTotalsMap = new Map<string, { playerId: string; totalCount: number; tickets: RaffleTicketDoc[] }>();
+            tickets.forEach(t => {
+                const existing = playerTotalsMap.get(t.playerId);
                 if (existing) {
-                    existing.count++;
+                    existing.totalCount++;
                     existing.tickets.push(t);
                 } else {
-                    counts.set(t.playerId, { count: 1, tickets: [t] });
+                    playerTotalsMap.set(t.playerId, { playerId: t.playerId, totalCount: 1, tickets: [t] });
                 }
             });
 
-            // Filter for players who haven't won another prize first
-            const sortedCounts = Array.from(counts.entries()).map(([playerId, val]) => ({
-                playerId,
-                count: val.count,
-                tickets: val.tickets,
-                hasWon: alreadyWonPlayerIds.has(playerId)
-            })).sort((a, b) => b.count - a.count);
+            // 2. Sort all players descending by total tickets held (Rank 1 = most tickets, Rank 2 = 2nd most, Rank 3 = 3rd most, etc.)
+            const allRankedBuyers = Array.from(playerTotalsMap.values()).sort((a, b) => b.totalCount - a.totalCount);
 
-            const unawarded = sortedCounts.filter(s => !s.hasWon);
-            const candidates = unawarded.length > 0 ? unawarded : sortedCounts;
-            const highestCount = candidates[0]?.count || 0;
-            const topCandidates = candidates.filter(c => c.count === highestCount);
+            // 3. Exclude players who have already won another prize in this raffle session
+            const alreadyWonPlayerIds = new Set(currentWinnersList.filter(w => w.prizeId !== prize.id).map(w => w.playerId));
+            const unawardedBuyers = allRankedBuyers.filter(b => !alreadyWonPlayerIds.has(b.playerId));
 
-            const selected = topCandidates[Math.floor(Math.random() * topCandidates.length)];
-            return selected.tickets[Math.floor(Math.random() * selected.tickets.length)] || pool[0];
+            const candidateBuyers = unawardedBuyers.length > 0 ? unawardedBuyers : allRankedBuyers;
+
+            if (candidateBuyers.length > 0) {
+                const maxTicketCount = candidateBuyers[0].totalCount;
+                const tiedTopHolders = candidateBuyers.filter(b => b.totalCount === maxTicketCount);
+                const chosenBuyer = tiedTopHolders[Math.floor(Math.random() * tiedTopHolders.length)];
+
+                const undrawnTickets = chosenBuyer.tickets.filter(t => !drawnTicketIds.has(t.id));
+                const winningTicket = undrawnTickets.length > 0 
+                    ? undrawnTickets[Math.floor(Math.random() * undrawnTickets.length)]
+                    : chosenBuyer.tickets[Math.floor(Math.random() * chosenBuyer.tickets.length)];
+
+                if (winningTicket) return winningTicket;
+            }
+
+            return pool[Math.floor(Math.random() * pool.length)];
         } else {
             // Standard random draw: prefer players who haven't won yet
             const alreadyWonPlayerIds = new Set(currentWinnersList.filter(w => w.prizeId !== prize.id).map(w => w.playerId));

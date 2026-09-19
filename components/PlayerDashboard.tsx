@@ -429,7 +429,11 @@ const BadgeProgressCard: React.FC<{badge: Badge, player: Player, ranks: Rank[]}>
     );
 }
 
-const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'events' | 'sponsors' | 'ranks'> & { onSelectEvent?: (e: GameEvent) => void }> = ({ player, players, events, sponsors, ranks, onSelectEvent }) => {
+const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'events' | 'sponsors' | 'ranks' | 'raffles'> & { 
+    onSelectEvent?: (e: GameEvent) => void;
+    onSelectRaffle?: (r: Raffle) => void;
+    onNavigateToRaffles?: () => void;
+}> = ({ player, players, events, sponsors, ranks, raffles, onSelectEvent, onSelectRaffle, onNavigateToRaffles }) => {
     const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
@@ -452,6 +456,11 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
     const sortedPlayers = useMemo(() => [...players].sort((a, b) => (b.stats?.xp ?? 0) - (a.stats?.xp ?? 0)), [players]);
     const topThree = sortedPlayers.slice(0, 3);
     
+    // Active running raffle for live spotlight preview
+    const activeRaffle = useMemo(() => {
+        return (raffles || []).find(r => r.status !== 'Completed');
+    }, [raffles]);
+
     // Live calculated player performance incorporating match combat, badges, honors, and XP adjustments
     const perf = useMemo(() => {
         return calculatePlayerPerformance(player, dataContext?.honors, dataContext?.badges, dataContext?.legendaryBadges);
@@ -478,6 +487,19 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                     />
                 )}
             </AnimatePresence>
+
+            {/* LIVE ACTIVE RAFFLE SPOTLIGHT ON DASHBOARD */}
+            {activeRaffle && onSelectRaffle && (
+                <div className="mb-2">
+                    <EmbeddedLiveRaffleCard
+                        raffle={activeRaffle}
+                        player={player}
+                        players={players}
+                        onOpenArena={onSelectRaffle}
+                    />
+                </div>
+            )}
+
             <div className="overview-card">
                 <h3 className="overview-section-title">Current Rank & Progression</h3>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-6 mb-6">
@@ -1009,9 +1031,170 @@ const EventsTab: React.FC<Pick<PlayerDashboardProps, 'events' | 'player' | 'onEv
     );
 };
 
+const EmbeddedLiveRaffleCard: React.FC<{
+    raffle: Raffle;
+    player: Player;
+    players: Player[];
+    onOpenArena: (r: Raffle) => void;
+}> = ({ raffle, player, players, onOpenArena }) => {
+    const userTickets = (raffle.tickets || []).filter(t => t.playerId === player.id);
+    const totalTix = (raffle.tickets || []).length;
+    const odds = totalTix > 0 ? ((userTickets.length / totalTix) * 100).toFixed(1) : '0.0';
+    const prizes = raffle.prizes || [];
+    const winners = raffle.winners || [];
+    const isCompleted = raffle.status === 'Completed';
+
+    // Simulated active radar ticker for realism
+    const [scrambledCode, setScrambledCode] = useState<string>('TKT-SCANNING');
+    useEffect(() => {
+        if (isCompleted || totalTix === 0) return;
+        const interval = setInterval(() => {
+            const randomTkt = (raffle.tickets || [])[Math.floor(Math.random() * (raffle.tickets || []).length)];
+            if (randomTkt) {
+                setScrambledCode(randomTkt.code);
+            }
+        }, 800);
+        return () => clearInterval(interval);
+    }, [raffle, isCompleted, totalTix]);
+
+    return (
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-zinc-900/95 via-zinc-900/90 to-black/95 p-4 sm:p-6 border border-amber-500/40 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(251,191,36,0.2)] backdrop-blur-xl group transition-all duration-300">
+            {/* Ambient Backlight 3D Glow */}
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+            
+            {/* Tactical Grid Overlay */}
+            <div className="absolute inset-0 bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
+
+            <div className="relative z-10 space-y-4">
+                {/* Header Badge & Live Radar */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <span className="relative flex h-3 w-3">
+                            {!isCompleted && (
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            )}
+                            <span className={`relative inline-flex rounded-full h-3 w-3 ${isCompleted ? 'bg-zinc-500' : 'bg-emerald-500'}`}></span>
+                        </span>
+                        <span className={`text-[10px] sm:text-xs font-mono font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${
+                            isCompleted 
+                                ? 'bg-zinc-800 text-zinc-400 border-zinc-700' 
+                                : 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                        }`}>
+                            {isCompleted ? 'EVENT CONCLUDED' : '🔴 LIVE DRAW ARENA RUNNING'}
+                        </span>
+                    </div>
+
+                    <div className="text-[11px] font-mono text-zinc-400 bg-black/60 px-3 py-1 rounded-full border border-zinc-800/80 shadow-inner flex items-center gap-2">
+                        <span className="text-zinc-500">POOL:</span>
+                        <strong className="text-amber-400">{totalTix} Tickets</strong>
+                    </div>
+                </div>
+
+                {/* Title & Description */}
+                <div className="space-y-1">
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight drop-shadow-md flex items-center gap-2">
+                        <SparklesIcon className="w-5 h-5 text-amber-400 animate-pulse flex-shrink-0" />
+                        <span className="truncate">{raffle.name}</span>
+                    </h3>
+                    {raffle.description && (
+                        <p className="text-xs sm:text-sm text-zinc-400 line-clamp-2 leading-relaxed">
+                            {raffle.description}
+                        </p>
+                    )}
+                </div>
+
+                {/* Live 3D Drum Slot & Ticket Telemetry */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-center">
+                    {/* 3D Realistic Slot Preview Screen */}
+                    <div className="md:col-span-7 bg-gradient-to-b from-black via-zinc-950 to-black p-3.5 sm:p-4 rounded-2xl border border-zinc-800 shadow-[inset_0_4px_12px_rgba(0,0,0,0.9),0_2px_8px_rgba(251,191,36,0.1)] relative overflow-hidden flex flex-col justify-between">
+                        {/* Metallic Top & Bottom Highlights */}
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-zinc-700 to-transparent" />
+                        
+                        <div className="flex justify-between items-center text-[10px] font-mono uppercase text-zinc-400 mb-2">
+                            <span className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                                Live Stage Feed
+                            </span>
+                            <span className="text-amber-400 font-bold">
+                                {winners.length}/{prizes.length} Prizes Drawn
+                            </span>
+                        </div>
+
+                        {/* Drum Cylinder Simulation */}
+                        <div className="relative py-2.5 my-1 flex items-center justify-center bg-zinc-900/60 rounded-xl border border-amber-500/20 shadow-inner">
+                            <div className="text-center">
+                                <span className="text-[10px] text-zinc-400 uppercase font-mono tracking-widest block mb-0.5">
+                                    {isCompleted ? 'Final Draw Concluded' : 'Active Ticket Stream'}
+                                </span>
+                                <div className="font-mono font-black text-base sm:text-xl text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 tracking-wider">
+                                    {isCompleted ? 'ALL WINNERS VERIFIED' : scrambledCode}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Top Prize Showcase */}
+                        {prizes.length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs">
+                                <div className="flex items-center gap-2 truncate">
+                                    <span className="text-amber-400 font-bold">Grand Prize:</span>
+                                    <span className="text-zinc-200 font-semibold truncate">{prizes[0].name}</span>
+                                </div>
+                                {prizes[0].value && (
+                                    <span className="text-[11px] font-mono font-bold text-emerald-400 flex-shrink-0 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/50">
+                                        ${prizes[0].value}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Personal Tactical Odds & Tickets Held */}
+                    <div className="md:col-span-5 bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 p-3.5 sm:p-4 rounded-2xl border border-zinc-800/80 shadow-inner flex flex-col justify-between space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-mono font-bold uppercase text-zinc-400">Your Standing</span>
+                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                                userTickets.length > 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-zinc-800 text-zinc-500'
+                            }`}>
+                                {userTickets.length > 0 ? 'ELIGIBLE' : 'NO TICKETS'}
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-center">
+                            <div className="p-2 rounded-xl bg-black/50 border border-zinc-800">
+                                <span className="text-[9px] font-mono uppercase text-zinc-400 block">Tickets Held</span>
+                                <span className="text-base font-mono font-black text-amber-400">{userTickets.length}</span>
+                            </div>
+                            <div className="p-2 rounded-xl bg-black/50 border border-zinc-800">
+                                <span className="text-[9px] font-mono uppercase text-zinc-400 block">Win Odds</span>
+                                <span className="text-base font-mono font-black text-emerald-400">{odds}%</span>
+                            </div>
+                        </div>
+
+                        {/* Interactive Enter Button */}
+                        <Button
+                            onClick={() => onOpenArena(raffle)}
+                            className="w-full text-xs font-black bg-gradient-to-r from-amber-600 via-amber-500 to-red-600 hover:from-amber-500 hover:to-red-500 text-white shadow-[0_4px_20px_rgba(217,119,6,0.35)] py-2.5 rounded-xl border border-amber-400/30 transition-all flex items-center justify-center gap-2"
+                        >
+                            <SparklesIcon className="w-4 h-4 text-amber-100 animate-bounce" />
+                            <span>🎯 Enter Live Spectator Arena</span>
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'players'>> = ({ raffles, player, players }) => {
     const safeRaffles = raffles || [];
     const [selectedRaffleForDashboard, setSelectedRaffleForDashboard] = useState<Raffle | null>(null);
+
+    // Keep active selected raffle synced with props updates
+    const activeSelectedRaffle = selectedRaffleForDashboard 
+        ? (safeRaffles.find(r => r.id === selectedRaffleForDashboard.id) || selectedRaffleForDashboard)
+        : null;
 
     const myTickets = safeRaffles.flatMap(r => (r.tickets || []).filter(t => t.playerId === player.id).map(t => ({...t, raffleName: r.name, raffleStatus: r.status})));
     const pastRaffles = safeRaffles.filter(r => r.status === 'Completed');
@@ -1026,14 +1209,35 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
     return (
         <div className="space-y-6">
             {/* Fullscreen/Modal Live Raffle Event Dashboard */}
-            {selectedRaffleForDashboard && (
+            {activeSelectedRaffle && (
                 <RaffleEventDashboard
-                    raffle={selectedRaffleForDashboard}
+                    raffle={activeSelectedRaffle}
                     players={players}
                     currentPlayer={player}
                     isAdmin={false}
                     onClose={() => setSelectedRaffleForDashboard(null)}
                 />
+            )}
+
+            {/* EMBEDDED LIVE ARENA STREAM FOR ACTIVE RAFFLES */}
+            {activeRaffles.length > 0 && (
+                <div className="space-y-4">
+                    <h3 className="text-sm sm:text-base font-black uppercase font-mono tracking-wider text-amber-400 flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping inline-block" />
+                        Live Running Draw Stages ({activeRaffles.length})
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4">
+                        {activeRaffles.map(raffle => (
+                            <EmbeddedLiveRaffleCard
+                                key={raffle.id}
+                                raffle={raffle}
+                                player={player}
+                                players={players}
+                                onOpenArena={(r) => setSelectedRaffleForDashboard(r)}
+                            />
+                        ))}
+                    </div>
+                </div>
             )}
 
             {/* ACTIVE & UPCOMING RAFFLE EVENTS SHOWCASE */}
@@ -1051,10 +1255,10 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                                 return (
                                     <div 
                                         key={raffle.id}
-                                        className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                                        className={`p-4 rounded-3xl border transition-all flex flex-col justify-between ${
                                             isCompleted
-                                                ? 'bg-zinc-950/70 border-zinc-800'
-                                                : 'bg-gradient-to-br from-zinc-900/90 via-zinc-900 to-amber-950/20 border-amber-500/40 shadow-xl'
+                                                ? 'bg-zinc-950/80 border-zinc-800/80 shadow-md'
+                                                : 'bg-gradient-to-br from-zinc-900/90 via-zinc-900 to-amber-950/30 border-amber-500/40 shadow-[0_12px_30px_rgba(0,0,0,0.6)]'
                                         }`}
                                     >
                                         <div>
@@ -1076,7 +1280,7 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                                             )}
 
                                             {/* Tactical Stats Matrix */}
-                                            <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-black/50 border border-zinc-800/80 mb-3 text-center">
+                                            <div className="grid grid-cols-3 gap-2 p-2.5 rounded-2xl bg-black/50 border border-zinc-800/80 mb-3 text-center">
                                                 <div>
                                                     <span className="text-[10px] text-zinc-500 uppercase font-mono block">Your Tickets</span>
                                                     <span className="text-xs font-mono font-bold text-amber-400">{userTickets.length} held</span>
@@ -1097,7 +1301,7 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                                                     <span className="text-[10px] text-zinc-500 uppercase font-mono block">Prize Roster ({prizes.length} Spots):</span>
                                                     <div className="flex flex-wrap gap-1.5">
                                                         {prizes.slice(0, 3).map((p, idx) => (
-                                                            <span key={p.id || idx} className="text-[11px] bg-zinc-800/80 text-zinc-300 px-2 py-0.5 rounded-lg border border-zinc-700/60">
+                                                            <span key={p.id || idx} className="text-[11px] bg-zinc-800/80 text-zinc-300 px-2 py-0.5 rounded-xl border border-zinc-700/60">
                                                                 #{p.place || idx + 1} {p.name}
                                                             </span>
                                                         ))}
@@ -1113,7 +1317,7 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                                         <div className="pt-2 border-t border-zinc-800/80">
                                             <Button
                                                 onClick={() => setSelectedRaffleForDashboard(raffle)}
-                                                className="w-full text-xs font-black bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white shadow-lg shadow-amber-950/40 flex items-center justify-center gap-1.5"
+                                                className="w-full text-xs font-black bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white shadow-lg shadow-amber-950/40 py-2.5 rounded-xl flex items-center justify-center gap-1.5"
                                             >
                                                 <SparklesIcon className="w-4 h-4 text-amber-200" />
                                                 <span>🎯 Enter Live Event Arena & Draw Stage</span>
@@ -1541,12 +1745,18 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
     const [showQRScanner, setShowQRScanner] = useState<boolean>(false);
     const [selectedEvent, setSelectedEvent] = useState<GameEvent | null>(null);
+    const [activeRaffleModal, setActiveRaffleModal] = useState<Raffle | null>(null);
     const auth = useContext(AuthContext);
     const data = useContext(DataContext);
     
     const setHelpTopic = auth?.setHelpTopic;
     const logActivity = data?.logActivity;
     
+    // Keep active selected raffle synced with current props
+    const syncedActiveRaffle = activeRaffleModal 
+        ? ((raffles || []).find(r => r.id === activeRaffleModal.id) || activeRaffleModal)
+        : null;
+
     useEffect(() => {
         if (setHelpTopic) {
             setHelpTopic(`player-dashboard-${activeTab.toLowerCase()}`);
@@ -1609,7 +1819,19 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.2 }}
                         >
-                            {activeTab === 'Overview' && <OverviewTab player={player} players={players} events={events} sponsors={sponsors} ranks={ranks} onSelectEvent={setSelectedEvent} />}
+                            {activeTab === 'Overview' && (
+                                <OverviewTab 
+                                    player={player} 
+                                    players={players} 
+                                    events={events} 
+                                    sponsors={sponsors} 
+                                    ranks={ranks} 
+                                    raffles={raffles}
+                                    onSelectEvent={setSelectedEvent} 
+                                    onSelectRaffle={(r) => setActiveRaffleModal(r)}
+                                    onNavigateToRaffles={() => setActiveTab('Raffles')}
+                                />
+                            )}
                             {activeTab === 'Events' && (
                                 <EventsTab 
                                     events={events} 
@@ -1632,6 +1854,17 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                     </AnimatePresence>
                 </div>
             </main>
+
+            {/* Live Raffle Spectator Modal when launched from Overview */}
+            {syncedActiveRaffle && (
+                <RaffleEventDashboard
+                    raffle={syncedActiveRaffle}
+                    players={players}
+                    currentPlayer={player}
+                    isAdmin={false}
+                    onClose={() => setActiveRaffleModal(null)}
+                />
+            )}
 
             {showQRScanner && data && (
                 <EventQRScannerModal

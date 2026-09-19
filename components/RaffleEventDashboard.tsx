@@ -257,7 +257,12 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
 
     const prizes = useMemo(() => [...(raffle.prizes || [])].sort((a, b) => a.place - b.place), [raffle.prizes]);
     const tickets = useMemo(() => raffle.tickets || [], [raffle.tickets]);
-    const isTopTicketsMode = !!raffle.alwaysChooseMostTickets;
+    const isTopTicketsMode = Boolean(
+        raffle.alwaysChooseMostTickets === true || 
+        (raffle as any)?.alwayschoosemosttickets === true ||
+        String(raffle.alwaysChooseMostTickets) === 'true' ||
+        String((raffle as any)?.alwayschoosemosttickets) === 'true'
+    );
 
     // Available tickets for drawing (unawarded tickets)
     const availableTickets = useMemo(() => {
@@ -435,33 +440,48 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
         if (pool.length === 0) return null;
 
         if (isTopTicketsMode) {
-            const alreadyWonPlayerIds = new Set(currentWinnersList.filter(w => w.prizeId !== targetPrize.id).map(w => w.playerId));
-            const counts = new Map<string, { count: number; tickets: RaffleTicketDoc[] }>();
-
-            pool.forEach(t => {
-                const existing = counts.get(t.playerId);
+            // 1. Calculate overall total ticket volume per player in this raffle
+            const playerTotalsMap = new Map<string, { playerId: string; totalCount: number; tickets: RaffleTicketDoc[] }>();
+            tickets.forEach(t => {
+                const existing = playerTotalsMap.get(t.playerId);
                 if (existing) {
-                    existing.count++;
+                    existing.totalCount++;
                     existing.tickets.push(t);
                 } else {
-                    counts.set(t.playerId, { count: 1, tickets: [t] });
+                    playerTotalsMap.set(t.playerId, { playerId: t.playerId, totalCount: 1, tickets: [t] });
                 }
             });
 
-            const sorted = Array.from(counts.entries()).map(([playerId, val]) => ({
-                playerId,
-                count: val.count,
-                tickets: val.tickets,
-                hasWon: alreadyWonPlayerIds.has(playerId)
-            })).sort((a, b) => b.count - a.count);
+            // 2. Sort all participating players descending by total tickets held (Rank 1 = most tickets, Rank 2 = 2nd most, Rank 3 = 3rd most, etc.)
+            const allRankedBuyers = Array.from(playerTotalsMap.values()).sort((a, b) => b.totalCount - a.totalCount);
 
-            const unawarded = sorted.filter(s => !s.hasWon);
-            const candidates = unawarded.length > 0 ? unawarded : sorted;
-            const topCount = candidates[0]?.count || 0;
-            const topHolders = candidates.filter(c => c.count === topCount);
-            const chosenHolder = topHolders[Math.floor(Math.random() * topHolders.length)];
+            // 3. Exclude players who have already won another prize in this raffle session
+            const alreadyWonPlayerIds = new Set(currentWinnersList.filter(w => w.prizeId !== targetPrize.id).map(w => w.playerId));
+            const unawardedBuyers = allRankedBuyers.filter(b => !alreadyWonPlayerIds.has(b.playerId));
 
-            return chosenHolder.tickets[Math.floor(Math.random() * chosenHolder.tickets.length)] || pool[0];
+            // Candidate buyers pool (prefer unawarded; fallback to all ranked buyers if all have won)
+            const candidateBuyers = unawardedBuyers.length > 0 ? unawardedBuyers : allRankedBuyers;
+
+            if (candidateBuyers.length > 0) {
+                // Find maximum ticket count among the available eligible candidates
+                const maxTicketCount = candidateBuyers[0].totalCount;
+                
+                // Collect all candidates tied at the current top rank tier
+                const tiedTopHolders = candidateBuyers.filter(b => b.totalCount === maxTicketCount);
+                
+                // Randomly draw among tied candidates at this rank tier
+                const chosenBuyer = tiedTopHolders[Math.floor(Math.random() * tiedTopHolders.length)];
+
+                // From the chosen player's tickets, pick an undrawn ticket
+                const undrawnTickets = chosenBuyer.tickets.filter(t => !drawnTicketIds.has(t.id));
+                const winningTicket = undrawnTickets.length > 0 
+                    ? undrawnTickets[Math.floor(Math.random() * undrawnTickets.length)]
+                    : chosenBuyer.tickets[Math.floor(Math.random() * chosenBuyer.tickets.length)];
+
+                if (winningTicket) return winningTicket;
+            }
+
+            return pool[Math.floor(Math.random() * pool.length)];
         } else {
             const alreadyWonPlayerIds = new Set(currentWinnersList.filter(w => w.prizeId !== targetPrize.id).map(w => w.playerId));
             const freshTickets = pool.filter(t => !alreadyWonPlayerIds.has(t.playerId));
@@ -609,7 +629,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
     return (
         <div 
             ref={containerRef}
-            className="fixed inset-0 z-50 bg-black/95 text-white flex flex-col backdrop-blur-md overflow-hidden animate-fadeIn"
+            className="fixed inset-0 z-50 bg-black/95 text-white flex flex-col backdrop-blur-xl overflow-hidden animate-fadeIn select-none"
             id="raffle-event-dashboard-container"
         >
             {/* Confetti canvas overlay */}
@@ -624,52 +644,53 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                     <div 
                         key={r.id}
                         style={{ left: `${r.left}%`, bottom: '60px' }}
-                        className="absolute text-3xl sm:text-4xl animate-floatUp"
+                        className="absolute text-2xl sm:text-4xl animate-floatUp drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
                     >
                         {r.emoji}
                     </div>
                 ))}
             </div>
 
-            {/* Tactical Grid Ambient Glow */}
-            <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#ef4444_1px,transparent_1px)] [background-size:24px_24px]" />
-            <div className="absolute -top-32 -left-32 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+            {/* Tactical Grid Ambient 3D Glow & Depth Lighting */}
+            <div className="absolute inset-0 pointer-events-none opacity-25 bg-[radial-gradient(#ef4444_1px,transparent_1px)] [background-size:20px_20px]" />
+            <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-80 bg-gradient-to-b from-amber-500/15 via-red-600/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* ==================================================== */}
             {/* TOP BAR: EVENT BRANDING & THEATER CONTROLS */}
             {/* ==================================================== */}
-            <header className="relative z-20 flex items-center justify-between px-4 sm:px-6 py-3 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500/20 to-red-600/20 border border-amber-500/30 text-amber-400">
-                        <TrophyIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+            <header className="relative z-20 flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-amber-500/20 via-zinc-900 to-red-600/20 border border-amber-500/30 text-amber-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] shrink-0">
+                        <TrophyIcon className="w-4 h-4 sm:w-6 sm:h-6" />
                     </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-base sm:text-lg font-black tracking-wide text-white uppercase truncate max-w-[200px] sm:max-w-md">
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <h1 className="text-sm sm:text-lg font-black tracking-wide text-white uppercase truncate max-w-[140px] xs:max-w-[200px] sm:max-w-md">
                                 {raffle.name}
                             </h1>
-                            <span className={`text-[10px] sm:text-xs font-mono font-bold px-2 py-0.5 rounded-full border ${
+                            <span className={`text-[9px] sm:text-xs font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded-full border shadow-sm ${
                                 raffle.status === 'Completed'
                                     ? 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                                    : 'bg-emerald-950/80 text-emerald-400 border-emerald-800 animate-pulse'
+                                    : 'bg-emerald-950/90 text-emerald-400 border-emerald-700/80 animate-pulse'
                             }`}>
-                                {raffle.status === 'Completed' ? 'DRAW CONCLUDED' : 'LIVE RAFFLE ARENA'}
+                                {raffle.status === 'Completed' ? 'CONCLUDED' : 'LIVE ARENA'}
                             </span>
                             {isTopTicketsMode && isAdmin && (
-                                <span className="hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                                    👑 TOP BUYER PRIORITY (ADMIN)
+                                <span className="hidden md:inline-flex text-[9px] sm:text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                    👑 TOP BUYER PRIORITY
                                 </span>
                             )}
                         </div>
-                        <p className="text-[11px] text-zinc-400 flex items-center gap-2">
-                            <span>Tickets: <strong className="text-white font-mono">{tickets.length}</strong></span>
+                        <p className="text-[10px] sm:text-[11px] text-zinc-400 flex items-center gap-1.5 truncate">
+                            <span>Pool: <strong className="text-white font-mono">{tickets.length}</strong> tix</span>
                             <span>•</span>
-                            <span>Prizes: <strong className="text-amber-400">{prizes.length} Spots</strong></span>
+                            <span>Prizes: <strong className="text-amber-400 font-mono">{prizes.length}</strong></span>
                             {raffle.drawDate && (
                                 <>
-                                    <span>•</span>
-                                    <span className="hidden sm:inline">Draw: {new Date(raffle.drawDate).toLocaleDateString()}</span>
+                                    <span className="hidden xs:inline">•</span>
+                                    <span className="hidden xs:inline truncate">Draw: {new Date(raffle.drawDate).toLocaleDateString()}</span>
                                 </>
                             )}
                         </p>
@@ -677,31 +698,31 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                 </div>
 
                 {/* Right controls */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                     {/* Sound Toggle */}
                     <button
                         onClick={toggleSound}
                         title={soundMuted ? "Unmute Tactical Audio FX" : "Mute Audio FX"}
-                        className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors"
+                        className="p-1.5 sm:p-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] active:scale-95 transition-all"
                     >
-                        {soundMuted ? <SpeakerXMarkIcon className="w-4 h-4 text-zinc-500"/> : <SpeakerWaveIcon className="w-4 h-4 text-amber-400"/>}
+                        {soundMuted ? <SpeakerXMarkIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-500"/> : <SpeakerWaveIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400"/>}
                     </button>
 
                     {/* Fullscreen Mode */}
                     <button
                         onClick={toggleFullscreen}
-                        title="Toggle Projector Theater Mode"
-                        className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors"
+                        title="Toggle Theater Mode"
+                        className="p-1.5 sm:p-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] active:scale-95 transition-all"
                     >
-                        {isFullscreen ? <ArrowsPointingInIcon className="w-4 h-4 text-amber-400"/> : <ArrowsPointingOutIcon className="w-4 h-4"/>}
+                        {isFullscreen ? <ArrowsPointingInIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400"/> : <ArrowsPointingOutIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/>}
                     </button>
 
                     {/* Close Modal */}
                     <button 
                         onClick={onClose}
-                        className="p-2 rounded-lg bg-zinc-900 hover:bg-red-950 text-zinc-400 hover:text-red-400 border border-zinc-800 transition-colors"
+                        className="p-1.5 sm:p-2 rounded-xl bg-zinc-900/90 hover:bg-red-950/80 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-900/50 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] active:scale-95 transition-all"
                     >
-                        <XMarkIcon className="w-5 h-5"/>
+                        <XMarkIcon className="w-4 h-4 sm:w-5 sm:h-5"/>
                     </button>
                 </div>
             </header>
@@ -709,54 +730,54 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
             {/* ==================================================== */}
             {/* NAVIGATION TABS HUD */}
             {/* ==================================================== */}
-            <nav className="relative z-20 flex items-center justify-between px-4 sm:px-6 py-2 bg-zinc-900/60 border-b border-zinc-800/80 overflow-x-auto gap-2">
-                <div className="flex items-center gap-1.5 sm:gap-2">
+            <nav className="relative z-20 flex items-center justify-between px-3 sm:px-6 py-1.5 sm:py-2 bg-zinc-900/70 border-b border-zinc-800/80 overflow-x-auto gap-2 scrollbar-none backdrop-blur-md">
+                <div className="flex items-center gap-1 sm:gap-2">
                     <button
                         onClick={() => setActiveTab('stage')}
-                        className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+                        className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm ${
                             activeTab === 'stage'
-                                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/20 border border-amber-400'
+                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60 border border-transparent'
                         }`}
                     >
                         <SparklesIcon className="w-3.5 h-3.5" />
-                        <span>🎯 Live Draw Arena</span>
+                        <span>🎯 Live Stage</span>
                     </button>
 
                     <button
                         onClick={() => setActiveTab('prizes')}
-                        className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+                        className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm ${
                             activeTab === 'prizes'
-                                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/20 border border-amber-400'
+                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60 border border-transparent'
                         }`}
                     >
                         <TrophyIcon className="w-3.5 h-3.5" />
-                        <span>🏆 Prize Vault ({prizes.length})</span>
+                        <span>🏆 Vault ({prizes.length})</span>
                     </button>
 
                     <button
                         onClick={() => setActiveTab('leaderboard')}
-                        className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+                        className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm ${
                             activeTab === 'leaderboard'
-                                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/20 border border-amber-400'
+                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60 border border-transparent'
                         }`}
                     >
                         <UserGroupIcon className="w-3.5 h-3.5" />
-                        <span>📊 Contenders Radar</span>
+                        <span>📊 Radar</span>
                     </button>
 
                     <button
                         onClick={() => setActiveTab('tickets')}
-                        className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+                        className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm ${
                             activeTab === 'tickets'
-                                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/20 border border-amber-400'
+                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60 border border-transparent'
                         }`}
                     >
                         <TicketIcon className="w-3.5 h-3.5" />
-                        <span>🎟️ Ticket Stash {currentPlayer ? `(${myTickets.length})` : `(${tickets.length})`}</span>
+                        <span>🎟️ My Tix {currentPlayer ? `(${myTickets.length})` : `(${tickets.length})`}</span>
                     </button>
                 </div>
 
@@ -767,7 +788,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                         <button
                             key={emoji}
                             onClick={() => triggerCheer(emoji)}
-                            className="p-1 sm:px-2 sm:py-1 rounded bg-zinc-800/80 hover:bg-zinc-700 text-sm hover:scale-125 transition-transform"
+                            className="p-1 sm:px-2 sm:py-1 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-xs sm:text-sm hover:scale-125 active:scale-95 transition-all shadow-sm"
                             title={`Send ${emoji}`}
                         >
                             {emoji}
@@ -779,14 +800,14 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
             {/* ==================================================== */}
             {/* MAIN DASHBOARD CONTENT AREA */}
             {/* ==================================================== */}
-            <main className="relative z-10 flex-1 overflow-y-auto p-3 sm:p-6 flex flex-col">
+            <main className="relative z-10 flex-1 overflow-y-auto p-2.5 sm:p-6 flex flex-col scrollbar-thin">
                 {/* ==================================================== */}
                 {/* TAB 1: LIVE DRAW ARENA / THEATER STAGE */}
                 {/* ==================================================== */}
                 {activeTab === 'stage' && (
-                    <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full space-y-4">
+                    <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full space-y-3 sm:space-y-4">
                         {/* Prize Position Selector Pills */}
-                        <div className="flex items-center justify-center gap-2 overflow-x-auto pb-1">
+                        <div className="flex items-center justify-start sm:justify-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none">
                             {prizes.map((p, idx) => {
                                 const hasWinner = localWinners.some(w => w.prizeId === p.id);
                                 const isCurrent = idx === currentPrizeIndex;
@@ -800,49 +821,55 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                             }
                                         }}
                                         disabled={isSpinning}
-                                        className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+                                        className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-mono text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
                                             isCurrent
-                                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/30 scale-105'
+                                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/30 scale-105 border border-amber-300'
                                                 : hasWinner
                                                     ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/80'
-                                                    : 'bg-zinc-900/80 text-zinc-400 hover:text-white border border-zinc-800'
+                                                    : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-zinc-800'
                                         }`}
                                     >
                                         <span>#{idx + 1}</span>
-                                        <span className="max-w-[110px] truncate">{p.name || `Prize #${idx + 1}`}</span>
+                                        <span className="max-w-[80px] sm:max-w-[110px] truncate">{p.name || `Prize #${idx + 1}`}</span>
                                         {hasWinner && <CheckBadgeIcon className="w-3.5 h-3.5 text-emerald-400" />}
                                     </button>
                                 );
                             })}
                         </div>
 
-                        {/* CENTRAL ROTATING CYLINDER / SPOTLIGHT STAGE */}
-                        <div className="relative flex-1 min-h-[300px] sm:min-h-[360px] bg-gradient-to-b from-zinc-900/90 via-zinc-950/95 to-black rounded-2xl border border-amber-500/30 p-4 sm:p-8 flex flex-col items-center justify-center text-center shadow-2xl overflow-hidden">
+                        {/* CENTRAL ROTATING CYLINDER / 3D SPOTLIGHT STAGE */}
+                        <div className="relative flex-1 min-h-[240px] sm:min-h-[360px] bg-gradient-to-b from-zinc-900/95 via-zinc-950/98 to-black rounded-3xl border border-amber-500/30 p-3.5 sm:p-8 flex flex-col items-center justify-center text-center shadow-[0_20px_60px_-15px_rgba(0,0,0,0.9),inset_0_1px_1px_rgba(255,255,255,0.15)] overflow-hidden">
                             {/* Ambient Stage Lighting */}
-                            <div className="absolute -top-1/2 left-1/2 -translate-x-1/2 w-3/4 h-3/4 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-                            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-500/60 to-transparent" />
+                            <div className="absolute -top-1/2 left-1/2 -translate-x-1/2 w-full h-full bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-500/70 to-transparent" />
+                            <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-600/40 to-transparent" />
 
                             {/* Place & Prize Name Banner */}
-                            <div className="mb-4">
-                                <span className="inline-block font-mono text-xs uppercase tracking-widest text-amber-400 bg-amber-950/60 px-3 py-1 rounded-full border border-amber-500/40">
+                            <div className="mb-2 sm:mb-4">
+                                <span className="inline-block font-mono text-[10px] sm:text-xs uppercase tracking-widest text-amber-400 bg-amber-950/70 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-amber-500/40 shadow-sm">
                                     Place #{currentPrizeIndex + 1} Prize Award
                                 </span>
-                                <h2 className="text-xl sm:text-3xl font-black text-white mt-1.5 drop-shadow-md">
+                                <h2 className="text-lg sm:text-3xl font-black text-white mt-1 sm:mt-1.5 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] px-2">
                                     {currentPrize?.name || 'Grand Tactical Prize'}
                                 </h2>
                             </div>
 
-                            {/* REEL / WINNER CARD DISPLAY */}
+                            {/* 3D CYLINDRICAL REEL / WINNER CARD DISPLAY */}
                             {isSpinning ? (
-                                <div className="w-full max-w-md my-4 p-6 rounded-2xl bg-zinc-950/90 border-2 border-amber-500/80 shadow-[0_0_30px_rgba(245,158,11,0.25)] flex flex-col items-center justify-center animate-pulse">
-                                    <div className="flex items-center gap-2 text-xs font-mono text-amber-400 mb-2">
-                                        <ArrowPathIcon className="w-4 h-4 animate-spin text-amber-400" />
+                                <div className="w-full max-w-sm sm:max-w-md my-2 sm:my-4 p-4 sm:p-6 rounded-2xl bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 border-2 border-amber-500/80 shadow-[0_0_40px_rgba(245,158,11,0.3),inset_0_2px_8px_rgba(0,0,0,0.9)] flex flex-col items-center justify-center relative overflow-hidden">
+                                    {/* 3D Drum Slot Machine Cylindrical Overlays */}
+                                    <div className="absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-black via-black/80 to-transparent pointer-events-none z-10" />
+                                    <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none z-10" />
+                                    <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:100%_8px] pointer-events-none" />
+
+                                    <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-mono text-amber-400 mb-1.5 z-10">
+                                        <ArrowPathIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin text-amber-400" />
                                         <span>DECRYPTING TICKET SERIALS...</span>
                                     </div>
-                                    <div className="text-3xl sm:text-5xl font-mono font-black text-amber-300 tracking-wider my-2 animate-bounce">
+                                    <div className="text-2xl sm:text-5xl font-mono font-black text-amber-300 tracking-wider my-1.5 sm:my-2 animate-pulse drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] z-10">
                                         {availableTickets[activeCandidateIndex]?.code || 'TKT-??????'}
                                     </div>
-                                    <div className="text-sm font-semibold text-zinc-300 mt-1">
+                                    <div className="text-xs sm:text-sm font-semibold text-zinc-300 mt-1 z-10 truncate max-w-full px-2">
                                         {(() => {
                                             const candidate = availableTickets[activeCandidateIndex];
                                             const p = players.find(ply => ply.id === candidate?.playerId);
@@ -855,56 +882,56 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                     </div>
                                 </div>
                             ) : justWon ? (
-                                /* WINNER REVEAL SPOTLIGHT CARD */
-                                <div className="w-full max-w-lg my-2 p-5 sm:p-6 rounded-2xl bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 border-2 border-amber-400 shadow-[0_0_40px_rgba(245,158,11,0.35)] flex flex-col items-center justify-center animate-scaleUp">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <SparklesIcon className="w-5 h-5 text-amber-400 animate-spin" />
-                                        <span className="font-mono text-xs uppercase font-black text-amber-400 tracking-wider">
+                                /* WINNER REVEAL SPOTLIGHT CARD (3D REALISM DEPTH) */
+                                <div className="w-full max-w-md sm:max-w-lg my-1.5 sm:my-2 p-4 sm:p-6 rounded-3xl bg-gradient-to-b from-amber-950/90 via-zinc-900/95 to-zinc-950 border-2 border-amber-400 shadow-[0_20px_50px_rgba(245,158,11,0.35),inset_0_1px_1px_rgba(255,255,255,0.25)] flex flex-col items-center justify-center animate-scaleUp">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <SparklesIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 animate-spin" />
+                                        <span className="font-mono text-[11px] sm:text-xs uppercase font-black text-amber-400 tracking-wider">
                                             OFFICIAL WINNER SELECTED!
                                         </span>
-                                        <SparklesIcon className="w-5 h-5 text-amber-400 animate-spin" />
+                                        <SparklesIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 animate-spin" />
                                     </div>
 
                                     {/* Winner Details with Full Name and Callsign */}
-                                    <div className="my-3 flex flex-col items-center">
+                                    <div className="my-2 sm:my-3 flex flex-col items-center">
                                         {justWon.player?.avatarUrl ? (
                                             <img 
                                                 src={justWon.player.avatarUrl} 
                                                 alt={justWon.player.name}
-                                                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-amber-400 object-cover shadow-lg mb-2"
+                                                className="w-14 h-14 sm:w-20 sm:h-20 rounded-full border-2 border-amber-400 object-cover shadow-[0_4px_20px_rgba(245,158,11,0.4)] mb-1.5"
                                                 referrerPolicy="no-referrer"
                                             />
                                         ) : (
-                                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-2xl font-black mb-2 shadow-lg">
+                                            <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-xl sm:text-2xl font-black mb-1.5 shadow-[0_4px_20px_rgba(245,158,11,0.4)]">
                                                 {justWon.player?.name?.charAt(0) || '🏆'}
                                             </div>
                                         )}
 
-                                        <h3 className="text-xl sm:text-2xl font-black text-white">
+                                        <h3 className="text-lg sm:text-2xl font-black text-white px-2">
                                             {justWon.player?.name} {justWon.player?.surname || ''}
                                         </h3>
                                         
                                         {justWon.player?.callsign && (
-                                            <span className="text-base sm:text-lg font-mono font-bold text-amber-400 mt-0.5">
+                                            <span className="text-sm sm:text-lg font-mono font-bold text-amber-400 mt-0.5">
                                                 "{justWon.player.callsign}"
                                             </span>
                                         )}
                                         
-                                        <span className="text-xs text-zinc-400 font-mono mt-0.5">
+                                        <span className="text-[10px] sm:text-xs text-zinc-400 font-mono mt-0.5">
                                             ID: {justWon.player?.playerCode || 'OP-00'}
                                         </span>
                                     </div>
 
-                                    {/* Winning Ticket Code Pill */}
-                                    <div className="bg-zinc-950/90 px-4 py-2 rounded-xl border border-amber-500/40 flex items-center gap-3">
-                                        <span className="text-xs font-mono text-zinc-400">Winning Ticket:</span>
-                                        <span className="text-base sm:text-lg font-mono font-black text-red-400 tracking-wider">
+                                    {/* Winning Ticket Code Pill (Realistic Holographic Ticket Token) */}
+                                    <div className="bg-zinc-950/95 px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl border border-amber-500/40 shadow-inner flex items-center gap-2 sm:gap-3">
+                                        <span className="text-[10px] sm:text-xs font-mono text-zinc-400">Winning Ticket:</span>
+                                        <span className="text-sm sm:text-lg font-mono font-black text-red-400 tracking-wider drop-shadow-sm">
                                             {justWon.ticket?.code || 'TKT-XXXX'}
                                         </span>
                                     </div>
 
                                     {justWon.totalTicketsHeld > 0 && (
-                                        <p className="text-[11px] text-amber-300/80 font-mono mt-2">
+                                        <p className="text-[10px] sm:text-[11px] text-amber-300/80 font-mono mt-1.5 sm:mt-2">
                                             Operator held {justWon.totalTicketsHeld} ticket{justWon.totalTicketsHeld === 1 ? '' : 's'} in this raffle pool
                                         </p>
                                     )}
@@ -916,19 +943,19 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                     const winPlayer = players.find(p => p.id === winDoc?.playerId);
                                     const winTicket = tickets.find(t => t.id === winDoc?.ticketId);
                                     return (
-                                        <div className="w-full max-w-md my-4 p-5 rounded-2xl bg-zinc-900/80 border border-emerald-500/50 flex flex-col items-center justify-center">
-                                            <span className="text-xs font-mono text-emerald-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1.5">
+                                        <div className="w-full max-w-sm sm:max-w-md my-2 sm:my-4 p-4 sm:p-5 rounded-3xl bg-zinc-900/90 border border-emerald-500/50 shadow-[0_10px_30px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.1)] flex flex-col items-center justify-center">
+                                            <span className="text-[10px] sm:text-xs font-mono text-emerald-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1.5">
                                                 <CheckBadgeIcon className="w-4 h-4"/> Prize Claimed
                                             </span>
-                                            <h3 className="text-lg font-bold text-white">
+                                            <h3 className="text-base sm:text-lg font-bold text-white">
                                                 {winPlayer?.name} {winPlayer?.surname || ''}
                                             </h3>
                                             {winPlayer?.callsign && (
-                                                <span className="text-sm font-mono font-bold text-amber-400">
+                                                <span className="text-xs sm:text-sm font-mono font-bold text-amber-400">
                                                     "{winPlayer.callsign}"
                                                 </span>
                                             )}
-                                            <div className="mt-2 font-mono text-xs text-red-400 bg-red-950/60 px-3 py-1 rounded-lg border border-red-900/50">
+                                            <div className="mt-2 font-mono text-[11px] sm:text-xs text-red-400 bg-red-950/80 px-3 py-1 rounded-xl border border-red-900/50 shadow-inner">
                                                 {winTicket?.code || 'TKT-LOCKED'}
                                             </div>
                                         </div>
@@ -936,11 +963,11 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                 })()
                             ) : (
                                 /* WAITING FOR SPIN PROMPT */
-                                <div className="my-6 space-y-2">
-                                    <div className="w-16 h-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-500">
-                                        <TicketIcon className="w-8 h-8 text-amber-400/60" />
+                                <div className="my-3 sm:my-6 space-y-1.5 sm:space-y-2">
+                                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] flex items-center justify-center mx-auto text-zinc-500">
+                                        <TicketIcon className="w-6 h-6 sm:w-8 sm:h-8 text-amber-400/60" />
                                     </div>
-                                    <p className="text-sm text-zinc-400">
+                                    <p className="text-xs sm:text-sm text-zinc-400">
                                         {availableTickets.length > 0 
                                             ? `${availableTickets.length} eligible tickets awaiting drawing`
                                             : 'No tickets available in this raffle pool'
@@ -951,11 +978,11 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
 
                             {/* CONTROLS BAR: ONLY ADMIN CAN TRIGGER AND COMMIT DRAWS */}
                             {isAdmin ? (
-                                <div className="flex flex-wrap items-center justify-center gap-2.5 mt-4 z-20">
+                                <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2.5 mt-3 sm:mt-4 z-20">
                                     <Button
                                         onClick={() => executeSpinDraw(currentPrize)}
                                         disabled={isSpinning || isAutoDrawingAll || availableTickets.length === 0}
-                                        className="text-sm font-bold bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 shadow-lg shadow-red-950/80"
+                                        className="text-xs sm:text-sm font-bold bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 shadow-lg shadow-red-950/80 active:scale-95"
                                     >
                                         {isSpinning 
                                             ? '🎲 Decrypting...' 
@@ -970,9 +997,9 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                             variant="secondary"
                                             onClick={handleAutoDrawAll}
                                             disabled={isSpinning || isAutoDrawingAll || availableTickets.length === 0}
-                                            className="text-xs sm:text-sm font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30"
+                                            className="text-xs sm:text-sm font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 active:scale-95"
                                         >
-                                            ⚡ Auto-Draw All {undrawnPrizesCount} Spots
+                                            ⚡ Auto-Draw All {undrawnPrizesCount}
                                         </Button>
                                     )}
 
@@ -984,9 +1011,9 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                                 setJustWon(null);
                                             }}
                                             disabled={isSpinning}
-                                            className="text-xs sm:text-sm"
+                                            className="text-xs sm:text-sm active:scale-95"
                                         >
-                                            👈 Prev Place
+                                            👈 Prev
                                         </Button>
                                     )}
 
@@ -998,9 +1025,9 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                                 setJustWon(null);
                                             }}
                                             disabled={isSpinning}
-                                            className="text-xs sm:text-sm"
+                                            className="text-xs sm:text-sm active:scale-95"
                                         >
-                                            Next Place 👉
+                                            Next 👉
                                         </Button>
                                     )}
 
@@ -1009,16 +1036,16 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                             variant="secondary"
                                             onClick={handleSaveWinners}
                                             disabled={isSpinning}
-                                            className="text-xs sm:text-sm bg-emerald-950/80 text-emerald-400 border border-emerald-800 hover:bg-emerald-900"
+                                            className="text-xs sm:text-sm bg-emerald-950/80 text-emerald-400 border border-emerald-800 hover:bg-emerald-900 active:scale-95"
                                         >
-                                            💾 Save & Commit Results
+                                            💾 Save Results
                                         </Button>
                                     )}
                                 </div>
                             ) : (
                                 /* SPECTATOR CLIENT CONTROLS: VIEW ONLY + PLACE NAVIGATION */
-                                <div className="flex flex-col items-center gap-3 mt-4 z-20">
-                                    <div className="flex items-center gap-2">
+                                <div className="flex flex-col items-center gap-2 sm:gap-3 mt-3 sm:mt-4 z-20">
+                                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">
                                         {currentPrizeIndex > 0 && (
                                             <Button 
                                                 size="sm"
@@ -1027,18 +1054,18 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                                     setCurrentPrizeIndex(prev => Math.max(0, prev - 1));
                                                     setJustWon(null);
                                                 }}
-                                                className="text-xs"
+                                                className="text-[11px] sm:text-xs active:scale-95"
                                             >
-                                                👈 Prev Place
+                                                👈 Prev
                                             </Button>
                                         )}
 
-                                        <div className="px-3.5 py-1.5 rounded-full bg-zinc-900/90 border border-zinc-800 text-xs text-zinc-400 font-mono flex items-center gap-2">
+                                        <div className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-zinc-900/90 border border-zinc-800 text-[10px] sm:text-xs text-zinc-400 font-mono flex items-center gap-1.5 shadow-sm">
                                             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                                             <span>
                                                 {raffle.status === 'Completed'
-                                                    ? '🏆 Official Draw Concluded'
-                                                    : '📡 Live Spectator View • Waiting for Host Draw'
+                                                    ? '🏆 Draw Concluded'
+                                                    : '📡 Live Spectator Stream'
                                                 }
                                             </span>
                                         </div>
@@ -1051,9 +1078,9 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                                     setCurrentPrizeIndex(prev => Math.min(prizes.length - 1, prev + 1));
                                                     setJustWon(null);
                                                 }}
-                                                className="text-xs"
+                                                className="text-[11px] sm:text-xs active:scale-95"
                                             >
-                                                Next Place 👉
+                                                Next 👉
                                             </Button>
                                         )}
                                     </div>
@@ -1061,16 +1088,16 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                             )}
                         </div>
 
-                        {/* LIVE WINNERS PODIUM ROSTER */}
+                        {/* LIVE WINNERS PODIUM ROSTER (3D DEPTH CARDS) */}
                         {localWinners.length > 0 && (
-                            <div className="bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800 text-left">
-                                <div className="flex justify-between items-center mb-3">
-                                    <h4 className="font-bold text-xs uppercase tracking-wider text-amber-400 flex items-center gap-2">
-                                        <TrophyIcon className="w-4 h-4"/> Official Winners Podium ({localWinners.length} of {prizes.length} Awarded)
+                            <div className="bg-zinc-900/70 p-3 sm:p-4 rounded-3xl border border-zinc-800 text-left shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.08)]">
+                                <div className="flex justify-between items-center mb-2.5">
+                                    <h4 className="font-bold text-[11px] sm:text-xs uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                                        <TrophyIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/> Official Podium ({localWinners.length}/{prizes.length} Awarded)
                                     </h4>
                                     {localWinners.length === prizes.length && (
-                                        <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950 px-2.5 py-0.5 rounded border border-emerald-800">
-                                            ✓ All Prizes Claimed
+                                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-lg border border-emerald-800">
+                                            ✓ All Claimed
                                         </span>
                                     )}
                                 </div>
@@ -1082,20 +1109,20 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                         const place = prize?.place || (wIdx + 1);
                                         const medal = place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : '🎖️';
                                         return (
-                                            <div key={w.id} className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800">
-                                                <div className="flex items-center gap-2.5">
-                                                    <span className="text-xl">{medal}</span>
-                                                    <div>
+                                            <div key={w.id} className="flex items-center justify-between p-2 sm:p-2.5 rounded-2xl bg-zinc-950/90 border border-zinc-800/80 shadow-sm">
+                                                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                                                    <span className="text-base sm:text-xl shrink-0">{medal}</span>
+                                                    <div className="min-w-0">
                                                         <div className="flex items-center gap-1.5">
-                                                            <span className="font-bold text-white text-xs">{prize?.name || `Place #${place}`}</span>
-                                                            <span className="text-[10px] text-amber-400 font-mono">#{place}</span>
+                                                            <span className="font-bold text-white text-[11px] sm:text-xs truncate">{prize?.name || `Place #${place}`}</span>
+                                                            <span className="text-[9px] sm:text-[10px] text-amber-400 font-mono shrink-0">#{place}</span>
                                                         </div>
-                                                        <p className="text-[11px] text-zinc-300">
+                                                        <p className="text-[10px] sm:text-[11px] text-zinc-300 truncate">
                                                             {player?.name} {player?.surname || ''} <span className="text-amber-400 font-mono font-bold">({player?.callsign || player?.playerCode || 'Operator'})</span>
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <span className="font-mono text-xs font-bold text-red-400 px-2 py-0.5 rounded bg-red-950/60 border border-red-900/50">
+                                                <span className="font-mono text-[10px] sm:text-xs font-bold text-red-400 px-2 py-0.5 rounded-lg bg-red-950/80 border border-red-900/50 shrink-0 ml-2">
                                                     {ticket?.code || 'TICKET'}
                                                 </span>
                                             </div>

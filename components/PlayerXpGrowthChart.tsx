@@ -2,17 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as d3 from 'd3';
 import type { Player, GameEvent, Rank } from '../types';
 import { 
-    TrendingUp, 
-    Calendar, 
-    Zap, 
-    Award, 
-    Activity, 
-    Target, 
-    Sparkles, 
-    ChevronRight,
-    Crosshair,
-    Clock,
-    Flame
+    TrendingUp 
 } from 'lucide-react';
 
 interface PlayerXpGrowthChartProps {
@@ -268,12 +258,12 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
         const svg = d3.select(svgRef.current);
         svg.selectAll('*').remove();
 
-        const height = containerWidth < 500 ? 160 : 185;
+        const height = containerWidth < 500 ? 100 : 115;
         const margin = {
-            top: 14,
-            right: containerWidth < 500 ? 14 : 24,
-            bottom: 24,
-            left: containerWidth < 500 ? 38 : 46
+            top: 8,
+            right: 12,
+            bottom: 18,
+            left: containerWidth < 500 ? 30 : 36
         };
 
         const innerWidth = containerWidth - margin.left - margin.right;
@@ -320,12 +310,12 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
         areaGradient.append('stop')
             .attr('offset', '0%')
             .attr('stop-color', '#f59e0b')
-            .attr('stop-opacity', 0.35);
+            .attr('stop-opacity', 0.3);
 
         areaGradient.append('stop')
-            .attr('offset', '65%')
+            .attr('offset', '70%')
             .attr('stop-color', '#d97706')
-            .attr('stop-opacity', 0.08);
+            .attr('stop-opacity', 0.05);
 
         areaGradient.append('stop')
             .attr('offset', '100%')
@@ -348,24 +338,24 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
             .attr('offset', '100%')
             .attr('stop-color', '#f59e0b');
 
-        // High-tech Glow Filter
+        // Subtle Glow Filter
         const filter = defs.append('filter')
             .attr('id', 'd3-chart-glow')
-            .attr('x', '-30%')
-            .attr('y', '-30%')
-            .attr('width', '160%')
-            .attr('height', '160%');
+            .attr('x', '-20%')
+            .attr('y', '-20%')
+            .attr('width', '140%')
+            .attr('height', '140%');
 
         filter.append('feGaussianBlur')
-            .attr('stdDeviation', '3')
+            .attr('stdDeviation', '2')
             .attr('result', 'coloredBlur');
 
         const feMerge = filter.append('feMerge');
         feMerge.append('feMergeNode').attr('in', 'coloredBlur');
         feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
 
-        // Horizontal Grid Lines
-        const yTicks = yScale.ticks(4);
+        // Horizontal Grid Lines (clean and minimal)
+        const yTicks = yScale.ticks(3);
         g.append('g')
             .attr('class', 'grid')
             .selectAll('line')
@@ -378,34 +368,7 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
             .attr('y2', d => yScale(d))
             .attr('stroke', '#27272a')
             .attr('stroke-width', 1)
-            .attr('stroke-dasharray', '3,3');
-
-        // Rank Tier Reference Lines
-        const relevantTiers = allTiers.filter(t => t.minXp > 0 && t.minXp <= maxYValue * 1.15);
-        relevantTiers.forEach(tier => {
-            const yPos = yScale(tier.minXp);
-            if (yPos >= 0 && yPos <= innerHeight) {
-                g.append('line')
-                    .attr('x1', 0)
-                    .attr('x2', innerWidth)
-                    .attr('y1', yPos)
-                    .attr('y2', yPos)
-                    .attr('stroke', '#f59e0b')
-                    .attr('stroke-opacity', 0.2)
-                    .attr('stroke-width', 1)
-                    .attr('stroke-dasharray', '4,4');
-
-                g.append('text')
-                    .attr('x', innerWidth - 4)
-                    .attr('y', yPos - 4)
-                    .attr('text-anchor', 'end')
-                    .attr('fill', '#d97706')
-                    .attr('font-size', '8.5px')
-                    .attr('font-family', 'monospace')
-                    .attr('font-weight', 'bold')
-                    .text(`${tier.name.toUpperCase()} (${tier.minXp} RP)`);
-            }
-        });
+            .attr('stroke-dasharray', '2,2');
 
         // Area Generator
         const area = d3.area<XpDataPoint>()
@@ -423,7 +386,7 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
             .attr('opacity', 0);
 
         areaPath.transition()
-            .duration(800)
+            .duration(600)
             .attr('opacity', 1);
 
         // Line Generator
@@ -432,14 +395,14 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
             .y(d => yScale(d.cumulativeXp))
             .curve(d3.curveMonotoneX);
 
-        // Animated Main Glow Path with strokeDashoffset entry transition
+        // Animated Main Path
         const path = g.append('path')
             .datum(filteredPoints)
             .attr('class', 'line')
             .attr('d', line)
             .attr('fill', 'none')
             .attr('stroke', 'url(#xp-chart-line-grad)')
-            .attr('stroke-width', 2.5)
+            .attr('stroke-width', 2)
             .style('filter', 'url(#d3-chart-glow)');
 
         const totalLength = (path.node() as SVGPathElement)?.getTotalLength() || 0;
@@ -447,11 +410,11 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
             .attr('stroke-dasharray', `${totalLength} ${totalLength}`)
             .attr('stroke-dashoffset', totalLength)
             .transition()
-            .duration(1000)
+            .duration(800)
             .ease(d3.easeCubicOut)
             .attr('stroke-dashoffset', 0);
 
-        // Data Nodes / Glowing Markers with staggered bounce in
+        // Data Nodes / Markers
         const pointsGroup = g.append('g').attr('class', 'data-points');
 
         pointsGroup.selectAll('.point-halo')
@@ -463,11 +426,11 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
             .attr('cy', d => yScale(d.cumulativeXp))
             .attr('r', 0)
             .attr('fill', '#f59e0b')
-            .attr('fill-opacity', 0.25)
+            .attr('fill-opacity', 0.2)
             .transition()
-            .delay((_, i) => (i * 80) + 400)
-            .duration(500)
-            .attr('r', 5.5);
+            .delay((_, i) => (i * 60) + 300)
+            .duration(400)
+            .attr('r', 4);
 
         pointsGroup.selectAll('.point-core')
             .data(filteredPoints)
@@ -479,15 +442,15 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
             .attr('r', 0)
             .attr('fill', '#ffffff')
             .attr('stroke', '#f59e0b')
-            .attr('stroke-width', 2)
+            .attr('stroke-width', 1.5)
             .transition()
-            .delay((_, i) => (i * 80) + 400)
-            .duration(500)
-            .attr('r', 3);
+            .delay((_, i) => (i * 60) + 300)
+            .duration(400)
+            .attr('r', 2.5);
 
         // X-Axis (Dates)
         const xAxis = d3.axisBottom(xScale)
-            .ticks(containerWidth < 500 ? 4 : 6)
+            .ticks(containerWidth < 500 ? 3 : 5)
             .tickFormat(d => d3.timeFormat('%b %d')(d as Date))
             .tickSizeOuter(0);
 
@@ -498,23 +461,23 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
         gx.select('.domain').attr('stroke', '#3f3f46');
         gx.selectAll('.tick line').attr('stroke', '#3f3f46');
         gx.selectAll('.tick text')
-            .attr('fill', '#a1a1aa')
-            .attr('font-size', '9.5px')
+            .attr('fill', '#71717a')
+            .attr('font-size', '8.5px')
             .attr('font-family', 'monospace')
-            .attr('dy', '8px');
+            .attr('dy', '6px');
 
         // Y-Axis (RP Values)
         const yAxis = d3.axisLeft(yScale)
-            .ticks(4)
-            .tickFormat(d => `${d} RP`)
+            .ticks(3)
+            .tickFormat(d => `${d}`)
             .tickSizeOuter(0);
 
         const gy = g.append('g').call(yAxis);
         gy.select('.domain').attr('stroke', '#3f3f46');
         gy.selectAll('.tick line').attr('stroke', '#27272a');
         gy.selectAll('.tick text')
-            .attr('fill', '#a1a1aa')
-            .attr('font-size', '9.5px')
+            .attr('fill', '#71717a')
+            .attr('font-size', '8.5px')
             .attr('font-family', 'monospace');
 
         // Interactive Crosshair & Live Hover Overlay
@@ -592,37 +555,28 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
     }, [filteredPoints, containerWidth, allTiers]);
 
     return (
-        <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-950/90 border border-zinc-800/80 shadow-lg relative overflow-hidden backdrop-blur-md">
+        <div className="p-2.5 sm:p-3 rounded-xl bg-zinc-950/90 border border-zinc-800/80 shadow-md relative overflow-hidden backdrop-blur-md">
             
-            {/* Header: Title & Time Range Filter Buttons */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 mb-2.5 pb-2 border-b border-zinc-800/70">
-                <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400">
-                        <TrendingUp className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h3 className="text-xs sm:text-sm font-black font-mono text-white uppercase tracking-wider">
-                                Season RP Growth & Trajectory
-                            </h3>
-                            <span className="px-1.5 py-0.2 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 font-mono text-[8px] font-bold uppercase">
-                                Live D3.js
-                            </span>
-                        </div>
-                    </div>
+            {/* Compact Header: Title & Time Range Toggles */}
+            <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-zinc-800/70">
+                <div className="flex items-center gap-1.5">
+                    <TrendingUp className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <h3 className="text-xs sm:text-sm font-black font-mono text-white uppercase tracking-wider truncate">
+                        Season RP Growth & Trajectory
+                    </h3>
                 </div>
 
-                {/* Range Buttons */}
-                <div className="flex items-center gap-1 p-0.5 rounded-lg bg-zinc-900/90 border border-zinc-800 self-stretch sm:self-auto justify-end">
+                {/* Range Filter Pills */}
+                <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-900/90 border border-zinc-800 shrink-0">
                     {[
-                        { id: 'all', label: 'Full Season' },
-                        { id: '30d', label: 'Last 30D' },
-                        { id: 'recent5', label: 'Recent Ops' },
+                        { id: 'all', label: 'All' },
+                        { id: '30d', label: '30D' },
+                        { id: 'recent5', label: 'Recent' },
                     ].map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setTimeRange(tab.id as any)}
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase transition-all ${
+                            className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase transition-all ${
                                 timeRange === tab.id
                                     ? 'bg-amber-500 text-black shadow-sm'
                                     : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
@@ -634,31 +588,26 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
                 </div>
             </div>
 
-            {/* Quick Metrics Strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
-                <div className="p-2 rounded-lg bg-zinc-900/40 border border-zinc-800/60 flex items-center justify-between">
-                    <span className="text-[9px] font-mono uppercase text-zinc-400">Total RP</span>
-                    <span className="text-sm sm:text-base font-mono font-black text-amber-400">{statsSummary.currentTotal.toLocaleString()}</span>
-                </div>
-
-                <div className="p-2 rounded-lg bg-zinc-900/40 border border-zinc-800/60 flex items-center justify-between">
+            {/* Streamlined Metrics Micro-Strip */}
+            <div className="grid grid-cols-3 gap-1.5 mb-1.5">
+                <div className="px-2 py-1 rounded-md bg-zinc-900/40 border border-zinc-800/60 flex items-center justify-between">
                     <span className="text-[9px] font-mono uppercase text-zinc-400">Peak Gain</span>
-                    <span className="text-sm sm:text-base font-mono font-black text-emerald-400">+{statsSummary.highestGain.toLocaleString()}</span>
+                    <span className="text-xs font-mono font-bold text-emerald-400">+{statsSummary.highestGain.toLocaleString()}</span>
                 </div>
 
-                <div className="p-2 rounded-lg bg-zinc-900/40 border border-zinc-800/60 flex items-center justify-between">
+                <div className="px-2 py-1 rounded-md bg-zinc-900/40 border border-zinc-800/60 flex items-center justify-between">
                     <span className="text-[9px] font-mono uppercase text-zinc-400">Avg / Op</span>
-                    <span className="text-sm sm:text-base font-mono font-black text-white">~{statsSummary.avgGain.toLocaleString()}</span>
+                    <span className="text-xs font-mono font-bold text-zinc-200">~{statsSummary.avgGain.toLocaleString()}</span>
                 </div>
 
-                <div className="p-2 rounded-lg bg-zinc-900/40 border border-zinc-800/60 flex items-center justify-between">
-                    <span className="text-[9px] font-mono uppercase text-zinc-400">Operations</span>
-                    <span className="text-sm sm:text-base font-mono font-black text-zinc-200">{statsSummary.totalRecordedEvents}</span>
+                <div className="px-2 py-1 rounded-md bg-zinc-900/40 border border-zinc-800/60 flex items-center justify-between">
+                    <span className="text-[9px] font-mono uppercase text-zinc-400">Recorded Ops</span>
+                    <span className="text-xs font-mono font-bold text-amber-400">{statsSummary.totalRecordedEvents}</span>
                 </div>
             </div>
 
             {/* D3 SVG Line Chart Canvas & Floating Hover Tooltip */}
-            <div ref={containerRef} className="w-full relative min-h-[160px] sm:min-h-[185px] bg-zinc-950/80 rounded-lg border border-zinc-900 p-0.5 flex items-center justify-center">
+            <div ref={containerRef} className="w-full relative min-h-[100px] sm:min-h-[115px] bg-zinc-950/80 rounded-lg border border-zinc-900/80 p-0.5 flex items-center justify-center">
                 <svg ref={svgRef} className="w-full block overflow-visible" />
 
                 {/* Floating Interactive Tooltip */}
@@ -666,31 +615,31 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
                     <div 
                         className="absolute pointer-events-none z-30 transition-all duration-75 ease-out -translate-y-full"
                         style={{
-                            left: `${Math.min(Math.max(tooltipPos.x, 90), containerWidth - 90)}px`,
-                            top: `${Math.max(tooltipPos.y - 8, 8)}px`,
+                            left: `${Math.min(Math.max(tooltipPos.x, 70), containerWidth - 70)}px`,
+                            top: `${Math.max(tooltipPos.y - 6, 6)}px`,
                             transform: 'translate(-50%, -100%)'
                         }}
                     >
-                        <div className="bg-zinc-900/95 border border-amber-500/50 shadow-[0_6px_20px_rgba(0,0,0,0.8)] rounded-lg p-2 min-w-[150px] max-w-[210px] text-xs font-mono backdrop-blur-md">
-                            <div className="flex items-center justify-between gap-1.5 border-b border-zinc-800 pb-1 mb-1">
-                                <span className="font-black text-amber-400 uppercase truncate text-[10px]">
+                        <div className="bg-zinc-900/95 border border-amber-500/50 shadow-lg rounded-lg p-1.5 px-2 min-w-[125px] max-w-[190px] text-xs font-mono backdrop-blur-md">
+                            <div className="flex items-center justify-between gap-1.5 border-b border-zinc-800 pb-0.5 mb-0.5">
+                                <span className="font-bold text-amber-400 uppercase truncate text-[9px]">
                                     {hoveredPoint.label}
                                 </span>
-                                <span className="text-[8.5px] text-zinc-400 whitespace-nowrap">
+                                <span className="text-[8px] text-zinc-400 whitespace-nowrap">
                                     {hoveredPoint.dateLabel}
                                 </span>
                             </div>
 
-                            <div className="flex items-center justify-between gap-2 text-[10px] mb-0.5">
-                                <span className="text-zinc-400">Total RP:</span>
-                                <span className="font-bold font-mono text-white text-[11px]">
+                            <div className="flex items-center justify-between gap-2 text-[9px] mb-0.5">
+                                <span className="text-zinc-400">Total:</span>
+                                <span className="font-bold font-mono text-white">
                                     {hoveredPoint.cumulativeXp.toLocaleString()} RP
                                 </span>
                             </div>
 
                             {hoveredPoint.xpDelta !== 0 && (
-                                <div className="flex items-center justify-between gap-2 text-[9px]">
-                                    <span className="text-zinc-400">Op Delta:</span>
+                                <div className="flex items-center justify-between gap-2 text-[8.5px]">
+                                    <span className="text-zinc-400">Delta:</span>
                                     <span className={`font-bold font-mono ${hoveredPoint.xpDelta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                                         {hoveredPoint.xpDelta >= 0 ? `+${hoveredPoint.xpDelta}` : hoveredPoint.xpDelta} RP
                                     </span>
@@ -698,29 +647,15 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
                             )}
 
                             {hoveredPoint.rankName && (
-                                <div className="flex items-center justify-between gap-2 text-[8.5px] text-zinc-400 pt-0.5 mt-0.5 border-t border-zinc-800/70">
+                                <div className="flex items-center justify-between gap-2 text-[8px] text-zinc-400 pt-0.5 mt-0.5 border-t border-zinc-800/70">
                                     <span>Milestone:</span>
                                     <span className="text-amber-300 font-bold uppercase">{hoveredPoint.rankName}</span>
                                 </div>
                             )}
 
                             {/* Pointer Arrow */}
-                            <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 w-2 h-2 bg-zinc-900 border-r border-b border-amber-500/50 rotate-45" />
+                            <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-zinc-900 border-r border-b border-amber-500/50 rotate-45" />
                         </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Bottom Tactical Data Ribbon */}
-            <div className="mt-2 p-1.5 px-2.5 rounded-lg bg-zinc-900/60 border border-amber-500/15 flex items-center justify-between text-xs font-mono">
-                <div className="flex items-center gap-1.5 text-zinc-400 text-[10px]">
-                    <Clock className="w-3 h-3 text-amber-500" />
-                    <span>Hover or slide across the line to inspect operation details.</span>
-                </div>
-                {hoveredPoint && (
-                    <div className="flex items-center gap-1 text-[10px]">
-                        <span className="text-zinc-400">Selected:</span>
-                        <span className="text-amber-400 font-bold">{hoveredPoint.cumulativeXp.toLocaleString()} RP</span>
                     </div>
                 )}
             </div>

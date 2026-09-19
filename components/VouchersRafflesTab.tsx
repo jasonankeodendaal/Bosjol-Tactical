@@ -792,7 +792,7 @@ const LiveRaffleDrawArena: React.FC<{
 
                     dataContext?.createNotification?.({
                         title: `🎉 Raffle Winner: ${winnerDisplayName}!`,
-                        message: `${winnerDisplayName} won "${currentPrize.name}" in ${raffle.name}! ${isTopTicketsMode ? `(Top Ticket Buyer: ${playerTicketsCount} tickets)` : `Ticket: ${finalWinningTicket.code}`}`,
+                        message: `${winnerDisplayName} won "${currentPrize.name}" in ${raffle.name}! (Ticket: ${finalWinningTicket.code})`,
                         type: 'raffle_winner',
                         playerId: winningPlayer.id,
                         playerName: fullName,

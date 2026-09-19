@@ -534,7 +534,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
 
                     dataContext?.createNotification?.({
                         title: `🎉 Raffle Winner: ${winnerDisplayName}!`,
-                        message: `${winnerDisplayName} won "${targetPrize.name}" in ${raffle.name}! ${isTopTicketsMode ? `(Top Ticket Buyer: ${playerTicketsCount} tickets)` : `Ticket: ${winningTicket.code}`}`,
+                        message: `${winnerDisplayName} won "${targetPrize.name}" in ${raffle.name}! (Ticket: ${winningTicket.code})`,
                         type: 'raffle_winner',
                         playerId: winningPlayer.id,
                         playerName: fullName,
@@ -656,9 +656,9 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                             }`}>
                                 {raffle.status === 'Completed' ? 'DRAW CONCLUDED' : 'LIVE RAFFLE ARENA'}
                             </span>
-                            {isTopTicketsMode && (
+                            {isTopTicketsMode && isAdmin && (
                                 <span className="hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                                    👑 TOP BUYER PRIORITY
+                                    👑 TOP BUYER PRIORITY (ADMIN)
                                 </span>
                             )}
                         </div>
@@ -1139,9 +1139,9 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                     Total ticket distribution across {leaderboardStats.length} participating operators
                                 </p>
                             </div>
-                            {isTopTicketsMode && (
+                            {isTopTicketsMode && isAdmin && (
                                 <span className="text-xs font-bold bg-amber-500/20 text-amber-300 px-3 py-1 rounded-lg border border-amber-500/40">
-                                    👑 Top Buyers Guaranteed Place Preference
+                                    👑 Top Buyers Priority (Admin Only)
                                 </span>
                             )}
                         </div>

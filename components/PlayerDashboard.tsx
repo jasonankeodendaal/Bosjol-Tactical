@@ -1069,11 +1069,6 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                                                     </span>
                                                     <h4 className="font-black text-white text-base sm:text-lg mt-1">{raffle.name}</h4>
                                                 </div>
-                                                {raffle.alwaysChooseMostTickets && (
-                                                    <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                                                        👑 Top Buyer Priority
-                                                    </span>
-                                                )}
                                             </div>
 
                                             {raffle.description && (
@@ -1224,11 +1219,6 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        {raffle.alwaysChooseMostTickets && (
-                                            <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                                                👑 Top Ticket Priority
-                                            </span>
-                                        )}
                                         <Button
                                             size="sm"
                                             variant="secondary"

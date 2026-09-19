@@ -430,7 +430,7 @@ const BadgeProgressCard: React.FC<{badge: Badge, player: Player, ranks: Rank[]}>
     );
 }
 
-const TinySquareRaffleCard: React.FC<{
+const TinyBarRaffleCard: React.FC<{
     raffle: Raffle;
     player: Player;
     onOpenArena: (r: Raffle) => void;
@@ -450,51 +450,68 @@ const TinySquareRaffleCard: React.FC<{
     return (
         <div
             onClick={() => onOpenArena(raffle)}
-            className="group relative overflow-hidden w-36 h-36 sm:w-40 sm:h-40 aspect-square flex-shrink-0 rounded-2xl bg-gradient-to-b from-zinc-900/95 via-zinc-900/90 to-black/95 p-2.5 sm:p-3 border border-amber-500/40 hover:border-amber-400 shadow-[0_4px_16px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(251,191,36,0.2)] hover:shadow-[0_6px_24px_rgba(245,158,11,0.25)] backdrop-blur-xl cursor-pointer transition-all duration-200 hover:-translate-y-0.5 flex flex-col justify-between select-none"
+            className="group relative overflow-hidden w-full rounded-xl bg-gradient-to-r from-zinc-950 via-zinc-900 to-black p-2 sm:px-3 sm:py-2 border border-amber-500/40 hover:border-amber-400 shadow-[0_2px_12px_rgba(0,0,0,0.7)] hover:shadow-[0_4px_16px_rgba(245,158,11,0.25)] backdrop-blur-xl cursor-pointer transition-all duration-200 flex items-center justify-between gap-2 select-none"
             title={`Enter ${raffle.name} Live Arena`}
         >
-            {/* Ambient subtle backlight */}
-            <div className="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/15 rounded-full blur-xl pointer-events-none group-hover:bg-amber-500/25 transition-all" />
+            {/* Tiny animated glowing laser shimmer bar effect along the top edge */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500/10 via-amber-500/40 to-amber-500/10 overflow-hidden pointer-events-none">
+                <motion.div
+                    className="w-24 h-full bg-gradient-to-r from-transparent via-amber-300 to-transparent shadow-[0_0_8px_#f59e0b]"
+                    animate={{ x: ['-100%', '800%'] }}
+                    transition={{ repeat: Infinity, duration: 2.5, ease: 'linear' }}
+                />
+            </div>
 
-            {/* Top row: Status & Prizes count */}
-            <div className="flex items-center justify-between relative z-10">
-                <div className="flex items-center gap-1.5">
+            {/* Subtle left accent bar */}
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-400 to-red-500 rounded-l" />
+
+            {/* Left Info Cluster */}
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 pl-1">
+                {/* Live Pulse Indicator */}
+                <div className="flex items-center gap-1.5 shrink-0">
                     <span className="relative flex h-2 w-2">
                         {!isCompleted && (
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                         )}
                         <span className={`relative inline-flex rounded-full h-2 w-2 ${isCompleted ? 'bg-zinc-500' : 'bg-emerald-500'}`} />
                     </span>
-                    <span className={`text-[9px] font-mono font-black uppercase tracking-wider ${isCompleted ? 'text-zinc-400' : 'text-emerald-400'}`}>
-                        {isCompleted ? 'Ended' : 'Live'}
+                    <span className={`text-[9px] font-mono font-black uppercase tracking-wider hidden xs:inline ${isCompleted ? 'text-zinc-400' : 'text-emerald-400'}`}>
+                        {isCompleted ? 'Ended' : 'Live Raffle'}
                     </span>
                 </div>
-                <span className="text-[9px] font-mono font-bold text-amber-400/90 bg-black/60 px-1.5 py-0.5 rounded border border-amber-500/30">
+
+                <div className="h-3.5 w-px bg-zinc-800 shrink-0 hidden xs:block" />
+
+                {/* Tactical Icon + Raffle Title */}
+                <div className="flex items-center gap-1.5 min-w-0">
+                    <SparklesIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors truncate">
+                        {raffle.name}
+                    </span>
+                </div>
+            </div>
+
+            {/* Center & Right Badges + Action */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                {/* Prize badge */}
+                <span className="text-[9px] font-mono text-zinc-400 bg-black/60 px-1.5 py-0.5 rounded border border-zinc-800 hidden sm:inline">
                     {prizesCount} prize{prizesCount === 1 ? '' : 's'}
                 </span>
-            </div>
 
-            {/* Center: Glowing Icon & Raffle Name & Ticket count */}
-            <div className="flex flex-col items-center justify-center my-auto text-center px-1 relative z-10">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-amber-500/20 to-red-500/20 border border-amber-500/30 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform shadow-inner">
-                    <SparklesIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+                {/* Personal Tickets Tag */}
+                <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                    myTicketsCount > 0 
+                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-300' 
+                        : 'bg-black/50 border-zinc-800 text-zinc-500'
+                }`}>
+                    {myTicketsCount > 0 ? `${myTicketsCount} ticket${myTicketsCount === 1 ? '' : 's'}` : '0 tix'}
+                </span>
+
+                {/* Compact Action Pill with Arrow */}
+                <div className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 group-hover:from-amber-500 group-hover:to-amber-400 text-black font-black text-[9px] sm:text-[10px] tracking-wider uppercase flex items-center gap-1 shadow-sm transition-all">
+                    <span>Arena</span>
+                    <span className="text-[8px] font-bold">→</span>
                 </div>
-                <p className="text-xs font-black text-white truncate max-w-full group-hover:text-amber-300 transition-colors leading-tight">
-                    {raffle.name}
-                </p>
-                <p className="text-[9px] font-mono text-zinc-400 mt-0.5 truncate max-w-full">
-                    {myTicketsCount > 0 ? (
-                        <span className="text-amber-400 font-bold">{myTicketsCount} ticket{myTicketsCount === 1 ? '' : 's'}</span>
-                    ) : (
-                        <span>0 tickets held</span>
-                    )}
-                </p>
-            </div>
-
-            {/* Bottom action pill */}
-            <div className="w-full py-1 rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 group-hover:from-amber-500 group-hover:to-amber-400 text-black font-black text-[9px] sm:text-[10px] tracking-wider uppercase flex items-center justify-center gap-1 shadow-sm transition-all relative z-10">
-                <span>Enter Arena</span>
-                <span className="text-[8px] font-bold">→</span>
             </div>
         </div>
     );
@@ -559,33 +576,17 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                 )}
             </AnimatePresence>
 
-            {/* LIVE ACTIVE RAFFLE SPOTLIGHT (SHRUNK DOWN TINY SQUARE RAFFLE CARD) */}
+            {/* LIVE ACTIVE RAFFLE SPOTLIGHT (SHRUNK DOWN TINY BAR EFFECT) */}
             {activeRaffles.length > 0 && onSelectRaffle && (
-                <div className="mb-2">
-                    <div className="flex items-center justify-between mb-2 px-1">
-                        <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1.5">
-                            <SparklesIcon className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                            Live Raffle Stage
-                        </span>
-                        {onNavigateToRaffles && (
-                            <button
-                                onClick={onNavigateToRaffles}
-                                className="text-[10px] font-mono text-zinc-400 hover:text-amber-400 transition-colors"
-                            >
-                                All Raffles →
-                            </button>
-                        )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                        {activeRaffles.map(raffle => (
-                            <TinySquareRaffleCard
-                                key={raffle.id}
-                                raffle={raffle}
-                                player={player}
-                                onOpenArena={onSelectRaffle}
-                            />
-                        ))}
-                    </div>
+                <div className="mb-2.5 space-y-1.5">
+                    {activeRaffles.map(raffle => (
+                        <TinyBarRaffleCard
+                            key={raffle.id}
+                            raffle={raffle}
+                            player={player}
+                            onOpenArena={onSelectRaffle}
+                        />
+                    ))}
                 </div>
             )}
 

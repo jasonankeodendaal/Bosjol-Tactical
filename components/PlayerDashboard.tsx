@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // FIX: Changed RankTier and SubRank to Rank and Tier respectively.
-import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, Rank, Tier, PlayerRole } from '../types';
+import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, Rank, Tier, PlayerRole, RaffleTicketDoc } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
 import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, ChevronDownIcon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon, InformationCircleIcon } from './icons/Icons';
@@ -430,6 +430,76 @@ const BadgeProgressCard: React.FC<{badge: Badge, player: Player, ranks: Rank[]}>
     );
 }
 
+const TinySquareRaffleCard: React.FC<{
+    raffle: Raffle;
+    player: Player;
+    onOpenArena: (r: Raffle) => void;
+}> = ({ raffle, player, onOpenArena }) => {
+    const isPlayerTicket = (t: RaffleTicketDoc) => {
+        if (!t) return false;
+        const cid = String(player.id || '').trim().toLowerCase();
+        const ccode = String(player.playerCode || '').trim().toLowerCase();
+        const tid = String(t.playerId || '').trim().toLowerCase();
+        const tcode = String(t.playerCode || '').trim().toLowerCase();
+        return (cid && tid === cid) || (ccode && (tid === ccode || tcode === ccode));
+    };
+    const myTicketsCount = (raffle.tickets || []).filter(isPlayerTicket).length;
+    const prizesCount = (raffle.prizes || []).length;
+    const isCompleted = raffle.status === 'Completed';
+
+    return (
+        <div
+            onClick={() => onOpenArena(raffle)}
+            className="group relative overflow-hidden w-36 h-36 sm:w-40 sm:h-40 aspect-square flex-shrink-0 rounded-2xl bg-gradient-to-b from-zinc-900/95 via-zinc-900/90 to-black/95 p-2.5 sm:p-3 border border-amber-500/40 hover:border-amber-400 shadow-[0_4px_16px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(251,191,36,0.2)] hover:shadow-[0_6px_24px_rgba(245,158,11,0.25)] backdrop-blur-xl cursor-pointer transition-all duration-200 hover:-translate-y-0.5 flex flex-col justify-between select-none"
+            title={`Enter ${raffle.name} Live Arena`}
+        >
+            {/* Ambient subtle backlight */}
+            <div className="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/15 rounded-full blur-xl pointer-events-none group-hover:bg-amber-500/25 transition-all" />
+
+            {/* Top row: Status & Prizes count */}
+            <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                        {!isCompleted && (
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        )}
+                        <span className={`relative inline-flex rounded-full h-2 w-2 ${isCompleted ? 'bg-zinc-500' : 'bg-emerald-500'}`} />
+                    </span>
+                    <span className={`text-[9px] font-mono font-black uppercase tracking-wider ${isCompleted ? 'text-zinc-400' : 'text-emerald-400'}`}>
+                        {isCompleted ? 'Ended' : 'Live'}
+                    </span>
+                </div>
+                <span className="text-[9px] font-mono font-bold text-amber-400/90 bg-black/60 px-1.5 py-0.5 rounded border border-amber-500/30">
+                    {prizesCount} prize{prizesCount === 1 ? '' : 's'}
+                </span>
+            </div>
+
+            {/* Center: Glowing Icon & Raffle Name & Ticket count */}
+            <div className="flex flex-col items-center justify-center my-auto text-center px-1 relative z-10">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-amber-500/20 to-red-500/20 border border-amber-500/30 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform shadow-inner">
+                    <SparklesIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+                </div>
+                <p className="text-xs font-black text-white truncate max-w-full group-hover:text-amber-300 transition-colors leading-tight">
+                    {raffle.name}
+                </p>
+                <p className="text-[9px] font-mono text-zinc-400 mt-0.5 truncate max-w-full">
+                    {myTicketsCount > 0 ? (
+                        <span className="text-amber-400 font-bold">{myTicketsCount} ticket{myTicketsCount === 1 ? '' : 's'}</span>
+                    ) : (
+                        <span>0 tickets held</span>
+                    )}
+                </p>
+            </div>
+
+            {/* Bottom action pill */}
+            <div className="w-full py-1 rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 group-hover:from-amber-500 group-hover:to-amber-400 text-black font-black text-[9px] sm:text-[10px] tracking-wider uppercase flex items-center justify-center gap-1 shadow-sm transition-all relative z-10">
+                <span>Enter Arena</span>
+                <span className="text-[8px] font-bold">→</span>
+            </div>
+        </div>
+    );
+};
+
 const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'events' | 'sponsors' | 'ranks' | 'raffles'> & { 
     onSelectEvent?: (e: GameEvent) => void;
     onSelectRaffle?: (r: Raffle) => void;
@@ -457,9 +527,9 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
     const sortedPlayers = useMemo(() => [...players].sort((a, b) => (b.stats?.xp ?? 0) - (a.stats?.xp ?? 0)), [players]);
     const topThree = sortedPlayers.slice(0, 3);
     
-    // Active running raffle for live spotlight preview
-    const activeRaffle = useMemo(() => {
-        return (raffles || []).find(r => r.status !== 'Completed');
+    // Active running raffles for live spotlight preview (shrunk tiny square cards)
+    const activeRaffles = useMemo(() => {
+        return (raffles || []).filter(r => r.status !== 'Completed');
     }, [raffles]);
 
     // Live calculated player performance incorporating match combat, badges, honors, and XP adjustments
@@ -489,15 +559,33 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                 )}
             </AnimatePresence>
 
-            {/* LIVE ACTIVE RAFFLE SPOTLIGHT ON DASHBOARD */}
-            {activeRaffle && onSelectRaffle && (
+            {/* LIVE ACTIVE RAFFLE SPOTLIGHT (SHRUNK DOWN TINY SQUARE RAFFLE CARD) */}
+            {activeRaffles.length > 0 && onSelectRaffle && (
                 <div className="mb-2">
-                    <EmbeddedLiveRaffleCard
-                        raffle={activeRaffle}
-                        player={player}
-                        players={players}
-                        onOpenArena={onSelectRaffle}
-                    />
+                    <div className="flex items-center justify-between mb-2 px-1">
+                        <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1.5">
+                            <SparklesIcon className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                            Live Raffle Stage
+                        </span>
+                        {onNavigateToRaffles && (
+                            <button
+                                onClick={onNavigateToRaffles}
+                                className="text-[10px] font-mono text-zinc-400 hover:text-amber-400 transition-colors"
+                            >
+                                All Raffles →
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                        {activeRaffles.map(raffle => (
+                            <TinySquareRaffleCard
+                                key={raffle.id}
+                                raffle={raffle}
+                                player={player}
+                                onOpenArena={onSelectRaffle}
+                            />
+                        ))}
+                    </div>
                 </div>
             )}
 

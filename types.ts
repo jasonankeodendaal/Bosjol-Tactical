@@ -312,6 +312,7 @@ export interface RaffleCore {
     prizes: Prize[];
     drawDate: string; // ISO date string
     status: 'Upcoming' | 'Active' | 'Completed';
+    alwaysChooseMostTickets?: boolean; // When toggled on, drawing prioritizes the player holding the most tickets
     createdAt: string;
 }
 

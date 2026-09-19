@@ -1009,9 +1009,10 @@ const EventsTab: React.FC<Pick<PlayerDashboardProps, 'events' | 'player' | 'onEv
 };
 
 const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'players'>> = ({ raffles, player, players }) => {
-    const myTickets = raffles.flatMap(r => r.tickets.filter(t => t.playerId === player.id).map(t => ({...t, raffleName: r.name})));
-    const pastRaffles = raffles.filter(r => r.status === 'Completed');
-    const myWins = pastRaffles.flatMap(r => r.winners.filter(w => w.playerId === player.id).map(w => ({...w, raffleName: r.name, prize: r.prizes.find(p => p.id === w.prizeId)})));
+    const safeRaffles = raffles || [];
+    const myTickets = safeRaffles.flatMap(r => (r.tickets || []).filter(t => t.playerId === player.id).map(t => ({...t, raffleName: r.name})));
+    const pastRaffles = safeRaffles.filter(r => r.status === 'Completed');
+    const myWins = pastRaffles.flatMap(r => (r.winners || []).filter(w => w.playerId === player.id).map(w => ({...w, raffleName: r.name, prize: (r.prizes || []).find(p => p.id === w.prizeId)})));
 
     return (
         <div className="space-y-6">

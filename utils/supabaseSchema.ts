@@ -654,18 +654,27 @@ CREATE TABLE IF NOT EXISTS public.locations (
 
 CREATE TABLE IF NOT EXISTS public.raffles (
     id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
+    name TEXT,
+    title TEXT,
+    location TEXT DEFAULT 'Main Tactical Arena',
+    "contactPhone" TEXT DEFAULT '',
+    contactphone TEXT DEFAULT '',
     description TEXT DEFAULT '',
     "ticketPrice" NUMERIC DEFAULT 0,
     ticketprice NUMERIC DEFAULT 0,
     "totalTickets" NUMERIC DEFAULT 100,
     totaltickets NUMERIC DEFAULT 100,
+    tickets JSONB DEFAULT '[]'::jsonb,
     "soldTickets" JSONB DEFAULT '[]'::jsonb,
     soldtickets JSONB DEFAULT '[]'::jsonb,
-    status TEXT DEFAULT 'Active',
+    winners JSONB DEFAULT '[]'::jsonb,
+    status TEXT DEFAULT 'Upcoming',
     "drawDate" TEXT,
     drawdate TEXT,
     prizes JSONB DEFAULT '[]'::jsonb,
+    "alwaysChooseMostTickets" BOOLEAN DEFAULT FALSE,
+    alwayschoosemosttickets BOOLEAN DEFAULT FALSE,
+    "createdAt" TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

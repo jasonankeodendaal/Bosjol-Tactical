@@ -297,6 +297,7 @@ const RaffleEditorModal: React.FC<{
         contactPhone: raffle.contactPhone || '+27821234567',
         drawDate: raffle.drawDate ? raffle.drawDate.split('T')[0] : new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
         status: raffle.status || 'Upcoming' as 'Upcoming' | 'Active' | 'Completed',
+        alwaysChooseMostTickets: raffle.alwaysChooseMostTickets ?? false,
     });
     
     const [prizes, setPrizes] = useState<Prize[]>(
@@ -385,6 +386,62 @@ const RaffleEditorModal: React.FC<{
                         value={formData.contactPhone} 
                         onChange={e => setFormData(f => ({ ...f, contactPhone: e.target.value }))} 
                     />
+                </div>
+
+                {/* Always Choose Most Tickets Toggle */}
+                <div className="bg-zinc-950/80 p-3.5 rounded-xl border border-zinc-800 hover:border-amber-500/40 transition-all space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                            <div className={`p-2 rounded-lg border transition-colors ${formData.alwaysChooseMostTickets ? 'bg-amber-500/20 text-amber-400 border-amber-500/50' : 'bg-zinc-900 text-zinc-500 border-zinc-800'}`}>
+                                <TrophyIcon className="w-5 h-5"/>
+                            </div>
+                            <div>
+                                <label 
+                                    id="alwaysChooseMostTicketsLabel"
+                                    onClick={() => setFormData(f => ({ ...f, alwaysChooseMostTickets: !f.alwaysChooseMostTickets }))}
+                                    className="text-xs font-bold uppercase tracking-wider text-zinc-200 cursor-pointer block hover:text-amber-400 transition-colors"
+                                >
+                                    Always Choose Player With Most Tickets to Win
+                                </label>
+                                <p className="text-[11px] text-zinc-400">
+                                    VIP / Top Buyer Priority: Prioritizes the player who holds the highest ticket volume
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            id="alwaysChooseMostTicketsToggleBtn"
+                            type="button"
+                            role="switch"
+                            aria-checked={formData.alwaysChooseMostTickets}
+                            aria-labelledby="alwaysChooseMostTicketsLabel"
+                            onClick={() => setFormData(f => ({ ...f, alwaysChooseMostTickets: !f.alwaysChooseMostTickets }))}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                                formData.alwaysChooseMostTickets ? 'bg-amber-500' : 'bg-zinc-700'
+                            }`}
+                        >
+                            <span
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                                    formData.alwaysChooseMostTickets ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                            />
+                        </button>
+                    </div>
+                    
+                    {formData.alwaysChooseMostTickets ? (
+                        <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-500/30 text-[11px] text-amber-300 flex items-start gap-2">
+                            <SparklesIcon className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                            <span>
+                                <strong>Top Ticket Holder Guaranteed Win:</strong> When toggled ON, the draw algorithm will automatically select the player holding the most tickets in this raffle to win the prize. If tied, it draws among tied top buyers.
+                            </span>
+                        </div>
+                    ) : (
+                        <div className="p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/80 text-[11px] text-zinc-400 flex items-center gap-2">
+                            <span className="text-zinc-500 font-mono text-xs">🎲</span>
+                            <span>
+                                <strong>Standard Fair Draw:</strong> Every issued ticket has equal probability of being randomly selected.
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="border-t border-zinc-800 pt-3">
@@ -579,16 +636,42 @@ const LiveRaffleDrawArena: React.FC<{
     const [isSpinning, setIsSpinning] = useState(false);
     const [displayCandidate, setDisplayCandidate] = useState<{ ticketCode: string; player: Player | undefined } | null>(null);
     const [localWinners, setLocalWinners] = useState<RaffleWinnerDoc[]>(raffle.winners || []);
-    const [justWon, setJustWon] = useState<{ prize: Prize; winner: RaffleWinnerDoc; player: Player | undefined } | null>(null);
+    const [justWon, setJustWon] = useState<{ prize: Prize; winner: RaffleWinnerDoc; player: Player | undefined; totalTicketsHeld?: number } | null>(null);
 
     const prizes = useMemo(() => [...raffle.prizes].sort((a, b) => a.place - b.place), [raffle.prizes]);
     const tickets = raffle.tickets || [];
+    const isTopTicketsMode = !!raffle.alwaysChooseMostTickets;
 
     // Eligible tickets (excluding already winning tickets to ensure one win per ticket)
     const availableTickets = useMemo(() => {
         const winningTicketIds = new Set(localWinners.map(w => w.ticketId));
         return tickets.filter(t => !winningTicketIds.has(t.id));
     }, [tickets, localWinners]);
+
+    // Compute ticket statistics per player in the available ticket pool
+    const playerTicketStats = useMemo(() => {
+        const counts = new Map<string, { count: number; tickets: RaffleTicketDoc[]; player: Player | undefined }>();
+        availableTickets.forEach(t => {
+            const existing = counts.get(t.playerId);
+            if (existing) {
+                existing.count++;
+                existing.tickets.push(t);
+            } else {
+                const player = players.find(p => p.id === t.playerId);
+                counts.set(t.playerId, { count: 1, tickets: [t], player });
+            }
+        });
+
+        const sortedStats = Array.from(counts.values()).sort((a, b) => b.count - a.count);
+        const maxCount = sortedStats[0]?.count || 0;
+        const topHolders = sortedStats.filter(s => s.count === maxCount);
+
+        return {
+            sortedStats,
+            maxCount,
+            topHolders
+        };
+    }, [availableTickets, players]);
 
     const currentPrize = prizes[currentPrizeIndex] || prizes[0];
     const isPrizeDrawn = localWinners.some(w => w.prizeId === currentPrize?.id);
@@ -618,8 +701,19 @@ const LiveRaffleDrawArena: React.FC<{
                 setTimeout(spinInterval, speed);
             } else {
                 // Final Lock on Winner
-                const finalWinningTicket = availableTickets[Math.floor(Math.random() * availableTickets.length)];
+                let finalWinningTicket: RaffleTicketDoc;
+                
+                if (isTopTicketsMode && playerTicketStats.topHolders.length > 0) {
+                    // Choose from the player(s) with the most tickets in this raffle
+                    const selectedTopHolder = playerTicketStats.topHolders[Math.floor(Math.random() * playerTicketStats.topHolders.length)];
+                    finalWinningTicket = selectedTopHolder.tickets[Math.floor(Math.random() * selectedTopHolder.tickets.length)] || availableTickets[0];
+                } else {
+                    // Standard uniform random ticket draw
+                    finalWinningTicket = availableTickets[Math.floor(Math.random() * availableTickets.length)];
+                }
+
                 const winningPlayer = players.find(p => p.id === finalWinningTicket.playerId);
+                const playerTicketsCount = tickets.filter(t => t.playerId === finalWinningTicket.playerId).length;
                 
                 const newWinnerDoc: RaffleWinnerDoc = {
                     id: `rw_${Date.now()}`,
@@ -632,13 +726,18 @@ const LiveRaffleDrawArena: React.FC<{
                 const updatedWinners = [...localWinners.filter(w => w.prizeId !== currentPrize.id), newWinnerDoc];
                 setLocalWinners(updatedWinners);
                 setIsSpinning(false);
-                setJustWon({ prize: currentPrize, winner: newWinnerDoc, player: winningPlayer });
+                setJustWon({ 
+                    prize: currentPrize, 
+                    winner: newWinnerDoc, 
+                    player: winningPlayer,
+                    totalTicketsHeld: playerTicketsCount
+                });
 
                 // Trigger celebration notification
                 if (winningPlayer) {
                     dataContext?.createNotification?.({
                         title: `🎉 Raffle Winner: ${winningPlayer.name}!`,
-                        message: `${winningPlayer.name} (${winningPlayer.callsign || winningPlayer.playerCode}) won "${currentPrize.name}" in ${raffle.name}! Ticket: ${finalWinningTicket.code}`,
+                        message: `${winningPlayer.name} (${winningPlayer.callsign || winningPlayer.playerCode}) won "${currentPrize.name}" in ${raffle.name}! ${isTopTicketsMode ? `(Top Ticket Holder: ${playerTicketsCount} tickets)` : `Ticket: ${finalWinningTicket.code}`}`,
                         type: 'raffle_winner',
                         playerId: winningPlayer.id,
                         playerName: `${winningPlayer.name} ${winningPlayer.surname || ''}`.trim(),
@@ -663,6 +762,21 @@ const LiveRaffleDrawArena: React.FC<{
     return (
         <Modal isOpen={true} onClose={handleSaveAndExit} title={`Tactical Raffle Draw: ${raffle.name}`}>
             <div className="space-y-6 text-center">
+                {/* Mode Indicator Banner */}
+                <div className="flex items-center justify-center gap-2">
+                    {isTopTicketsMode ? (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm">
+                            <TrophyIcon className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Top Ticket Holder Win Mode Active ({playerTicketStats.maxCount} Max Tickets)</span>
+                        </div>
+                    ) : (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-zinc-400 bg-zinc-900 border border-zinc-800">
+                            <span>🎲</span>
+                            <span>Standard Random Draw (Equal Ticket Odds)</span>
+                        </div>
+                    )}
+                </div>
+
                 {/* Prize selector tabs */}
                 <div className="flex justify-center gap-2 overflow-x-auto pb-1">
                     {prizes.map((p, idx) => {
@@ -700,7 +814,7 @@ const LiveRaffleDrawArena: React.FC<{
                             {currentPrize.name}
                         </h3>
                         <p className="text-xs text-zinc-400 mt-0.5">
-                            {availableTickets.length} eligible tickets in the pool
+                            {availableTickets.length} eligible tickets across {playerTicketStats.sortedStats.length} player(s) in the pool
                         </p>
                     </div>
 
@@ -731,7 +845,7 @@ const LiveRaffleDrawArena: React.FC<{
                                         src={justWon.player?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(justWon.player?.callsign || justWon.player?.name || 'OP')}&background=18181b&color=ef4444&bold=true`} 
                                         alt={justWon.player?.name}
                                         onError={(e) => {
-                                            (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(justWon.player?.callsign || justWon.player?.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
+                                             (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(justWon.player?.callsign || justWon.player?.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
                                         }}
                                         className="w-12 h-12 rounded-full border-2 border-amber-400 shadow-md object-cover"
                                     />
@@ -742,6 +856,11 @@ const LiveRaffleDrawArena: React.FC<{
                                         <div className="text-xs text-amber-300 font-mono font-bold">
                                             Callsign: {justWon.player?.callsign || 'N/A'} • {justWon.player?.playerCode || ''}
                                         </div>
+                                        {isTopTicketsMode && justWon.totalTicketsHeld !== undefined && (
+                                            <div className="text-[11px] text-amber-400 font-semibold">
+                                                👑 Held {justWon.totalTicketsHeld} ticket{justWon.totalTicketsHeld === 1 ? '' : 's'} (Top Buyer)
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <p className="text-xs font-semibold text-emerald-400">
@@ -772,6 +891,28 @@ const LiveRaffleDrawArena: React.FC<{
                             </div>
                         )}
                     </div>
+
+                    {/* Top Ticket Holders Summary Preview if in Top Tickets Mode */}
+                    {isTopTicketsMode && playerTicketStats.sortedStats.length > 0 && !isSpinning && !justWon && (
+                        <div className="mb-4 bg-amber-950/20 border border-amber-500/20 rounded-xl p-3 text-left">
+                            <div className="flex items-center justify-between text-[11px] font-bold uppercase text-amber-400 tracking-wider mb-2">
+                                <span>👑 Ticket Holder Standings</span>
+                                <span className="text-zinc-400 font-normal">Top count: {playerTicketStats.maxCount}</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+                                {playerTicketStats.sortedStats.slice(0, 4).map((stat, idx) => (
+                                    <div key={stat.player?.id || idx} className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg ${idx === 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold' : 'bg-zinc-900/80 text-zinc-300 border border-zinc-800'}`}>
+                                        <span className="truncate">
+                                            {idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : ''}{stat.player?.name} {stat.player?.surname || ''} ({stat.player?.callsign || 'Operator'})
+                                        </span>
+                                        <span className="font-mono text-amber-400 ml-2">
+                                            {stat.count} {stat.count === 1 ? 'ticket' : 'tickets'}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Action Controls */}
                     <div className="flex flex-col sm:flex-row justify-center gap-3">
@@ -1304,7 +1445,15 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                         <div>
                                             <div className="flex items-start justify-between gap-3 mb-2">
                                                 <div>
-                                                    <h4 className="font-bold text-base text-white">{r.name}</h4>
+                                                    <h4 className="font-bold text-base text-white flex items-center gap-2">
+                                                        <span>{r.name}</span>
+                                                        {r.alwaysChooseMostTickets && (
+                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 inline-flex items-center gap-1" title="Draw engine will prioritize top ticket holders">
+                                                                <TrophyIcon className="w-3 h-3 text-amber-400" />
+                                                                Top Buyer Priority
+                                                            </span>
+                                                        )}
+                                                    </h4>
                                                     <p className="text-xs text-zinc-400">
                                                         Draw Date: {new Date(r.drawDate).toLocaleDateString()} • {r.location}
                                                     </p>

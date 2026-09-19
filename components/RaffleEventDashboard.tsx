@@ -949,57 +949,116 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                 </div>
                             )}
 
-                            {/* CONTROLS BAR (FOR HOST / ADMIN OR DEMO) */}
-                            <div className="flex flex-wrap items-center justify-center gap-2.5 mt-4 z-20">
-                                <Button
-                                    onClick={() => executeSpinDraw(currentPrize)}
-                                    disabled={isSpinning || isAutoDrawingAll || availableTickets.length === 0}
-                                    className="text-sm font-bold bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 shadow-lg shadow-red-950/80"
-                                >
-                                    {isSpinning 
-                                        ? '🎲 Decrypting...' 
-                                        : isCurrentPrizeDrawn 
-                                            ? '🔄 Re-Draw This Prize' 
-                                            : `🎯 Spin Place #${currentPrizeIndex + 1}`
-                                    }
-                                </Button>
-
-                                {undrawnPrizesCount > 1 && (
+                            {/* CONTROLS BAR: ONLY ADMIN CAN TRIGGER AND COMMIT DRAWS */}
+                            {isAdmin ? (
+                                <div className="flex flex-wrap items-center justify-center gap-2.5 mt-4 z-20">
                                     <Button
-                                        variant="secondary"
-                                        onClick={handleAutoDrawAll}
+                                        onClick={() => executeSpinDraw(currentPrize)}
                                         disabled={isSpinning || isAutoDrawingAll || availableTickets.length === 0}
-                                        className="text-xs sm:text-sm font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30"
+                                        className="text-sm font-bold bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 shadow-lg shadow-red-950/80"
                                     >
-                                        ⚡ Auto-Draw All {undrawnPrizesCount} Spots
+                                        {isSpinning 
+                                            ? '🎲 Decrypting...' 
+                                            : isCurrentPrizeDrawn 
+                                                ? '🔄 Re-Draw This Prize' 
+                                                : `🎯 Spin Place #${currentPrizeIndex + 1}`
+                                        }
                                     </Button>
-                                )}
 
-                                {currentPrizeIndex < prizes.length - 1 && (
-                                    <Button 
-                                        variant="secondary"
-                                        onClick={() => {
-                                            setCurrentPrizeIndex(prev => Math.min(prizes.length - 1, prev + 1));
-                                            setJustWon(null);
-                                        }}
-                                        disabled={isSpinning}
-                                        className="text-xs sm:text-sm"
-                                    >
-                                        Next Place 👉
-                                    </Button>
-                                )}
+                                    {undrawnPrizesCount > 1 && (
+                                        <Button
+                                            variant="secondary"
+                                            onClick={handleAutoDrawAll}
+                                            disabled={isSpinning || isAutoDrawingAll || availableTickets.length === 0}
+                                            className="text-xs sm:text-sm font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30"
+                                        >
+                                            ⚡ Auto-Draw All {undrawnPrizesCount} Spots
+                                        </Button>
+                                    )}
 
-                                {onSaveWinners && localWinners.length > 0 && (
-                                    <Button
-                                        variant="secondary"
-                                        onClick={handleSaveWinners}
-                                        disabled={isSpinning}
-                                        className="text-xs sm:text-sm bg-emerald-950/80 text-emerald-400 border border-emerald-800 hover:bg-emerald-900"
-                                    >
-                                        💾 Save & Commit Results
-                                    </Button>
-                                )}
-                            </div>
+                                    {currentPrizeIndex > 0 && (
+                                        <Button 
+                                            variant="secondary"
+                                            onClick={() => {
+                                                setCurrentPrizeIndex(prev => Math.max(0, prev - 1));
+                                                setJustWon(null);
+                                            }}
+                                            disabled={isSpinning}
+                                            className="text-xs sm:text-sm"
+                                        >
+                                            👈 Prev Place
+                                        </Button>
+                                    )}
+
+                                    {currentPrizeIndex < prizes.length - 1 && (
+                                        <Button 
+                                            variant="secondary"
+                                            onClick={() => {
+                                                setCurrentPrizeIndex(prev => Math.min(prizes.length - 1, prev + 1));
+                                                setJustWon(null);
+                                            }}
+                                            disabled={isSpinning}
+                                            className="text-xs sm:text-sm"
+                                        >
+                                            Next Place 👉
+                                        </Button>
+                                    )}
+
+                                    {onSaveWinners && localWinners.length > 0 && (
+                                        <Button
+                                            variant="secondary"
+                                            onClick={handleSaveWinners}
+                                            disabled={isSpinning}
+                                            className="text-xs sm:text-sm bg-emerald-950/80 text-emerald-400 border border-emerald-800 hover:bg-emerald-900"
+                                        >
+                                            💾 Save & Commit Results
+                                        </Button>
+                                    )}
+                                </div>
+                            ) : (
+                                /* SPECTATOR CLIENT CONTROLS: VIEW ONLY + PLACE NAVIGATION */
+                                <div className="flex flex-col items-center gap-3 mt-4 z-20">
+                                    <div className="flex items-center gap-2">
+                                        {currentPrizeIndex > 0 && (
+                                            <Button 
+                                                size="sm"
+                                                variant="secondary"
+                                                onClick={() => {
+                                                    setCurrentPrizeIndex(prev => Math.max(0, prev - 1));
+                                                    setJustWon(null);
+                                                }}
+                                                className="text-xs"
+                                            >
+                                                👈 Prev Place
+                                            </Button>
+                                        )}
+
+                                        <div className="px-3.5 py-1.5 rounded-full bg-zinc-900/90 border border-zinc-800 text-xs text-zinc-400 font-mono flex items-center gap-2">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                            <span>
+                                                {raffle.status === 'Completed'
+                                                    ? '🏆 Official Draw Concluded'
+                                                    : '📡 Live Spectator View • Waiting for Host Draw'
+                                                }
+                                            </span>
+                                        </div>
+
+                                        {currentPrizeIndex < prizes.length - 1 && (
+                                            <Button 
+                                                size="sm"
+                                                variant="secondary"
+                                                onClick={() => {
+                                                    setCurrentPrizeIndex(prev => Math.min(prizes.length - 1, prev + 1));
+                                                    setJustWon(null);
+                                                }}
+                                                className="text-xs"
+                                            >
+                                                Next Place 👉
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* LIVE WINNERS PODIUM ROSTER */}

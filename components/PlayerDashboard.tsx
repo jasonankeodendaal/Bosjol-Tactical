@@ -20,6 +20,7 @@ import { UrlOrUploadField } from './UrlOrUploadField';
 import { PlayerRankShowcase } from './PlayerRankShowcase';
 import { PlayerRulesView } from './PlayerRulesView';
 import { PlayerGameTypesView } from './PlayerGameTypesView';
+import { RaffleEventDashboard } from './RaffleEventDashboard';
 import { getRankForPlayer, getRankProgression, FALLBACK_RECRUIT_TIER } from '../utils/rankUtils';
 import { resolveRankIcon, getRankBadgeSvg } from '../utils/rankBadges';
 import { calculatePlayerPerformance } from '../utils/playerPerformanceUtils';
@@ -1010,16 +1011,129 @@ const EventsTab: React.FC<Pick<PlayerDashboardProps, 'events' | 'player' | 'onEv
 
 const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'players'>> = ({ raffles, player, players }) => {
     const safeRaffles = raffles || [];
+    const [selectedRaffleForDashboard, setSelectedRaffleForDashboard] = useState<Raffle | null>(null);
+
     const myTickets = safeRaffles.flatMap(r => (r.tickets || []).filter(t => t.playerId === player.id).map(t => ({...t, raffleName: r.name, raffleStatus: r.status})));
     const pastRaffles = safeRaffles.filter(r => r.status === 'Completed');
+    const activeRaffles = safeRaffles.filter(r => r.status !== 'Completed');
+
     const myWins = pastRaffles.flatMap(r => (r.winners || []).filter(w => w.playerId === player.id).map(w => {
         const prize = (r.prizes || []).find(p => p.id === w.prizeId);
         const ticket = (r.tickets || []).find(t => t.id === w.ticketId);
-        return { ...w, raffleName: r.name, prize, ticket };
+        return { ...w, raffleName: r.name, prize, ticket, raffle: r };
     }));
 
     return (
         <div className="space-y-6">
+            {/* Fullscreen/Modal Live Raffle Event Dashboard */}
+            {selectedRaffleForDashboard && (
+                <RaffleEventDashboard
+                    raffle={selectedRaffleForDashboard}
+                    players={players}
+                    currentPlayer={player}
+                    isAdmin={false}
+                    onClose={() => setSelectedRaffleForDashboard(null)}
+                />
+            )}
+
+            {/* ACTIVE & UPCOMING RAFFLE EVENTS SHOWCASE */}
+            <DashboardCard title="Tactical Raffle Events & Live Arena" icon={<SparklesIcon className="w-6 h-6 text-amber-400" />}>
+                <div className="p-4 space-y-4">
+                    {safeRaffles.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {safeRaffles.map(raffle => {
+                                const userTickets = (raffle.tickets || []).filter(t => t.playerId === player.id);
+                                const totalTix = (raffle.tickets || []).length;
+                                const odds = totalTix > 0 ? ((userTickets.length / totalTix) * 100).toFixed(1) : '0.0';
+                                const prizes = raffle.prizes || [];
+                                const isCompleted = raffle.status === 'Completed';
+
+                                return (
+                                    <div 
+                                        key={raffle.id}
+                                        className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                                            isCompleted
+                                                ? 'bg-zinc-950/70 border-zinc-800'
+                                                : 'bg-gradient-to-br from-zinc-900/90 via-zinc-900 to-amber-950/20 border-amber-500/40 shadow-xl'
+                                        }`}
+                                    >
+                                        <div>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                                                        isCompleted 
+                                                            ? 'bg-zinc-800 text-zinc-400 border-zinc-700' 
+                                                            : 'bg-emerald-950 text-emerald-400 border-emerald-800 animate-pulse'
+                                                    }`}>
+                                                        {isCompleted ? 'CONCLUDED' : 'LIVE ARENA ACTIVE'}
+                                                    </span>
+                                                    <h4 className="font-black text-white text-base sm:text-lg mt-1">{raffle.name}</h4>
+                                                </div>
+                                                {raffle.alwaysChooseMostTickets && (
+                                                    <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                                        👑 Top Buyer Priority
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {raffle.description && (
+                                                <p className="text-xs text-zinc-400 mb-3 line-clamp-2">{raffle.description}</p>
+                                            )}
+
+                                            {/* Tactical Stats Matrix */}
+                                            <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-black/50 border border-zinc-800/80 mb-3 text-center">
+                                                <div>
+                                                    <span className="text-[10px] text-zinc-500 uppercase font-mono block">Your Tickets</span>
+                                                    <span className="text-xs font-mono font-bold text-amber-400">{userTickets.length} held</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-[10px] text-zinc-500 uppercase font-mono block">Total Pool</span>
+                                                    <span className="text-xs font-mono font-bold text-white">{totalTix} tix</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-[10px] text-zinc-500 uppercase font-mono block">Win Odds</span>
+                                                    <span className="text-xs font-mono font-bold text-emerald-400">{odds}%</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Prize Showcase Preview */}
+                                            {prizes.length > 0 && (
+                                                <div className="mb-3 space-y-1">
+                                                    <span className="text-[10px] text-zinc-500 uppercase font-mono block">Prize Roster ({prizes.length} Spots):</span>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {prizes.slice(0, 3).map((p, idx) => (
+                                                            <span key={p.id || idx} className="text-[11px] bg-zinc-800/80 text-zinc-300 px-2 py-0.5 rounded-lg border border-zinc-700/60">
+                                                                #{p.place || idx + 1} {p.name}
+                                                            </span>
+                                                        ))}
+                                                        {prizes.length > 3 && (
+                                                            <span className="text-[11px] text-zinc-500 self-center">+{prizes.length - 3} more</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Action Button */}
+                                        <div className="pt-2 border-t border-zinc-800/80">
+                                            <Button
+                                                onClick={() => setSelectedRaffleForDashboard(raffle)}
+                                                className="w-full text-xs font-black bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white shadow-lg shadow-amber-950/40 flex items-center justify-center gap-1.5"
+                                            >
+                                                <SparklesIcon className="w-4 h-4 text-amber-200" />
+                                                <span>🎯 Enter Live Event Arena & Draw Stage</span>
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <p className="text-center text-zinc-500 py-8 text-sm">No tactical raffle events available at this time.</p>
+                    )}
+                </div>
+            </DashboardCard>
+
             {myWins.length > 0 && (
                 <DashboardCard title="Raffle Victories & Claimed Prizes" icon={<TrophyIcon className="w-6 h-6 text-amber-400" />}>
                     <div className="p-4 space-y-3">
@@ -1044,14 +1158,26 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                                             </p>
                                         </div>
                                     </div>
-                                    {win.ticket?.code && (
-                                        <div className="text-right">
-                                            <span className="text-[10px] uppercase font-mono text-zinc-400 block">Winning Ticket</span>
-                                            <span className="font-mono text-xs font-bold text-red-400 bg-red-950/70 px-2 py-0.5 rounded border border-red-900/60">
-                                                {win.ticket.code}
-                                            </span>
-                                        </div>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                        {win.ticket?.code && (
+                                            <div className="text-right">
+                                                <span className="text-[10px] uppercase font-mono text-zinc-400 block">Winning Ticket</span>
+                                                <span className="font-mono text-xs font-bold text-red-400 bg-red-950/70 px-2 py-0.5 rounded border border-red-900/60">
+                                                    {win.ticket.code}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {win.raffle && (
+                                            <Button
+                                                size="sm"
+                                                variant="secondary"
+                                                onClick={() => setSelectedRaffleForDashboard(win.raffle)}
+                                                className="text-xs"
+                                            >
+                                                View Arena
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             );
                         })}
@@ -1097,11 +1223,21 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                                             Drawn on {raffle.drawDate ? new Date(raffle.drawDate).toLocaleDateString() : 'N/A'} • {winners.length} winner{winners.length === 1 ? '' : 's'} awarded
                                         </p>
                                     </div>
-                                    {raffle.alwaysChooseMostTickets && (
-                                        <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                                            👑 Top Ticket Priority
-                                        </span>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                        {raffle.alwaysChooseMostTickets && (
+                                            <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                                                👑 Top Ticket Priority
+                                            </span>
+                                        )}
+                                        <Button
+                                            size="sm"
+                                            variant="secondary"
+                                            onClick={() => setSelectedRaffleForDashboard(raffle)}
+                                            className="text-[11px] py-1 px-2.5"
+                                        >
+                                            View Stage
+                                        </Button>
+                                    </div>
                                 </div>
 
                                 {winners.length > 0 ? (

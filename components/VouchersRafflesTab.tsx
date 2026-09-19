@@ -5,6 +5,7 @@ import { Input } from './Input';
 import { Modal } from './Modal';
 import { TicketIcon, PlusIcon, PencilIcon, TrashIcon, TrophyIcon, UserIcon, CheckCircleIcon, SparklesIcon } from './icons/Icons';
 import { useData } from '../data/DataContext';
+import { RaffleEventDashboard } from './RaffleEventDashboard';
 
 interface VouchersRafflesTabProps {
     vouchers: Voucher[];
@@ -1321,11 +1322,16 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
             )}
 
             {drawingRaffle && (
-                <LiveRaffleDrawArena 
+                <RaffleEventDashboard 
                     raffle={drawingRaffle} 
                     players={players} 
+                    isAdmin={true}
                     onClose={() => setDrawingRaffle(null)} 
                     onSaveWinners={handleSaveRaffleWinners} 
+                    onIssueTickets={(r) => {
+                        setDrawingRaffle(null);
+                        setIssuingTicketsRaffle(r);
+                    }}
                 />
             )}
 
@@ -1676,10 +1682,9 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                                 <Button 
                                                     size="sm" 
                                                     onClick={() => setDrawingRaffle(r)}
-                                                    disabled={tickets.length === 0}
-                                                    className="text-xs bg-amber-600 hover:bg-amber-500 text-black font-black flex items-center gap-1"
+                                                    className="text-xs bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white font-black flex items-center gap-1 shadow-md shadow-amber-950/60"
                                                 >
-                                                    <span>🎰</span> Run Live Draw
+                                                    <span>🎯</span> Live Arena & Draw
                                                 </Button>
                                                 <Button 
                                                     size="sm" 

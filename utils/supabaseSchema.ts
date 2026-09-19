@@ -1654,7 +1654,7 @@ GRANT ALL ON TABLE public.players TO anon, authenticated, service_role;
 export const RAFFLES_SQL_SCHEMA_MIGRATION = `-- =========================================================================
 -- BOSJOL TACTICAL AIRSOFT - RAFFLE SYSTEM & MULTI-WINNER SQL MIGRATION
 -- Run this in your Supabase SQL Editor (SQL Editor -> New query -> Paste -> Run)
--- Supports: Multiple Winners, Ordered Prizes (1st, 2nd, 3rd, 4th, etc.), and Top-Ticket Mode
+-- Supports: Multiple Winners, Ordered Prizes (1st, 2nd, 3rd, 4th, etc.), Top-Ticket Priority, and Live Realtime Sync
 -- =========================================================================
 
 -- 1. Create or ensure raffles table exists
@@ -1715,6 +1715,20 @@ ALTER TABLE public.raffles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read and write on raffles" ON public.raffles;
 CREATE POLICY "Allow public read and write on raffles" ON public.raffles FOR ALL USING (true) WITH CHECK (true);
 GRANT ALL ON TABLE public.raffles TO anon, authenticated, service_role;
+
+-- 4. Enable Full Replica Identity for instant Realtime Broadcasts
+ALTER TABLE public.raffles REPLICA IDENTITY FULL;
+
+-- 5. Add to Supabase Realtime Publication
+DO $$
+BEGIN
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.raffles;
+    EXCEPTION 
+        WHEN duplicate_object THEN NULL;
+        WHEN OTHERS THEN NULL;
+    END;
+END $$;
 `;
 
 

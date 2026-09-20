@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, Rank, Tier, PlayerRole, RaffleTicketDoc } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
-import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, ChevronDownIcon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon, InformationCircleIcon } from './icons/Icons';
+import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, ChevronDownIcon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon, InformationCircleIcon, CheckBadgeIcon } from './icons/Icons';
 import { BadgePill } from './BadgePill';
 // FIX: Changed UNRANKED_SUB_RANK to UNRANKED_TIER.
 import { UNRANKED_TIER, MOCK_PLAYER_ROLES, MOCK_BADGES } from '../constants';

@@ -1490,6 +1490,18 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
             paidTo: String(item.paidTo || item.paidto || item.paid_to || item.vendor || ''),
             paidto: String(item.paidTo || item.paidto || item.paid_to || item.vendor || ''),
             paid_to: String(item.paidTo || item.paidto || item.paid_to || item.vendor || ''),
+            profitMade: Number(item.profitMade ?? item.profitmade ?? item.profit_made ?? 0),
+            profitmade: Number(item.profitMade ?? item.profitmade ?? item.profit_made ?? 0),
+            profit_made: Number(item.profitMade ?? item.profitmade ?? item.profit_made ?? 0),
+            profitName: String(item.profitName || item.profitname || item.profit_name || ''),
+            profitname: String(item.profitName || item.profitname || item.profit_name || ''),
+            profit_name: String(item.profitName || item.profitname || item.profit_name || ''),
+            profitReason: String(item.profitReason || item.profitreason || item.profit_reason || ''),
+            profitreason: String(item.profitReason || item.profitreason || item.profit_reason || ''),
+            profit_reason: String(item.profitReason || item.profitreason || item.profit_reason || ''),
+            profitDate: String(item.profitDate || item.profitdate || item.profit_date || ''),
+            profitdate: String(item.profitDate || item.profitdate || item.profit_date || ''),
+            profit_date: String(item.profitDate || item.profitdate || item.profit_date || ''),
         };
     }
 
@@ -2518,6 +2530,18 @@ CREATE TABLE IF NOT EXISTS public.transactions (
     "paidTo" TEXT DEFAULT '',
     paidto TEXT DEFAULT '',
     paid_to TEXT DEFAULT '',
+    "profitMade" NUMERIC DEFAULT 0,
+    profitmade NUMERIC DEFAULT 0,
+    profit_made NUMERIC DEFAULT 0,
+    "profitName" TEXT DEFAULT '',
+    profitname TEXT DEFAULT '',
+    profit_name TEXT DEFAULT '',
+    "profitReason" TEXT DEFAULT '',
+    profitreason TEXT DEFAULT '',
+    profit_reason TEXT DEFAULT '',
+    "profitDate" TEXT DEFAULT '',
+    profitdate TEXT DEFAULT '',
+    profit_date TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -2540,6 +2564,22 @@ ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS category TEXT DEFAULT '
 ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "paidTo" TEXT DEFAULT '';
 ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paidto TEXT DEFAULT '';
 ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paid_to TEXT DEFAULT '';
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "profitMade" NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profitmade NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profit_made NUMERIC DEFAULT 0;
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "profitName" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profitname TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profit_name TEXT DEFAULT '';
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "profitReason" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profitreason TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profit_reason TEXT DEFAULT '';
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "profitDate" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profitdate TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profit_date TEXT DEFAULT '';
 
 ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT DEFAULT 'Cash';
 ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paymentmethod TEXT DEFAULT 'Cash';

@@ -463,6 +463,11 @@ export interface Transaction {
     receiptImageUrl?: string;
     category?: string;
     paidTo?: string;
+    // Profit tracking on expenses
+    profitMade?: number;
+    profitName?: string;
+    profitReason?: string;
+    profitDate?: string;
 }
 
 export interface Location {

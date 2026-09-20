@@ -208,6 +208,10 @@ export const FinanceTab: React.FC<{
             paidTo: '',
             receiptImageUrl: '',
             notes: '',
+            profitMade: '',
+            profitName: '',
+            profitReason: '',
+            profitDate: new Date().toISOString().slice(0, 10),
         });
         setEditingExpense(null);
     };
@@ -229,6 +233,10 @@ export const FinanceTab: React.FC<{
             paidTo: expense.paidTo || '',
             receiptImageUrl: expense.receiptImageUrl || '',
             notes: expense.notes || '',
+            profitMade: expense.profitMade ? String(expense.profitMade) : '',
+            profitName: expense.profitName || '',
+            profitReason: expense.profitReason || '',
+            profitDate: expense.profitDate ? expense.profitDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
         });
         setIsExpenseModalOpen(true);
     };
@@ -273,6 +281,12 @@ export const FinanceTab: React.FC<{
                 paidTo: expenseFormData.paidTo.trim(),
                 receiptImageUrl: expenseFormData.receiptImageUrl.trim(),
                 notes: expenseFormData.notes.trim(),
+                profitMade: expenseFormData.profitMade ? parseFloat(expenseFormData.profitMade) : 0,
+                profitName: expenseFormData.profitName.trim(),
+                profitReason: expenseFormData.profitReason.trim(),
+                profitDate: expenseFormData.profitDate 
+                    ? (expenseFormData.profitDate.includes('T') ? expenseFormData.profitDate : `${expenseFormData.profitDate}T12:00:00Z`) 
+                    : '',
                 status: 'completed',
                 paymentStatus: 'Paid',
             };
@@ -1033,6 +1047,57 @@ export const FinanceTab: React.FC<{
                         )}
                     </div>
 
+                    {/* PROFIT MADE SECTION (OPTIONAL) */}
+                    <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-900/40 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="font-bold text-emerald-300 flex items-center gap-1.5 text-xs">
+                                <ArrowTrendingUpIcon className="w-4 h-4 text-emerald-400" />
+                                <span>Profits Made / Revenue Generated from this Expense (Optional)</span>
+                            </span>
+                            <span className="text-[10px] text-zinc-400">Track ROI, resale gain or return</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <Input
+                                    label="Profit Made Amount (R / ZAR)"
+                                    type="number"
+                                    step="0.01"
+                                    value={expenseFormData.profitMade}
+                                    onChange={e => setExpenseFormData(prev => ({ ...prev, profitMade: e.target.value }))}
+                                    placeholder="e.g. 1500"
+                                />
+                            </div>
+                            <div>
+                                <Input
+                                    label="Profit / Income Name"
+                                    value={expenseFormData.profitName}
+                                    onChange={e => setExpenseFormData(prev => ({ ...prev, profitName: e.target.value }))}
+                                    placeholder="e.g. BB Resale Return / Event Ticket Profit"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <Input
+                                    label="Profit Reason / Description"
+                                    value={expenseFormData.profitReason}
+                                    onChange={e => setExpenseFormData(prev => ({ ...prev, profitReason: e.target.value }))}
+                                    placeholder="e.g. Sold 30 cartons at skirmish entrance"
+                                />
+                            </div>
+                            <div>
+                                <Input
+                                    label="Profit Realization Date"
+                                    type="date"
+                                    value={expenseFormData.profitDate}
+                                    onChange={e => setExpenseFormData(prev => ({ ...prev, profitDate: e.target.value }))}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Submit Actions */}
                     <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800">
                         <Button
@@ -1103,6 +1168,27 @@ export const FinanceTab: React.FC<{
                                 <p className="text-zinc-200 leading-relaxed text-xs">
                                     {inspectingExpense.expenseReason}
                                 </p>
+                            </div>
+                        )}
+
+                        {/* Profit Made / Return Generated (if any) */}
+                        {Boolean(inspectingExpense.profitMade && Number(inspectingExpense.profitMade) > 0) && (
+                            <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] text-emerald-400 uppercase font-black flex items-center gap-1">
+                                        <ArrowTrendingUpIcon className="w-3.5 h-3.5" /> Profit Made / Revenue Generated
+                                    </span>
+                                    <span className="font-mono font-black text-emerald-400 text-base">
+                                        +R{Number(inspectingExpense.profitMade).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                    </span>
+                                </div>
+                                <p className="text-white font-bold text-xs">{inspectingExpense.profitName || 'Resale / Return Revenue'}</p>
+                                {inspectingExpense.profitReason && (
+                                    <p className="text-[11px] text-zinc-300">"{inspectingExpense.profitReason}"</p>
+                                )}
+                                {inspectingExpense.profitDate && (
+                                    <p className="text-[10px] text-zinc-400">Realized on: {new Date(inspectingExpense.profitDate).toLocaleDateString()}</p>
+                                )}
                             </div>
                         )}
 

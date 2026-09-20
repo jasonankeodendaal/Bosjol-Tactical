@@ -108,6 +108,10 @@ function normalizeCollectionItem<T>(collectionName: string, item: any): T {
             receiptImageUrl: String(item.receiptImageUrl || item.receiptimageurl || item.receipt_image_url || item.slipImageUrl || item.slipimageurl || item.slip_image_url || ''),
             category: String(item.category || (item.type === 'Expense' ? 'Business Expense' : '')),
             paidTo: String(item.paidTo || item.paidto || item.paid_to || item.vendor || ''),
+            profitMade: Number(item.profitMade ?? item.profitmade ?? item.profit_made ?? 0),
+            profitName: String(item.profitName || item.profitname || item.profit_name || ''),
+            profitReason: String(item.profitReason || item.profitreason || item.profit_reason || ''),
+            profitDate: String(item.profitDate || item.profitdate || item.profit_date || ''),
         } as unknown as T;
     }
     if (collectionName === 'raffles') {

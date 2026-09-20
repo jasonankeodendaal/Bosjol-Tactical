@@ -1414,6 +1414,253 @@ const LiveRaffleDrawArena: React.FC<{
 
 
 // ==========================================
+// 3D MODERN ROSTER TICKET DRAWER COMPONENT
+// ==========================================
+const RaffleTicketRosterDrawer: React.FC<{
+    raffleName: string;
+    tickets: RaffleTicketDoc[];
+    players: Player[];
+    onClose: () => void;
+}> = ({ raffleName, tickets, players, onClose }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [viewMode, setViewMode] = useState<'grouped' | 'list'>('grouped');
+
+    // Group tickets by player
+    const groupedOperators = useMemo(() => {
+        const map = new Map<string, {
+            key: string;
+            player?: Player;
+            displayName: string;
+            callsign?: string;
+            pCode?: string;
+            avatarUrl?: string;
+            tickets: RaffleTicketDoc[];
+        }>();
+
+        tickets.forEach(t => {
+            const p = players.find(player => 
+                player.id === t.playerId || 
+                (player.playerCode && t.playerId === player.playerCode) || 
+                (t.playerCode && player.playerCode === t.playerCode)
+            );
+            const key = p ? p.id : (t.playerId || t.playerName || 'unassigned');
+            const displayName = p ? `${p.name} ${p.surname || ''}`.trim() : (t.playerName || 'Operator');
+            const callsign = p?.callsign || t.playerCallsign;
+            const pCode = p?.playerCode || t.playerCode;
+            const avatarUrl = p?.avatarUrl;
+
+            if (!map.has(key)) {
+                map.set(key, { key, player: p, displayName, callsign, pCode, avatarUrl, tickets: [t] });
+            } else {
+                map.get(key)!.tickets.push(t);
+            }
+        });
+
+        return Array.from(map.values()).sort((a, b) => b.tickets.length - a.tickets.length);
+    }, [tickets, players]);
+
+    // Filter based on search term
+    const filteredOperators = useMemo(() => {
+        if (!searchTerm.trim()) return groupedOperators;
+        const q = searchTerm.toLowerCase();
+        return groupedOperators.filter(op => {
+            const nameMatch = op.displayName.toLowerCase().includes(q);
+            const csMatch = op.callsign?.toLowerCase().includes(q);
+            const codeMatch = op.pCode?.toLowerCase().includes(q);
+            const tktMatch = op.tickets.some(t => t.code.toLowerCase().includes(q));
+            return nameMatch || csMatch || codeMatch || tktMatch;
+        });
+    }, [groupedOperators, searchTerm]);
+
+    const filteredTickets = useMemo(() => {
+        if (!searchTerm.trim()) return tickets;
+        const q = searchTerm.toLowerCase();
+        return tickets.filter(t => {
+            const p = players.find(player => player.id === t.playerId || (player.playerCode && t.playerId === player.playerCode) || (t.playerCode && player.playerCode === t.playerCode));
+            const name = p ? `${p.name} ${p.surname || ''}`.trim() : (t.playerName || 'Operator');
+            const cs = p?.callsign || t.playerCallsign;
+            return t.code.toLowerCase().includes(q) || name.toLowerCase().includes(q) || cs?.toLowerCase().includes(q);
+        });
+    }, [tickets, players, searchTerm]);
+
+    return (
+        <div className="my-4 p-4 sm:p-5 bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 rounded-2xl border border-amber-500/30 shadow-2xl shadow-black/80 space-y-4">
+            {/* Header Controls */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-zinc-800">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0">
+                        <TicketIcon className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                        <h4 className="font-mono text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-2 truncate">
+                            <span>ROSTER ({tickets.length})</span>
+                            <span className="text-[10px] text-zinc-400 font-sans normal-case font-medium hidden sm:inline">• {groupedOperators.length} Operators</span>
+                        </h4>
+                        <p className="text-[11px] text-zinc-400 truncate font-medium">{raffleName}</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                    <div className="flex items-center bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-[11px]">
+                        <button
+                            type="button"
+                            onClick={() => setViewMode('grouped')}
+                            className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                                viewMode === 'grouped'
+                                    ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                                    : 'text-zinc-400 hover:text-white'
+                            }`}
+                        >
+                            Operators ({groupedOperators.length})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setViewMode('list')}
+                            className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                                viewMode === 'list'
+                                    ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                                    : 'text-zinc-400 hover:text-white'
+                            }`}
+                        >
+                            All Stream ({tickets.length})
+                        </button>
+                    </div>
+
+                    <button 
+                        onClick={onClose} 
+                        className="text-zinc-500 hover:text-white p-1 rounded-lg hover:bg-zinc-800 text-xs font-bold transition-colors shrink-0"
+                        title="Close Roster Drawer"
+                    >
+                        ✕ Close
+                    </button>
+                </div>
+            </div>
+
+            {/* Search Input Bar */}
+            <div className="relative">
+                <input
+                    type="text"
+                    placeholder="Search by operator, callsign, code, or ticket number..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-black/60 border border-zinc-800 focus:border-amber-500/60 rounded-xl px-3.5 py-2 pl-9 text-xs text-white placeholder-zinc-500 focus:outline-none transition-all"
+                />
+                <span className="absolute left-3 top-2.5 text-zinc-500 text-xs">🔍</span>
+                {searchTerm && (
+                    <button 
+                        onClick={() => setSearchTerm('')} 
+                        className="absolute right-3 top-2 text-zinc-500 hover:text-white text-xs font-bold"
+                    >
+                        Clear
+                    </button>
+                )}
+            </div>
+
+            {/* Content Area */}
+            {viewMode === 'grouped' ? (
+                filteredOperators.length === 0 ? (
+                    <p className="text-zinc-500 italic py-6 text-center text-xs">No operators found matching search.</p>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto p-1 scrollbar-thin">
+                        {filteredOperators.map(op => {
+                            const qty = op.tickets.length;
+                            return (
+                                <div
+                                    key={op.key}
+                                    className="p-3.5 rounded-xl bg-gradient-to-b from-zinc-900/90 via-zinc-900/70 to-black border border-zinc-800 hover:border-amber-500/60 shadow-lg shadow-black/50 hover:shadow-amber-500/10 hover:-translate-y-0.5 transition-all duration-200 group flex flex-col justify-between"
+                                >
+                                    {/* Top Row: Operator & Qty Pill */}
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                            {op.avatarUrl ? (
+                                                <img src={op.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 border border-amber-500/30" referrerPolicy="no-referrer" />
+                                            ) : (
+                                                <div className="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold font-mono text-xs flex items-center justify-center shrink-0">
+                                                    {op.displayName.charAt(0)}
+                                                </div>
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <span 
+                                                    className="text-xs font-bold text-white truncate block max-w-[130px] sm:max-w-[150px]"
+                                                    title={`${op.displayName} ${op.callsign ? `("${op.callsign}")` : ''}`}
+                                                >
+                                                    {op.displayName}
+                                                </span>
+                                                {op.callsign && (
+                                                    <span className="text-[10px] text-amber-400 font-mono font-semibold truncate block max-w-[130px]">
+                                                        "{op.callsign}"
+                                                    </span>
+                                                )}
+                                                {op.pCode && (
+                                                    <span className="text-[9px] text-zinc-500 font-mono block">
+                                                        [{op.pCode}]
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Qty Badge (Shrink-to-fit Pill) */}
+                                        <div className="shrink-0 text-right">
+                                            <span className="inline-flex items-center gap-1 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black font-mono text-xs px-2.5 py-1 rounded-lg shadow-sm shadow-amber-500/20 whitespace-nowrap">
+                                                <span>{qty}</span>
+                                                <span className="text-[10px] uppercase tracking-wide font-extrabold">{qty === 1 ? 'TIX' : 'TIX'}</span>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Bottom Row: Ticket Serial Code Pills */}
+                                    <div className="mt-3 pt-2 border-t border-zinc-800/80">
+                                        <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto scrollbar-none">
+                                            {op.tickets.map(t => (
+                                                <span 
+                                                    key={t.id} 
+                                                    className="font-mono text-[10px] font-bold text-amber-300 bg-amber-950/40 border border-amber-900/50 px-1.5 py-0.5 rounded shadow-sm hover:border-amber-400 transition-colors shrink-0"
+                                                >
+                                                    {t.code}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )
+            ) : (
+                /* Individual Ticket Stream View */
+                filteredTickets.length === 0 ? (
+                    <p className="text-zinc-500 italic py-6 text-center text-xs">No tickets match query.</p>
+                ) : (
+                    <div className="space-y-1.5 max-h-96 overflow-y-auto p-1 scrollbar-thin">
+                        {filteredTickets.map((t, i) => {
+                            const p = players.find(player => player.id === t.playerId || (player.playerCode && t.playerId === player.playerCode) || (t.playerCode && player.playerCode === t.playerCode));
+                            const displayName = p ? `${p.name} ${p.surname || ''}`.trim() : (t.playerName || 'Operator');
+                            const callsign = p?.callsign || t.playerCallsign;
+                            const pCode = p?.playerCode || t.playerCode;
+
+                            return (
+                                <div key={t.id || i} className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/80 transition-colors gap-2">
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <span className="font-mono text-amber-400 font-bold text-xs bg-amber-950/60 px-2 py-0.5 rounded border border-amber-900/50">{t.code}</span>
+                                        {pCode && <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">[{pCode}]</span>}
+                                    </div>
+                                    <div className="text-right min-w-0 truncate">
+                                        <span className="text-white font-semibold text-xs truncate max-w-[140px] sm:max-w-[220px] inline-block align-bottom" title={displayName}>{displayName}</span>
+                                        {callsign && <span className="text-amber-400 font-mono text-[10px] ml-1 truncate max-w-[100px] inline-block align-bottom">("{callsign}")</span>}
+                                        <span className="text-zinc-500 ml-1.5 text-[10px] shrink-0">({t.paymentStatus || 'Valid'})</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )
+            )}
+        </div>
+    );
+};
+
+
+// ==========================================
 // MAIN VOUCHERS & RAFFLES TAB
 // ==========================================
 export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => {
@@ -2006,35 +2253,12 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
 
                                         {/* Ticket Drawer */}
                                         {isViewingTickets && (
-                                            <div className="my-3 p-3 bg-black/80 rounded-lg border border-zinc-800 text-xs space-y-2 max-h-48 overflow-y-auto">
-                                                <div className="flex justify-between items-center font-bold text-zinc-400 uppercase text-[10px]">
-                                                    <span>Ticket Roster ({tickets.length})</span>
-                                                    <button onClick={() => setViewingTicketsRaffleId(null)} className="text-zinc-500 hover:text-white">Close</button>
-                                                </div>
-                                                {tickets.length === 0 ? (
-                                                    <p className="text-zinc-500 italic py-1">No tickets issued yet. Click "Issue Tickets" below.</p>
-                                                ) : (
-                                                    tickets.map((t, i) => {
-                                                        const p = players.find(player => player.id === t.playerId || (player.playerCode && t.playerId === player.playerCode) || (t.playerCode && player.playerCode === t.playerCode));
-                                                        const displayName = p ? `${p.name} ${p.surname || ''}`.trim() : (t.playerName || 'Operator');
-                                                        const callsign = p?.callsign || t.playerCallsign;
-                                                        const pCode = p?.playerCode || t.playerCode;
-                                                        return (
-                                                            <div key={t.id || i} className="flex items-center justify-between py-1.5 border-b border-zinc-800/60 last:border-0 hover:bg-zinc-900/40 px-1 rounded transition-colors gap-2">
-                                                                <div className="flex items-center gap-1.5 shrink-0">
-                                                                    <span className="font-mono text-amber-400 font-bold text-[11px] sm:text-xs bg-amber-950/40 px-2 py-0.5 rounded border border-amber-900/40 shrink-0">{t.code}</span>
-                                                                    {pCode && <span className="text-[10px] text-zinc-500 font-mono shrink-0 hidden sm:inline">[{pCode}]</span>}
-                                                                </div>
-                                                                <div className="text-right min-w-0 truncate">
-                                                                    <span className="text-white font-semibold text-xs truncate max-w-[130px] sm:max-w-[200px] inline-block align-bottom">{displayName}</span>
-                                                                    {callsign && <span className="text-amber-400 font-mono text-[10px] ml-1 truncate max-w-[90px] inline-block align-bottom">("{callsign}")</span>}
-                                                                    <span className="text-zinc-500 ml-1.5 text-[10px] shrink-0">({t.paymentStatus || 'Valid'})</span>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })
-                                                )}
-                                            </div>
+                                            <RaffleTicketRosterDrawer 
+                                                raffleName={r.name}
+                                                tickets={tickets}
+                                                players={players}
+                                                onClose={() => setViewingTicketsRaffleId(null)}
+                                            />
                                         )}
 
                                         {/* Action Bar */}

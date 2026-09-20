@@ -3,7 +3,7 @@ import type { Voucher, Raffle, Prize, Player, GameEvent, VoucherRedemption, Raff
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
-import { TicketIcon, PlusIcon, PencilIcon, TrashIcon, TrophyIcon, UserIcon, CheckCircleIcon, SparklesIcon, ClipboardListIcon } from './icons/Icons';
+import { TicketIcon, PlusIcon, PencilIcon, TrashIcon, TrophyIcon, UserIcon, CheckCircleIcon, SparklesIcon, ClipboardListIcon, CheckBadgeIcon } from './icons/Icons';
 import { useData } from '../data/DataContext';
 import { RaffleEventDashboard } from './RaffleEventDashboard';
 import { RAFFLES_SQL_SCHEMA_MIGRATION } from '../utils/supabaseSchema';
@@ -1664,8 +1664,17 @@ const RaffleTicketRosterDrawer: React.FC<{
 // MAIN VOUCHERS & RAFFLES TAB
 // ==========================================
 export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => {
-    const { vouchers, raffles, players, addDoc, updateDoc, deleteDoc } = props;
+    const { vouchers = [], raffles = [], players = [], addDoc, updateDoc, deleteDoc } = props;
+    const safeVouchers = vouchers || [];
+    const safeRaffles = raffles || [];
+    const safePlayers = players || [];
     const dataContext = useData();
+
+    const formatSafeDate = (d?: string) => {
+        if (!d) return 'TBD';
+        const parsed = new Date(d);
+        return isNaN(parsed.getTime()) ? d : parsed.toLocaleDateString();
+    };
 
     const [activeSection, setActiveSection] = useState<'vouchers' | 'raffles'>('vouchers');
     const [voucherFilter, setVoucherFilter] = useState<'All' | 'Active' | 'Claimed' | 'Expired'>('All');
@@ -1939,7 +1948,7 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                         <TicketIcon className="w-4 h-4"/>
                         <span>Vouchers & Discount Engine</span>
                         <span className="text-xs px-2 py-0.5 rounded-full bg-black/40 text-zinc-300">
-                            {vouchers.length}
+                            {safeVouchers.length}
                         </span>
                     </button>
 
@@ -1954,7 +1963,7 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                         <TrophyIcon className="w-4 h-4"/>
                         <span>Tactical Raffles & Winner Draw</span>
                         <span className="text-xs px-2 py-0.5 rounded-full bg-black/40 text-zinc-300">
-                            {raffles.length}
+                            {safeRaffles.length}
                         </span>
                     </button>
                 </div>
@@ -2025,7 +2034,7 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                         ) : (
                             filteredVouchers.map(v => {
                                 const redemptions = v.redemptions || [];
-                                const assignedPlayer = players.find(p => p.id === v.assignedToPlayerId);
+                                const assignedPlayer = safePlayers.find(p => p.id === v.assignedToPlayerId);
                                 const isDepleted = v.status === 'Depleted' || (v.usageLimit ? redemptions.length >= v.usageLimit : false);
                                 const isViewingRedemptions = viewingRedemptionsVoucherId === v.id;
 
@@ -2091,7 +2100,7 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                                     <p className="text-zinc-500 italic text-[7.5px]">No claims yet.</p>
                                                 ) : (
                                                     redemptions.map((r, i) => {
-                                                        const p = players.find(player => player.id === r.playerId);
+                                                        const p = safePlayers.find(player => player.id === r.playerId);
                                                         return (
                                                             <div key={r.id || i} className="flex items-center justify-between py-0.5 border-b border-zinc-800/60 last:border-0">
                                                                 <span className="font-bold text-white truncate text-[7.5px]">{p?.name || 'Player'}</span>
@@ -2164,16 +2173,16 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                     <div className="space-y-2">
                         <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping inline-block" />
-                            Active Tactical Raffle Arenas ({raffles.filter(r => r.status !== 'Completed').length})
+                            Active Tactical Raffle Arenas ({safeRaffles.filter(r => r.status !== 'Completed').length})
                         </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-2.5 perspective-[1000px]">
-                            {raffles.filter(r => r.status !== 'Completed').length === 0 ? (
+                            {safeRaffles.filter(r => r.status !== 'Completed').length === 0 ? (
                                 <div className="col-span-full py-6 text-center text-zinc-500 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800">
                                     <TrophyIcon className="w-8 h-8 mx-auto mb-1 text-zinc-600"/>
                                     <p className="font-semibold text-xs">No active running raffles.</p>
                                 </div>
                             ) : (
-                                raffles.filter(r => r.status !== 'Completed').map(r => {
+                                safeRaffles.filter(r => r.status !== 'Completed').map(r => {
                                     const tickets = r.tickets || [];
                                     const winners = r.winners || [];
 
@@ -2188,7 +2197,7 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                             <div className="min-w-0">
                                                 <div className="flex items-center justify-between gap-1 mb-1 min-w-0">
                                                     <span className="text-[7.5px] sm:text-[8px] px-1.5 py-0.2 rounded font-bold uppercase bg-amber-950/80 text-amber-400 border border-amber-800 animate-pulse truncate whitespace-nowrap shrink-0">
-                                                        {r.status}
+                                                        {r.status || 'Active'}
                                                     </span>
                                                     <div className="flex items-center gap-0.5 shrink-0">
                                                         <button 
@@ -2214,7 +2223,7 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
 
                                                 <h4 className="font-bold text-[10px] sm:text-xs text-white truncate mb-0.5 leading-tight">{r.name}</h4>
                                                 <p className="text-[7.5px] sm:text-[8px] text-zinc-400 mb-1 truncate">
-                                                    Draw: {new Date(r.drawDate).toLocaleDateString()}
+                                                    Draw: {formatSafeDate(r.drawDate)}
                                                 </p>
 
                                                 {/* Prize Preview */}
@@ -2257,14 +2266,14 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                     </div>
 
                     {/* Concluded & Completed Raffles Section (Tiny Side-by-Side 3D Squares) */}
-                    {raffles.filter(r => r.status === 'Completed').length > 0 && (
+                    {safeRaffles.filter(r => r.status === 'Completed').length > 0 && (
                         <div className="space-y-2 pt-3 border-t border-zinc-800">
                             <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
                                 <CheckBadgeIcon className="w-3.5 h-3.5 text-emerald-400" />
-                                Concluded Raffles ({raffles.filter(r => r.status === 'Completed').length})
+                                Concluded Raffles ({safeRaffles.filter(r => r.status === 'Completed').length})
                             </h3>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-2.5 perspective-[1000px]">
-                                {raffles.filter(r => r.status === 'Completed').map(r => {
+                                {safeRaffles.filter(r => r.status === 'Completed').map(r => {
                                     const winners = r.winners || [];
                                     const prizes = r.prizes || [];
 
@@ -2293,7 +2302,7 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
 
                                                 <h4 className="font-bold text-[10px] sm:text-xs text-white truncate mb-0.5 leading-tight">{r.name}</h4>
                                                 <p className="text-[7.5px] sm:text-[8px] text-zinc-500 mb-1 truncate">
-                                                    Drawn: {new Date(r.drawDate).toLocaleDateString()}
+                                                    Drawn: {formatSafeDate(r.drawDate)}
                                                 </p>
 
                                                 {/* Winners Summary */}
@@ -2303,7 +2312,7 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                                     </span>
                                                     {winners.slice(0, 1).map((w, i) => {
                                                         const prize = prizes.find(p => p.id === w.prizeId);
-                                                        const wPlayer = players.find(p => p.id === w.playerId);
+                                                        const wPlayer = safePlayers.find(p => p.id === w.playerId);
                                                         return (
                                                             <div key={w.id || i} className="text-[7.5px] sm:text-[8px] text-zinc-300 truncate mt-0.5">
                                                                 <span className="text-amber-300 font-bold truncate">🏆 {wPlayer?.name || 'Winner'}: </span>

@@ -4,7 +4,7 @@ import { motion, Variants } from 'framer-motion';
 import { GameEvent, EventType, EventStatus } from '../types';
 import { BadgePill } from './BadgePill';
 import { CalendarIcon } from './icons/Icons';
-import { QrCode, Users, ClipboardList } from 'lucide-react';
+import { QrCode, Users, ClipboardList, MapPin, Clock, Trophy } from 'lucide-react';
 
 interface EventCardProps {
   event: GameEvent;
@@ -29,10 +29,17 @@ const eventStatusColorMap: Record<EventStatus, 'green' | 'blue' | 'red' | 'amber
     'Cancelled': 'red',
 };
 
-const EventCardComponent: React.FC<EventCardProps> = ({ event, className = '', onShowQR, onShowRentals, signupsCount, rentalsCount }) => {
+const EventCardComponent: React.FC<EventCardProps> = ({ 
+  event, 
+  className = '', 
+  onShowQR, 
+  onShowRentals, 
+  signupsCount, 
+  rentalsCount 
+}) => {
   const cardVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } }
   };
   
   // Calculate total attending players count accurately
@@ -53,90 +60,141 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, className = '', o
     ? Math.max(signupsCount, baseAttendeesCount) 
     : baseAttendeesCount;
 
+  const isUpcoming = event.status === 'Upcoming' || event.status === 'In Progress';
+
   return (
     <motion.div 
       variants={cardVariants}
-      className={`relative group bg-zinc-800/50 rounded-lg border border-zinc-700/50 ${event.status !== 'Upcoming' ? 'opacity-60' : 'hover:bg-zinc-800 hover:border-red-600/50'} transition-all duration-300 overflow-hidden flex flex-col h-full ${className}`}
+      className={`relative group overflow-hidden rounded-xl bg-gradient-to-br from-zinc-900 via-zinc-900/95 to-zinc-950 p-2 sm:p-2.5 border ${
+        isUpcoming ? 'border-zinc-800 hover:border-red-500/70' : 'border-zinc-800/60 opacity-75'
+      } shadow-[0_6px_16px_rgba(0,0,0,0.7)] hover:shadow-[0_12px_24px_rgba(239,68,68,0.22)] hover:-translate-y-0.5 hover:rotate-0.5 transition-all duration-200 flex flex-col justify-between w-full h-full select-none ${className}`}
     >
-      <div className="relative">
-        {event.imageUrl && event.imageUrl.trim() !== '' ? (
-          <img src={event.imageUrl} alt={event.title} className="w-full h-14 sm:h-24 object-cover flex-shrink-0"/>
-        ) : (
-          <div className="w-full h-10 sm:h-20 bg-zinc-900/80 flex items-center justify-center flex-shrink-0 text-zinc-600">
-            <CalendarIcon className="w-4 h-4 sm:w-8 sm:h-8" />
+      {/* 3D Top Metallic/Laser Shimmer Line */}
+      <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${
+        isUpcoming 
+          ? 'from-transparent via-red-500/50 to-transparent' 
+          : 'from-transparent via-zinc-600/30 to-transparent'
+      } pointer-events-none`} />
+
+      {/* Top Banner & Quick Action Buttons */}
+      <div className="relative mb-1.5 min-w-0">
+        <div className="w-full h-16 sm:h-20 rounded-lg overflow-hidden relative bg-zinc-950/80 border border-zinc-800/80 shrink-0">
+          {event.imageUrl && event.imageUrl.trim() !== '' ? (
+            <img 
+              src={event.imageUrl} 
+              alt={event.title} 
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600 bg-gradient-to-b from-zinc-900 to-black">
+              <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-zinc-500 group-hover:text-red-400 transition-colors" />
+              <span className="text-[9px] font-mono text-zinc-500 mt-1 uppercase tracking-wider">Tactical Ops</span>
+            </div>
+          )}
+
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/20 to-transparent pointer-events-none" />
+
+          {/* Top Status & Type Badges */}
+          <div className="absolute top-1 left-1 flex flex-wrap gap-1 z-10 max-w-[calc(100%-60px)]">
+            <BadgePill 
+              color={eventStatusColorMap[event.status]} 
+              className="!px-1.5 !py-0.5 !text-[8px] sm:!text-[9px] !font-bold !rounded-md !shadow-sm uppercase"
+            >
+              {event.status}
+            </BadgePill>
+            <span className="hidden xs:inline-block px-1.5 py-0.5 rounded-md bg-black/80 border border-white/10 text-zinc-300 text-[8px] font-mono uppercase">
+              {event.type}
+            </span>
           </div>
-        )}
 
-        {/* Action Buttons Overlay */}
-        <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-10">
-          {onShowRentals && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onShowRentals(event);
-              }}
-              className="px-2 py-1 rounded-lg bg-black/85 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-white/20 backdrop-blur-md text-[10px] font-bold transition-all shadow-md flex items-center gap-1"
-              title="Equipment Rentals"
-            >
-              <ClipboardList className="w-3.5 h-3.5 text-red-400 shrink-0" />
-              <span>Rentals</span>
-              {rentalsCount !== undefined && rentalsCount > 0 && (
-                <span className="text-red-400 font-mono font-bold">({rentalsCount})</span>
-              )}
-            </button>
-          )}
+          {/* Action Buttons Overlay (QR Pass & Rentals) */}
+          <div className="absolute top-1 right-1 flex items-center gap-1 z-10">
+            {onShowRentals && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShowRentals(event);
+                }}
+                className="px-1.5 py-0.5 rounded-md bg-black/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/20 backdrop-blur-md text-[8px] sm:text-[9px] font-bold transition-all shadow-md flex items-center gap-0.5"
+                title="Equipment Rentals Manifest"
+              >
+                <ClipboardList className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-red-400 shrink-0" />
+                <span className="hidden sm:inline">Rent</span>
+                {rentalsCount !== undefined && rentalsCount > 0 && (
+                  <span className="text-red-400 font-mono font-bold">({rentalsCount})</span>
+                )}
+              </button>
+            )}
 
-          {onShowQR && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onShowQR(event);
-              }}
-              className="px-2 py-1 rounded-lg bg-black/85 hover:bg-red-600 text-zinc-200 hover:text-white border border-red-500/40 backdrop-blur-md text-[10px] font-bold transition-all shadow-md flex items-center gap-1"
-              title="Enlarge Event QR Code for Check-In"
-            >
-              <QrCode className="w-3.5 h-3.5 text-red-400 shrink-0" />
-              <span>QR Pass</span>
-            </button>
-          )}
+            {onShowQR && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShowQR(event);
+                }}
+                className="px-1.5 py-0.5 rounded-md bg-black/90 hover:bg-red-600 text-zinc-300 hover:text-white border border-red-500/40 backdrop-blur-md text-[8px] sm:text-[9px] font-bold transition-all shadow-md flex items-center gap-0.5"
+                title="Event QR Pass"
+              >
+                <QrCode className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-red-400 shrink-0" />
+                <span className="hidden sm:inline">QR</span>
+              </button>
+            )}
+          </div>
+
+          {/* Bottom Title Bar Inside Poster for Compact Neatness */}
+          <div className="absolute bottom-1 left-1.5 right-1.5 min-w-0 z-10">
+            <h4 className="font-black text-[11px] sm:text-xs text-white truncate drop-shadow-md leading-tight group-hover:text-red-300 transition-colors">
+              {event.title}
+            </h4>
+          </div>
         </div>
       </div>
 
-      <div className="p-1.5 sm:p-3 flex flex-col flex-grow justify-between min-w-0">
-        <div>
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-0.5 sm:gap-2 mb-1">
-            <h4 className="font-bold text-[10px] sm:text-base text-gray-100 truncate leading-tight w-full">{event.title}</h4>
-            <div className="flex flex-wrap sm:flex-col items-start sm:items-end gap-0.5 sm:gap-1.5 flex-shrink-0">
-              <BadgePill color={eventTypeColorMap[event.type]} className="!px-1 !py-0 !text-[7px] sm:!px-2.5 sm:!py-0.5 sm:!text-xs !rounded">{event.type}</BadgePill>
-              <BadgePill color={eventStatusColorMap[event.status]} className="!px-1 !py-0 !text-[7px] sm:!px-2.5 sm:!py-0.5 sm:!text-xs !rounded">{event.status}</BadgePill>
-            </div>
+      {/* Info Body - Shrink to fit always */}
+      <div className="space-y-1.5 flex flex-col justify-between flex-grow min-w-0">
+        {/* Date, Time & Location Pill Matrix */}
+        <div className="grid grid-cols-2 gap-1 text-[8.5px] sm:text-[9.5px] bg-zinc-950/90 p-1.5 rounded-lg border border-zinc-800/80 min-w-0">
+          <div className="flex items-center gap-1 min-w-0 truncate">
+            <CalendarIcon className="w-3 h-3 text-red-400 shrink-0" />
+            <span className="text-zinc-200 font-semibold truncate">
+              {new Date(event.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+            </span>
           </div>
-          <div className="flex items-center text-[8px] sm:text-xs text-gray-400 mt-0.5">
-            <CalendarIcon className="w-2.5 h-2.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1.5 flex-shrink-0 text-red-400" />
-            <span className="truncate">{new Date(event.date).toLocaleDateString()}</span>
+
+          <div className="flex items-center gap-1 min-w-0 truncate justify-end">
+            <Clock className="w-2.5 h-2.5 text-zinc-400 shrink-0" />
+            <span className="text-zinc-300 font-mono truncate">
+              {event.startTime || 'TBD'}
+            </span>
           </div>
-          <p className="text-[8px] sm:text-xs text-gray-400 truncate mt-0.5 font-mono">
-            {event.startTime} @ {event.location}
-          </p>
+
+          <div className="col-span-2 flex items-center gap-1 min-w-0 truncate pt-1 border-t border-zinc-800/60">
+            <MapPin className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+            <span className="text-zinc-400 truncate text-[8px] sm:text-[9px]">
+              {event.location || 'Tactical Arena'}
+            </span>
+          </div>
         </div>
 
-        <div>
-          <p className="text-[8px] sm:text-sm text-gray-400 line-clamp-1 sm:line-clamp-2 mt-1 hidden sm:block">
-            {event.description}
-          </p>
+        {/* RP & Game Fee Indicators */}
+        <div className="flex items-center justify-between gap-1 text-[8px] sm:text-[9px] pt-1 border-t border-zinc-800/60 min-w-0">
+          <span className={`inline-flex items-center gap-1 font-bold px-1.5 py-0.5 rounded border truncate ${
+            attendingCount > 0 
+              ? 'text-emerald-300 bg-emerald-950/60 border-emerald-500/30' 
+              : 'text-zinc-400 bg-zinc-900/80 border-zinc-800'
+          }`}>
+            <Users className={`w-2.5 h-2.5 ${attendingCount > 0 ? 'text-emerald-400' : 'text-zinc-500'} shrink-0`} />
+            <span className="truncate">{attendingCount} op{attendingCount === 1 ? '' : 's'}</span>
+          </span>
 
-          {/* Card Footer Summary Counter */}
-          <div className="mt-2 pt-1.5 border-t border-zinc-700/40 flex items-center justify-between text-[8px] sm:text-xs">
-            <span className={`inline-flex items-center gap-1 font-semibold px-1.5 sm:px-2 py-0.5 rounded border ${
-              attendingCount > 0 
-                ? 'text-emerald-400 bg-emerald-950/40 border-emerald-500/30' 
-                : 'text-zinc-400 bg-zinc-900/60 border-zinc-700/40'
-            }`}>
-              <Users className={`w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 ${attendingCount > 0 ? 'text-emerald-400' : 'text-zinc-500'}`} />
-              <span>{attendingCount} attending</span>
-            </span>
-            <span className="text-[8px] sm:text-[10px] text-zinc-400 uppercase font-mono tracking-wider">
-              {event.gameFee ? `R${event.gameFee} Fee` : 'Free Entry'}
+          <div className="flex items-center gap-1 shrink-0 font-mono">
+            {event.participationXp ? (
+              <span className="text-amber-400 font-bold text-[8px] sm:text-[9px]">
+                +{event.participationXp} RP
+              </span>
+            ) : null}
+            <span className="px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-300 border border-zinc-800 font-bold uppercase text-[7.5px] sm:text-[8px]">
+              {event.gameFee ? `R${event.gameFee}` : 'FREE'}
             </span>
           </div>
         </div>

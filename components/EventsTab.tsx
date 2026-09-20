@@ -89,7 +89,7 @@ export const EventsTab: React.FC<EventsTabProps> = ({ events, signups = [], onMa
                         activeFilter={filter}
                     />
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-4 max-h-[65vh] overflow-y-auto pr-1 sm:pr-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-2.5 max-h-[72vh] overflow-y-auto pr-1 sm:pr-1.5 perspective-[1000px]">
                         {eventsToShow.length > 0 ? eventsToShow.map(event => {
                             const eventSignups = (effectiveSignups || []).filter(s => s.eventId === event.id);
                             const eventRentalsCount = (event.attendees || []).reduce((acc, a) => acc + (a.rentedGearIds || []).length, 0) +

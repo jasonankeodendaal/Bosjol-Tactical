@@ -676,29 +676,40 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                 ))}
             </div>
 
-            {/* Tactical Grid Ambient 3D Glow & Depth Lighting */}
-            <div className="absolute inset-0 pointer-events-none opacity-25 bg-[radial-gradient(#ef4444_1px,transparent_1px)] [background-size:20px_20px]" />
-            <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-80 bg-gradient-to-b from-amber-500/15 via-red-600/10 to-transparent rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
+            {/* Tactical Grid & 4D Layered Atmospheric Background with Image Fade & Depth Blur */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {/* Dark tactical atmospheric background image with smooth dark radial mask */}
+                <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-15 mix-blend-luminosity scale-105 transform-gpu transition-transform duration-1000"
+                    style={{ backgroundImage: `url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=2000&q=80')` }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/92 to-black" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.12)_0%,rgba(0,0,0,0.85)_70%,rgba(0,0,0,0.98)_100%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(#f59e0b_0.8px,transparent_0.8px)] [background-size:24px_24px] opacity-15" />
+                
+                {/* 4D Floating Optical Depth Flares */}
+                <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-96 bg-gradient-to-b from-amber-500/20 via-red-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute top-1/3 -left-20 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-10 -right-20 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+            </div>
 
             {/* ==================================================== */}
-            {/* TOP BAR: EVENT BRANDING & THEATER CONTROLS */}
+            {/* TOP BAR: EVENT BRANDING & THEATER CONTROLS (SHRINK TO FIT) */}
             {/* ==================================================== */}
-            <header className="relative z-20 flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                    <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-amber-500/20 via-zinc-900 to-red-600/20 border border-amber-500/30 text-amber-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] shrink-0">
-                        <TrophyIcon className="w-4 h-4 sm:w-6 sm:h-6" />
+            <header className="relative z-20 flex items-center justify-between px-3 sm:px-5 py-1.5 sm:py-2 border-b border-white/10 bg-black/50 backdrop-blur-2xl shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                    <div className="p-1 sm:p-1.5 rounded-xl bg-gradient-to-br from-amber-500/20 via-zinc-900 to-red-600/20 border border-amber-500/40 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)] shrink-0">
+                        <TrophyIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                     <div className="min-w-0">
                         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                            <h1 className="text-sm sm:text-lg font-black tracking-wide text-white uppercase truncate max-w-[140px] xs:max-w-[200px] sm:max-w-md">
+                            <h1 className="text-xs sm:text-base font-black tracking-wide text-white uppercase truncate max-w-[130px] xs:max-w-[180px] sm:max-w-md">
                                 {raffle.name}
                             </h1>
-                            <span className={`text-[9px] sm:text-xs font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded-full border shadow-sm ${
+                            <span className={`text-[8px] sm:text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full border shadow-sm ${
                                 raffle.status === 'Completed'
-                                    ? 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                                    : 'bg-emerald-950/90 text-emerald-400 border-emerald-700/80 animate-pulse'
+                                    ? 'bg-zinc-800/80 text-zinc-400 border-zinc-700'
+                                    : 'bg-emerald-950/80 text-emerald-400 border-emerald-500/50 animate-pulse'
                             }`}>
                                 {raffle.status === 'Completed' ? 'CONCLUDED' : 'LIVE ARENA'}
                             </span>
@@ -723,7 +734,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                     <button
                         onClick={toggleSound}
                         title={soundMuted ? "Unmute Tactical Audio FX" : "Mute Audio FX"}
-                        className="p-1.5 sm:p-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] active:scale-95 transition-all"
+                        className="p-1 sm:p-1.5 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/10 shadow-sm active:scale-95 transition-all"
                     >
                         {soundMuted ? <SpeakerXMarkIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-500"/> : <SpeakerWaveIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400"/>}
                     </button>
@@ -732,7 +743,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                     <button
                         onClick={toggleFullscreen}
                         title="Toggle Theater Mode"
-                        className="p-1.5 sm:p-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] active:scale-95 transition-all"
+                        className="p-1 sm:p-1.5 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/10 shadow-sm active:scale-95 transition-all"
                     >
                         {isFullscreen ? <ArrowsPointingInIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400"/> : <ArrowsPointingOutIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/>}
                     </button>
@@ -740,24 +751,24 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                     {/* Close Modal */}
                     <button 
                         onClick={onClose}
-                        className="p-1.5 sm:p-2 rounded-xl bg-zinc-900/90 hover:bg-red-950/80 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-900/50 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] active:scale-95 transition-all"
+                        className="p-1 sm:p-1.5 rounded-xl bg-zinc-900/80 hover:bg-red-950/80 text-zinc-400 hover:text-red-400 border border-white/10 hover:border-red-900/50 shadow-sm active:scale-95 transition-all"
                     >
-                        <XMarkIcon className="w-4 h-4 sm:w-5 sm:h-5"/>
+                        <XMarkIcon className="w-4 h-4 sm:w-4 sm:h-4"/>
                     </button>
                 </div>
             </header>
 
             {/* ==================================================== */}
-            {/* NAVIGATION TABS HUD */}
+            {/* NAVIGATION TABS HUD (SHRINK TO FIT) */}
             {/* ==================================================== */}
-            <nav className="relative z-20 flex items-center justify-between px-3 sm:px-6 py-1.5 sm:py-2 bg-zinc-900/70 border-b border-zinc-800/80 overflow-x-auto gap-2 scrollbar-none backdrop-blur-md">
-                <div className="flex items-center gap-1 sm:gap-2">
+            <nav className="relative z-20 flex items-center justify-between px-3 sm:px-5 py-1 sm:py-1.5 bg-black/30 border-b border-white/5 overflow-x-auto gap-2 scrollbar-none backdrop-blur-xl">
+                <div className="flex items-center gap-1 sm:gap-1.5">
                     <button
                         onClick={() => setActiveTab('stage')}
-                        className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm ${
+                        className={`px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm ${
                             activeTab === 'stage'
-                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/20 border border-amber-400'
-                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60 border border-transparent'
+                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/25 border border-amber-300'
+                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/40 border border-transparent'
                         }`}
                     >
                         <SparklesIcon className="w-3.5 h-3.5" />
@@ -766,10 +777,10 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
 
                     <button
                         onClick={() => setActiveTab('prizes')}
-                        className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm ${
+                        className={`px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm ${
                             activeTab === 'prizes'
-                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/20 border border-amber-400'
-                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60 border border-transparent'
+                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/25 border border-amber-300'
+                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/40 border border-transparent'
                         }`}
                     >
                         <TrophyIcon className="w-3.5 h-3.5" />
@@ -779,10 +790,10 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                     {isAdmin && (
                         <button
                             onClick={() => setActiveTab('leaderboard')}
-                            className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm ${
+                            className={`px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm ${
                                 activeTab === 'leaderboard'
-                                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/20 border border-amber-400'
-                                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60 border border-transparent'
+                                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/25 border border-amber-300'
+                                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/40 border border-transparent'
                             }`}
                         >
                             <UserGroupIcon className="w-3.5 h-3.5" />
@@ -792,10 +803,10 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
 
                     <button
                         onClick={() => setActiveTab('tickets')}
-                        className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm ${
+                        className={`px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm ${
                             activeTab === 'tickets'
-                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/20 border border-amber-400'
-                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60 border border-transparent'
+                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/25 border border-amber-300'
+                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/40 border border-transparent'
                         }`}
                     >
                         <TicketIcon className="w-3.5 h-3.5" />
@@ -810,7 +821,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                         <button
                             key={emoji}
                             onClick={() => triggerCheer(emoji)}
-                            className="p-1 sm:px-2 sm:py-1 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-xs sm:text-sm hover:scale-125 active:scale-95 transition-all shadow-sm"
+                            className="p-1 sm:px-2 sm:py-0.5 rounded-lg bg-zinc-800/50 hover:bg-zinc-700 text-xs sm:text-sm hover:scale-125 active:scale-95 transition-all shadow-sm"
                             title={`Send ${emoji}`}
                         >
                             {emoji}
@@ -859,39 +870,39 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                             })}
                         </div>
 
-                        {/* CENTRAL ROTATING CYLINDER / 3D SPOTLIGHT STAGE */}
-                        <div className="relative flex-1 min-h-[240px] sm:min-h-[360px] bg-gradient-to-b from-zinc-900/95 via-zinc-950/98 to-black rounded-3xl border border-amber-500/30 p-3.5 sm:p-8 flex flex-col items-center justify-center text-center shadow-[0_20px_60px_-15px_rgba(0,0,0,0.9),inset_0_1px_1px_rgba(255,255,255,0.15)] overflow-hidden">
+                        {/* CENTRAL ROTATING CYLINDER / 3D SPOTLIGHT STAGE (NO HEAVY OUTLINES, 3D SHADOWING) */}
+                        <div className="relative flex-1 min-h-[220px] sm:min-h-[320px] bg-gradient-to-b from-zinc-900/60 via-black/80 to-black/95 rounded-3xl p-3 sm:p-6 flex flex-col items-center justify-center text-center shadow-[0_30px_90px_-20px_rgba(0,0,0,0.95)] backdrop-blur-2xl overflow-hidden group">
                             {/* Ambient Stage Lighting */}
-                            <div className="absolute -top-1/2 left-1/2 -translate-x-1/2 w-full h-full bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-                            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-500/70 to-transparent" />
-                            <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-600/40 to-transparent" />
+                            <div className="absolute -top-1/2 left-1/2 -translate-x-1/2 w-full h-full bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+                            <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-amber-500/60 to-transparent pointer-events-none" />
+                            <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-600/30 to-transparent pointer-events-none" />
 
                             {/* Place & Prize Name Banner */}
-                            <div className="mb-2 sm:mb-4">
-                                <span className="inline-block font-mono text-[10px] sm:text-xs uppercase tracking-widest text-amber-400 bg-amber-950/70 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-amber-500/40 shadow-sm">
+                            <div className="mb-2 sm:mb-3">
+                                <span className="inline-block font-mono text-[9px] sm:text-xs uppercase tracking-widest text-amber-300 bg-amber-950/60 px-2.5 py-0.5 sm:py-1 rounded-full border border-amber-500/30 shadow-sm backdrop-blur-md">
                                     Place #{currentPrizeIndex + 1} Prize Award
                                 </span>
-                                <h2 className="text-lg sm:text-3xl font-black text-white mt-1 sm:mt-1.5 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] px-2">
+                                <h2 className="text-base sm:text-2xl font-black text-white mt-1 drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] px-2">
                                     {currentPrize?.name || 'Grand Tactical Prize'}
                                 </h2>
                             </div>
 
                             {/* 3D CYLINDRICAL REEL / WINNER CARD DISPLAY */}
                             {isSpinning ? (
-                                <div className="w-full max-w-sm sm:max-w-md my-2 sm:my-4 p-4 sm:p-6 rounded-2xl bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 border-2 border-amber-500/80 shadow-[0_0_40px_rgba(245,158,11,0.3),inset_0_2px_8px_rgba(0,0,0,0.9)] flex flex-col items-center justify-center relative overflow-hidden">
+                                <div className="w-full max-w-sm sm:max-w-md my-2 p-3 sm:p-5 rounded-2xl bg-black/80 border border-amber-500/60 shadow-[0_0_50px_rgba(245,158,11,0.25),inset_0_2px_8px_rgba(0,0,0,0.9)] flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-2xl">
                                     {/* 3D Drum Slot Machine Cylindrical Overlays */}
                                     <div className="absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-black via-black/80 to-transparent pointer-events-none z-10" />
                                     <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none z-10" />
                                     <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:100%_8px] pointer-events-none" />
 
-                                    <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-mono text-amber-400 mb-1.5 z-10">
-                                        <ArrowPathIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin text-amber-400" />
+                                    <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-mono text-amber-400 mb-1 z-10">
+                                        <ArrowPathIcon className="w-3.5 h-3.5 animate-spin text-amber-400" />
                                         <span>DECRYPTING TICKET SERIALS...</span>
                                     </div>
-                                    <div className="text-2xl sm:text-5xl font-mono font-black text-amber-300 tracking-wider my-1.5 sm:my-2 animate-pulse drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] z-10">
+                                    <div className="text-2xl sm:text-4xl font-mono font-black text-amber-300 tracking-wider my-1 sm:my-1.5 animate-pulse drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] z-10">
                                         {availableTickets[activeCandidateIndex]?.code || 'TKT-??????'}
                                     </div>
-                                    <div className="text-xs sm:text-sm font-semibold text-zinc-300 mt-1 z-10 truncate max-w-full px-2">
+                                    <div className="text-xs sm:text-sm font-semibold text-zinc-300 mt-0.5 z-10 truncate max-w-full px-2">
                                         {(() => {
                                             const candidate = availableTickets[activeCandidateIndex];
                                             const p = players.find(ply => ply.id === candidate?.playerId);
@@ -905,55 +916,55 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                 </div>
                             ) : justWon ? (
                                 /* WINNER REVEAL SPOTLIGHT CARD (3D REALISM DEPTH) */
-                                <div className="w-full max-w-md sm:max-w-lg my-1.5 sm:my-2 p-4 sm:p-6 rounded-3xl bg-gradient-to-b from-amber-950/90 via-zinc-900/95 to-zinc-950 border-2 border-amber-400 shadow-[0_20px_50px_rgba(245,158,11,0.35),inset_0_1px_1px_rgba(255,255,255,0.25)] flex flex-col items-center justify-center animate-scaleUp">
+                                <div className="w-full max-w-md my-1.5 p-3.5 sm:p-5 rounded-3xl bg-gradient-to-b from-amber-950/50 via-zinc-900/70 to-black/90 shadow-[0_25px_70px_rgba(245,158,11,0.25),0_10px_30px_rgba(0,0,0,0.9)] backdrop-blur-2xl flex flex-col items-center justify-center animate-scaleUp border border-amber-500/40">
                                     <div className="flex items-center gap-1.5 mb-1">
-                                        <SparklesIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 animate-spin" />
-                                        <span className="font-mono text-[11px] sm:text-xs uppercase font-black text-amber-400 tracking-wider">
+                                        <SparklesIcon className="w-4 h-4 text-amber-400 animate-spin" />
+                                        <span className="font-mono text-[10px] sm:text-xs uppercase font-black text-amber-400 tracking-wider">
                                             OFFICIAL WINNER SELECTED!
                                         </span>
-                                        <SparklesIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 animate-spin" />
+                                        <SparklesIcon className="w-4 h-4 text-amber-400 animate-spin" />
                                     </div>
 
                                     {/* Winner Details with Full Name and Callsign */}
-                                    <div className="my-2 sm:my-3 flex flex-col items-center">
+                                    <div className="my-1.5 sm:my-2 flex flex-col items-center">
                                         {justWon.player?.avatarUrl ? (
                                             <img 
                                                 src={justWon.player.avatarUrl} 
                                                 alt={justWon.player.name}
-                                                className="w-14 h-14 sm:w-20 sm:h-20 rounded-full border-2 border-amber-400 object-cover shadow-[0_4px_20px_rgba(245,158,11,0.4)] mb-1.5"
+                                                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-amber-400 object-cover shadow-[0_4px_20px_rgba(245,158,11,0.4)] mb-1"
                                                 referrerPolicy="no-referrer"
                                             />
                                         ) : (
-                                            <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-xl sm:text-2xl font-black mb-1.5 shadow-[0_4px_20px_rgba(245,158,11,0.4)]">
+                                            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-lg sm:text-xl font-black mb-1 shadow-[0_4px_20px_rgba(245,158,11,0.4)]">
                                                 {justWon.player?.name?.charAt(0) || '🏆'}
                                             </div>
                                         )}
 
-                                        <h3 className="text-lg sm:text-2xl font-black text-white px-2">
+                                        <h3 className="text-base sm:text-xl font-black text-white px-2">
                                             {justWon.player?.name} {justWon.player?.surname || ''}
                                         </h3>
                                         
                                         {justWon.player?.callsign && (
-                                            <span className="text-sm sm:text-lg font-mono font-bold text-amber-400 mt-0.5">
+                                            <span className="text-xs sm:text-base font-mono font-bold text-amber-400 mt-0.5">
                                                 "{justWon.player.callsign}"
                                             </span>
                                         )}
                                         
-                                        <span className="text-[10px] sm:text-xs text-zinc-400 font-mono mt-0.5">
+                                        <span className="text-[10px] text-zinc-400 font-mono mt-0.5">
                                             ID: {justWon.player?.playerCode || 'OP-00'}
                                         </span>
                                     </div>
 
                                     {/* Winning Ticket Code Pill (Realistic Holographic Ticket Token) */}
-                                    <div className="bg-zinc-950/95 px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl border border-amber-500/40 shadow-inner flex items-center gap-2 sm:gap-3">
+                                    <div className="bg-black/80 px-3 py-1 sm:py-1.5 rounded-xl border border-amber-500/40 shadow-inner flex items-center gap-2">
                                         <span className="text-[10px] sm:text-xs font-mono text-zinc-400">Winning Ticket:</span>
-                                        <span className="text-sm sm:text-lg font-mono font-black text-red-400 tracking-wider drop-shadow-sm">
+                                        <span className="text-xs sm:text-base font-mono font-black text-red-400 tracking-wider">
                                             {justWon.ticket?.code || 'TKT-XXXX'}
                                         </span>
                                     </div>
 
                                     {isAdmin && justWon.totalTicketsHeld > 0 && (
-                                        <p className="text-[10px] sm:text-[11px] text-amber-300/80 font-mono mt-1.5 sm:mt-2">
+                                        <p className="text-[10px] text-amber-300/80 font-mono mt-1.5">
                                             Operator held {justWon.totalTicketsHeld} ticket{justWon.totalTicketsHeld === 1 ? '' : 's'} in this raffle pool
                                         </p>
                                     )}
@@ -965,19 +976,19 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                     const winPlayer = players.find(p => p.id === winDoc?.playerId);
                                     const winTicket = tickets.find(t => t.id === winDoc?.ticketId);
                                     return (
-                                        <div className="w-full max-w-sm sm:max-w-md my-2 sm:my-4 p-4 sm:p-5 rounded-3xl bg-zinc-900/90 border border-emerald-500/50 shadow-[0_10px_30px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.1)] flex flex-col items-center justify-center">
+                                        <div className="w-full max-w-sm my-2 p-3 sm:p-4 rounded-2xl bg-black/60 border border-emerald-500/40 shadow-2xl backdrop-blur-xl flex flex-col items-center justify-center">
                                             <span className="text-[10px] sm:text-xs font-mono text-emerald-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1.5">
                                                 <CheckBadgeIcon className="w-4 h-4"/> Prize Claimed
                                             </span>
-                                            <h3 className="text-base sm:text-lg font-bold text-white">
+                                            <h3 className="text-sm sm:text-base font-bold text-white">
                                                 {winPlayer?.name} {winPlayer?.surname || ''}
                                             </h3>
                                             {winPlayer?.callsign && (
-                                                <span className="text-xs sm:text-sm font-mono font-bold text-amber-400">
+                                                <span className="text-xs font-mono font-bold text-amber-400">
                                                     "{winPlayer.callsign}"
                                                 </span>
                                             )}
-                                            <div className="mt-2 font-mono text-[11px] sm:text-xs text-red-400 bg-red-950/80 px-3 py-1 rounded-xl border border-red-900/50 shadow-inner">
+                                            <div className="mt-1.5 font-mono text-[10px] sm:text-xs text-red-400 bg-red-950/80 px-2.5 py-0.5 rounded-lg border border-red-900/50">
                                                 {winTicket?.code || 'TKT-LOCKED'}
                                             </div>
                                         </div>
@@ -985,11 +996,11 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                 })()
                             ) : (
                                 /* WAITING FOR SPIN PROMPT */
-                                <div className="my-3 sm:my-6 space-y-1.5 sm:space-y-2">
-                                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] flex items-center justify-center mx-auto text-zinc-500">
-                                        <TicketIcon className="w-6 h-6 sm:w-8 sm:h-8 text-amber-400/60" />
+                                <div className="my-2 sm:my-4 space-y-1">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center mx-auto text-zinc-500 shadow-md">
+                                        <TicketIcon className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400/80" />
                                     </div>
-                                    <p className="text-xs sm:text-sm text-zinc-400">
+                                    <p className="text-xs text-zinc-400">
                                         {availableTickets.length > 0 
                                             ? `${availableTickets.length} eligible tickets awaiting drawing`
                                             : 'No tickets available in this raffle pool'
@@ -1110,15 +1121,15 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                             )}
                         </div>
 
-                        {/* LIVE WINNERS PODIUM ROSTER (3D DEPTH CARDS) */}
+                        {/* LIVE WINNERS PODIUM ROSTER (BORDERLESS FLOATING GLASS) */}
                         {localWinners.length > 0 && (
-                            <div className="bg-zinc-900/70 p-3 sm:p-4 rounded-3xl border border-zinc-800 text-left shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.08)]">
+                            <div className="bg-black/40 p-3 sm:p-4 rounded-3xl border border-white/5 text-left shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl">
                                 <div className="flex justify-between items-center mb-2.5">
                                     <h4 className="font-bold text-[11px] sm:text-xs uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
                                         <TrophyIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4"/> Official Podium ({localWinners.length}/{prizes.length} Awarded)
                                     </h4>
                                     {localWinners.length === prizes.length && (
-                                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-lg border border-emerald-800">
+                                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-lg border border-emerald-800/80">
                                             ✓ All Claimed
                                         </span>
                                     )}
@@ -1131,7 +1142,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                         const place = prize?.place || (wIdx + 1);
                                         const medal = place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : '🎖️';
                                         return (
-                                            <div key={w.id} className="flex items-center justify-between p-2 sm:p-2.5 rounded-2xl bg-zinc-950/90 border border-zinc-800/80 shadow-sm">
+                                            <div key={w.id} className="flex items-center justify-between p-2 sm:p-2.5 rounded-2xl bg-black/50 border border-white/5 shadow-md backdrop-blur-md">
                                                 <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
                                                     <span className="text-base sm:text-xl shrink-0">{medal}</span>
                                                     <div className="min-w-0">
@@ -1184,32 +1195,32 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                 return (
                                     <div 
                                         key={prize.id || idx}
-                                        className={`p-4 rounded-2xl border transition-all ${
+                                        className={`p-3.5 rounded-2xl border transition-all backdrop-blur-xl shadow-lg ${
                                             winnerDoc
-                                                ? 'bg-gradient-to-br from-zinc-900/90 to-emerald-950/30 border-emerald-800/80'
-                                                : 'bg-zinc-900/70 border-zinc-800 hover:border-zinc-700'
+                                                ? 'bg-gradient-to-br from-black/60 to-emerald-950/40 border-emerald-500/50'
+                                                : 'bg-black/40 border-white/5 hover:border-white/20'
                                         }`}
                                     >
                                         <div className="flex items-start justify-between">
                                             <div>
-                                                <span className="text-xs font-mono font-black text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30">
+                                                <span className="text-[11px] font-mono font-black text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-500/30">
                                                     {medal}
                                                 </span>
-                                                <h4 className="text-base font-bold text-white mt-1.5">{prize.name}</h4>
+                                                <h4 className="text-sm sm:text-base font-bold text-white mt-1.5">{prize.name}</h4>
                                             </div>
                                             {winnerDoc ? (
-                                                <span className="text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 px-2 py-1 rounded border border-emerald-800">
+                                                <span className="text-[10px] font-mono font-bold bg-emerald-950/80 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800/80">
                                                     CLAIMED
                                                 </span>
                                             ) : (
-                                                <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800 px-2 py-1 rounded">
+                                                <span className="text-[10px] font-mono text-zinc-400 bg-white/5 px-2 py-0.5 rounded border border-white/10">
                                                     UP FOR GRABS
                                                 </span>
                                             )}
                                         </div>
 
                                         {winnerDoc && (
-                                            <div className="mt-3 pt-3 border-t border-zinc-800/80 flex items-center justify-between">
+                                            <div className="mt-2.5 pt-2.5 border-t border-white/10 flex items-center justify-between">
                                                 <div>
                                                     <span className="text-[10px] text-zinc-400 uppercase font-mono block">Winner:</span>
                                                     <p className="text-xs font-bold text-white">
@@ -1237,28 +1248,28 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                 {/* TAB 3: CONTENDERS LEADERBOARD & RADAR (ADMIN ONLY) */}
                 {/* ==================================================== */}
                 {activeTab === 'leaderboard' && isAdmin && (
-                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                    <div className="max-w-4xl mx-auto w-full space-y-3">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                             <div>
-                                <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-                                    <UserGroupIcon className="w-5 h-5 text-amber-400" /> Contenders Radar & Odds Breakdown
+                                <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                                    <UserGroupIcon className="w-4 h-4 text-amber-400" /> Contenders Radar & Odds Breakdown
                                 </h3>
-                                <p className="text-xs text-zinc-400">
+                                <p className="text-[11px] text-zinc-400">
                                     Total ticket distribution across {leaderboardStats.length} participating operators
                                 </p>
                             </div>
                         </div>
 
                         {/* Top Contender Leaderboard Table */}
-                        <div className="bg-zinc-900/80 rounded-2xl border border-zinc-800 overflow-hidden">
-                            <div className="p-3 bg-zinc-950/80 border-b border-zinc-800 grid grid-cols-12 text-xs font-mono font-bold text-zinc-400">
+                        <div className="bg-black/40 rounded-2xl border border-white/5 overflow-hidden backdrop-blur-2xl shadow-xl">
+                            <div className="p-2.5 bg-black/60 border-b border-white/10 grid grid-cols-12 text-[11px] font-mono font-bold text-zinc-400">
                                 <span className="col-span-1 text-center">#</span>
                                 <span className="col-span-5">Operator</span>
                                 <span className="col-span-3 text-center">Tickets Held</span>
                                 <span className="col-span-3 text-right">Probability</span>
                             </div>
 
-                            <div className="divide-y divide-zinc-800/60 max-h-96 overflow-y-auto">
+                            <div className="divide-y divide-white/5 max-h-96 overflow-y-auto">
                                 {leaderboardStats.length > 0 ? (
                                     leaderboardStats.map((item, idx) => {
                                         const probability = tickets.length > 0 
@@ -1269,10 +1280,10 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                         return (
                                             <div 
                                                 key={item.player?.id || idx}
-                                                className={`p-3 grid grid-cols-12 items-center text-xs transition-colors ${
+                                                className={`p-2.5 grid grid-cols-12 items-center text-xs transition-colors ${
                                                     isCurrent 
-                                                        ? 'bg-amber-500/10 font-bold border-l-4 border-amber-500' 
-                                                        : 'hover:bg-zinc-800/40'
+                                                        ? 'bg-amber-500/15 font-bold border-l-4 border-amber-500' 
+                                                        : 'hover:bg-white/5'
                                                 }`}
                                             >
                                                 <span className="col-span-1 text-center font-mono font-bold text-amber-400">
@@ -1280,9 +1291,9 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                                 </span>
                                                 <div className="col-span-5 flex items-center gap-2">
                                                     {item.player?.avatarUrl ? (
-                                                        <img src={item.player.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" referrerPolicy="no-referrer" />
+                                                        <img src={item.player.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" referrerPolicy="no-referrer" />
                                                     ) : (
-                                                        <div className="w-6 h-6 rounded-full bg-zinc-800 text-zinc-300 flex items-center justify-center text-[10px] font-bold">
+                                                        <div className="w-5 h-5 rounded-full bg-white/10 text-zinc-300 flex items-center justify-center text-[10px] font-bold">
                                                             {item.player?.name?.charAt(0) || 'O'}
                                                         </div>
                                                     )}
@@ -1299,11 +1310,11 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                                     </div>
                                                 </div>
                                                 <div className="col-span-3 text-center">
-                                                    <span className="font-mono font-bold text-white bg-zinc-800 px-2 py-0.5 rounded">
+                                                    <span className="font-mono font-bold text-white bg-white/10 px-2 py-0.5 rounded text-[11px]">
                                                         {item.count} tickets
                                                     </span>
                                                 </div>
-                                                <div className="col-span-3 text-right font-mono font-bold text-emerald-400">
+                                                <div className="col-span-3 text-right font-mono font-bold text-emerald-400 text-xs">
                                                     {probability}%
                                                 </div>
                                             </div>
@@ -1323,58 +1334,58 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                 {/* TAB 4: TICKET STASH (PERSONAL FOR PLAYERS, AUDIT FOR ADMIN) */}
                 {/* ==================================================== */}
                 {activeTab === 'tickets' && (
-                    <div className="max-w-4xl mx-auto w-full space-y-4">
+                    <div className="max-w-4xl mx-auto w-full space-y-3">
                         {!isAdmin ? (
                             /* Player View: Private Personal Stash Only */
-                            <div className="space-y-4">
-                                <div className="p-4 rounded-2xl bg-gradient-to-r from-zinc-900 via-amber-950/40 to-zinc-900 border border-amber-500/40 flex items-center justify-between">
+                            <div className="space-y-3">
+                                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-black/60 via-amber-950/30 to-black/60 border border-amber-500/30 backdrop-blur-2xl flex items-center justify-between shadow-lg">
                                     <div>
                                         <span className="text-xs font-mono uppercase font-bold text-amber-400 block">
                                             Your Personal Raffle Tickets
                                         </span>
-                                        <p className="text-lg font-black text-white mt-0.5">
+                                        <p className="text-base font-black text-white mt-0.5">
                                             {myTickets.length} Ticket{myTickets.length === 1 ? '' : 's'} Held
                                         </p>
                                     </div>
-                                    <span className="text-xs font-mono text-zinc-400 bg-zinc-950 px-3 py-1.5 rounded-xl border border-zinc-800">
+                                    <span className="text-[11px] font-mono text-zinc-400 bg-black/60 px-2.5 py-1 rounded-xl border border-white/10">
                                         Status: {raffle.status}
                                     </span>
                                 </div>
 
                                 {myTickets.length === 0 ? (
-                                    <div className="p-12 text-center bg-zinc-950/60 rounded-2xl border border-zinc-800/80">
-                                        <TicketIcon className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
-                                        <p className="text-sm font-semibold text-zinc-300">You do not hold any tickets for this raffle yet.</p>
-                                        <p className="text-xs text-zinc-500 mt-1">Tickets assigned to your callsign/profile will appear here securely.</p>
+                                    <div className="p-8 text-center bg-black/40 rounded-2xl border border-white/5 backdrop-blur-xl">
+                                        <TicketIcon className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+                                        <p className="text-xs font-semibold text-zinc-300">You do not hold any tickets for this raffle yet.</p>
+                                        <p className="text-[10px] text-zinc-500 mt-1">Tickets assigned to your callsign/profile will appear here securely.</p>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-96 overflow-y-auto p-1">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-96 overflow-y-auto p-1">
                                         {myTickets.map(ticket => {
                                             const isWinningTicket = localWinners.some(w => w.ticketId === ticket.id);
                                             return (
                                                 <div
                                                     key={ticket.id}
-                                                    className={`p-3.5 rounded-xl border flex flex-col justify-between transition-all ${
+                                                    className={`p-3 rounded-xl border flex flex-col justify-between transition-all backdrop-blur-md shadow-md ${
                                                         isWinningTicket
-                                                            ? 'bg-gradient-to-b from-amber-950/80 to-zinc-900 border-amber-400 shadow-md shadow-amber-500/20'
-                                                            : 'bg-zinc-900/90 border-amber-500/40'
+                                                            ? 'bg-gradient-to-b from-amber-950/80 to-black/90 border-amber-400 shadow-amber-500/20'
+                                                            : 'bg-black/40 border-amber-500/30'
                                                     }`}
                                                 >
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <span className="font-mono text-sm font-black text-amber-400">
+                                                    <div className="flex items-center justify-between mb-1.5">
+                                                        <span className="font-mono text-xs font-black text-amber-400">
                                                             {ticket.code}
                                                         </span>
                                                         {isWinningTicket ? (
-                                                            <span className="text-xs bg-amber-500 text-black font-black px-2 py-0.5 rounded-full">
+                                                            <span className="text-[10px] bg-amber-500 text-black font-black px-1.5 py-0.5 rounded-full">
                                                                 WINNER 🏆
                                                             </span>
                                                         ) : (
-                                                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                                                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-white/10 text-zinc-400">
                                                                 {ticket.paymentStatus || 'Valid'}
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <p className="text-[11px] text-zinc-400 font-mono">
+                                                    <p className="text-[10px] text-zinc-400 font-mono">
                                                         Issued: {new Date(ticket.purchaseDate).toLocaleDateString()}
                                                     </p>
                                                 </div>
@@ -1385,13 +1396,13 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                             </div>
                         ) : (
                             /* Admin View: Full Pool Audit & Management */
-                            <div className="space-y-4">
-                                <div className="p-4 rounded-2xl bg-gradient-to-r from-zinc-900 via-amber-950/40 to-zinc-900 border border-amber-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                            <div className="space-y-3">
+                                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-black/60 via-amber-950/30 to-black/60 border border-amber-500/30 backdrop-blur-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-lg">
                                     <div>
                                         <span className="text-xs font-mono uppercase font-bold text-amber-400 block">
                                             Admin Raffle Pool Stash
                                         </span>
-                                        <p className="text-lg font-black text-white mt-0.5">
+                                        <p className="text-base font-black text-white mt-0.5">
                                             {tickets.length} Total Tickets in Pool
                                         </p>
                                     </div>
@@ -1399,7 +1410,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                         <Button 
                                             size="sm"
                                             onClick={() => onIssueTickets(raffle)}
-                                            className="bg-amber-600 hover:bg-amber-500 text-xs font-bold"
+                                            className="bg-amber-600 hover:bg-amber-500 text-xs font-bold py-1"
                                         >
                                             + Issue Tickets
                                         </Button>
@@ -1407,21 +1418,21 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                 </div>
 
                                 {/* Search & Filter */}
-                                <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center justify-between gap-2">
                                     <input
                                         type="text"
                                         placeholder="Search ticket serial code or operator..."
                                         value={ticketSearch}
                                         onChange={(e) => setTicketSearch(e.target.value)}
-                                        className="w-full max-w-sm px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-amber-500"
+                                        className="w-full max-w-sm px-3 py-1.5 rounded-xl bg-black/60 border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-amber-500"
                                     />
-                                    <span className="text-xs font-mono text-zinc-400 shrink-0">
+                                    <span className="text-[11px] font-mono text-zinc-400 shrink-0">
                                         {tickets.length} total in pool
                                     </span>
                                 </div>
 
                                 {/* Ticket Grid for Admin */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-96 overflow-y-auto p-1">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-96 overflow-y-auto p-1">
                                     {tickets
                                         .filter(t => {
                                             if (!ticketSearch) return true;
@@ -1445,10 +1456,10 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                             return (
                                                 <div
                                                     key={ticket.id}
-                                                    className={`p-2.5 rounded-xl border flex flex-col justify-between transition-all ${
+                                                    className={`p-2 rounded-xl border flex flex-col justify-between transition-all backdrop-blur-md shadow-sm ${
                                                         isWinningTicket
-                                                            ? 'bg-gradient-to-b from-amber-950/80 to-zinc-900 border-amber-400 shadow-md shadow-amber-500/20'
-                                                            : 'bg-zinc-950/70 border-zinc-800/80'
+                                                            ? 'bg-gradient-to-b from-amber-950/80 to-black border-amber-400 shadow-amber-500/20'
+                                                            : 'bg-black/50 border-white/5'
                                                     }`}
                                                 >
                                                     <div className="flex items-center justify-between mb-1 gap-1">
@@ -1457,7 +1468,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                                         </span>
                                                         {isWinningTicket && <span className="text-xs shrink-0">🏆</span>}
                                                     </div>
-                                                    <p className="text-[11px] text-zinc-300 truncate font-semibold" title={`${ownerName} ${ownerCallsign ? `("${ownerCallsign}")` : ''}`}>
+                                                    <p className="text-[10px] text-zinc-300 truncate font-semibold" title={`${ownerName} ${ownerCallsign ? `("${ownerCallsign}")` : ''}`}>
                                                         {ownerName} {ownerCallsign ? `("${ownerCallsign}")` : ''}
                                                     </p>
                                                 </div>
@@ -1470,10 +1481,10 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                 )}
             </main>
 
-            {/* Tactical Footer */}
-            <footer className="relative z-20 px-4 py-2 border-t border-zinc-800 bg-zinc-950/90 text-center text-[11px] font-mono text-zinc-500 flex items-center justify-between">
+            {/* Tactical Footer (Shrink to Fit) */}
+            <footer className="relative z-20 px-3 sm:px-5 py-1 sm:py-1.5 border-t border-white/5 bg-black/60 text-center text-[10px] font-mono text-zinc-500 flex items-center justify-between backdrop-blur-xl">
                 <span>BOSJOL TACTICAL AIRSOFT • RAFFLE ENGINE</span>
-                <span>AUDIT RECORD: {raffle.id}</span>
+                <span className="hidden xs:inline">AUDIT RECORD: {raffle.id}</span>
             </footer>
         </div>
     );

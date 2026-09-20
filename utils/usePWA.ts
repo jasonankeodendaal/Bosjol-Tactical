@@ -17,6 +17,7 @@ export function usePWA() {
     // Detect standalone mode (already installed / launched from home screen)
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches ||
       (window.navigator as unknown as { standalone?: boolean }).standalone === true;
     setIsInstalled(isStandalone);
 

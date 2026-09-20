@@ -7,13 +7,11 @@
   "scope": "/",
   "display": "standalone",
   "display_override": [
-    "window-controls-overlay",
     "standalone",
-    "minimal-ui",
-    "browser"
+    "fullscreen"
   ],
   "orientation": "any",
-  "theme_color": "#b91c1c",
+  "theme_color": "#0a0a0a",
   "background_color": "#09090b",
   "lang": "en",
   "dir": "ltr",

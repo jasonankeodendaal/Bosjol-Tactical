@@ -129,6 +129,8 @@ export type EventType = 'Training' | 'Mission' | 'Briefing' | 'Maintenance';
 export type EventStatus = 'Upcoming' | 'In Progress' | 'Completed' | 'Cancelled';
 export type PaymentStatus = 'Paid (Card)' | 'Paid (Cash)' | 'Paid (EFT)' | 'Unpaid';
 
+export type CheckInStatus = 'pending' | 'checked_in' | 'no_show';
+
 export interface EventAttendee {
     playerId: string;
     paymentStatus: PaymentStatus;
@@ -137,6 +139,12 @@ export interface EventAttendee {
     note?: string;
     discountAmount?: number;
     discountReason?: string;
+    // Guest & Check-In extensions
+    isGuest?: boolean;
+    guestName?: string;
+    guestCallsign?: string;
+    guestPhone?: string;
+    checkInStatus?: CheckInStatus;
 }
 
 // Sub-collection document type
@@ -177,6 +185,17 @@ export interface Signup {
     playerId: string;
     requestedGearIds: string[];
     note?: string;
+    // Guest & Check-In extensions
+    isGuest?: boolean;
+    guestName?: string;
+    guestCallsign?: string;
+    guestPhone?: string;
+    checkInStatus?: CheckInStatus;
+    paymentStatus?: PaymentStatus;
+    playerName?: string;
+    playerCallsign?: string;
+    playerCode?: string;
+    signedUpAt?: string;
 }
 
 // Core data stored in the `events` collection document

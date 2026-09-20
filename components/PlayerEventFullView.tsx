@@ -24,8 +24,10 @@ import {
     ShieldCheck,
     ClipboardList,
     Receipt,
-    Eye
+    Eye,
+    Lock
 } from 'lucide-react';
+import { isUnjoinLocked } from '../utils/eventUtils';
 import type { GameEvent, Player, Signup, Location, InventoryItem } from '../types';
 import { BadgePill } from './BadgePill';
 import { Button } from './Button';
@@ -326,6 +328,8 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
         });
         return availableGear.find(g => g.id === assignedId);
     }, [selectedGear, availableGear]);
+
+    const unjoinLocked = useMemo(() => isSignedUp && isUnjoinLocked(event), [isSignedUp, event]);
 
     return (
         <motion.div
@@ -945,13 +949,32 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
                                     </div>
                                 )}
 
-                                <div className="pt-2">
+                                <div className="pt-2 space-y-2">
+                                    {unjoinLocked && (
+                                        <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-300 text-xs flex items-center gap-2 font-medium">
+                                            <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                                            <span>Registration locked 48h prior to match start. Unjoining disabled.</span>
+                                        </div>
+                                    )}
                                     <Button 
-                                        onClick={() => onSignUp(event.id, [], '', undefined)}
-                                        variant="danger"
-                                        className="w-full py-2 text-xs font-bold uppercase tracking-wider"
+                                        onClick={() => {
+                                            if (unjoinLocked) {
+                                                alert("Event signups are locked 48 hours before match start. You cannot unjoin at this time. Please contact event command.");
+                                            } else {
+                                                onSignUp(event.id, [], '', undefined);
+                                            }
+                                        }}
+                                        variant={unjoinLocked ? 'secondary' : 'danger'}
+                                        className={`w-full py-2 text-xs font-bold uppercase tracking-wider ${unjoinLocked ? '!bg-zinc-900 !text-amber-400 !border-amber-500/40' : ''}`}
                                     >
-                                        Withdraw Registration
+                                        {unjoinLocked ? (
+                                            <span className="flex items-center justify-center gap-1.5">
+                                                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                                                Unjoining Locked (48h Rule)
+                                            </span>
+                                        ) : (
+                                            'Withdraw Registration'
+                                        )}
                                     </Button>
                                 </div>
                             </div>
@@ -1002,10 +1025,19 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
                     </>
                 ) : (
                     <button
-                        onClick={() => onSignUp(event.id, [], '', undefined)}
-                        className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider shadow-lg active:scale-95 transition-all"
+                        onClick={() => {
+                            if (unjoinLocked) {
+                                alert("Event signups are locked 48 hours before match start. You cannot unjoin at this time. Please contact event command.");
+                            } else {
+                                onSignUp(event.id, [], '', undefined);
+                            }
+                        }}
+                        className={`w-full py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5 ${
+                            unjoinLocked ? 'bg-zinc-900 text-amber-400 border border-amber-500/40' : 'bg-red-600 hover:bg-red-700 text-white'
+                        }`}
                     >
-                        Withdraw Registration
+                        {unjoinLocked && <Lock className="w-3.5 h-3.5 text-amber-400" />}
+                        <span>{unjoinLocked ? 'Unjoining Locked (48h Rule)' : 'Withdraw Registration'}</span>
                     </button>
                 )}
             </div>

@@ -9,10 +9,11 @@ import { BadgePill } from './BadgePill';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
-import { QrCode, Ban, RotateCcw, Database, Sparkles, Image as ImageIcon, Palette, ClipboardList, Users, Check, Trophy, Award } from 'lucide-react';
+import { QrCode, Ban, RotateCcw, Database, Sparkles, Image as ImageIcon, Palette, ClipboardList, Users, Check, Trophy, Award, UserPlus, Phone, UserX } from 'lucide-react';
 import { EventQRCodeModal } from './EventQRCodeModal';
 import { EventPosterModal } from './EventPosterModal';
 import { EquipmentRentalsSummaryModal } from './EquipmentRentalsSummaryModal';
+import { AddGuestPlayerModal } from './AddGuestPlayerModal';
 
 interface ManageEventPageProps {
     event?: GameEvent;
@@ -107,6 +108,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     }, [formData.awardedBadges]);
 
     const [liveStats, setLiveStats] = useState<Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>>>(event?.liveStats || {});
+    const [showAddGuestModal, setShowAddGuestModal] = useState(false);
     
     // --- Audio Recording State & Handlers ---
     const [isRecording, setIsRecording] = useState(false);
@@ -184,14 +186,45 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
 
 
     const signedUpPlayersDetails = useMemo(() => {
-        const signedUpPlayerIds = signups.filter(s => s.eventId === event?.id).map(s => s.playerId);
-        return players.filter(p => signedUpPlayerIds.includes(p.id));
+        const eventSignups = signups.filter(s => s.eventId === event?.id);
+        return eventSignups.map(s => {
+            const p = players.find(x => x.id === s.playerId);
+            return {
+                id: s.playerId,
+                name: s.playerName || (p ? `${p.name} ${p.surname || ''}`.trim() : s.playerId),
+                callsign: s.playerCallsign || p?.callsign || p?.name || 'Operator',
+                isGuest: s.isGuest || false,
+                signup: s,
+                playerObj: p
+            };
+        });
     }, [signups, event?.id, players]);
 
-
-    const attendeesDetails = useMemo(() =>
-        players.filter(p => formData.attendees.some(a => a.playerId === p.id)),
-    [players, formData.attendees]);
+    const attendeesDetails = useMemo(() => {
+        return formData.attendees.map(a => {
+            if (a.isGuest) {
+                return {
+                    id: a.playerId,
+                    name: a.guestName || 'Guest Operator',
+                    callsign: a.guestCallsign || 'Guest',
+                    avatarUrl: '',
+                    isGuest: true,
+                    attendee: a,
+                    playerObj: undefined
+                };
+            }
+            const p = players.find(x => x.id === a.playerId);
+            return {
+                id: a.playerId,
+                name: p ? `${p.name} ${p.surname || ''}`.trim() : a.playerId,
+                callsign: p?.callsign || p?.name || 'Operator',
+                avatarUrl: p?.avatarUrl || '',
+                isGuest: false,
+                attendee: a,
+                playerObj: p
+            };
+        });
+    }, [formData.attendees, players]);
     
     const handleStatChange = (playerId: string, stat: keyof PlayerStats, value: number) => {
         setLiveStats(prev => ({
@@ -251,26 +284,110 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
         }));
     };
     
+    const handleAddGuestPlayer = async (guestAttendee: EventAttendee, isPendingSignup?: boolean) => {
+        if (!event) return;
+
+        if (isPendingSignup) {
+            const signupId = `signup_${guestAttendee.playerId}`;
+            const newSignupData = {
+                id: signupId,
+                eventId: event.id,
+                playerId: guestAttendee.playerId,
+                requestedGearIds: guestAttendee.rentedGearIds || [],
+                note: guestAttendee.note || '',
+                isGuest: true,
+                guestName: guestAttendee.guestName,
+                guestCallsign: guestAttendee.guestCallsign,
+                guestPhone: guestAttendee.guestPhone,
+                playerName: guestAttendee.guestName,
+                playerCallsign: guestAttendee.guestCallsign,
+                paymentStatus: guestAttendee.paymentStatus,
+                signedUpAt: new Date().toISOString(),
+            };
+            await setDoc('signups', signupId, newSignupData);
+        } else {
+            const updatedAttendees = [...formData.attendees, guestAttendee];
+            setFormData(prev => ({
+                ...prev,
+                attendees: updatedAttendees
+            }));
+            if (event.id) {
+                await setDoc('events', event.id, {
+                    ...formData,
+                    attendees: updatedAttendees
+                });
+            }
+        }
+    };
+
     const handleCheckIn = async (playerId: string) => {
         if (!event) return;
         const signup = signups.find(s => s.playerId === playerId && s.eventId === event.id);
-        if (!signup) return;
+
+        const existingAttendee = formData.attendees.find(a => a.playerId === playerId);
+        if (existingAttendee) {
+            setFormData(prev => ({
+                ...prev,
+                attendees: prev.attendees.map(a => a.playerId === playerId ? { ...a, checkInStatus: 'checked_in' } : a)
+            }));
+            return;
+        }
 
         const newAttendee: EventAttendee = {
             playerId,
-            paymentStatus: 'Unpaid',
-            rentedGearIds: signup.requestedGearIds || [],
-            note: signup.note,
+            paymentStatus: signup?.paymentStatus || 'Unpaid',
+            rentedGearIds: signup?.requestedGearIds || [],
+            note: signup?.note || '',
+            checkInStatus: 'checked_in',
+            isGuest: signup?.isGuest || false,
+            guestName: signup?.guestName,
+            guestCallsign: signup?.guestCallsign,
+            guestPhone: signup?.guestPhone,
         };
         
-        // This is an optimistic update. We update the local form state immediately.
         setFormData(prev => ({
             ...prev,
             attendees: [...prev.attendees, newAttendee]
         }));
         
-        // Then we perform the database operation to remove the signup doc.
-        await deleteDoc('signups', signup.id);
+        if (signup) {
+            await deleteDoc('signups', signup.id);
+        }
+    };
+
+    const handleMarkNoShow = async (playerId: string) => {
+        if (!event) return;
+        const signup = signups.find(s => s.playerId === playerId && s.eventId === event.id);
+
+        const existingAttendee = formData.attendees.find(a => a.playerId === playerId);
+        if (existingAttendee) {
+            setFormData(prev => ({
+                ...prev,
+                attendees: prev.attendees.map(a => a.playerId === playerId ? { ...a, checkInStatus: 'no_show' } : a)
+            }));
+            return;
+        }
+
+        const newAttendee: EventAttendee = {
+            playerId,
+            paymentStatus: signup?.paymentStatus || 'Unpaid',
+            rentedGearIds: signup?.requestedGearIds || [],
+            note: signup?.note ? `${signup.note} (No Show)` : 'No Show',
+            checkInStatus: 'no_show',
+            isGuest: signup?.isGuest || false,
+            guestName: signup?.guestName,
+            guestCallsign: signup?.guestCallsign,
+            guestPhone: signup?.guestPhone,
+        };
+
+        setFormData(prev => ({
+            ...prev,
+            attendees: [...prev.attendees, newAttendee]
+        }));
+
+        if (signup) {
+            await deleteDoc('signups', signup.id);
+        }
     };
 
     const handleCheckOut = async (playerId: string) => {
@@ -278,6 +395,15 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
 
         const attendee = formData.attendees.find(a => a.playerId === playerId);
         if (!attendee) return;
+
+        // If it was a guest player, remove from attendees directly
+        if (attendee.isGuest) {
+            setFormData(prev => ({
+                ...prev,
+                attendees: prev.attendees.filter(a => a.playerId !== playerId)
+            }));
+            return;
+        }
 
         const newSignupData = {
             eventId: event.id,
@@ -294,7 +420,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
         
         // Perform database operation
         await setDoc('signups', `${event.id}_${playerId}`, newSignupData);
-    }
+    };
     
     const handlePaymentStatus = (playerId: string, status: PaymentStatus) => {
         setFormData(prev => ({
@@ -1390,37 +1516,140 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             </Button>
                         </div>
                     )}
-                     <DashboardCard title={`Signed Up (${signedUpPlayersDetails.length})`} icon={<UserIcon className="w-6 h-6" />}>
-                        <div className="p-4 space-y-2 max-h-60 overflow-y-auto">
+                    {/* Walk-In Guest Management Header Bar */}
+                    <div className="flex items-center justify-between gap-2 p-3 bg-zinc-900/90 border border-purple-500/30 rounded-xl">
+                        <div>
+                            <p className="text-xs font-bold text-white uppercase tracking-wider">Walk-In Guest Management</p>
+                            <p className="text-[11px] text-zinc-400">Add player with no registered account</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowAddGuestModal(true)}
+                            className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-colors shadow-sm"
+                        >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            <span>+ Add Guest Player</span>
+                        </button>
+                    </div>
+
+                    <DashboardCard title={`Signed Up (${signedUpPlayersDetails.length})`} icon={<UserIcon className="w-6 h-6" />}>
+                        <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
                             {signedUpPlayersDetails.length > 0 ? signedUpPlayersDetails.map(player => (
-                                <div key={player.id} className="bg-zinc-800/50 p-2 rounded-md flex justify-between items-center">
-                                    <p className="font-semibold text-white">{player.name}</p>
-                                    <Button size="sm" onClick={() => handleCheckIn(player.id)}>Check In</Button>
+                                <div key={player.id} className="bg-zinc-800/60 p-2.5 rounded-lg border border-zinc-700/80 flex flex-wrap sm:flex-nowrap justify-between items-center gap-2">
+                                    <div>
+                                        <div className="flex items-center gap-1.5">
+                                            <p className="font-semibold text-white text-xs sm:text-sm">{player.name}</p>
+                                            {player.isGuest && (
+                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                                    GUEST
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-[11px] text-zinc-400 font-mono">@{player.callsign}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        <Button size="sm" onClick={() => handleCheckIn(player.id)} className="!bg-emerald-600 hover:!bg-emerald-500 !text-xs !py-1">
+                                            Check In
+                                        </Button>
+                                        <Button size="sm" variant="danger" onClick={() => handleMarkNoShow(player.id)} className="!bg-amber-600 hover:!bg-amber-500 !text-xs !py-1">
+                                            No Show
+                                        </Button>
+                                    </div>
                                 </div>
                             )) : <p className="text-center text-gray-500 text-sm py-4">No players signed up yet.</p>}
                         </div>
                     </DashboardCard>
+
                     <DashboardCard title={`Attendees (${formData.attendees.length})`} icon={<UserIcon className="w-6 h-6" />}>
-                        <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
+                        <div className="p-4 space-y-2.5 max-h-96 overflow-y-auto">
                              {attendeesDetails.length > 0 ? attendeesDetails.map(player => {
-                                const attendee = formData.attendees.find(a => a.playerId === player.id)!;
+                                const attendee = player.attendee || formData.attendees.find(a => a.playerId === player.id)!;
+                                const isNoShow = attendee?.checkInStatus === 'no_show';
+
                                 return (
-                                <div key={player.id} className="bg-zinc-800/50 p-3 rounded-md">
-                                    <div className="flex justify-between items-center">
-                                        <p className="font-semibold text-white">{player.name}</p>
-                                        <Button size="sm" variant="danger" onClick={() => handleCheckOut(player.id)}>
-                                            <MinusIcon className="w-4 h-4" />
-                                        </Button>
+                                    <div key={player.id} className={`p-3 rounded-lg border transition-all ${
+                                        isNoShow 
+                                            ? 'bg-amber-950/20 border-amber-500/40' 
+                                            : 'bg-zinc-800/60 border-zinc-700/80'
+                                    }`}>
+                                        <div className="flex justify-between items-start gap-2">
+                                            <div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <p className="font-bold text-white text-sm">{player.name}</p>
+                                                    {player.isGuest && (
+                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                                            GUEST
+                                                        </span>
+                                                    )}
+                                                    {isNoShow ? (
+                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                                            NO SHOW
+                                                        </span>
+                                                    ) : (
+                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                                            CHECKED IN
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-zinc-400 font-mono">
+                                                    Callsign: {player.callsign} {attendee?.guestPhone ? `• ${attendee.guestPhone}` : ''}
+                                                </p>
+                                                {(attendee?.rentedGearIds || []).length > 0 && (
+                                                    <p className="text-[11px] text-purple-300 font-mono mt-0.5">
+                                                        Rented Gear: {attendee.rentedGearIds.length} item(s)
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <Button size="sm" variant="danger" onClick={() => handleCheckOut(player.id)} title="Remove / Return to Signups" className="!p-1">
+                                                <MinusIcon className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+
+                                        {/* Check-In Status Toggles */}
+                                        <div className="mt-2 pt-2 border-t border-zinc-700/60 flex items-center justify-between gap-2 flex-wrap">
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCheckIn(player.id)}
+                                                    className={`px-2 py-1 rounded text-[10px] font-bold border transition-colors ${
+                                                        !isNoShow
+                                                            ? 'bg-emerald-600 text-white border-emerald-500'
+                                                            : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700'
+                                                    }`}
+                                                >
+                                                    Checked In
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleMarkNoShow(player.id)}
+                                                    className={`px-2 py-1 rounded text-[10px] font-bold border transition-colors ${
+                                                        isNoShow
+                                                            ? 'bg-amber-600 text-white border-amber-500'
+                                                            : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700'
+                                                    }`}
+                                                >
+                                                    No Show
+                                                </button>
+                                            </div>
+
+                                            {/* Payment Status */}
+                                            <div className="flex flex-wrap gap-1 items-center">
+                                                {(['Paid (Card)', 'Paid (Cash)', 'Paid (EFT)', 'Unpaid'] as PaymentStatus[]).map(st => (
+                                                    <Button 
+                                                        key={st}
+                                                        size="sm" 
+                                                        variant={attendee?.paymentStatus === st ? 'primary' : 'secondary'} 
+                                                        onClick={() => handlePaymentStatus(player.id, st)}
+                                                        className="!text-[10px] !py-0.5 !px-2"
+                                                    >
+                                                        {st.replace('Paid (', '').replace(')', '')}
+                                                    </Button>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-wrap gap-1.5 items-center mt-2">
-                                        <Button size="sm" variant={attendee.paymentStatus === 'Paid (Card)' ? 'primary' : 'secondary'} onClick={() => handlePaymentStatus(player.id, 'Paid (Card)')}>Card</Button>
-                                        <Button size="sm" variant={attendee.paymentStatus === 'Paid (Cash)' ? 'primary' : 'secondary'} onClick={() => handlePaymentStatus(player.id, 'Paid (Cash)')}>Cash</Button>
-                                        <Button size="sm" variant={attendee.paymentStatus === 'Paid (EFT)' ? 'primary' : 'secondary'} onClick={() => handlePaymentStatus(player.id, 'Paid (EFT)')}>EFT</Button>
-                                        <Button size="sm" variant={attendee.paymentStatus === 'Unpaid' ? 'primary' : 'secondary'} onClick={() => handlePaymentStatus(player.id, 'Unpaid')}>Unpaid</Button>
-                                    </div>
-                                </div>
                                 )
-                             }) : <p className="text-center text-gray-500 text-sm py-4">No players checked in.</p>}
+                             }) : <p className="text-center text-gray-500 text-sm py-4">No players checked in yet.</p>}
                         </div>
                     </DashboardCard>
                     <div className="space-y-3">
@@ -1553,6 +1782,15 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                     onClose={() => setShowRentalManifestModal(false)}
                     isAdmin={true}
                     initialTab="admin-manifest"
+                />
+            )}
+
+            {showAddGuestModal && event && (
+                <AddGuestPlayerModal
+                    eventId={event.id}
+                    inventory={inventory}
+                    onClose={() => setShowAddGuestModal(false)}
+                    onAddGuest={handleAddGuestPlayer}
                 />
             )}
         </div>

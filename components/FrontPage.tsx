@@ -185,7 +185,9 @@ interface FrontPageProps {
 export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLinks, carouselMedia, onEnter }) => {
     const [showSignUpModal, setShowSignUpModal] = useState(false);
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
-    const [isMuted, setIsMuted] = useState(false);
+    const [isMuted, setIsMuted] = useState(() => {
+        return localStorage.getItem('app_audio_muted') === 'true';
+    });
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     const loginBackgroundUrl = companyDetails.loginBackgroundUrl;
@@ -200,20 +202,36 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
         }
     }, [carouselMedia.length, loginBackgroundUrl]);
 
+    // Handle live audio changes & audio removal
     useEffect(() => {
-        if (audioRef.current && loginAudioUrl && loginAudioUrl.trim() !== '') {
-            audioRef.current.volume = 0.5;
-            audioRef.current.play().catch(() => {
-                // Autoplay policy restriction catch
-            });
+        if (audioRef.current) {
+            if (loginAudioUrl && loginAudioUrl.trim() !== '') {
+                audioRef.current.volume = 0.5;
+                audioRef.current.muted = isMuted;
+                audioRef.current.play().catch(() => {
+                    // Autoplay policy restriction catch
+                });
+            } else {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+            }
         }
     }, [loginAudioUrl]);
 
-    const toggleMute = () => {
+    useEffect(() => {
         if (audioRef.current) {
-            audioRef.current.muted = !isMuted;
-            setIsMuted(!isMuted);
+            audioRef.current.muted = isMuted;
         }
+        localStorage.setItem('app_audio_muted', String(isMuted));
+    }, [isMuted]);
+
+    const toggleMute = () => {
+        const nextMuted = !isMuted;
+        if (audioRef.current) {
+            audioRef.current.muted = nextMuted;
+        }
+        setIsMuted(nextMuted);
+        localStorage.setItem('app_audio_muted', String(nextMuted));
     };
 
     const handleEnter = () => {

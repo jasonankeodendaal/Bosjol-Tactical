@@ -14,6 +14,7 @@ import { MockDataWatermark } from './components/MockDataWatermark';
 import { Input } from './components/Input';
 import { DashboardBackground } from './components/DashboardBackground';
 import { getTierForXp, getRankForPlayer } from './utils/rankUtils';
+import { isUnjoinLocked } from './utils/eventUtils';
 import { auth as firebaseAuth } from './firebase'; // Deprecated import kept to prevent build crash, value is null.
 
 
@@ -590,10 +591,8 @@ const AppContent: React.FC = () => {
 
         let targetAudioUrl: string | undefined;
 
-        if (showFrontPage) {
-            targetAudioUrl = undefined; // No audio on the front page
-        } else if (!isAuthenticated) {
-            targetAudioUrl = companyDetails.loginAudioUrl; // Login screen audio
+        if (showFrontPage || !isAuthenticated) {
+            targetAudioUrl = undefined; // Managed directly in FrontPage and LoginScreen components for synchronized live audio and mute controls
         } else if (user?.role === 'player') {
             targetAudioUrl = companyDetails.playerDashboardAudioUrl; // Player dashboard audio
         } else if (user?.role === 'admin' || user?.role === 'creator') {
@@ -664,6 +663,12 @@ const AppContent: React.FC = () => {
         const playerObj = user as Player;
 
         if (existingSignup) {
+            // Check if unjoining is locked (within 48 hours before event start)
+            if (isUnjoinLocked(event)) {
+                alert("Event signups are locked 48 hours before match start. Unjoining is not permitted. Please contact field command if you cannot attend.");
+                return;
+            }
+
             // Withdraw from event
             await deleteDoc('signups', signupId);
             
@@ -770,6 +775,7 @@ const AppContent: React.FC = () => {
                         <LoginScreen 
                             companyDetails={companyDetails} 
                             socialLinks={socialLinks} 
+                            carouselMedia={carouselMedia}
                             onBackToWelcome={() => setShowFrontPage(true)} 
                         />
                         <PublicPageFloatingIcons 

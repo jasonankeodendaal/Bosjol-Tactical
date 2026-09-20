@@ -469,6 +469,16 @@ ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS "operatorNote" TEXT DEFAULT 
 ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS operatornote TEXT DEFAULT '';
 ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS "votedGameTypeId" TEXT DEFAULT '';
 ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS votedgametypeid TEXT DEFAULT '';
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS "isGuest" BOOLEAN DEFAULT false;
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS isguest BOOLEAN DEFAULT false;
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS "guestName" TEXT DEFAULT '';
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS guestname TEXT DEFAULT '';
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS "guestCallsign" TEXT DEFAULT '';
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS guestcallsign TEXT DEFAULT '';
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS "guestPhone" TEXT DEFAULT '';
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS guestphone TEXT DEFAULT '';
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS "checkInStatus" TEXT DEFAULT 'pending';
+ALTER TABLE public.signups ADD COLUMN IF NOT EXISTS checkinstatus TEXT DEFAULT 'pending';
 
 CREATE TABLE IF NOT EXISTS public.notifications (
     id TEXT PRIMARY KEY,

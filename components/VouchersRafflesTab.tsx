@@ -2014,8 +2014,8 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                         />
                     </div>
 
-                    {/* Vouchers Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Vouchers Grid - Side by Side Squares with 3D Depth */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 perspective-[1000px]">
                         {filteredVouchers.length === 0 ? (
                             <div className="col-span-full py-12 text-center text-zinc-500 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800">
                                 <TicketIcon className="w-12 h-12 mx-auto mb-2 text-zinc-600"/>
@@ -2032,19 +2032,19 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                 return (
                                     <div 
                                         key={v.id} 
-                                        className="bg-gradient-to-br from-zinc-900/90 to-zinc-950 rounded-xl border border-zinc-800 hover:border-zinc-700 p-4 transition-all shadow-md flex flex-col justify-between"
+                                        className="relative group overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900/95 via-zinc-900 to-zinc-950 p-4 border border-zinc-800 hover:border-red-500/50 hover:shadow-[0_20px_50px_rgba(239,68,68,0.2)] hover:-translate-y-1 hover:rotate-1 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between aspect-square"
                                     >
                                         <div>
-                                            <div className="flex items-start justify-between gap-3 mb-2.5">
-                                                <div>
-                                                    <span className="font-mono text-base font-black text-red-400 bg-red-950/60 px-2.5 py-1 rounded border border-red-900/60 inline-block">
+                                            <div className="flex items-start justify-between gap-2 mb-2">
+                                                <div className="truncate">
+                                                    <span className="font-mono text-sm font-black text-red-400 bg-red-950/80 px-2 py-0.5 rounded border border-red-900/60 inline-block truncate max-w-[130px]">
                                                         {v.code}
                                                     </span>
-                                                    <span className="ml-2 font-black text-amber-400 text-sm">
+                                                    <span className="ml-1.5 font-black text-amber-400 text-xs">
                                                         {v.type === 'percentage' ? `${v.discount}% OFF` : `R${v.discount} OFF`}
                                                     </span>
                                                 </div>
-                                                <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase ${
+                                                <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase flex-shrink-0 ${
                                                     v.status === 'Active' 
                                                         ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800' 
                                                         : v.status === 'Depleted' 
@@ -2055,23 +2055,23 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                                 </span>
                                             </div>
 
-                                            <p className="text-xs text-zinc-300 mb-3">
+                                            <p className="text-[11px] text-zinc-300 mb-2 line-clamp-2">
                                                 {v.description || 'No description provided.'}
                                             </p>
 
-                                            <div className="grid grid-cols-2 gap-2 text-[11px] bg-zinc-950/60 p-2.5 rounded-lg border border-zinc-800/80 mb-3">
+                                            <div className="grid grid-cols-2 gap-1 text-[10px] bg-zinc-950/80 p-2 rounded-xl border border-zinc-800/80 mb-2">
                                                 <div>
-                                                    <span className="text-zinc-500 font-semibold">Total Claims:</span>
-                                                    <span className="ml-1 text-white font-bold">{redemptions.length} / {v.usageLimit || '∞'}</span>
+                                                    <span className="text-zinc-500 block">Claims</span>
+                                                    <span className="text-white font-bold">{redemptions.length} / {v.usageLimit || '∞'}</span>
                                                 </div>
                                                 <div>
-                                                    <span className="text-zinc-500 font-semibold">Per Player:</span>
-                                                    <span className="ml-1 text-white font-bold">{v.perUserLimit || 1} use(s)</span>
+                                                    <span className="text-zinc-500 block">Per Player</span>
+                                                    <span className="text-white font-bold">{v.perUserLimit || 1} use(s)</span>
                                                 </div>
-                                                <div className="col-span-2 truncate">
-                                                    <span className="text-zinc-500 font-semibold">Assigned To:</span>
-                                                    <span className="ml-1 text-zinc-300 font-medium">
-                                                        {assignedPlayer ? `${assignedPlayer.name} (${assignedPlayer.callsign || assignedPlayer.playerCode})` : 'All Operators'}
+                                                <div className="col-span-2 truncate pt-0.5 border-t border-zinc-800/60">
+                                                    <span className="text-zinc-500">For: </span>
+                                                    <span className="text-zinc-300 font-semibold truncate">
+                                                        {assignedPlayer ? `${assignedPlayer.name}` : 'All Operators'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -2079,31 +2079,22 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
 
                                         {/* Redemptions Drawer */}
                                         {isViewingRedemptions && (
-                                            <div className="my-3 p-3 bg-black/80 rounded-lg border border-zinc-800 text-xs space-y-2 max-h-48 overflow-y-auto">
-                                                <div className="flex justify-between items-center font-bold text-zinc-400 uppercase text-[10px]">
-                                                    <span>Claim History ({redemptions.length})</span>
+                                            <div className="my-1 p-2 bg-black/90 rounded-xl border border-zinc-800 text-[10px] space-y-1 max-h-32 overflow-y-auto">
+                                                <div className="flex justify-between items-center font-bold text-zinc-400 uppercase text-[9px]">
+                                                    <span>Claims ({redemptions.length})</span>
                                                     <button onClick={() => setViewingRedemptionsVoucherId(null)} className="text-zinc-500 hover:text-white">Close</button>
                                                 </div>
                                                 {redemptions.length === 0 ? (
-                                                    <p className="text-zinc-500 italic py-1">No claims recorded yet.</p>
+                                                    <p className="text-zinc-500 italic py-0.5">No claims yet.</p>
                                                 ) : (
                                                     redemptions.map((r, i) => {
                                                         const p = players.find(player => player.id === r.playerId);
                                                         return (
-                                                            <div key={r.id || i} className="flex items-center justify-between py-1.5 border-b border-zinc-800/60 last:border-0">
-                                                                <div>
-                                                                    <span className="font-bold text-white">{p?.name || 'Unknown'}</span>
-                                                                    <span className="text-amber-400 font-mono ml-1 text-[11px]">
-                                                                        ({p?.callsign || p?.playerCode || 'Operator'})
-                                                                    </span>
-                                                                    <p className="text-[10px] text-zinc-500">
-                                                                        {new Date(r.date).toLocaleDateString()} at {new Date(r.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                    </p>
-                                                                </div>
+                                                            <div key={r.id || i} className="flex items-center justify-between py-1 border-b border-zinc-800/60 last:border-0">
+                                                                <span className="font-bold text-white truncate">{p?.name || 'Unknown'}</span>
                                                                 <button 
                                                                     onClick={() => handleUndoRedemption(v.id, r.id)}
-                                                                    className="text-red-400 hover:text-red-300 px-2 py-0.5 rounded bg-red-950/40 hover:bg-red-900/50 text-[10px] font-semibold transition-colors"
-                                                                    title="Undo / Revoke Claim"
+                                                                    className="text-red-400 hover:text-red-300 px-1.5 py-0.2 rounded bg-red-950/40 text-[9px]"
                                                                 >
                                                                     Undo
                                                                 </button>
@@ -2115,30 +2106,30 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                         )}
 
                                         {/* Action Bar */}
-                                        <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between gap-2">
-                                            <div className="flex gap-1.5">
+                                        <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between gap-1">
+                                            <div className="flex gap-1">
                                                 <Button 
                                                     size="sm" 
                                                     onClick={() => setClaimingVoucher(v)}
                                                     disabled={isDepleted}
-                                                    className="text-xs bg-emerald-600 hover:bg-emerald-500 font-bold"
+                                                    className="text-[10px] px-2 py-1 bg-emerald-600 hover:bg-emerald-500 font-bold"
                                                 >
-                                                    Claim for Player
+                                                    Claim
                                                 </Button>
                                                 <Button 
                                                     size="sm" 
                                                     variant="secondary"
                                                     onClick={() => setViewingRedemptionsVoucherId(isViewingRedemptions ? null : v.id)}
-                                                    className="text-xs text-zinc-300"
+                                                    className="text-[10px] px-2 py-1 text-zinc-300"
                                                 >
-                                                    {isViewingRedemptions ? 'Hide Claims' : `Claims (${redemptions.length})`}
+                                                    {isViewingRedemptions ? 'Hide' : `Claims (${redemptions.length})`}
                                                 </Button>
                                             </div>
 
                                             <div className="flex gap-1">
                                                 <button 
                                                     onClick={() => setIsEditingVoucher(v)} 
-                                                    className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
+                                                    className="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
                                                     title="Edit Voucher"
                                                 >
                                                     <PencilIcon className="w-3.5 h-3.5"/>
@@ -2149,7 +2140,7 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                                             deleteDoc('vouchers', v.id);
                                                         }
                                                     }}
-                                                    className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-900/60 text-zinc-400 hover:text-red-400 transition-colors"
+                                                    className="p-1 rounded-lg bg-zinc-800 hover:bg-red-900/60 text-zinc-400 hover:text-red-400"
                                                     title="Delete Voucher"
                                                 >
                                                     <TrashIcon className="w-3.5 h-3.5"/>
@@ -2168,147 +2159,177 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
             {/* SECTION 2: RAFFLES COMMAND & LIVE WINNER DRAW */}
             {/* ==================================================== */}
             {activeSection === 'raffles' && (
-                <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {raffles.length === 0 ? (
-                            <div className="col-span-full py-12 text-center text-zinc-500 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800">
-                                <TrophyIcon className="w-12 h-12 mx-auto mb-2 text-zinc-600"/>
-                                <p className="font-semibold text-sm">No raffle events created yet.</p>
-                                <p className="text-xs text-zinc-600 mt-1">Click "Create New Raffle" to launch a tactical gear raffle.</p>
-                            </div>
-                        ) : (
-                            raffles.map(r => {
-                                const tickets = r.tickets || [];
-                                const winners = r.winners || [];
-                                const isViewingTickets = viewingTicketsRaffleId === r.id;
+                <div className="space-y-6">
+                    {/* Active Raffles Grid - Side by Side Squares with 3D Depth */}
+                    <div className="space-y-3">
+                        <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping inline-block" />
+                            Active Tactical Raffle Arenas ({raffles.filter(r => r.status !== 'Completed').length})
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 perspective-[1000px]">
+                            {raffles.filter(r => r.status !== 'Completed').length === 0 ? (
+                                <div className="col-span-full py-8 text-center text-zinc-500 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800">
+                                    <TrophyIcon className="w-10 h-10 mx-auto mb-2 text-zinc-600"/>
+                                    <p className="font-semibold text-xs">No active running raffles.</p>
+                                </div>
+                            ) : (
+                                raffles.filter(r => r.status !== 'Completed').map(r => {
+                                    const tickets = r.tickets || [];
+                                    const winners = r.winners || [];
+                                    const isViewingTickets = viewingTicketsRaffleId === r.id;
 
-                                return (
-                                    <div 
-                                        key={r.id} 
-                                        className="bg-gradient-to-br from-zinc-900/90 to-zinc-950 rounded-xl border border-zinc-800 hover:border-zinc-700 p-4 transition-all shadow-md flex flex-col justify-between"
-                                    >
-                                        <div>
-                                            <div className="flex items-start justify-between gap-3 mb-2">
-                                                <div>
-                                                    <h4 className="font-bold text-base text-white flex items-center gap-2">
-                                                        <span>{r.name}</span>
-                                                    </h4>
-                                                    <p className="text-xs text-zinc-400">
-                                                        Draw Date: {new Date(r.drawDate).toLocaleDateString()} • {r.location}
-                                                    </p>
+                                    return (
+                                        <div 
+                                            key={r.id} 
+                                            className="relative group overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900/95 via-zinc-900 to-amber-950/40 p-4 border border-amber-500/40 shadow-[0_10px_30px_rgba(0,0,0,0.8)] hover:shadow-[0_20px_50px_rgba(245,158,11,0.25)] hover:-translate-y-1 hover:rotate-1 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between aspect-square"
+                                        >
+                                            <div>
+                                                <div className="flex items-start justify-between gap-2 mb-1.5">
+                                                    <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase bg-amber-950/80 text-amber-400 border border-amber-800 animate-pulse">
+                                                        {r.status}
+                                                    </span>
+                                                    <div className="flex gap-1">
+                                                        <button 
+                                                            onClick={() => setIsEditingRaffle(r)} 
+                                                            className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs"
+                                                            title="Edit Raffle"
+                                                        >
+                                                            <PencilIcon className="w-3 h-3"/>
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                if (confirm(`Are you sure you want to delete raffle "${r.name}"?`)) {
+                                                                    deleteDoc('raffles', r.id);
+                                                                }
+                                                            }}
+                                                            className="p-1 rounded bg-zinc-800 hover:bg-red-900/60 text-zinc-400 hover:text-red-400 text-xs"
+                                                            title="Delete Raffle"
+                                                        >
+                                                            <TrashIcon className="w-3 h-3"/>
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase ${
-                                                    r.status === 'Completed' 
-                                                        ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800' 
-                                                        : r.status === 'Active' 
-                                                            ? 'bg-amber-950/80 text-amber-400 border border-amber-800' 
-                                                            : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                                                }`}>
-                                                    {r.status}
-                                                </span>
-                                            </div>
 
-                                            {/* Prize Showcase */}
-                                            <div className="my-3 space-y-1.5 bg-black/50 p-3 rounded-lg border border-zinc-800/80">
-                                                <span className="text-[11px] font-bold uppercase text-amber-400 tracking-wider">
-                                                    Prizes ({r.prizes?.length || 0})
-                                                </span>
-                                                {r.prizes?.map((p, idx) => {
-                                                    const winner = winners.find(w => w.prizeId === p.id);
-                                                    const winnerPlayer = players.find(player => player.id === winner?.playerId);
-                                                    return (
-                                                        <div key={p.id || idx} className="flex items-center justify-between text-xs">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="font-bold text-amber-400 w-5">#{idx + 1}</span>
-                                                                <span className="text-zinc-200">{p.name}</span>
-                                                            </div>
-                                                            {winnerPlayer ? (
-                                                                <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1.5">
-                                                                    <span>🏆 {winnerPlayer.name} {winnerPlayer.surname || ''}</span>
-                                                                    {winnerPlayer.callsign && (
-                                                                        <span className="text-amber-400 font-mono font-bold">
-                                                                            ("{winnerPlayer.callsign}")
-                                                                        </span>
-                                                                    )}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-[10px] text-zinc-500">Unclaimed</span>
-                                                            )}
+                                                <h4 className="font-bold text-sm text-white truncate mb-0.5">{r.name}</h4>
+                                                <p className="text-[10px] text-zinc-400 mb-2 truncate">
+                                                    Date: {new Date(r.drawDate).toLocaleDateString()}
+                                                </p>
+
+                                                {/* Prize Showcase */}
+                                                <div className="my-1.5 space-y-1 bg-black/60 p-2 rounded-xl border border-zinc-800">
+                                                    <span className="text-[9px] font-bold uppercase text-amber-400 block">
+                                                        Prizes ({r.prizes?.length || 0})
+                                                    </span>
+                                                    {r.prizes?.slice(0, 2).map((p, idx) => (
+                                                        <div key={p.id || idx} className="text-[10px] text-zinc-300 truncate flex justify-between">
+                                                            <span className="truncate">#{idx + 1} {p.name}</span>
                                                         </div>
-                                                    );
-                                                })}
+                                                    ))}
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-1 text-[9px] text-zinc-400 bg-zinc-950/80 p-1.5 rounded-lg border border-zinc-800 text-center">
+                                                    <div>Tickets: <strong className="text-white block">{tickets.length}</strong></div>
+                                                    <div>Winners: <strong className="text-amber-400 block">{winners.length}/{r.prizes?.length || 0}</strong></div>
+                                                </div>
                                             </div>
 
-                                            <div className="flex items-center justify-between text-xs text-zinc-400 bg-zinc-950/60 px-3 py-2 rounded-lg border border-zinc-800 mb-3">
-                                                <span>Total Issued Tickets: <strong className="text-white">{tickets.length}</strong></span>
-                                                <span>Winners Drawn: <strong className="text-amber-400">{winners.length} / {r.prizes?.length || 0}</strong></span>
-                                            </div>
-                                        </div>
-
-                                        {/* Ticket Drawer */}
-                                        {isViewingTickets && (
-                                            <RaffleTicketRosterDrawer 
-                                                raffleName={r.name}
-                                                tickets={tickets}
-                                                players={players}
-                                                onClose={() => setViewingTicketsRaffleId(null)}
-                                            />
-                                        )}
-
-                                        {/* Action Bar */}
-                                        <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between gap-2">
-                                            <div className="flex flex-wrap gap-1.5">
+                                            {/* Action Bar */}
+                                            <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between gap-1">
                                                 <Button 
                                                     size="sm" 
                                                     onClick={() => setDrawingRaffle(r)}
-                                                    className="text-xs bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white font-black flex items-center gap-1 shadow-md shadow-amber-950/60"
+                                                    className="text-[10px] px-2 py-1.5 bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white font-black shadow-md flex-1"
                                                 >
-                                                    <span>🎯</span> Live Arena & Draw
+                                                    <span>🎯</span> Spin Live Arena
                                                 </Button>
                                                 <Button 
                                                     size="sm" 
                                                     variant="secondary"
                                                     onClick={() => setIssuingTicketsRaffle(r)}
-                                                    className="text-xs text-zinc-200"
+                                                    className="text-[10px] px-1.5 py-1 text-zinc-300"
                                                 >
-                                                    Issue Tickets
+                                                    Tickets
                                                 </Button>
-                                                <Button 
-                                                    size="sm" 
-                                                    variant="secondary"
-                                                    onClick={() => setViewingTicketsRaffleId(isViewingTickets ? null : r.id)}
-                                                    className="text-xs text-zinc-400"
-                                                >
-                                                    {isViewingTickets ? 'Hide' : `Roster (${tickets.length})`}
-                                                </Button>
-                                            </div>
-
-                                            <div className="flex gap-1">
-                                                <button 
-                                                    onClick={() => setIsEditingRaffle(r)} 
-                                                    className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
-                                                    title="Edit Raffle"
-                                                >
-                                                    <PencilIcon className="w-3.5 h-3.5"/>
-                                                </button>
-                                                <button 
-                                                    onClick={() => {
-                                                        if (confirm(`Are you sure you want to delete raffle "${r.name}"?`)) {
-                                                            deleteDoc('raffles', r.id);
-                                                        }
-                                                    }}
-                                                    className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-900/60 text-zinc-400 hover:text-red-400 transition-colors"
-                                                    title="Delete Raffle"
-                                                >
-                                                    <TrashIcon className="w-3.5 h-3.5"/>
-                                                </button>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })
-                        )}
+                                    );
+                                })
+                            )}
+                        </div>
                     </div>
+
+                    {/* Concluded & Completed Raffles Section (Auto-moved & marked completed) */}
+                    {raffles.filter(r => r.status === 'Completed').length > 0 && (
+                        <div className="space-y-3 pt-4 border-t border-zinc-800">
+                            <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                                <CheckBadgeIcon className="w-4 h-4 text-emerald-400" />
+                                Concluded & Completed Raffles ({raffles.filter(r => r.status === 'Completed').length})
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 perspective-[1000px]">
+                                {raffles.filter(r => r.status === 'Completed').map(r => {
+                                    const winners = r.winners || [];
+                                    const prizes = r.prizes || [];
+
+                                    return (
+                                        <div 
+                                            key={r.id} 
+                                            className="relative group overflow-hidden rounded-2xl bg-zinc-950/90 p-4 border border-zinc-800 shadow-md flex flex-col justify-between aspect-square"
+                                        >
+                                            <div>
+                                                <div className="flex items-start justify-between gap-2 mb-1.5">
+                                                    <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-800">
+                                                        COMPLETED & MARKED DONE
+                                                    </span>
+                                                    <button 
+                                                        onClick={() => {
+                                                            if (confirm(`Are you sure you want to delete completed raffle "${r.name}"?`)) {
+                                                                deleteDoc('raffles', r.id);
+                                                            }
+                                                        }}
+                                                        className="p-1 rounded bg-zinc-800 hover:bg-red-900/60 text-zinc-400 hover:text-red-400 text-xs"
+                                                        title="Delete Raffle"
+                                                    >
+                                                        <TrashIcon className="w-3 h-3"/>
+                                                    </button>
+                                                </div>
+
+                                                <h4 className="font-bold text-sm text-white truncate mb-0.5">{r.name}</h4>
+                                                <p className="text-[10px] text-zinc-500 mb-2 truncate">
+                                                    Draw Date: {new Date(r.drawDate).toLocaleDateString()}
+                                                </p>
+
+                                                {/* Winners Summary */}
+                                                <div className="my-1.5 p-2 rounded-xl bg-black/60 border border-zinc-800/80 space-y-1">
+                                                    <span className="text-[9px] font-mono font-bold uppercase text-amber-400 block">
+                                                        Winners ({winners.length}/{prizes.length})
+                                                    </span>
+                                                    {winners.slice(0, 2).map((w, i) => {
+                                                        const prize = prizes.find(p => p.id === w.prizeId);
+                                                        const wPlayer = players.find(p => p.id === w.playerId);
+                                                        return (
+                                                            <div key={w.id || i} className="text-[10px] text-zinc-300 flex justify-between truncate">
+                                                                <span className="truncate text-amber-300">🏆 {wPlayer?.name || 'Winner'}</span>
+                                                                <span className="text-zinc-500 truncate">{prize?.name}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <Button
+                                                size="sm"
+                                                variant="secondary"
+                                                onClick={() => setDrawingRaffle(r)}
+                                                className="w-full text-[10px] py-1.5 text-zinc-300 font-bold"
+                                            >
+                                                View Arena & Winners
+                                            </Button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

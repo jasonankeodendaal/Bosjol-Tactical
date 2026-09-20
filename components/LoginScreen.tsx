@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../auth/AuthContext';
 import { Button } from './Button';
 import { UserIcon, KeyIcon, ExclamationTriangleIcon, CloudArrowDownIcon, ArrowLeftIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from './icons/Icons';
-import { CompanyDetails, SocialLink } from '../types';
+import { CompanyDetails, SocialLink, CarouselMedia } from '../types';
 import { Input } from './Input';
 import { RecruitSignUpForm } from './RecruitSignUpForm';
 import { UserPlus } from 'lucide-react';
@@ -12,10 +12,11 @@ import { UserPlus } from 'lucide-react';
 interface LoginScreenProps {
   companyDetails: CompanyDetails;
   socialLinks: SocialLink[];
+  carouselMedia?: CarouselMedia[];
   onBackToWelcome?: () => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, socialLinks, onBackToWelcome }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, socialLinks, carouselMedia = [], onBackToWelcome }) => {
   const auth = useContext(AuthContext);
   if (!auth) throw new Error("AuthContext not found");
 
@@ -23,27 +24,45 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => {
+    return localStorage.getItem('app_audio_muted') === 'true';
+  });
   const [showRecruitForm, setShowRecruitForm] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { login } = auth;
   const audioUrl = companyDetails.loginAudioUrl;
+  const loginBackgroundUrl = companyDetails.loginBackgroundUrl;
 
   useEffect(() => {
-    if (audioRef.current && audioUrl && audioUrl.trim() !== '') {
-      audioRef.current.volume = 0.5;
-      audioRef.current.play().catch(() => {
-        // Autoplay fallback
-      });
+    if (audioRef.current) {
+      if (audioUrl && audioUrl.trim() !== '') {
+        audioRef.current.volume = 0.5;
+        audioRef.current.muted = isMuted;
+        audioRef.current.play().catch(() => {
+          // Autoplay fallback
+        });
+      } else {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
     }
   }, [audioUrl]);
 
-  const toggleMute = () => {
+  useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
+      audioRef.current.muted = isMuted;
     }
+    localStorage.setItem('app_audio_muted', String(isMuted));
+  }, [isMuted]);
+
+  const toggleMute = () => {
+    const nextMuted = !isMuted;
+    if (audioRef.current) {
+      audioRef.current.muted = nextMuted;
+    }
+    setIsMuted(nextMuted);
+    localStorage.setItem('app_audio_muted', String(nextMuted));
   };
   
   const performLogin = async () => {
@@ -69,10 +88,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
   };
 
   const renderBackground = () => {
-    const url = companyDetails.loginBackgroundUrl;
-    if (!url || typeof url !== 'string' || url.trim() === '') return null;
+    const bgUrl = (loginBackgroundUrl && loginBackgroundUrl.trim() !== '') 
+      ? loginBackgroundUrl 
+      : (carouselMedia && carouselMedia.length > 0 && carouselMedia[0]?.url ? carouselMedia[0].url : null);
 
-    const isVideo = url.startsWith('data:video') || url.includes('.mp4') || url.includes('.webm') || url.includes('.mov');
+    if (!bgUrl || typeof bgUrl !== 'string' || bgUrl.trim() === '') return null;
+
+    const isVideo = bgUrl.startsWith('data:video') || bgUrl.includes('.mp4') || bgUrl.includes('.webm') || bgUrl.includes('.mov');
 
     if (isVideo) {
       return (
@@ -81,10 +103,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
           loop
           muted={isMuted}
           playsInline
-          className="absolute inset-0 w-full h-full object-cover z-0 opacity-100"
-          key={url}
+          className="absolute inset-0 w-full h-full object-cover z-0 opacity-80"
+          key={bgUrl}
         >
-          <source src={url} />
+          <source src={bgUrl} />
           Your browser does not support the video tag.
         </video>
       );
@@ -92,8 +114,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
 
     return (
       <div
-        className="absolute inset-0 w-full h-full bg-cover bg-center z-0 opacity-100"
-        style={{ backgroundImage: `url("${url}")` }}
+        className="absolute inset-0 w-full h-full bg-cover bg-center z-0 opacity-80"
+        style={{ backgroundImage: `url("${bgUrl}")` }}
       />
     );
   };

@@ -212,6 +212,139 @@ interface FloatingReaction {
     left: number;
 }
 
+// ==========================================
+// TACTICAL ANIMATED SPINNING WHEEL
+// ==========================================
+interface WheelSegment {
+    label: string;
+    code: string;
+    ticketId?: string;
+}
+
+const TacticalSpinningWheel: React.FC<{
+    segments: WheelSegment[];
+    rotationAngle: number;
+    isSpinning: boolean;
+    winningIndex: number | null;
+}> = ({ segments, rotationAngle, isSpinning, winningIndex }) => {
+    const total = Math.max(1, segments.length);
+    const sliceAngle = 360 / total;
+    const colors = [
+        '#d97706', '#dc2626', '#059669', '#2563eb', 
+        '#7c3aed', '#0891b2', '#b45309', '#991b1b',
+        '#047857', '#1d4ed8', '#6d28d9', '#0e7490'
+    ];
+
+    return (
+        <div className="relative w-full max-w-[240px] sm:max-w-[300px] aspect-square mx-auto my-1.5 flex items-center justify-center shrink-0">
+            {/* Outer LED Ring with Flashing Bulbs */}
+            <div className="absolute -inset-2.5 sm:-inset-3.5 rounded-full border-4 border-amber-500/50 bg-gradient-to-b from-amber-950/60 via-zinc-950 to-black p-2 shadow-[0_0_40px_rgba(245,158,11,0.35)] flex items-center justify-center">
+                {Array.from({ length: 18 }).map((_, i) => {
+                    const angle = (i * 360) / 18;
+                    const rad = (angle * Math.PI) / 180;
+                    const rx = 50 + 47 * Math.cos(rad);
+                    const ry = 50 + 47 * Math.sin(rad);
+                    const isActive = isSpinning
+                        ? (i % 2 === Math.floor(rotationAngle / 18) % 2)
+                        : true;
+                    return (
+                        <div
+                            key={i}
+                            className={`absolute w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full border border-black/80 transition-all ${
+                                isActive
+                                    ? 'bg-amber-400 shadow-[0_0_10px_#f59e0b]'
+                                    : 'bg-red-600 shadow-[0_0_10px_#dc2626]'
+                            }`}
+                            style={{ left: `${rx}%`, top: `${ry}%`, transform: 'translate(-50%, -50%)' }}
+                        />
+                    );
+                })}
+            </div>
+
+            {/* Top Tactical Targeting Pointer */}
+            <div className="absolute -top-4 sm:-top-5 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center">
+                <div className={`w-0 h-0 border-l-[10px] sm:border-l-[14px] border-l-transparent border-r-[10px] sm:border-r-[14px] border-r-transparent border-t-[18px] sm:border-t-[24px] border-t-red-600 drop-shadow-[0_4px_12px_rgba(239,68,68,0.9)] ${isSpinning ? 'animate-bounce' : ''}`} />
+                <div className="w-3 h-3 rounded-full bg-amber-400 border-2 border-red-950 shadow-[0_0_10px_#f59e0b] -mt-2" />
+            </div>
+
+            {/* Rotating Wheel Graphics */}
+            <div
+                className="w-full h-full rounded-full overflow-hidden shadow-[inset_0_0_25px_rgba(0,0,0,0.9)]"
+                style={{
+                    transform: `rotate(${rotationAngle}deg)`,
+                    transition: isSpinning ? 'transform 0.08s linear' : 'transform 3.8s cubic-bezier(0.12, 0.8, 0.28, 1.0)',
+                }}
+            >
+                <svg viewBox="0 0 200 200" className="w-full h-full transform -rotate-90">
+                    {segments.map((seg, idx) => {
+                        const startAngle = idx * sliceAngle;
+                        const endAngle = (idx + 1) * sliceAngle;
+                        const startRad = (startAngle * Math.PI) / 180;
+                        const endRad = (endAngle * Math.PI) / 180;
+
+                        const x1 = 100 + 100 * Math.cos(startRad);
+                        const y1 = 100 + 100 * Math.sin(startRad);
+                        const x2 = 100 + 100 * Math.cos(endRad);
+                        const y2 = 100 + 100 * Math.sin(endRad);
+
+                        const largeArc = sliceAngle > 180 ? 1 : 0;
+                        const pathData = `M 100 100 L ${x1} ${y1} A 100 100 0 ${largeArc} 1 ${x2} ${y2} Z`;
+
+                        const midAngle = startAngle + sliceAngle / 2;
+                        const midRad = (midAngle * Math.PI) / 180;
+                        const textX = 100 + 68 * Math.cos(midRad);
+                        const textY = 100 + 68 * Math.sin(midRad);
+
+                        const isWinnerWedge = winningIndex === idx;
+
+                        return (
+                            <g key={idx}>
+                                <path
+                                    d={pathData}
+                                    fill={isWinnerWedge ? '#fbbf24' : colors[idx % colors.length]}
+                                    stroke="#09090b"
+                                    strokeWidth="1.5"
+                                />
+                                <text
+                                    x={textX}
+                                    y={textY}
+                                    fill="#ffffff"
+                                    fontSize="6.5"
+                                    fontWeight="900"
+                                    fontFamily="monospace"
+                                    textAnchor="middle"
+                                    dominantBaseline="middle"
+                                    transform={`rotate(${midAngle + 90}, ${textX}, ${textY})`}
+                                    className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                >
+                                    {(seg.code || `TKT-${idx + 1}`).substring(0, 9)}
+                                </text>
+                            </g>
+                        );
+                    })}
+
+                    {/* Central Tactical Hub */}
+                    <circle cx="100" cy="100" r="28" fill="#18181b" stroke="#f59e0b" strokeWidth="2.5" />
+                    <circle cx="100" cy="100" r="18" fill="#09090b" stroke="#ef4444" strokeWidth="1.5" />
+                    <text
+                        x="100"
+                        y="100"
+                        fill="#fbbf24"
+                        fontSize="6.5"
+                        fontWeight="900"
+                        fontFamily="monospace"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        transform="rotate(90, 100, 100)"
+                    >
+                        BOSJOL
+                    </text>
+                </svg>
+            </div>
+        </div>
+    );
+};
+
 interface RaffleEventDashboardProps {
     raffle: Raffle;
     players: Player[];
@@ -245,6 +378,8 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
     const [localWinners, setLocalWinners] = useState<RaffleWinnerDoc[]>(raffle.winners || []);
     const [candidateReel, setCandidateReel] = useState<Array<{ ticket: RaffleTicketDoc; player: Player | undefined }>>([]);
     const [activeCandidateIndex, setActiveCandidateIndex] = useState(0);
+    const [wheelRotation, setWheelRotation] = useState(0);
+    const [winningWedgeIndex, setWinningWedgeIndex] = useState<number | null>(null);
     const [justWon, setJustWon] = useState<{
         prize: Prize;
         winner: RaffleWinnerDoc;
@@ -270,6 +405,23 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
         const winningTicketIds = new Set(localWinners.map(w => w.ticketId));
         return tickets.filter(t => !winningTicketIds.has(t.id));
     }, [tickets, localWinners]);
+
+    // Derived wheel segments for 3D physics wheel
+    const wheelSegments = useMemo(() => {
+        if (availableTickets.length === 0) {
+            return [{ label: 'NO TICKETS', code: 'EMPTY-POOL' }];
+        }
+        const maxSegs = Math.min(12, availableTickets.length);
+        return availableTickets.slice(0, maxSegs).map((t, i) => {
+            const p = players.find(ply => ply.id === t.playerId);
+            const name = p ? (p.callsign || p.name) : 'Operator';
+            return {
+                label: name,
+                code: t.code || `TKT-${i + 1}`,
+                ticketId: t.id
+            };
+        });
+    }, [availableTickets, players]);
 
     const currentPrize = prizes[currentPrizeIndex] || prizes[0] || { id: 'p_1', name: 'Grand Prize', place: 1 };
     const isCurrentPrizeDrawn = localWinners.some(w => w.prizeId === currentPrize?.id);
@@ -515,35 +667,58 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
 
         setIsSpinning(true);
         setJustWon(null);
+        setWinningWedgeIndex(null);
+
+        // Broadcast live draw start to players
+        if (dataContext?.updateDoc) {
+            dataContext.updateDoc('raffles', {
+                ...raffle,
+                liveState: {
+                    isSpinning: true,
+                    currentPrizeId: targetPrize.id,
+                    updatedAt: Date.now()
+                }
+            });
+        }
 
         // Notify subscribers that live draw has started
         notifyLiveRaffleStart(raffle.name, targetPrize.name, raffle.id).catch(() => {});
 
         let spinCount = 0;
-        const totalSpins = 36;
+        const totalSpins = 32;
         let speed = 40;
 
         const spinInterval = () => {
             const randomIdx = Math.floor(Math.random() * availableTickets.length);
-            const randomTicket = availableTickets[randomIdx];
-            const randomPlayer = players.find(p => p.id === randomTicket.playerId);
-
             setActiveCandidateIndex(randomIdx % 10);
+            setWheelRotation(prev => prev + 45);
+
             soundEngine.playTick(1 + (spinCount / totalSpins) * 0.8);
             spinCount++;
 
             if (spinCount < totalSpins) {
-                // Heartbeat tension in the final 8 ticks
+                // Heartbeat tension in the final 6 ticks
                 if (totalSpins - spinCount <= 6 && spinCount % 2 === 0) {
                     soundEngine.playHeartbeat();
                 }
-                speed = 40 + Math.pow(spinCount / totalSpins, 3.2) * 280;
+                speed = 40 + Math.pow(spinCount / totalSpins, 3.2) * 260;
                 setTimeout(spinInterval, speed);
             } else {
                 // Final Lock-in
                 const winningTicket = pickWinnerTicket(targetPrize, localWinners) || availableTickets[0];
                 const winningPlayer = players.find(p => p.id === winningTicket.playerId);
                 const playerTicketsCount = tickets.filter(t => t.playerId === winningTicket.playerId).length;
+
+                // Find winning wedge index
+                const segIdx = wheelSegments.findIndex(s => s.ticketId === winningTicket.id);
+                const winIdx = segIdx >= 0 ? segIdx : 0;
+                setWinningWedgeIndex(winIdx);
+
+                // Align wheel precisely with winning wedge
+                const segCount = Math.max(1, wheelSegments.length);
+                const sliceAngle = 360 / segCount;
+                const targetWedgeAngle = (winIdx + 0.5) * sliceAngle;
+                setWheelRotation(prev => prev + 1440 + (360 - (targetWedgeAngle % 360)));
 
                 const newWinnerDoc: RaffleWinnerDoc = {
                     id: `rw_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -567,6 +742,27 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                 setIsSpinning(false);
                 soundEngine.playVictoryFanfare();
                 fireConfetti();
+
+                // Check if all prizes are drawn -> mark completed
+                const allPrizesWon = prizes.length > 0 && updatedWinners.length >= prizes.length;
+                const updatedRaffle = {
+                    ...raffle,
+                    winners: updatedWinners,
+                    status: allPrizesWon ? ('Completed' as const) : ('Active' as const),
+                    completedAt: allPrizesWon ? new Date().toISOString() : raffle.completedAt,
+                    liveState: {
+                        isSpinning: false,
+                        lastWinner: newWinnerDoc,
+                        updatedAt: Date.now()
+                    }
+                };
+
+                if (onSaveWinners) {
+                    onSaveWinners(raffle.id, updatedWinners);
+                }
+                if (dataContext?.updateDoc) {
+                    dataContext.updateDoc('raffles', updatedRaffle);
+                }
 
                 // Dispatch mobile notification for raffle win
                 notifyRaffleWin(raffle.name, targetPrize.name, winningTicket.code || 'WINNER', raffle.id).catch(() => {});
@@ -594,7 +790,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
         };
 
         spinInterval();
-    }, [availableTickets, isSpinning, currentPrize, players, pickWinnerTicket, localWinners, raffle.id, raffle.name, tickets, fireConfetti, dataContext, isTopTicketsMode]);
+    }, [availableTickets, isSpinning, currentPrize, players, pickWinnerTicket, localWinners, raffle, tickets, fireConfetti, dataContext, wheelSegments, prizes.length, onSaveWinners]);
 
     // Auto-draw all remaining prizes sequentially
     const handleAutoDrawAll = async () => {
@@ -886,6 +1082,14 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                     {currentPrize?.name || 'Grand Tactical Prize'}
                                 </h2>
                             </div>
+
+                            {/* 3D TACTICAL ANIMATED SPINNING WHEEL ARENA */}
+                            <TacticalSpinningWheel 
+                                segments={wheelSegments}
+                                rotationAngle={wheelRotation}
+                                isSpinning={isSpinning}
+                                winningIndex={winningWedgeIndex}
+                            />
 
                             {/* 3D CYLINDRICAL REEL / WINNER CARD DISPLAY */}
                             {isSpinning ? (

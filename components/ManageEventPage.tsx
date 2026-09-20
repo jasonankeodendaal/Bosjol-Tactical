@@ -807,20 +807,20 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     };
 
     return (
-        <div className="p-2.5 sm:p-4 md:p-6 max-w-[1700px] mx-auto space-y-4">
+        <div className="p-2 sm:p-4 md:p-6 max-w-[1700px] mx-auto space-y-3 sm:space-y-4 min-w-0 w-full overflow-x-hidden">
             {/* Modern Top Header Bar */}
-            <header className="flex flex-wrap items-center justify-between gap-2.5 bg-gradient-to-r from-zinc-900/95 via-zinc-900/90 to-zinc-950/95 p-3 sm:p-4 rounded-2xl border border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-                <div className="flex items-center gap-2.5 min-w-0">
-                    <Button onClick={onBack} variant="secondary" size="sm" className="!p-2 shrink-0">
-                        <ArrowLeftIcon className="w-4 h-4" />
+            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-gradient-to-r from-zinc-900/95 via-zinc-900/90 to-zinc-950/95 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.5)] w-full min-w-0">
+                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 w-full sm:w-auto">
+                    <Button onClick={onBack} variant="secondary" size="sm" className="!p-1.5 sm:!p-2 shrink-0">
+                        <ArrowLeftIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </Button>
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-base sm:text-xl font-black text-white truncate tracking-tight">
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap">
+                            <h1 className="text-sm sm:text-base md:text-xl font-black text-white truncate tracking-tight">
                                 {event ? (formData.title || 'Manage Event') : 'Create New Event'}
                             </h1>
                             {formData.status && (
-                                <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${
+                                <span className={`text-[9px] sm:text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${
                                     formData.status === 'Active' 
                                         ? 'bg-emerald-950 text-emerald-300 border-emerald-500/50'
                                         : formData.status === 'Completed'
@@ -833,27 +833,27 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                 </span>
                             )}
                         </div>
-                        <p className="text-[11px] text-zinc-400 truncate">
+                        <p className="text-[10px] sm:text-[11px] text-zinc-400 truncate">
                             {formData.date} • {formData.startTime} • {formData.location || 'No location set'}
                         </p>
                     </div>
                 </div>
 
                 {/* Quick Action Pill Bar */}
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto justify-start sm:justify-end shrink-0">
                     <Button
                         onClick={handleSaveClick}
                         size="sm"
-                        className="!bg-emerald-600 hover:!bg-emerald-500 text-white font-bold !text-xs !py-1.5 !px-3 shadow-[0_0_12px_rgba(16,185,129,0.3)] flex items-center gap-1.5"
+                        className="!bg-emerald-600 hover:!bg-emerald-500 text-white font-bold !text-[11px] sm:!text-xs !py-1 sm:!py-1.5 !px-2.5 sm:!px-3 shadow-[0_0_12px_rgba(16,185,129,0.3)] flex items-center gap-1 sm:gap-1.5 shrink-0"
                     >
                         <Save className="w-3.5 h-3.5" />
-                        <span>Save Changes</span>
+                        <span>Save</span>
                     </Button>
 
                     <Button
                         onClick={() => setShowPosterModal(true)}
                         size="sm"
-                        className="!bg-gradient-to-r !from-red-700 !to-red-600 hover:!from-red-600 hover:!to-red-500 text-white font-bold !text-xs !py-1.5 !px-2.5 shadow-[0_0_12px_rgba(220,38,38,0.3)] flex items-center gap-1.5"
+                        className="!bg-gradient-to-r !from-red-700 !to-red-600 hover:!from-red-600 hover:!to-red-500 text-white font-bold !text-[11px] sm:!text-xs !py-1 sm:!py-1.5 !px-2 sm:!px-2.5 shadow-[0_0_12px_rgba(220,38,38,0.3)] flex items-center gap-1 sm:gap-1.5 shrink-0"
                     >
                         <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                         <span className="hidden sm:inline">Poster Artwork</span>
@@ -864,14 +864,14 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                         <Button
                             onClick={() => setShowRentalManifestModal(true)}
                             size="sm"
-                            className="!bg-zinc-900 hover:!bg-zinc-800 !border !border-zinc-700 text-zinc-200 font-bold !text-xs !py-1.5 !px-2.5 flex items-center gap-1.5"
+                            className="!bg-zinc-900 hover:!bg-zinc-800 !border !border-zinc-700 text-zinc-200 font-bold !text-[11px] sm:!text-xs !py-1 sm:!py-1.5 !px-2 sm:!px-2.5 flex items-center gap-1 sm:gap-1.5 shrink-0"
                             title="View Equipment Rental Manifest"
                         >
                             <ClipboardList className="w-3.5 h-3.5 text-red-400" />
                             <span className="hidden md:inline">Rentals Manifest</span>
                             <span className="md:hidden">Rentals</span>
                             {eventRentalsCount > 0 && (
-                                <span className="px-1.5 py-0.2 rounded-full bg-red-600 text-white text-[10px] font-mono font-bold">
+                                <span className="px-1.5 py-0.2 rounded-full bg-red-600 text-white text-[9px] sm:text-[10px] font-mono font-bold">
                                     {eventRentalsCount}
                                 </span>
                             )}
@@ -882,7 +882,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                         <Button
                             onClick={() => setShowQRModal(true)}
                             size="sm"
-                            className="!bg-zinc-900 hover:!bg-red-950/60 !border !border-red-500/40 text-red-400 font-bold !text-xs !py-1.5 !px-2.5 flex items-center gap-1.5"
+                            className="!bg-zinc-900 hover:!bg-red-950/60 !border !border-red-500/40 text-red-400 font-bold !text-[11px] sm:!text-xs !py-1 sm:!py-1.5 !px-2 sm:!px-2.5 flex items-center gap-1 sm:gap-1.5 shrink-0"
                         >
                             <QrCode className="w-3.5 h-3.5 text-red-400" />
                             <span className="hidden sm:inline">QR Pass</span>
@@ -893,7 +893,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                         <button
                             type="button"
                             onClick={() => setShowAddGuestModal(true)}
-                            className="px-2.5 py-1.5 rounded-lg bg-purple-600/90 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                            className="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg bg-purple-600/90 hover:bg-purple-500 text-white font-bold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors shadow-sm cursor-pointer shrink-0"
                         >
                             <UserPlus className="w-3.5 h-3.5" />
                             <span className="hidden sm:inline">+ Add Guest</span>
@@ -904,7 +904,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             </header>
 
             {/* Modern Section Navigator Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-semibold">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-semibold w-full">
                 {[
                     { id: 'all', label: 'All Panels (Side-by-Side)', icon: LayoutGrid },
                     { id: 'details', label: '1. Mission & Rules', icon: FileText },
@@ -919,7 +919,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             key={tab.id}
                             type="button"
                             onClick={() => setActiveSection(tab.id as any)}
-                            className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0 text-[11px] sm:text-xs cursor-pointer ${
                                 isActive
                                     ? 'bg-red-600 text-white shadow-md shadow-red-950 font-bold'
                                     : 'bg-zinc-900/80 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
@@ -928,7 +928,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             <Icon className="w-3.5 h-3.5" />
                             <span>{tab.label}</span>
                             {tab.badge && (
-                                <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold ${
+                                <span className={`text-[9px] sm:text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold ${
                                     isActive ? 'bg-black/30 text-white' : 'bg-zinc-800 text-zinc-300'
                                 }`}>
                                     {tab.badge}
@@ -940,18 +940,18 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             </div>
 
             {/* Side-by-Side Master Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-3.5 items-start min-w-0 w-full">
                 {/* Left Master Column */}
-                <div className={`space-y-3.5 ${activeSection === 'all' ? 'lg:col-span-6 xl:col-span-7' : activeSection === 'details' || activeSection === 'teams' ? 'lg:col-span-12' : 'hidden'}`}>
+                <div className={`space-y-3 sm:space-y-3.5 min-w-0 ${activeSection === 'all' ? 'lg:col-span-6 xl:col-span-7' : activeSection === 'details' || activeSection === 'teams' ? 'lg:col-span-12' : 'hidden'}`}>
                     {/* Mission Profile & Configuration */}
                     {(activeSection === 'all' || activeSection === 'details') && (
-                        <div className="bg-gradient-to-br from-zinc-900/95 via-zinc-900/90 to-zinc-950/95 rounded-2xl border border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.4)] p-3.5 sm:p-5 space-y-3.5">
-                            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+                        <div className="bg-gradient-to-br from-zinc-900/95 via-zinc-900/90 to-zinc-950/95 rounded-xl sm:rounded-2xl border border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.4)] p-3 sm:p-4 md:p-5 space-y-2.5 sm:space-y-3.5 min-w-0">
+                            <div className="flex items-center justify-between pb-1.5 sm:pb-2 border-b border-zinc-800">
                                 <div className="flex items-center gap-2">
                                     <CalendarIcon className="w-4 h-4 text-red-500" />
-                                    <h2 className="text-sm font-black uppercase tracking-wider text-white">Mission Configuration</h2>
+                                    <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">Mission Configuration</h2>
                                 </div>
-                                <span className="text-[10px] font-mono text-zinc-400">Section 1</span>
+                                <span className="text-[9px] sm:text-[10px] font-mono text-zinc-400">Section 1</span>
                             </div>
 
                             <Input 
@@ -959,17 +959,18 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                 value={formData.title} 
                                 onChange={e => setFormData(f => ({ ...f, title: e.target.value }))}
                                 placeholder="e.g. Operation Nightfall: Castle Defense" 
+                                className="!py-1.5 sm:!py-2 !text-xs sm:!text-sm"
                             />
                             
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                <div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                                <div className="min-w-0">
                                     <div className="flex items-center justify-between mb-1">
-                                        <label className="text-xs font-semibold text-zinc-300 flex items-center gap-1 truncate">
+                                        <label className="text-[11px] sm:text-xs font-semibold text-zinc-300 flex items-center gap-1 truncate">
                                             <Sparkles className="w-3.5 h-3.5 text-red-500 shrink-0" />
                                             <span>Game Type / Scenario Preset</span>
                                         </label>
                                         {formData.gameTypeId && (
-                                            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-red-950 text-red-400 border border-red-800/60 font-bold uppercase shrink-0">
+                                            <span className="text-[8px] sm:text-[9px] font-mono px-1.5 py-0.2 rounded bg-red-950 text-red-400 border border-red-800/60 font-bold uppercase shrink-0">
                                                 LINKED
                                             </span>
                                         )}
@@ -977,7 +978,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                     <select
                                         value={formData.gameTypeId || ''}
                                         onChange={(e) => {
-                                            const selectedId = e.target.value;
+                                             const selectedId = e.target.value;
                                             if (!selectedId) {
                                                 setFormData((f) => ({ ...f, gameTypeId: undefined }));
                                             } else {
@@ -998,7 +999,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                                 }
                                             }
                                         }}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-red-500 truncate"
+                                        className="w-full min-w-0 bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-red-500 truncate"
                                     >
                                         <option value="">-- Select Game Type / Scenario --</option>
                                         {dataContext?.gameTypes && dataContext.gameTypes.length > 0 ? (
@@ -1044,8 +1045,8 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                     })()}
                                 </div>
 
-                                <div>
-                                    <label className="block text-xs font-semibold text-zinc-300 mb-1 flex items-center gap-1">
+                                <div className="min-w-0">
+                                    <label className="block text-[11px] sm:text-xs font-semibold text-zinc-300 mb-1 flex items-center gap-1">
                                         <Palette className="w-3.5 h-3.5 text-red-500 shrink-0" />
                                         <span>Theme Concept / Art Prompt</span>
                                     </label>
@@ -1054,21 +1055,21 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                         value={formData.theme || ''}
                                         onChange={(e) => setFormData((f) => ({ ...f, theme: e.target.value }))}
                                         placeholder="e.g. Tactical Night Raid, dark fog, red neon"
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-red-500 placeholder:text-zinc-600 truncate"
+                                        className="w-full min-w-0 bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-red-500 placeholder:text-zinc-600 truncate"
                                     />
                                 </div>
                             </div>
 
-                            {/* Date, Time, Location */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            {/* Date, Time, Location - Optimized 2-col to 3-col Grid */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5">
                                 <Input label="Date" type="date" value={formData.date} onChange={e => setFormData(f => ({ ...f, date: e.target.value }))} className="!py-1.5 !text-xs" />
                                 <Input label="Start Time" type="time" value={formData.startTime} onChange={e => setFormData(f => ({ ...f, startTime: e.target.value }))} className="!py-1.5 !text-xs" />
-                                <div>
-                                    <label className="block text-xs font-semibold text-zinc-300 mb-1">Location</label>
+                                <div className="col-span-2 sm:col-span-1 min-w-0">
+                                    <label className="block text-[11px] sm:text-xs font-semibold text-zinc-300 mb-1">Location</label>
                                     <select
                                         value={formData.location}
                                         onChange={e => setFormData(f => ({ ...f, location: e.target.value }))}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-red-500 truncate"
+                                        className="w-full min-w-0 bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-red-500 truncate"
                                     >
                                         <option value="">-- Select Preset Location --</option>
                                         {availableLocations.map(loc => (
@@ -1084,9 +1085,9 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             </div>
 
                             {/* Description & Rules Side-by-Side */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                <div>
-                                    <label className="block text-xs font-semibold text-zinc-300 mb-1">Mission Description</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                                <div className="min-w-0">
+                                    <label className="block text-[11px] sm:text-xs font-semibold text-zinc-300 mb-1">Mission Description</label>
                                     <textarea 
                                         value={formData.description} 
                                         onChange={e => setFormData(f => ({...f, description: e.target.value}))} 
@@ -1095,8 +1096,8 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                         className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-red-500 placeholder:text-zinc-600" 
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-zinc-300 mb-1">Field Rules & Safety</label>
+                                <div className="min-w-0">
+                                    <label className="block text-[11px] sm:text-xs font-semibold text-zinc-300 mb-1">Field Rules & Safety</label>
                                     <textarea 
                                         value={formData.rules} 
                                         onChange={e => setFormData(f => ({...f, rules: e.target.value}))} 
@@ -1107,13 +1108,13 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                 </div>
                             </div>
 
-                            {/* Economy, XP & Status (4 Column compact) */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {/* Economy, XP & Status (Compact 2x2 on Mobile, 4-col on Desktop) */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
                                 <Input label="Game Fee (R)" type="number" value={formData.gameFee} onChange={e => setFormData(f => ({ ...f, gameFee: Number(e.target.value) }))} className="!py-1.5 !text-xs" />
                                 <Input label="Participation RP" type="number" value={formData.participationXp} onChange={e => setFormData(f => ({ ...f, participationXp: Number(e.target.value) }))} className="!py-1.5 !text-xs" />
                                 <Input label="Win Bonus RP" type="number" value={formData.winXpAward ?? 50} onChange={e => setFormData(f => ({ ...f, winXpAward: Number(e.target.value) }))} className="!py-1.5 !text-xs" />
-                                <div>
-                                    <label className="block text-xs font-semibold text-zinc-300 mb-1">Event Status</label>
+                                <div className="min-w-0">
+                                    <label className="block text-[11px] sm:text-xs font-semibold text-zinc-300 mb-1">Event Status</label>
                                     <select 
                                         value={formData.status} 
                                         onChange={e => {
@@ -1131,33 +1132,35 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                             }
                                             setFormData(f => ({ ...f, status: newStatus }));
                                         }} 
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-red-500 truncate"
+                                        className="w-full min-w-0 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-red-500 truncate"
                                     >
                                         {EVENT_STATUSES.map(s => <option key={s}>{s}</option>)}
                                     </select>
                                 </div>
                             </div>
 
-                            {/* Voting & Media Side-by-Side */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                                <UrlOrUploadField
-                                    label="Event Image Poster"
-                                    fileUrl={formData.imageUrl}
-                                    onUrlSet={(url) => setFormData(f => ({...f, imageUrl: url}))}
-                                    onRemove={() => setFormData(f => ({...f, imageUrl: ''}))}
-                                    accept="image/*"
-                                    apiServerUrl={companyDetails.apiServerUrl}
-                                />
+                            {/* Poster & Audio Briefing Side-by-Side */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 pt-1">
+                                <div className="min-w-0">
+                                    <UrlOrUploadField
+                                        label="Event Image Poster"
+                                        fileUrl={formData.imageUrl}
+                                        onUrlSet={(url) => setFormData(f => ({...f, imageUrl: url}))}
+                                        onRemove={() => setFormData(f => ({...f, imageUrl: ''}))}
+                                        accept="image/*"
+                                        apiServerUrl={companyDetails.apiServerUrl}
+                                    />
+                                </div>
 
-                                <div>
-                                    <label className="block text-xs font-semibold text-zinc-300 mb-1">Audio Mission Briefing</label>
-                                    <div className="bg-zinc-900/70 p-2.5 rounded-lg border border-zinc-700/60 min-h-[76px] flex flex-col justify-center">
+                                <div className="min-w-0">
+                                    <label className="block text-[11px] sm:text-xs font-semibold text-zinc-300 mb-1">Audio Mission Briefing</label>
+                                    <div className="bg-zinc-900/70 p-2 sm:p-2.5 rounded-lg border border-zinc-700/60 min-h-[64px] flex flex-col justify-center">
                                         {formData.audioBriefingUrl && !isRecording && (
-                                            <div className="flex items-center gap-2">
-                                                <audio src={formData.audioBriefingUrl} controls className="w-full h-8" />
+                                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                                <audio src={formData.audioBriefingUrl} controls className="w-full h-7 sm:h-8" />
                                                 <div className="flex gap-1 shrink-0">
-                                                    <Button variant="secondary" size="sm" onClick={handleStartRecording} className="!text-[10px] !py-1 !px-2">Record</Button>
-                                                    <Button variant="danger" size="sm" onClick={handleRemoveAudio} className="!text-[10px] !py-1 !px-2">✕</Button>
+                                                    <Button variant="secondary" size="sm" onClick={handleStartRecording} className="!text-[9px] sm:!text-[10px] !py-0.5 sm:!py-1 !px-1.5 sm:!px-2">Record</Button>
+                                                    <Button variant="danger" size="sm" onClick={handleRemoveAudio} className="!text-[9px] sm:!text-[10px] !py-0.5 sm:!py-1 !px-1.5 sm:!px-2">✕</Button>
                                                 </div>
                                             </div>
                                         )}
@@ -1189,43 +1192,43 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
 
                     {/* Tactical Teams Configuration Card */}
                     {(activeSection === 'all' || activeSection === 'teams') && (
-                        <div className="bg-gradient-to-br from-zinc-900/95 via-zinc-900/90 to-zinc-950/95 rounded-2xl border border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.4)] p-3.5 sm:p-5 space-y-3.5">
-                            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-                                <div className="flex items-center gap-2">
-                                    <Users className="w-4 h-4 text-red-500" />
-                                    <h2 className="text-sm font-black uppercase tracking-wider text-white">
+                        <div className="bg-gradient-to-br from-zinc-900/95 via-zinc-900/90 to-zinc-950/95 rounded-xl sm:rounded-2xl border border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.4)] p-3 sm:p-4 md:p-5 space-y-2.5 sm:space-y-3.5 min-w-0">
+                            <div className="flex items-center justify-between pb-1.5 sm:pb-2 border-b border-zinc-800">
+                                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                                    <Users className="w-4 h-4 text-red-500 shrink-0" />
+                                    <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white truncate">
                                         Tactical Squads ({formData.teamCount || 2} Teams)
                                     </h2>
                                 </div>
-                                <Button size="sm" onClick={handleAutoBalanceTeams} className="!bg-red-600 hover:!bg-red-500 !text-xs !py-1 !px-2.5 font-bold flex items-center gap-1.5 shadow-sm">
+                                <Button size="sm" onClick={handleAutoBalanceTeams} className="!bg-red-600 hover:!bg-red-500 !text-[11px] sm:!text-xs !py-0.5 sm:!py-1 !px-2 sm:!px-2.5 font-bold flex items-center gap-1 sm:gap-1.5 shadow-sm shrink-0">
                                     <Sparkles className="w-3.5 h-3.5" />
                                     <span>Auto-Balance</span>
                                 </Button>
                             </div>
 
                             {/* Team count selector buttons */}
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                                 {[2, 3, 4].map(num => (
                                     <button
                                         key={num}
                                         type="button"
                                         onClick={() => setFormData(f => ({ ...f, teamCount: num }))}
-                                        className={`py-1.5 px-2 rounded-lg text-xs font-bold border transition-all flex flex-col items-center justify-center cursor-pointer ${
+                                        className={`py-1 sm:py-1.5 px-1 sm:px-2 rounded-lg text-xs font-bold border transition-all flex flex-col items-center justify-center cursor-pointer ${
                                             (formData.teamCount || 2) === num
                                                 ? 'bg-red-600 text-white border-red-500 shadow-sm'
                                                 : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-white'
                                         }`}
                                     >
-                                        <span className="text-xs font-black">{num} Teams</span>
-                                        <span className="text-[9px] font-mono opacity-80">
-                                            {num === 2 ? 'Alpha vs Bravo' : num === 3 ? 'Alpha / Bravo / Charlie' : '4-Way Battle'}
+                                        <span className="text-[11px] sm:text-xs font-black">{num} Teams</span>
+                                        <span className="text-[8px] sm:text-[9px] font-mono opacity-80 truncate max-w-full">
+                                            {num === 2 ? 'Alpha vs Bravo' : num === 3 ? '3-Way Battle' : '4-Way Battle'}
                                         </span>
                                     </button>
                                 ))}
                             </div>
 
                             {/* Active Team Squad Boxes */}
-                            <div className={`grid grid-cols-1 ${(formData.teamCount || 2) >= 3 ? 'sm:grid-cols-2 md:grid-cols-3' : 'sm:grid-cols-2'} gap-2.5`}>
+                            <div className={`grid grid-cols-1 ${(formData.teamCount || 2) >= 3 ? 'sm:grid-cols-2 md:grid-cols-3' : 'sm:grid-cols-2'} gap-2 sm:gap-2.5`}>
                                 {[
                                     { key: 'alpha', name: 'Alpha Team', border: 'border-red-500/40', bg: 'bg-red-950/30', text: 'text-red-400', badge: 'bg-red-900/60 text-red-200 border-red-700' },
                                     { key: 'bravo', name: 'Bravo Team', border: 'border-blue-500/40', bg: 'bg-blue-950/30', text: 'text-blue-400', badge: 'bg-blue-900/60 text-blue-200 border-blue-700' },
@@ -1235,24 +1238,24 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                     const teamPlayerIds = formData.teams?.[team.key] || [];
                                     const teamPlayers = players.filter(p => teamPlayerIds.includes(p.id));
                                     return (
-                                        <div key={team.key} className={`p-2.5 rounded-xl border ${team.border} ${team.bg} space-y-1.5`}>
+                                        <div key={team.key} className={`p-2 sm:p-2.5 rounded-xl border ${team.border} ${team.bg} space-y-1 sm:space-y-1.5 min-w-0`}>
                                             <div className="flex items-center justify-between pb-1 border-b border-white/10">
-                                                <span className={`font-black text-xs uppercase tracking-wider ${team.text}`}>
+                                                <span className={`font-black text-[11px] sm:text-xs uppercase tracking-wider truncate ${team.text}`}>
                                                     {team.name}
                                                 </span>
-                                                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border ${team.badge}`}>
+                                                <span className={`text-[9px] sm:text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border shrink-0 ${team.badge}`}>
                                                     {teamPlayers.length}
                                                 </span>
                                             </div>
-                                            <div className="space-y-1 max-h-36 overflow-y-auto">
+                                            <div className="space-y-1 max-h-32 sm:max-h-36 overflow-y-auto">
                                                 {teamPlayers.length > 0 ? (
                                                     teamPlayers.map(p => (
-                                                        <div key={p.id} className="text-[11px] bg-zinc-900/90 px-2 py-1 rounded flex items-center justify-between border border-zinc-800">
-                                                            <span className="font-semibold text-white truncate max-w-[110px]">{p.callsign || p.name}</span>
+                                                        <div key={p.id} className="text-[10px] sm:text-[11px] bg-zinc-900/90 px-2 py-0.5 sm:py-1 rounded flex items-center justify-between border border-zinc-800 gap-1">
+                                                            <span className="font-semibold text-white truncate max-w-[120px]">{p.callsign || p.name}</span>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleAssignPlayerTeam(p.id, null)}
-                                                                className="text-[10px] text-zinc-500 hover:text-red-400 px-1 cursor-pointer"
+                                                                className="text-[10px] text-zinc-500 hover:text-red-400 px-1 cursor-pointer shrink-0"
                                                                 title="Remove from team"
                                                             >
                                                                 ✕
@@ -1271,23 +1274,23 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             {/* Manual Team Assignment Matrix */}
                             {attendeesDetails.length > 0 && (
                                 <div className="space-y-1.5 pt-2 border-t border-zinc-800">
-                                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
                                         Assign Checked-in Operators ({attendeesDetails.length})
                                     </span>
-                                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                    <div className="space-y-1.5 max-h-44 sm:max-h-48 overflow-y-auto pr-1">
                                         {attendeesDetails.map(player => {
                                             const currentTeam = Object.keys(formData.teams || {}).find(k => 
                                                 formData.teams?.[k]?.includes(player.id)
                                             );
 
                                             return (
-                                                <div key={player.id} className="bg-zinc-900/80 px-2.5 py-1.5 rounded-lg border border-zinc-800 flex items-center justify-between gap-2">
-                                                    <div className="min-w-0">
-                                                        <p className="text-xs font-bold text-white truncate">{player.name}</p>
-                                                        <p className="text-[10px] text-zinc-400 font-mono truncate">{player.callsign || 'No callsign'}</p>
+                                                <div key={player.id} className="bg-zinc-900/80 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border border-zinc-800 flex items-center justify-between gap-1.5 sm:gap-2">
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-[11px] sm:text-xs font-bold text-white truncate">{player.name}</p>
+                                                        <p className="text-[9px] sm:text-[10px] text-zinc-400 font-mono truncate">{player.callsign || 'No callsign'}</p>
                                                     </div>
 
-                                                    <div className="flex items-center gap-1 shrink-0">
+                                                    <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                                                         {[
                                                             { key: 'alpha', label: 'Alpha', activeClass: 'bg-red-600 text-white border-red-500' },
                                                             { key: 'bravo', label: 'Bravo', activeClass: 'bg-blue-600 text-white border-blue-500' },
@@ -1298,7 +1301,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                                                 key={t.key}
                                                                 type="button"
                                                                 onClick={() => handleAssignPlayerTeam(player.id, currentTeam === t.key ? null : t.key)}
-                                                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold border transition-colors cursor-pointer ${
+                                                                className={`px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold border transition-colors cursor-pointer ${
                                                                     currentTeam === t.key
                                                                         ? t.activeClass
                                                                         : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700'
@@ -1319,28 +1322,28 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                 </div>
 
                 {/* Right Master Column */}
-                <div className={`space-y-3.5 ${activeSection === 'all' ? 'lg:col-span-6 xl:col-span-5' : activeSection === 'gear' || activeSection === 'roster' ? 'lg:col-span-12' : 'hidden'}`}>
+                <div className={`space-y-3 sm:space-y-3.5 min-w-0 ${activeSection === 'all' ? 'lg:col-span-6 xl:col-span-5' : activeSection === 'gear' || activeSection === 'roster' ? 'lg:col-span-12' : 'hidden'}`}>
                     {/* Equipment Rentals Configuration */}
                     {(activeSection === 'all' || activeSection === 'gear') && (
-                        <div className="bg-gradient-to-br from-zinc-900/95 via-zinc-900/90 to-zinc-950/95 rounded-2xl border border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.4)] p-3.5 sm:p-5 space-y-3">
-                            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+                        <div className="bg-gradient-to-br from-zinc-900/95 via-zinc-900/90 to-zinc-950/95 rounded-xl sm:rounded-2xl border border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.4)] p-3 sm:p-4 md:p-5 space-y-2.5 sm:space-y-3 min-w-0">
+                            <div className="flex items-center justify-between pb-1.5 sm:pb-2 border-b border-zinc-800">
                                 <div className="flex items-center gap-2">
                                     <ClipboardList className="w-4 h-4 text-purple-400" />
-                                    <h2 className="text-sm font-black uppercase tracking-wider text-white">Gear Available for Rent</h2>
+                                    <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">Gear Available for Rent</h2>
                                 </div>
-                                <span className="text-[10px] font-mono text-zinc-400">
+                                <span className="text-[9px] sm:text-[10px] font-mono text-zinc-400">
                                     {(formData.gearForRent || []).length} Enabled
                                 </span>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-52 overflow-y-auto pr-1">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 max-h-48 sm:max-h-52 overflow-y-auto pr-1">
                                 {inventory.filter(i => i.isRental).map(item => {
                                     const isChecked = (formData.gearForRent || []).includes(item.id);
                                     const overridePrice = formData.rentalPriceOverrides?.[item.id];
                                     return (
-                                        <div key={item.id} className="bg-zinc-800/80 p-2 rounded-lg border border-zinc-700/60">
-                                            <div className="flex items-center justify-between">
-                                                <label className="flex items-center gap-2 cursor-pointer flex-grow min-w-0">
+                                        <div key={item.id} className="bg-zinc-800/80 p-2 rounded-lg border border-zinc-700/60 min-w-0">
+                                            <div className="flex items-center justify-between gap-1">
+                                                <label className="flex items-center gap-1.5 cursor-pointer flex-grow min-w-0">
                                                     <input
                                                         type="checkbox"
                                                         checked={isChecked}
@@ -1371,13 +1374,13 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
 
                     {/* Event Commendations & Operator Assignment */}
                     {(activeSection === 'all' || activeSection === 'gear') && (
-                        <div className="bg-gradient-to-br from-zinc-900/95 via-zinc-900/90 to-zinc-950/95 rounded-2xl border border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.4)] p-3.5 sm:p-5 space-y-3">
-                            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+                        <div className="bg-gradient-to-br from-zinc-900/95 via-zinc-900/90 to-zinc-950/95 rounded-xl sm:rounded-2xl border border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.4)] p-3 sm:p-4 md:p-5 space-y-2.5 sm:space-y-3 min-w-0">
+                            <div className="flex items-center justify-between pb-1.5 sm:pb-2 border-b border-zinc-800">
                                 <div className="flex items-center gap-2">
                                     <Trophy className="w-4 h-4 text-amber-400" />
-                                    <h2 className="text-sm font-black uppercase tracking-wider text-white">Event Commendations</h2>
+                                    <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">Event Commendations</h2>
                                 </div>
-                                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                                <span className={`text-[9px] sm:text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
                                     assignedCommendationsCount > 0 
                                         ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' 
                                         : 'bg-zinc-800 text-zinc-500'
@@ -1387,9 +1390,9 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             </div>
 
                             {/* Available Badges Checkbox Pills */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-36 overflow-y-auto">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 sm:gap-1.5 max-h-32 sm:max-h-36 overflow-y-auto">
                                 {legendaryBadges.map(badge => (
-                                    <label key={badge.id} className="flex items-center gap-2 p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700/80 cursor-pointer border border-zinc-700/50">
+                                    <label key={badge.id} className="flex items-center gap-1.5 p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700/80 cursor-pointer border border-zinc-700/50 min-w-0">
                                         <input
                                             type="checkbox"
                                             checked={(formData.eventBadges || []).includes(badge.id)}
@@ -1397,29 +1400,29 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                             className="h-3.5 w-3.5 rounded border-gray-600 bg-zinc-700 text-red-500 focus:ring-red-500 shrink-0"
                                         />
                                         {badge.iconUrl && badge.iconUrl.trim() !== '' ? (
-                                            <img src={badge.iconUrl} alt="" className="w-4 h-4 object-contain shrink-0"/>
+                                            <img src={badge.iconUrl} alt="" className="w-3.5 h-3.5 object-contain shrink-0"/>
                                         ) : (
-                                            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                                            <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                                         )}
-                                        <span className="text-[11px] text-amber-300 truncate font-semibold">{badge.name}</span>
+                                        <span className="text-[10px] sm:text-[11px] text-amber-300 truncate font-semibold">{badge.name}</span>
                                     </label>
                                 ))}
                             </div>
 
                             {/* Operator Badges Assignment List */}
                             {(formData.eventBadges || []).length > 0 && attendeesDetails.length > 0 && (
-                                <div className="space-y-2 pt-2 border-t border-zinc-800">
-                                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+                                <div className="space-y-1.5 pt-2 border-t border-zinc-800">
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
                                         Award Badges to Operators
                                     </span>
-                                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                    <div className="space-y-1.5 max-h-44 sm:max-h-48 overflow-y-auto pr-1">
                                         {attendeesDetails.map(player => {
                                             const playerAssigned = formData.awardedBadges?.[player.id] || [];
                                             const activeBadgesList = legendaryBadges.filter(b => (formData.eventBadges || []).includes(b.id));
 
                                             return (
                                                 <div key={player.id} className="bg-zinc-950/80 p-2 rounded-lg border border-zinc-800 flex flex-col gap-1.5">
-                                                    <div className="flex items-center justify-between gap-2">
+                                                    <div className="flex items-center justify-between gap-1.5">
                                                         <div className="flex items-center gap-1.5 min-w-0">
                                                             <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[9px] font-black text-amber-400 shrink-0">
                                                                 {(player.callsign || player.name || 'O')[0].toUpperCase()}
@@ -1440,13 +1443,13 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                                                     key={badge.id}
                                                                     type="button"
                                                                     onClick={() => handleTogglePlayerAwardedBadge(player.id, badge.id)}
-                                                                    className={`px-1.5 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                                                                    className={`px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-semibold flex items-center gap-1 transition-all cursor-pointer ${
                                                                         isSelected 
                                                                             ? 'bg-amber-500 text-black font-bold' 
                                                                             : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700'
                                                                     }`}
                                                                 >
-                                                                    <span className="truncate max-w-[100px]">{badge.name}</span>
+                                                                    <span className="truncate max-w-[85px] sm:max-w-[110px]">{badge.name}</span>
                                                                     {isSelected && <Check className="w-2.5 h-2.5 text-black stroke-[3]" />}
                                                                 </button>
                                                             );
@@ -1463,49 +1466,49 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
 
                     {/* Operator Signups & Checked-in Manifest Card */}
                     {(activeSection === 'all' || activeSection === 'roster') && (
-                        <div className="bg-gradient-to-br from-zinc-900/95 via-zinc-900/90 to-zinc-950/95 rounded-2xl border border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.4)] p-3.5 sm:p-5 space-y-3.5">
+                        <div className="bg-gradient-to-br from-zinc-900/95 via-zinc-900/90 to-zinc-950/95 rounded-xl sm:rounded-2xl border border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.4)] p-3 sm:p-4 md:p-5 space-y-2.5 sm:space-y-3.5 min-w-0">
                             {/* Header / Counts */}
-                            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-                                <div className="flex items-center gap-2">
-                                    <Users className="w-4 h-4 text-emerald-400" />
-                                    <h2 className="text-sm font-black uppercase tracking-wider text-white">
+                            <div className="flex items-center justify-between pb-1.5 sm:pb-2 border-b border-zinc-800">
+                                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                                    <Users className="w-4 h-4 text-emerald-400 shrink-0" />
+                                    <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white truncate">
                                         Operator Roster & Check-In
                                     </h2>
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[10px] font-mono">
-                                    <span className="text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded">
-                                        Signed Up: <strong>{signedUpPlayersDetails.length}</strong>
+                                <div className="flex items-center gap-1 text-[9px] sm:text-[10px] font-mono shrink-0">
+                                    <span className="text-zinc-400 bg-zinc-800 px-1.5 sm:px-2 py-0.5 rounded">
+                                        Signed: <strong>{signedUpPlayersDetails.length}</strong>
                                     </span>
-                                    <span className="text-emerald-300 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800/40">
-                                        Checked In: <strong>{formData.attendees.length}</strong>
+                                    <span className="text-emerald-300 bg-emerald-950 px-1.5 sm:px-2 py-0.5 rounded border border-emerald-800/40">
+                                        In: <strong>{formData.attendees.length}</strong>
                                     </span>
                                 </div>
                             </div>
 
                             {/* Signed Up Operators List */}
                             <div className="space-y-1.5">
-                                <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider block">
+                                <span className="text-[11px] sm:text-xs font-bold text-zinc-300 uppercase tracking-wider block">
                                     Signed Up ({signedUpPlayersDetails.length})
                                 </span>
-                                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                <div className="space-y-1.5 max-h-44 sm:max-h-48 overflow-y-auto pr-1">
                                     {signedUpPlayersDetails.length > 0 ? signedUpPlayersDetails.map(player => (
-                                        <div key={player.id} className="bg-zinc-800/80 p-2 rounded-lg border border-zinc-700/60 flex items-center justify-between gap-2">
-                                            <div className="min-w-0">
+                                        <div key={player.id} className="bg-zinc-800/80 p-1.5 sm:p-2 rounded-lg border border-zinc-700/60 flex items-center justify-between gap-1.5 sm:gap-2">
+                                            <div className="min-w-0 flex-1">
                                                 <div className="flex items-center gap-1.5 truncate">
-                                                    <p className="font-bold text-white text-xs truncate">{player.name}</p>
+                                                    <p className="font-bold text-white text-[11px] sm:text-xs truncate">{player.name}</p>
                                                     {player.isGuest && (
                                                         <span className="px-1 py-0.2 rounded text-[8px] font-black uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40">
                                                             GUEST
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-[10px] text-zinc-400 font-mono truncate">@{player.callsign || 'N/A'}</p>
+                                                <p className="text-[9px] sm:text-[10px] text-zinc-400 font-mono truncate">@{player.callsign || 'N/A'}</p>
                                             </div>
                                             <div className="flex items-center gap-1 shrink-0">
-                                                <Button size="sm" onClick={() => handleCheckIn(player.id)} className="!bg-emerald-600 hover:!bg-emerald-500 !text-[11px] !py-0.5 !px-2 font-bold">
+                                                <Button size="sm" onClick={() => handleCheckIn(player.id)} className="!bg-emerald-600 hover:!bg-emerald-500 !text-[10px] sm:!text-[11px] !py-0.5 !px-1.5 sm:!px-2 font-bold">
                                                     Check In
                                                 </Button>
-                                                <Button size="sm" variant="danger" onClick={() => handleMarkNoShow(player.id)} className="!bg-amber-600 hover:!bg-amber-500 !text-[11px] !py-0.5 !px-2 font-bold">
+                                                <Button size="sm" variant="danger" onClick={() => handleMarkNoShow(player.id)} className="!bg-amber-600 hover:!bg-amber-500 !text-[10px] sm:!text-[11px] !py-0.5 !px-1.5 sm:!px-2 font-bold">
                                                     No Show
                                                 </Button>
                                             </div>
@@ -1518,22 +1521,22 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
 
                             {/* Checked-In Attendees List */}
                             <div className="space-y-1.5 pt-2 border-t border-zinc-800">
-                                <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider block">
+                                <span className="text-[11px] sm:text-xs font-bold text-zinc-300 uppercase tracking-wider block">
                                     Checked In Operators ({formData.attendees.length})
                                 </span>
-                                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                                <div className="space-y-1.5 max-h-52 sm:max-h-56 overflow-y-auto pr-1">
                                     {attendeesDetails.length > 0 ? attendeesDetails.map(player => {
                                         const attendee = player.attendee || formData.attendees.find(a => a.playerId === player.id)!;
                                         const isNoShow = attendee?.checkInStatus === 'no_show';
 
                                         return (
-                                            <div key={player.id} className={`p-2 rounded-lg border transition-all ${
+                                            <div key={player.id} className={`p-1.5 sm:p-2 rounded-lg border transition-all ${
                                                 isNoShow ? 'bg-amber-950/20 border-amber-500/40' : 'bg-zinc-800/80 border-zinc-700/60'
                                             }`}>
                                                 <div className="flex items-center justify-between gap-1.5">
-                                                    <div className="min-w-0">
+                                                    <div className="min-w-0 flex-1">
                                                         <div className="flex items-center gap-1.5 truncate">
-                                                            <p className="font-bold text-white text-xs truncate">{player.name}</p>
+                                                            <p className="font-bold text-white text-[11px] sm:text-xs truncate">{player.name}</p>
                                                             {player.isGuest && (
                                                                 <span className="px-1 py-0.2 rounded text-[8px] font-black uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40">
                                                                     GUEST
@@ -1545,7 +1548,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                                                 {isNoShow ? 'NO SHOW' : 'CHECKED IN'}
                                                             </span>
                                                         </div>
-                                                        <p className="text-[10px] text-zinc-400 font-mono truncate">
+                                                        <p className="text-[9px] sm:text-[10px] text-zinc-400 font-mono truncate">
                                                             {player.callsign || 'N/A'} {attendee?.guestPhone ? `• ${attendee.guestPhone}` : ''}
                                                         </p>
                                                     </div>
@@ -1561,7 +1564,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                                         <button
                                                             type="button"
                                                             onClick={() => handleCheckIn(player.id)}
-                                                            className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
+                                                            className={`px-1.5 py-0.5 rounded text-[8.5px] sm:text-[9px] font-bold border ${
                                                                 !isNoShow ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-zinc-900 text-zinc-400 border-zinc-800'
                                                             }`}
                                                         >
@@ -1570,7 +1573,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                                         <button
                                                             type="button"
                                                             onClick={() => handleMarkNoShow(player.id)}
-                                                            className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
+                                                            className={`px-1.5 py-0.5 rounded text-[8.5px] sm:text-[9px] font-bold border ${
                                                                 isNoShow ? 'bg-amber-600 text-white border-amber-500' : 'bg-zinc-900 text-zinc-400 border-zinc-800'
                                                             }`}
                                                         >
@@ -1584,7 +1587,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                                                 key={st}
                                                                 type="button"
                                                                 onClick={() => handlePaymentStatus(player.id, st)}
-                                                                className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all cursor-pointer ${
+                                                                className={`px-1 sm:px-1.5 py-0.5 rounded text-[8.5px] sm:text-[9px] font-bold transition-all cursor-pointer ${
                                                                     attendee?.paymentStatus === st 
                                                                         ? 'bg-red-600 text-white shadow-sm' 
                                                                         : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
@@ -1605,13 +1608,13 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
 
                             {/* Winning Declaration & Event Finalization */}
                             {event && formData.status !== 'Completed' && formData.status !== 'Cancelled' && (
-                                <div className="space-y-2 pt-2 border-t border-zinc-800 bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800">
+                                <div className="space-y-1.5 sm:space-y-2 pt-2 border-t border-zinc-800 bg-zinc-950/60 p-2 sm:p-2.5 rounded-lg sm:rounded-xl border border-zinc-800">
                                     <div className="space-y-1">
-                                        <label className="block text-xs font-semibold text-zinc-300">Winning Team Declaration</label>
+                                        <label className="block text-[11px] sm:text-xs font-semibold text-zinc-300">Winning Team Declaration</label>
                                         <select
                                             value={formData.winningTeamId || ''}
                                             onChange={e => setFormData(f => ({ ...f, winningTeamId: (e.target.value as any) || null }))}
-                                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                                            className="w-full min-w-0 bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-red-500"
                                         >
                                             <option value="">-- No Winner Declared --</option>
                                             <option value="alpha">Alpha Team</option>
@@ -1622,7 +1625,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                         </select>
                                     </div>
 
-                                    <Button onClick={handleFinalizeEvent} variant="primary" className="w-full !bg-green-600 hover:!bg-green-500 !text-xs !py-2 font-bold">
+                                    <Button onClick={handleFinalizeEvent} variant="primary" className="w-full !bg-green-600 hover:!bg-green-500 !text-xs !py-1.5 sm:!py-2 font-bold">
                                         <CheckCircleIcon className="w-4 h-4 mr-1.5" />
                                         Finalize Event & Award RP
                                     </Button>
@@ -1630,7 +1633,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             )}
 
                             {/* Secondary Actions: Cancel / Reactivate / Delete */}
-                            <div className="flex gap-2 pt-1">
+                            <div className="flex gap-1.5 sm:gap-2 pt-1">
                                 {event && formData.status !== 'Cancelled' && (
                                     <Button 
                                         onClick={handleCancelEvent} 

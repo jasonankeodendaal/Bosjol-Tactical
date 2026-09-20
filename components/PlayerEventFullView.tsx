@@ -79,6 +79,18 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
         return signups.find(s => s.eventId === event.id && s.playerId === player.id);
     }, [signups, event.id, player.id]);
 
+    // Count of gear reserved specifically by this player
+    const myReservedGearCount = useMemo(() => {
+        if (existingSignup?.requestedGearIds?.length) {
+            return existingSignup.requestedGearIds.length;
+        }
+        const attendee = (event.attendees || []).find(a => a.playerId === player.id);
+        if (attendee?.rentedGearIds?.length) {
+            return attendee.rentedGearIds.length;
+        }
+        return 0;
+    }, [existingSignup, event.attendees, player.id]);
+
     // Attending players count (distinct signups + attendees + team assignments)
     const attendingCount = useMemo(() => {
         const attendeePlayerIds = new Set<string>();
@@ -371,21 +383,21 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
 
                 {/* Right: Quick Meta Stats & Close */}
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                    {/* Equipment Rentals Summary Action Button */}
+                    {/* Equipment Rentals Action Button */}
                     <button
                         onClick={() => {
                             setSummaryModalInitialTab(isAdmin ? 'admin-manifest' : 'my-gear');
                             setShowRentalsSummaryModal(true);
                         }}
                         className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-white/[0.05] hover:bg-red-600 hover:text-white border border-white/10 text-zinc-300 transition-all text-xs font-bold flex items-center gap-1.5 shrink-0 group active:scale-95 shadow-sm"
-                        title="View Equipment Rentals Summary"
+                        title={isAdmin ? "View Equipment Rentals & Armory Manifest" : "View My Reserved Gear"}
                     >
                         <ClipboardList className="w-3.5 h-3.5 text-red-400 group-hover:text-white transition-colors" />
-                        <span className="hidden sm:inline">Equipment Rentals Summary</span>
-                        <span className="sm:hidden">Rentals</span>
-                        {totalEventRentalsCount > 0 && (
+                        <span className="hidden sm:inline">{isAdmin ? "Equipment Manifest" : "My Gear"}</span>
+                        <span className="sm:hidden">{isAdmin ? "Manifest" : "My Gear"}</span>
+                        {(isAdmin ? totalEventRentalsCount : myReservedGearCount) > 0 && (
                             <span className="px-1.5 py-0.2 rounded-full bg-red-600 group-hover:bg-black/40 text-white text-[10px] font-mono font-bold">
-                                {totalEventRentalsCount}
+                                {isAdmin ? totalEventRentalsCount : myReservedGearCount}
                             </span>
                         )}
                     </button>

@@ -62,10 +62,11 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
     selectedGearIds,
     operatorNote = ''
 }) => {
-    // Determine active tab: if user is admin and player is not set or requested, default to 'admin-manifest'
+    // Determine active tab: if user is admin, allow switching; non-admin player view strictly defaults to 'my-gear'
     const [activeTab, setActiveTab] = useState<'my-gear' | 'admin-manifest'>(
-        initialTab || (isAdmin && !player ? 'admin-manifest' : 'my-gear')
+        isAdmin ? (initialTab || (player ? 'my-gear' : 'admin-manifest')) : 'my-gear'
     );
+    const effectiveTab = isAdmin ? activeTab : 'my-gear';
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
     const [copiedNotification, setCopiedNotification] = useState<string | null>(null);
@@ -700,7 +701,7 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
                         <div className="min-w-0">
                             <div className="flex items-center gap-1.5 sm:gap-2">
                                 <h2 className="text-xs sm:text-base font-black uppercase tracking-wider text-white truncate">
-                                    Equipment Rentals Summary
+                                    {isAdmin ? 'Equipment Rentals & Armory Manifest' : 'My Reserved Gear'}
                                 </h2>
                                 <span className="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold uppercase bg-white/[0.06] text-zinc-300 border border-white/10 shrink-0">
                                     {event.theme || 'Tactical Skirmish'}
@@ -723,41 +724,53 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
                 </div>
 
                 <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-                    {/* Tab Switcher - full width on mobile for easy tapping */}
-                    <div className="flex bg-black/60 p-1 rounded-xl border border-white/10 text-xs w-full sm:w-auto">
-                        <button
-                            onClick={() => setActiveTab('my-gear')}
-                            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 text-center ${
-                                activeTab === 'my-gear'
-                                    ? 'bg-red-600 text-white shadow-md'
-                                    : 'text-zinc-400 hover:text-white'
-                            }`}
-                        >
-                            <Receipt className="w-3.5 h-3.5 shrink-0" />
-                            <span className="truncate">My Gear</span>
+                    {/* Tab Switcher - Only visible if isAdmin */}
+                    {isAdmin ? (
+                        <div className="flex bg-black/60 p-1 rounded-xl border border-white/10 text-xs w-full sm:w-auto">
+                            <button
+                                onClick={() => setActiveTab('my-gear')}
+                                className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 text-center ${
+                                    effectiveTab === 'my-gear'
+                                        ? 'bg-red-600 text-white shadow-md'
+                                        : 'text-zinc-400 hover:text-white'
+                                }`}
+                            >
+                                <Receipt className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">My Gear</span>
+                                {playerReservedItems.length > 0 && (
+                                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono shrink-0">
+                                        {playerReservedItems.length}
+                                    </span>
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('admin-manifest')}
+                                className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 text-center ${
+                                    effectiveTab === 'admin-manifest'
+                                        ? 'bg-red-600 text-white shadow-md'
+                                        : 'text-zinc-400 hover:text-white'
+                                }`}
+                            >
+                                <Users className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">Armory Manifest</span>
+                                {totalItemsRentedCount > 0 && (
+                                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono shrink-0">
+                                        {totalItemsRentedCount}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/60 border border-white/10 text-xs font-bold text-red-400">
+                            <Receipt className="w-3.5 h-3.5" />
+                            <span>My Reserved Gear</span>
                             {playerReservedItems.length > 0 && (
-                                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono shrink-0">
+                                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-red-600 text-white font-mono shrink-0">
                                     {playerReservedItems.length}
                                 </span>
                             )}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('admin-manifest')}
-                            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 text-center ${
-                                activeTab === 'admin-manifest'
-                                    ? 'bg-red-600 text-white shadow-md'
-                                    : 'text-zinc-400 hover:text-white'
-                            }`}
-                        >
-                            <Users className="w-3.5 h-3.5 shrink-0" />
-                            <span className="truncate">Manifest {isAdmin ? '(Admin)' : ''}</span>
-                            {totalItemsRentedCount > 0 && (
-                                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono shrink-0">
-                                    {totalItemsRentedCount}
-                                </span>
-                            )}
-                        </button>
-                    </div>
+                        </div>
+                    )}
 
                     {/* Desktop Close Button */}
                     <button
@@ -788,7 +801,7 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
             {/* Main Tab Content */}
             <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar">
                     {/* TAB 1: PLAYER RESERVED GEAR VERIFICATION */}
-                    {activeTab === 'my-gear' && (
+                    {effectiveTab === 'my-gear' && (
                         <div className="space-y-6">
                             {/* Operator Status Banner */}
                             <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1015,7 +1028,7 @@ export const EquipmentRentalsSummaryModal: React.FC<EquipmentRentalsSummaryModal
                     )}
 
                     {/* TAB 2: ADMIN & EVENT-WIDE EQUIPMENT RENTAL MANIFEST */}
-                    {activeTab === 'admin-manifest' && (
+                    {effectiveTab === 'admin-manifest' && isAdmin && (
                         <div className="space-y-6">
                             {/* Manifest KPI Overview Bar */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">

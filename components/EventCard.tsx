@@ -76,7 +76,7 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, className = '', o
                 onShowRentals(event);
               }}
               className="px-2 py-1 rounded-lg bg-black/85 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-white/20 backdrop-blur-md text-[10px] font-bold transition-all shadow-md flex items-center gap-1"
-              title="Equipment Rentals Summary & Manifest"
+              title="Equipment Rentals"
             >
               <ClipboardList className="w-3.5 h-3.5 text-red-400 shrink-0" />
               <span>Rentals</span>

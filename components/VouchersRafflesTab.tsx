@@ -8,6 +8,7 @@ import { useData } from '../data/DataContext';
 import { RaffleEventDashboard } from './RaffleEventDashboard';
 import { RAFFLES_SQL_SCHEMA_MIGRATION } from '../utils/supabaseSchema';
 import { supabase } from '../supabaseClient';
+import { generateDynamicTicketCodes, formatDynamicTicketCode } from '../utils/raffleUtils';
 
 interface VouchersRafflesTabProps {
     vouchers: Voucher[];
@@ -573,8 +574,11 @@ const IssueTicketsModal: React.FC<{
     }, [raffle.tickets, selectedPlayer]);
 
     const existingCount = (raffle.tickets || []).length;
-    const previewStartCode = `BT-RAF-${(existingCount + 1).toString().padStart(4, '0')}`;
-    const previewEndCode = `BT-RAF-${(existingCount + quantity).toString().padStart(4, '0')}`;
+    const previewCodes = useMemo(() => {
+        return generateDynamicTicketCodes(existingCount, quantity, selectedPlayer?.callsign || selectedPlayer?.name || 'TIX');
+    }, [existingCount, quantity, selectedPlayer]);
+    const previewStartCode = previewCodes[0] || `#${(existingCount + 1).toString().padStart(3, '0')}`;
+    const previewEndCode = previewCodes[previewCodes.length - 1] || previewStartCode;
 
     const handleIssueConfirm = () => {
         if (!selectedPlayer) {
@@ -586,14 +590,13 @@ const IssueTicketsModal: React.FC<{
             return;
         }
 
+        const generatedCodes = generateDynamicTicketCodes(existingCount, quantity, selectedPlayer.callsign || selectedPlayer.name || 'TIX');
         const newTickets: RaffleTicketDoc[] = [];
         for (let i = 0; i < quantity; i++) {
-            const ticketNumber = existingCount + i + 1;
-            const paddedNum = ticketNumber.toString().padStart(4, '0');
             newTickets.push({
                 id: `tkt_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 7)}`,
                 raffleId: String(raffle.id),
-                code: `BT-RAF-${paddedNum}`,
+                code: generatedCodes[i] || `#${(existingCount + i + 1).toString().padStart(3, '0')}`,
                 playerId: String(selectedPlayer.id),
                 playerName: `${selectedPlayer.name} ${selectedPlayer.surname || ''}`.trim(),
                 playerCallsign: selectedPlayer.callsign || '',
@@ -1611,12 +1614,12 @@ const RaffleTicketRosterDrawer: React.FC<{
                                     {/* Bottom Row: Ticket Serial Code Pills */}
                                     <div className="mt-3 pt-2 border-t border-zinc-800/80">
                                         <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto scrollbar-none">
-                                            {op.tickets.map(t => (
+                                            {op.tickets.map((t, tIdx) => (
                                                 <span 
-                                                    key={t.id} 
+                                                    key={t.id || tIdx} 
                                                     className="font-mono text-[10px] font-bold text-amber-300 bg-amber-950/40 border border-amber-900/50 px-1.5 py-0.5 rounded shadow-sm hover:border-amber-400 transition-colors shrink-0"
                                                 >
-                                                    {t.code}
+                                                    {formatDynamicTicketCode(t.code, tIdx)}
                                                 </span>
                                             ))}
                                         </div>
@@ -1641,7 +1644,9 @@ const RaffleTicketRosterDrawer: React.FC<{
                             return (
                                 <div key={t.id || i} className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/80 transition-colors gap-2">
                                     <div className="flex items-center gap-2 shrink-0">
-                                        <span className="font-mono text-amber-400 font-bold text-xs bg-amber-950/60 px-2 py-0.5 rounded border border-amber-900/50">{t.code}</span>
+                                        <span className="font-mono text-amber-400 font-bold text-xs bg-amber-950/60 px-2 py-0.5 rounded border border-amber-900/50">
+                                            {formatDynamicTicketCode(t.code, i)}
+                                        </span>
                                         {pCode && <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">[{pCode}]</span>}
                                     </div>
                                     <div className="text-right min-w-0 truncate">

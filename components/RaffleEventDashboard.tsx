@@ -3,6 +3,7 @@ import type { Raffle, Player, Prize, RaffleTicketDoc, RaffleWinnerDoc } from '..
 import { useData } from '../data/DataContext';
 import { Button } from './Button';
 import { notifyLiveRaffleStart, notifyRaffleWin } from '../utils/notificationService';
+import { formatDynamicTicketCode } from '../utils/raffleUtils';
 import { 
     Trophy as TrophyIcon, 
     Ticket as TicketIcon, 
@@ -213,13 +214,25 @@ interface FloatingReaction {
 }
 
 // ==========================================
-// TACTICAL ANIMATED SPINNING WHEEL
+// TACTICAL PROFESSIONAL ANIMATED SPINNING WHEEL
 // ==========================================
 interface WheelSegment {
     label: string;
     code: string;
     ticketId?: string;
+    color?: string;
 }
+
+const TACTICAL_WEDGE_PALETTES = [
+    { bg1: '#991b1b', bg2: '#450a0a', stroke: '#ef4444', text: '#ffffff', tag: '#fca5a5' }, // Stealth Crimson
+    { bg1: '#b45309', bg2: '#451a03', stroke: '#f59e0b', text: '#ffffff', tag: '#fde68a' }, // Military Gold
+    { bg1: '#1e3a8a', bg2: '#172554', stroke: '#3b82f6', text: '#ffffff', tag: '#bfdbfe' }, // Cobalt Blue
+    { bg1: '#065f46', bg2: '#022c22', stroke: '#10b981', text: '#ffffff', tag: '#a7f3d0' }, // Forest Camo
+    { bg1: '#581c87', bg2: '#2e1065', stroke: '#a855f7', text: '#ffffff', tag: '#e9d5ff' }, // Royal Obsidian
+    { bg1: '#0e7490', bg2: '#083344', stroke: '#06b6d4', text: '#ffffff', tag: '#cffafe' }, // Cyber Slate
+    { bg1: '#831843', bg2: '#4c0519', stroke: '#f43f5e', text: '#ffffff', tag: '#fecdd3' }, // Ruby SpecOps
+    { bg1: '#334155', bg2: '#0f172a', stroke: '#94a3b8', text: '#ffffff', tag: '#e2e8f0' }, // Titanium Grey
+];
 
 const TacticalSpinningWheel: React.FC<{
     segments: WheelSegment[];
@@ -229,116 +242,297 @@ const TacticalSpinningWheel: React.FC<{
 }> = ({ segments, rotationAngle, isSpinning, winningIndex }) => {
     const total = Math.max(1, segments.length);
     const sliceAngle = 360 / total;
-    const colors = [
-        '#d97706', '#dc2626', '#059669', '#2563eb', 
-        '#7c3aed', '#0891b2', '#b45309', '#991b1b',
-        '#047857', '#1d4ed8', '#6d28d9', '#0e7490'
-    ];
+
+    // LED bulb count on the perimeter
+    const ledCount = 24;
 
     return (
-        <div className="relative w-full max-w-[240px] sm:max-w-[300px] aspect-square mx-auto my-1.5 flex items-center justify-center shrink-0">
-            {/* Outer LED Ring with Flashing Bulbs */}
-            <div className="absolute -inset-2.5 sm:-inset-3.5 rounded-full border-4 border-amber-500/50 bg-gradient-to-b from-amber-950/60 via-zinc-950 to-black p-2 shadow-[0_0_40px_rgba(245,158,11,0.35)] flex items-center justify-center">
-                {Array.from({ length: 18 }).map((_, i) => {
-                    const angle = (i * 360) / 18;
+        <div className="relative w-full max-w-[270px] xs:max-w-[300px] sm:max-w-[350px] md:max-w-[380px] aspect-square mx-auto my-2 flex items-center justify-center shrink-0">
+            {/* Ambient Radial Backlight Glow */}
+            <div className={`absolute -inset-4 rounded-full transition-all duration-700 pointer-events-none blur-2xl ${
+                isSpinning 
+                    ? 'bg-gradient-to-r from-amber-500/25 via-red-600/20 to-amber-500/25 animate-pulse' 
+                    : winningIndex !== null 
+                        ? 'bg-amber-400/35 scale-105' 
+                        : 'bg-amber-500/10'
+            }`} />
+
+            {/* Milled Titanium Outer Chassis Ring with LED Chase & Rivets */}
+            <div className="absolute -inset-3 sm:-inset-4 rounded-full p-2 bg-gradient-to-b from-zinc-800 via-zinc-950 to-black border-2 border-amber-500/40 shadow-[0_15px_40px_rgba(0,0,0,0.9),inset_0_2px_4px_rgba(255,255,255,0.15)] flex items-center justify-center">
+                {/* 24 Dynamic Perimeter LED Chasing Diodes */}
+                {Array.from({ length: ledCount }).map((_, i) => {
+                    const angle = (i * 360) / ledCount;
                     const rad = (angle * Math.PI) / 180;
-                    const rx = 50 + 47 * Math.cos(rad);
-                    const ry = 50 + 47 * Math.sin(rad);
-                    const isActive = isSpinning
-                        ? (i % 2 === Math.floor(rotationAngle / 18) % 2)
-                        : true;
+                    const rx = 50 + 47.5 * Math.cos(rad);
+                    const ry = 50 + 47.5 * Math.sin(rad);
+
+                    // Dynamic chasing active calculation
+                    const chaseStep = Math.floor(rotationAngle / 15);
+                    const isChaseLit = isSpinning 
+                        ? (i + chaseStep) % 3 === 0 || (i + chaseStep) % 6 === 0
+                        : winningIndex !== null
+                            ? true
+                            : i % 2 === 0;
+
+                    const isAmber = i % 2 === 0;
+
                     return (
                         <div
                             key={i}
-                            className={`absolute w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full border border-black/80 transition-all ${
-                                isActive
-                                    ? 'bg-amber-400 shadow-[0_0_10px_#f59e0b]'
-                                    : 'bg-red-600 shadow-[0_0_10px_#dc2626]'
+                            className={`absolute w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full border border-black/80 transition-all duration-150 ${
+                                isChaseLit
+                                    ? isAmber
+                                        ? 'bg-amber-300 shadow-[0_0_8px_#fde047]'
+                                        : 'bg-red-500 shadow-[0_0_8px_#ef4444]'
+                                    : 'bg-zinc-800/80 shadow-none scale-75 opacity-60'
                             }`}
+                            style={{ left: `${rx}%`, top: `${ry}%`, transform: 'translate(-50%, -50%)' }}
+                        />
+                    );
+                })}
+
+                {/* Perimeter Rivets (Machined Brass Studs between LEDs) */}
+                {Array.from({ length: 12 }).map((_, i) => {
+                    const angle = (i * 360) / 12 + 15;
+                    const rad = (angle * Math.PI) / 180;
+                    const rx = 50 + 44 * Math.cos(rad);
+                    const ry = 50 + 44 * Math.sin(rad);
+                    return (
+                        <div
+                            key={`rivet-${i}`}
+                            className="absolute w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-amber-700 border border-black/70 shadow-sm"
                             style={{ left: `${rx}%`, top: `${ry}%`, transform: 'translate(-50%, -50%)' }}
                         />
                     );
                 })}
             </div>
 
-            {/* Top Tactical Targeting Pointer */}
-            <div className="absolute -top-4 sm:-top-5 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center">
-                <div className={`w-0 h-0 border-l-[10px] sm:border-l-[14px] border-l-transparent border-r-[10px] sm:border-r-[14px] border-r-transparent border-t-[18px] sm:border-t-[24px] border-t-red-600 drop-shadow-[0_4px_12px_rgba(239,68,68,0.9)] ${isSpinning ? 'animate-bounce' : ''}`} />
-                <div className="w-3 h-3 rounded-full bg-amber-400 border-2 border-red-950 shadow-[0_0_10px_#f59e0b] -mt-2" />
+            {/* Top Precision Mechanical Flipper / Needle with Dynamic Spring Flinch */}
+            <div className="absolute -top-4 sm:-top-5 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center pointer-events-none">
+                {/* Targeting Vertical Alignment Beam */}
+                <div className={`w-0.5 h-6 sm:h-8 bg-gradient-to-b from-amber-400/80 to-transparent transition-opacity ${
+                    isSpinning ? 'opacity-90' : 'opacity-40'
+                }`} />
+
+                {/* Mechanical Needle Body with Spring Deflection when Spinning */}
+                <div 
+                    className={`relative flex flex-col items-center transition-transform ${
+                        isSpinning ? 'animate-bounce drop-shadow-[0_4px_16px_rgba(239,68,68,1)]' : 'drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]'
+                    }`}
+                    style={{
+                        transform: isSpinning ? `rotate(${((rotationAngle % 30) - 15) * 0.4}deg)` : 'rotate(0deg)'
+                    }}
+                >
+                    {/* Titanium Arrow Point */}
+                    <div className="w-0 h-0 border-l-[10px] sm:border-l-[14px] border-l-transparent border-r-[10px] sm:border-r-[14px] border-r-transparent border-t-[20px] sm:border-t-[26px] border-t-red-600" />
+                    
+                    {/* Glowing Ruby Laser Center Jewel */}
+                    <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-red-600 border border-zinc-950 shadow-[0_0_12px_#f59e0b] -mt-3.5 z-10 flex items-center justify-center">
+                        <div className="w-1 h-1 rounded-full bg-white animate-ping" />
+                    </div>
+                </div>
             </div>
 
-            {/* Rotating Wheel Graphics */}
+            {/* Main Rotating Vector Wheel */}
             <div
-                className="w-full h-full rounded-full overflow-hidden shadow-[inset_0_0_25px_rgba(0,0,0,0.9)]"
+                className="w-full h-full rounded-full overflow-hidden shadow-[inset_0_0_30px_rgba(0,0,0,0.95)]"
                 style={{
                     transform: `rotate(${rotationAngle}deg)`,
-                    transition: isSpinning ? 'transform 0.08s linear' : 'transform 3.8s cubic-bezier(0.12, 0.8, 0.28, 1.0)',
+                    transition: isSpinning 
+                        ? 'transform 0.08s linear' 
+                        : 'transform 3.8s cubic-bezier(0.12, 0.85, 0.22, 1.0)',
                 }}
             >
-                <svg viewBox="0 0 200 200" className="w-full h-full transform -rotate-90">
+                <svg viewBox="0 0 240 240" className="w-full h-full transform -rotate-90">
+                    <defs>
+                        {/* 3D Radial Depth Gradients for Tactical Wedges */}
+                        {TACTICAL_WEDGE_PALETTES.map((p, idx) => (
+                            <linearGradient key={`wedge-grad-${idx}`} id={`wedge-grad-${idx}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor={p.bg1} />
+                                <stop offset="70%" stopColor={p.bg2} />
+                                <stop offset="100%" stopColor="#09090b" />
+                            </linearGradient>
+                        ))}
+                        {/* Winner Radiant Golden Gradient */}
+                        <radialGradient id="winnerGoldGlow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stopColor="#fef08a" />
+                            <stop offset="60%" stopColor="#f59e0b" />
+                            <stop offset="100%" stopColor="#78350f" />
+                        </radialGradient>
+                        {/* Brushed Metallic Center Cap Gradients */}
+                        <linearGradient id="metalRim" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#71717a" />
+                            <stop offset="50%" stopColor="#27272a" />
+                            <stop offset="100%" stopColor="#09090b" />
+                        </linearGradient>
+                        <linearGradient id="goldRim" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#fde047" />
+                            <stop offset="50%" stopColor="#d97706" />
+                            <stop offset="100%" stopColor="#78350f" />
+                        </linearGradient>
+                    </defs>
+
+                    {/* Outer Wheel Rim Track */}
+                    <circle cx="120" cy="120" r="118" fill="#09090b" stroke="#27272a" strokeWidth="2" />
+
+                    {/* Wheel Wedges */}
                     {segments.map((seg, idx) => {
                         const startAngle = idx * sliceAngle;
                         const endAngle = (idx + 1) * sliceAngle;
                         const startRad = (startAngle * Math.PI) / 180;
                         const endRad = (endAngle * Math.PI) / 180;
 
-                        const x1 = 100 + 100 * Math.cos(startRad);
-                        const y1 = 100 + 100 * Math.sin(startRad);
-                        const x2 = 100 + 100 * Math.cos(endRad);
-                        const y2 = 100 + 100 * Math.sin(endRad);
+                        const radius = 116;
+                        const x1 = 120 + radius * Math.cos(startRad);
+                        const y1 = 120 + radius * Math.sin(startRad);
+                        const x2 = 120 + radius * Math.cos(endRad);
+                        const y2 = 120 + radius * Math.sin(endRad);
 
                         const largeArc = sliceAngle > 180 ? 1 : 0;
-                        const pathData = `M 100 100 L ${x1} ${y1} A 100 100 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                        const pathData = `M 120 120 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
 
                         const midAngle = startAngle + sliceAngle / 2;
                         const midRad = (midAngle * Math.PI) / 180;
-                        const textX = 100 + 68 * Math.cos(midRad);
-                        const textY = 100 + 68 * Math.sin(midRad);
+
+                        // Outer position for Short Dynamic Ticket Code (e.g. #042)
+                        const codeX = 120 + 82 * Math.cos(midRad);
+                        const codeY = 120 + 82 * Math.sin(midRad);
+
+                        // Inner position for Callsign / Name
+                        const nameX = 120 + 54 * Math.cos(midRad);
+                        const nameY = 120 + 54 * Math.sin(midRad);
 
                         const isWinnerWedge = winningIndex === idx;
+                        const palette = TACTICAL_WEDGE_PALETTES[idx % TACTICAL_WEDGE_PALETTES.length];
+
+                        // Clean dynamic short code
+                        const dynamicCode = formatDynamicTicketCode(seg.code, idx);
 
                         return (
                             <g key={idx}>
+                                {/* Wedge Slice */}
                                 <path
                                     d={pathData}
-                                    fill={isWinnerWedge ? '#fbbf24' : colors[idx % colors.length]}
-                                    stroke="#09090b"
-                                    strokeWidth="1.5"
+                                    fill={isWinnerWedge ? 'url(#winnerGoldGlow)' : `url(#wedge-grad-${idx % TACTICAL_WEDGE_PALETTES.length})`}
+                                    stroke={isWinnerWedge ? '#fde047' : '#18181b'}
+                                    strokeWidth={isWinnerWedge ? '2.5' : '1.2'}
                                 />
+
+                                {/* Outer Edge Silver Tick Pin */}
+                                <circle
+                                    cx={x1}
+                                    cy={y1}
+                                    r="2"
+                                    fill="#e2e8f0"
+                                    stroke="#0f172a"
+                                    strokeWidth="0.8"
+                                />
+
+                                {/* Short Dynamic Ticket Number (Outer Track - Bold Monospace) */}
                                 <text
-                                    x={textX}
-                                    y={textY}
-                                    fill="#ffffff"
-                                    fontSize="6.5"
+                                    x={codeX}
+                                    y={codeY}
+                                    fill={isWinnerWedge ? '#000000' : '#ffffff'}
+                                    fontSize={total > 16 ? '6.5' : '8.5'}
                                     fontWeight="900"
                                     fontFamily="monospace"
                                     textAnchor="middle"
                                     dominantBaseline="middle"
-                                    transform={`rotate(${midAngle + 90}, ${textX}, ${textY})`}
-                                    className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                    transform={`rotate(${midAngle + 90}, ${codeX}, ${codeY})`}
+                                    className={isWinnerWedge ? 'font-black' : 'drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)]'}
                                 >
-                                    {(seg.code || `TKT-${idx + 1}`).substring(0, 9)}
+                                    {dynamicCode}
                                 </text>
+
+                                {/* Operator Callsign / Name (Inner Track - Subtle & Clean) */}
+                                {total <= 16 && (
+                                    <text
+                                        x={nameX}
+                                        y={nameY}
+                                        fill={isWinnerWedge ? '#18181b' : palette.tag}
+                                        fontSize="5"
+                                        fontWeight="700"
+                                        fontFamily="sans-serif"
+                                        textAnchor="middle"
+                                        dominantBaseline="middle"
+                                        transform={`rotate(${midAngle + 90}, ${nameX}, ${nameY})`}
+                                        className="opacity-90 tracking-tighter"
+                                    >
+                                        {(seg.label || 'Operator').substring(0, 8).toUpperCase()}
+                                    </text>
+                                )}
                             </g>
                         );
                     })}
 
-                    {/* Central Tactical Hub */}
-                    <circle cx="100" cy="100" r="28" fill="#18181b" stroke="#f59e0b" strokeWidth="2.5" />
-                    <circle cx="100" cy="100" r="18" fill="#09090b" stroke="#ef4444" strokeWidth="1.5" />
-                    <text
-                        x="100"
-                        y="100"
-                        fill="#fbbf24"
-                        fontSize="6.5"
-                        fontWeight="900"
-                        fontFamily="monospace"
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        transform="rotate(90, 100, 100)"
-                    >
-                        BOSJOL
-                    </text>
+                    {/* Central Brushed Titanium Cap & Insignia Hub */}
+                    <circle cx="120" cy="120" r="34" fill="url(#metalRim)" stroke="url(#goldRim)" strokeWidth="3" />
+                    <circle cx="120" cy="120" r="24" fill="#09090b" stroke="#ef4444" strokeWidth="1.5" />
+                    <circle cx="120" cy="120" r="18" fill="#18181b" stroke="#f59e0b" strokeWidth="1" />
+
+                    {/* Hub Tactical Crosshair Reticle Lines */}
+                    <line x1="120" y1="98" x2="120" y2="142" stroke="#f59e0b" strokeWidth="0.8" strokeOpacity="0.4" />
+                    <line x1="98" y1="120" x2="142" y2="120" stroke="#f59e0b" strokeWidth="0.8" strokeOpacity="0.4" />
+
+                    {/* Dynamic Status / Emblem in Center */}
+                    {winningIndex !== null ? (
+                        <g transform="rotate(90, 120, 120)">
+                            <text
+                                x="120"
+                                y="117"
+                                fill="#fde047"
+                                fontSize="7"
+                                fontWeight="900"
+                                fontFamily="monospace"
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                            >
+                                🏆
+                            </text>
+                            <text
+                                x="120"
+                                y="126"
+                                fill="#f59e0b"
+                                fontSize="4.5"
+                                fontWeight="900"
+                                fontFamily="monospace"
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                            >
+                                WINNER
+                            </text>
+                        </g>
+                    ) : isSpinning ? (
+                        <g transform="rotate(90, 120, 120)">
+                            <circle cx="120" cy="120" r="8" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3 3" className="animate-spin" />
+                            <text
+                                x="120"
+                                y="120"
+                                fill="#f59e0b"
+                                fontSize="4.5"
+                                fontWeight="900"
+                                fontFamily="monospace"
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                            >
+                                SPIN
+                            </text>
+                        </g>
+                    ) : (
+                        <text
+                            x="120"
+                            y="120"
+                            fill="#fbbf24"
+                            fontSize="5.5"
+                            fontWeight="900"
+                            fontFamily="monospace"
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            transform="rotate(90, 120, 120)"
+                        >
+                            BOSJOL
+                        </text>
+                    )}
                 </svg>
             </div>
         </div>
@@ -455,18 +649,18 @@ const RaffleEventDashboardInner: React.FC<RaffleEventDashboardProps> = ({
         return tickets.filter(t => t && !winningTicketIds.has(t.id));
     }, [tickets, localWinners]);
 
-    // Derived wheel segments for 3D physics wheel
+    // Derived wheel segments for 3D physics wheel (up to 16 active segments)
     const wheelSegments = useMemo(() => {
         if (availableTickets.length === 0) {
-            return [{ label: 'NO TICKETS', code: 'EMPTY-POOL' }];
+            return [{ label: 'NO TICKETS', code: '#00' }];
         }
-        const maxSegs = Math.min(12, availableTickets.length);
+        const maxSegs = Math.min(16, availableTickets.length);
         return availableTickets.slice(0, maxSegs).map((t, i) => {
             const p = safePlayers.find(ply => ply && (ply.id === t.playerId || (ply.playerCode && ply.playerCode === t.playerId)));
             const name = p ? (p.callsign || p.name || 'Operator') : 'Operator';
             return {
                 label: name,
-                code: String(t.code || `TKT-${i + 1}`),
+                code: formatDynamicTicketCode(t.code, i),
                 ticketId: t.id
             };
         });
@@ -1157,7 +1351,7 @@ const RaffleEventDashboardInner: React.FC<RaffleEventDashboardProps> = ({
                                         <span>DECRYPTING TICKET SERIALS...</span>
                                     </div>
                                     <div className="text-2xl sm:text-4xl font-mono font-black text-amber-300 tracking-wider my-1 sm:my-1.5 animate-pulse drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] z-10">
-                                        {availableTickets[activeCandidateIndex]?.code || 'TKT-??????'}
+                                        {availableTickets[activeCandidateIndex] ? formatDynamicTicketCode(availableTickets[activeCandidateIndex].code, activeCandidateIndex) : '#001'}
                                     </div>
                                     <div className="text-xs sm:text-sm font-semibold text-zinc-300 mt-0.5 z-10 truncate max-w-full px-2">
                                         {(() => {
@@ -1213,10 +1407,10 @@ const RaffleEventDashboardInner: React.FC<RaffleEventDashboardProps> = ({
                                     </div>
 
                                     {/* Winning Ticket Code Pill (Realistic Holographic Ticket Token) */}
-                                    <div className="bg-black/80 px-3 py-1 sm:py-1.5 rounded-xl border border-amber-500/40 shadow-inner flex items-center gap-2">
+                                    <div className="bg-black/80 px-3.5 py-1.5 rounded-xl border border-amber-500/40 shadow-inner flex items-center gap-2">
                                         <span className="text-[10px] sm:text-xs font-mono text-zinc-400">Winning Ticket:</span>
-                                        <span className="text-xs sm:text-base font-mono font-black text-red-400 tracking-wider">
-                                            {justWon.ticket?.code || 'TKT-XXXX'}
+                                        <span className="text-sm sm:text-lg font-mono font-black text-amber-300 tracking-wider">
+                                            {formatDynamicTicketCode(justWon.ticket?.code || 'TKT-1')}
                                         </span>
                                     </div>
 
@@ -1245,8 +1439,8 @@ const RaffleEventDashboardInner: React.FC<RaffleEventDashboardProps> = ({
                                                     "{winPlayer.callsign}"
                                                 </span>
                                             )}
-                                            <div className="mt-1.5 font-mono text-[10px] sm:text-xs text-red-400 bg-red-950/80 px-2.5 py-0.5 rounded-lg border border-red-900/50">
-                                                {winTicket?.code || 'TKT-LOCKED'}
+                                            <div className="mt-1.5 font-mono text-[10px] sm:text-xs text-amber-400 bg-amber-950/80 px-2.5 py-0.5 rounded-lg border border-amber-900/50 font-bold">
+                                                {formatDynamicTicketCode(winTicket?.code || 'TKT-1')}
                                             </div>
                                         </div>
                                     );
@@ -1412,8 +1606,8 @@ const RaffleEventDashboardInner: React.FC<RaffleEventDashboardProps> = ({
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <span className="font-mono text-[10px] sm:text-xs font-bold text-red-400 px-2 py-0.5 rounded-lg bg-red-950/80 border border-red-900/50 shrink-0 ml-2">
-                                                    {ticket?.code || 'TICKET'}
+                                                <span className="font-mono text-[10px] sm:text-xs font-bold text-amber-300 px-2 py-0.5 rounded-lg bg-amber-950/80 border border-amber-900/50 shrink-0 ml-2">
+                                                    {formatDynamicTicketCode(ticket?.code || 'TKT-1')}
                                                 </span>
                                             </div>
                                         );
@@ -1488,8 +1682,8 @@ const RaffleEventDashboardInner: React.FC<RaffleEventDashboardProps> = ({
                                                     </p>
                                                 </div>
                                                 {winnerTicket?.code && (
-                                                    <span className="font-mono text-xs font-bold text-red-400 bg-red-950/80 px-2 py-0.5 rounded border border-red-900/60">
-                                                        {winnerTicket.code}
+                                                    <span className="font-mono text-xs font-bold text-amber-300 bg-amber-950/80 px-2.5 py-1 rounded-lg border border-amber-500/40">
+                                                        {formatDynamicTicketCode(winnerTicket.code)}
                                                     </span>
                                                 )}
                                             </div>
@@ -1630,7 +1824,7 @@ const RaffleEventDashboardInner: React.FC<RaffleEventDashboardProps> = ({
                                                 >
                                                     <div className="flex items-center justify-between mb-1.5">
                                                         <span className="font-mono text-xs font-black text-amber-400">
-                                                            {ticket.code}
+                                                            {formatDynamicTicketCode(ticket.code)}
                                                         </span>
                                                         {isWinningTicket ? (
                                                             <span className="text-[10px] bg-amber-500 text-black font-black px-1.5 py-0.5 rounded-full">
@@ -1723,7 +1917,7 @@ const RaffleEventDashboardInner: React.FC<RaffleEventDashboardProps> = ({
                                                 >
                                                     <div className="flex items-center justify-between mb-1 gap-1">
                                                         <span className="font-mono text-xs font-black text-amber-400 truncate">
-                                                            {ticket.code || 'TKT-????'}
+                                                            {formatDynamicTicketCode(ticket.code || 'TKT-0')}
                                                         </span>
                                                         {isWinningTicket && <span className="text-xs shrink-0">🏆</span>}
                                                     </div>

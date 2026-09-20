@@ -21,13 +21,22 @@ if ('serviceWorker' in navigator) {
       .then(registration => {
         console.log('[PWA] ServiceWorker registered with scope:', registration.scope);
 
-        // Check for updates periodically
+        // Check for live updates whenever app is launched/focused
+        registration.update();
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            registration.update();
+          }
+        });
+
+        // Auto-activate new ServiceWorker when an update is found
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('[PWA] New version available! Refresh to update.');
+                console.log('[PWA] New live version detected! Activating skipWaiting...');
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
               }
             });
           }
@@ -36,5 +45,15 @@ if ('serviceWorker' in navigator) {
       .catch(err => {
         console.warn('[PWA] ServiceWorker registration failed:', err);
       });
+
+    // Automatically reload app when new ServiceWorker takes control for instant live updates
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        console.log('[PWA] Controller changed, reloading page for instant live update...');
+        window.location.reload();
+      }
+    });
   });
 }

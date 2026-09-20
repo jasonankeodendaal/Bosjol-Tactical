@@ -2014,13 +2014,13 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                         />
                     </div>
 
-                    {/* Vouchers Grid - Side by Side Squares with 3D Depth */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 perspective-[1000px]">
+                    {/* Vouchers Grid - Tiny Side by Side Squares with 3D Depth */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-2.5 perspective-[1000px]">
                         {filteredVouchers.length === 0 ? (
-                            <div className="col-span-full py-12 text-center text-zinc-500 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800">
-                                <TicketIcon className="w-12 h-12 mx-auto mb-2 text-zinc-600"/>
-                                <p className="font-semibold text-sm">No vouchers match your filter.</p>
-                                <p className="text-xs text-zinc-600 mt-1">Click "Create New Voucher" above to generate codes for players.</p>
+                            <div className="col-span-full py-8 text-center text-zinc-500 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800">
+                                <TicketIcon className="w-8 h-8 mx-auto mb-1.5 text-zinc-600"/>
+                                <p className="font-semibold text-xs">No vouchers match your filter.</p>
+                                <p className="text-[10px] text-zinc-600 mt-0.5">Click "Create New Voucher" to generate codes.</p>
                             </div>
                         ) : (
                             filteredVouchers.map(v => {
@@ -2032,19 +2032,22 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                 return (
                                     <div 
                                         key={v.id} 
-                                        className="relative group overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900/95 via-zinc-900 to-zinc-950 p-4 border border-zinc-800 hover:border-red-500/50 hover:shadow-[0_20px_50px_rgba(239,68,68,0.2)] hover:-translate-y-1 hover:rotate-1 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between aspect-square"
+                                        className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-zinc-900 via-zinc-900/95 to-zinc-950 p-2 sm:p-2.5 border border-zinc-800 shadow-[0_6px_16px_rgba(0,0,0,0.7)] hover:border-red-500/60 hover:shadow-[0_12px_24px_rgba(239,68,68,0.22)] hover:-translate-y-0.5 hover:rotate-0.5 transition-all duration-200 flex flex-col justify-between aspect-square w-full select-none"
                                     >
-                                        <div>
-                                            <div className="flex items-start justify-between gap-2 mb-2">
-                                                <div className="truncate">
-                                                    <span className="font-mono text-sm font-black text-red-400 bg-red-950/80 px-2 py-0.5 rounded border border-red-900/60 inline-block truncate max-w-[130px]">
+                                        {/* Subtle 3D Top Metallic Highlight */}
+                                        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-red-500/40 to-transparent pointer-events-none" />
+
+                                        <div className="min-w-0">
+                                            <div className="flex items-center justify-between gap-1 mb-1 min-w-0">
+                                                <div className="flex items-center gap-1 min-w-0 truncate">
+                                                    <span className="font-mono text-[9px] sm:text-[10px] font-black text-red-400 bg-red-950/80 px-1.5 py-0.5 rounded border border-red-900/60 truncate max-w-[68px] sm:max-w-[82px] inline-block">
                                                         {v.code}
                                                     </span>
-                                                    <span className="ml-1.5 font-black text-amber-400 text-xs">
-                                                        {v.type === 'percentage' ? `${v.discount}% OFF` : `R${v.discount} OFF`}
+                                                    <span className="font-black text-amber-400 text-[9px] sm:text-[10px] whitespace-nowrap shrink-0">
+                                                        {v.type === 'percentage' ? `${v.discount}%` : `R${v.discount}`}
                                                     </span>
                                                 </div>
-                                                <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase flex-shrink-0 ${
+                                                <span className={`text-[7.5px] sm:text-[8px] px-1 py-0.2 rounded font-bold uppercase shrink-0 whitespace-nowrap ${
                                                     v.status === 'Active' 
                                                         ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800' 
                                                         : v.status === 'Depleted' 
@@ -2055,23 +2058,23 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                                 </span>
                                             </div>
 
-                                            <p className="text-[11px] text-zinc-300 mb-2 line-clamp-2">
-                                                {v.description || 'No description provided.'}
+                                            <p className="text-[8.5px] sm:text-[9px] text-zinc-300 line-clamp-1 leading-tight my-0.5">
+                                                {v.description || 'Voucher code'}
                                             </p>
 
-                                            <div className="grid grid-cols-2 gap-1 text-[10px] bg-zinc-950/80 p-2 rounded-xl border border-zinc-800/80 mb-2">
-                                                <div>
-                                                    <span className="text-zinc-500 block">Claims</span>
-                                                    <span className="text-white font-bold">{redemptions.length} / {v.usageLimit || '∞'}</span>
+                                            <div className="grid grid-cols-2 gap-0.5 text-[7.5px] sm:text-[8px] bg-zinc-950/90 p-1 rounded-md border border-zinc-800/80 my-0.5">
+                                                <div className="truncate">
+                                                    <span className="text-zinc-500 block text-[7px]">Claims</span>
+                                                    <span className="text-white font-bold truncate block">{redemptions.length}/{v.usageLimit || '∞'}</span>
                                                 </div>
-                                                <div>
-                                                    <span className="text-zinc-500 block">Per Player</span>
-                                                    <span className="text-white font-bold">{v.perUserLimit || 1} use(s)</span>
+                                                <div className="truncate">
+                                                    <span className="text-zinc-500 block text-[7px]">Per User</span>
+                                                    <span className="text-white font-bold truncate block">{v.perUserLimit || 1} use</span>
                                                 </div>
                                                 <div className="col-span-2 truncate pt-0.5 border-t border-zinc-800/60">
                                                     <span className="text-zinc-500">For: </span>
                                                     <span className="text-zinc-300 font-semibold truncate">
-                                                        {assignedPlayer ? `${assignedPlayer.name}` : 'All Operators'}
+                                                        {assignedPlayer ? `${assignedPlayer.name}` : 'All'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -2079,22 +2082,22 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
 
                                         {/* Redemptions Drawer */}
                                         {isViewingRedemptions && (
-                                            <div className="my-1 p-2 bg-black/90 rounded-xl border border-zinc-800 text-[10px] space-y-1 max-h-32 overflow-y-auto">
-                                                <div className="flex justify-between items-center font-bold text-zinc-400 uppercase text-[9px]">
+                                            <div className="my-0.5 p-1.5 bg-black/95 rounded-lg border border-zinc-800 text-[8px] space-y-0.5 max-h-20 overflow-y-auto z-10 shadow-lg">
+                                                <div className="flex justify-between items-center font-bold text-zinc-400 uppercase text-[7.5px]">
                                                     <span>Claims ({redemptions.length})</span>
-                                                    <button onClick={() => setViewingRedemptionsVoucherId(null)} className="text-zinc-500 hover:text-white">Close</button>
+                                                    <button onClick={() => setViewingRedemptionsVoucherId(null)} className="text-zinc-400 hover:text-white">✕</button>
                                                 </div>
                                                 {redemptions.length === 0 ? (
-                                                    <p className="text-zinc-500 italic py-0.5">No claims yet.</p>
+                                                    <p className="text-zinc-500 italic text-[7.5px]">No claims yet.</p>
                                                 ) : (
                                                     redemptions.map((r, i) => {
                                                         const p = players.find(player => player.id === r.playerId);
                                                         return (
-                                                            <div key={r.id || i} className="flex items-center justify-between py-1 border-b border-zinc-800/60 last:border-0">
-                                                                <span className="font-bold text-white truncate">{p?.name || 'Unknown'}</span>
+                                                            <div key={r.id || i} className="flex items-center justify-between py-0.5 border-b border-zinc-800/60 last:border-0">
+                                                                <span className="font-bold text-white truncate text-[7.5px]">{p?.name || 'Player'}</span>
                                                                 <button 
                                                                     onClick={() => handleUndoRedemption(v.id, r.id)}
-                                                                    className="text-red-400 hover:text-red-300 px-1.5 py-0.2 rounded bg-red-950/40 text-[9px]"
+                                                                    className="text-red-400 hover:text-red-300 px-1 py-0.2 rounded bg-red-950/40 text-[7px]"
                                                                 >
                                                                     Undo
                                                                 </button>
@@ -2105,34 +2108,31 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                             </div>
                                         )}
 
-                                        {/* Action Bar */}
-                                        <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between gap-1">
-                                            <div className="flex gap-1">
-                                                <Button 
-                                                    size="sm" 
+                                        {/* Action Bar - Shrink to fit */}
+                                        <div className="pt-1 border-t border-zinc-800/80 flex items-center justify-between gap-1 min-w-0">
+                                            <div className="flex items-center gap-0.5 min-w-0">
+                                                <button 
                                                     onClick={() => setClaimingVoucher(v)}
                                                     disabled={isDepleted}
-                                                    className="text-[10px] px-2 py-1 bg-emerald-600 hover:bg-emerald-500 font-bold"
+                                                    className="text-[8px] sm:text-[8.5px] px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-bold rounded whitespace-nowrap shrink-0 transition-colors"
                                                 >
                                                     Claim
-                                                </Button>
-                                                <Button 
-                                                    size="sm" 
-                                                    variant="secondary"
+                                                </button>
+                                                <button 
                                                     onClick={() => setViewingRedemptionsVoucherId(isViewingRedemptions ? null : v.id)}
-                                                    className="text-[10px] px-2 py-1 text-zinc-300"
+                                                    className="text-[7.5px] sm:text-[8px] px-1 py-0.5 text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded whitespace-nowrap shrink-0"
                                                 >
-                                                    {isViewingRedemptions ? 'Hide' : `Claims (${redemptions.length})`}
-                                                </Button>
+                                                    {isViewingRedemptions ? 'Hide' : `(${redemptions.length})`}
+                                                </button>
                                             </div>
 
-                                            <div className="flex gap-1">
+                                            <div className="flex items-center gap-0.5 shrink-0">
                                                 <button 
                                                     onClick={() => setIsEditingVoucher(v)} 
-                                                    className="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                                                    className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
                                                     title="Edit Voucher"
                                                 >
-                                                    <PencilIcon className="w-3.5 h-3.5"/>
+                                                    <PencilIcon className="w-2.5 h-2.5"/>
                                                 </button>
                                                 <button 
                                                     onClick={() => {
@@ -2140,10 +2140,10 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                                             deleteDoc('vouchers', v.id);
                                                         }
                                                     }}
-                                                    className="p-1 rounded-lg bg-zinc-800 hover:bg-red-900/60 text-zinc-400 hover:text-red-400"
+                                                    className="p-1 rounded bg-zinc-800 hover:bg-red-900/60 text-zinc-400 hover:text-red-400 transition-colors"
                                                     title="Delete Voucher"
                                                 >
-                                                    <TrashIcon className="w-3.5 h-3.5"/>
+                                                    <TrashIcon className="w-2.5 h-2.5"/>
                                                 </button>
                                             </div>
                                         </div>
@@ -2160,41 +2160,43 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
             {/* ==================================================== */}
             {activeSection === 'raffles' && (
                 <div className="space-y-6">
-                    {/* Active Raffles Grid - Side by Side Squares with 3D Depth */}
-                    <div className="space-y-3">
-                        <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping inline-block" />
+                    {/* Active Raffles Grid - Tiny Side by Side Squares with 3D Depth */}
+                    <div className="space-y-2">
+                        <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping inline-block" />
                             Active Tactical Raffle Arenas ({raffles.filter(r => r.status !== 'Completed').length})
                         </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 perspective-[1000px]">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-2.5 perspective-[1000px]">
                             {raffles.filter(r => r.status !== 'Completed').length === 0 ? (
-                                <div className="col-span-full py-8 text-center text-zinc-500 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800">
-                                    <TrophyIcon className="w-10 h-10 mx-auto mb-2 text-zinc-600"/>
+                                <div className="col-span-full py-6 text-center text-zinc-500 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800">
+                                    <TrophyIcon className="w-8 h-8 mx-auto mb-1 text-zinc-600"/>
                                     <p className="font-semibold text-xs">No active running raffles.</p>
                                 </div>
                             ) : (
                                 raffles.filter(r => r.status !== 'Completed').map(r => {
                                     const tickets = r.tickets || [];
                                     const winners = r.winners || [];
-                                    const isViewingTickets = viewingTicketsRaffleId === r.id;
 
                                     return (
                                         <div 
                                             key={r.id} 
-                                            className="relative group overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900/95 via-zinc-900 to-amber-950/40 p-4 border border-amber-500/40 shadow-[0_10px_30px_rgba(0,0,0,0.8)] hover:shadow-[0_20px_50px_rgba(245,158,11,0.25)] hover:-translate-y-1 hover:rotate-1 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between aspect-square"
+                                            className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-zinc-900 via-zinc-900/95 to-amber-950/40 p-2 sm:p-2.5 border border-amber-500/40 shadow-[0_6px_16px_rgba(0,0,0,0.7)] hover:shadow-[0_12px_24px_rgba(245,158,11,0.25)] hover:border-amber-400 hover:-translate-y-0.5 hover:rotate-0.5 transition-all duration-200 flex flex-col justify-between aspect-square w-full select-none"
                                         >
-                                            <div>
-                                                <div className="flex items-start justify-between gap-2 mb-1.5">
-                                                    <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase bg-amber-950/80 text-amber-400 border border-amber-800 animate-pulse">
+                                            {/* 3D Top Glow Highlight */}
+                                            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-amber-400/60 to-transparent pointer-events-none" />
+
+                                            <div className="min-w-0">
+                                                <div className="flex items-center justify-between gap-1 mb-1 min-w-0">
+                                                    <span className="text-[7.5px] sm:text-[8px] px-1.5 py-0.2 rounded font-bold uppercase bg-amber-950/80 text-amber-400 border border-amber-800 animate-pulse truncate whitespace-nowrap shrink-0">
                                                         {r.status}
                                                     </span>
-                                                    <div className="flex gap-1">
+                                                    <div className="flex items-center gap-0.5 shrink-0">
                                                         <button 
                                                             onClick={() => setIsEditingRaffle(r)} 
-                                                            className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs"
+                                                            className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
                                                             title="Edit Raffle"
                                                         >
-                                                            <PencilIcon className="w-3 h-3"/>
+                                                            <PencilIcon className="w-2.5 h-2.5"/>
                                                         </button>
                                                         <button 
                                                             onClick={() => {
@@ -2202,54 +2204,50 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                                                     deleteDoc('raffles', r.id);
                                                                 }
                                                             }}
-                                                            className="p-1 rounded bg-zinc-800 hover:bg-red-900/60 text-zinc-400 hover:text-red-400 text-xs"
+                                                            className="p-1 rounded bg-zinc-800 hover:bg-red-900/60 text-zinc-400 hover:text-red-400 transition-colors"
                                                             title="Delete Raffle"
                                                         >
-                                                            <TrashIcon className="w-3 h-3"/>
+                                                            <TrashIcon className="w-2.5 h-2.5"/>
                                                         </button>
                                                     </div>
                                                 </div>
 
-                                                <h4 className="font-bold text-sm text-white truncate mb-0.5">{r.name}</h4>
-                                                <p className="text-[10px] text-zinc-400 mb-2 truncate">
-                                                    Date: {new Date(r.drawDate).toLocaleDateString()}
+                                                <h4 className="font-bold text-[10px] sm:text-xs text-white truncate mb-0.5 leading-tight">{r.name}</h4>
+                                                <p className="text-[7.5px] sm:text-[8px] text-zinc-400 mb-1 truncate">
+                                                    Draw: {new Date(r.drawDate).toLocaleDateString()}
                                                 </p>
 
-                                                {/* Prize Showcase */}
-                                                <div className="my-1.5 space-y-1 bg-black/60 p-2 rounded-xl border border-zinc-800">
-                                                    <span className="text-[9px] font-bold uppercase text-amber-400 block">
-                                                        Prizes ({r.prizes?.length || 0})
-                                                    </span>
-                                                    {r.prizes?.slice(0, 2).map((p, idx) => (
-                                                        <div key={p.id || idx} className="text-[10px] text-zinc-300 truncate flex justify-between">
-                                                            <span className="truncate">#{idx + 1} {p.name}</span>
-                                                        </div>
-                                                    ))}
+                                                {/* Prize Preview */}
+                                                <div className="my-0.5 p-1 bg-black/60 rounded-md border border-zinc-800/80">
+                                                    <div className="text-[7.5px] font-bold uppercase text-amber-400 flex items-center justify-between">
+                                                        <span>Prizes</span>
+                                                        <span>{r.prizes?.length || 0}</span>
+                                                    </div>
+                                                    <div className="text-[8px] text-zinc-300 truncate mt-0.5">
+                                                        {r.prizes?.[0]?.name ? `🏆 ${r.prizes[0].name}` : 'No prizes set'}
+                                                    </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-1 text-[9px] text-zinc-400 bg-zinc-950/80 p-1.5 rounded-lg border border-zinc-800 text-center">
-                                                    <div>Tickets: <strong className="text-white block">{tickets.length}</strong></div>
-                                                    <div>Winners: <strong className="text-amber-400 block">{winners.length}/{r.prizes?.length || 0}</strong></div>
+                                                <div className="grid grid-cols-2 gap-0.5 text-[7px] sm:text-[7.5px] text-zinc-400 bg-zinc-950/80 p-0.5 rounded border border-zinc-800 text-center my-0.5">
+                                                    <div className="truncate">Tix: <strong className="text-white">{tickets.length}</strong></div>
+                                                    <div className="truncate">Won: <strong className="text-amber-400">{winners.length}/{r.prizes?.length || 0}</strong></div>
                                                 </div>
                                             </div>
 
-                                            {/* Action Bar */}
-                                            <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between gap-1">
-                                                <Button 
-                                                    size="sm" 
+                                            {/* Action Bar - Shrink to fit */}
+                                            <div className="pt-1 border-t border-zinc-800/80 flex items-center gap-1 min-w-0">
+                                                <button 
                                                     onClick={() => setDrawingRaffle(r)}
-                                                    className="text-[10px] px-2 py-1.5 bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white font-black shadow-md flex-1"
+                                                    className="flex-1 text-[8px] sm:text-[8.5px] py-1 px-1 bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white font-black rounded shadow whitespace-nowrap truncate text-center transition-all flex items-center justify-center gap-1"
                                                 >
-                                                    <span>🎯</span> Spin Live Arena
-                                                </Button>
-                                                <Button 
-                                                    size="sm" 
-                                                    variant="secondary"
+                                                    <span>🎯</span> Spin Arena
+                                                </button>
+                                                <button 
                                                     onClick={() => setIssuingTicketsRaffle(r)}
-                                                    className="text-[10px] px-1.5 py-1 text-zinc-300"
+                                                    className="text-[7.5px] sm:text-[8px] px-1.5 py-1 text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded whitespace-nowrap shrink-0"
                                                 >
-                                                    Tickets
-                                                </Button>
+                                                    Tix
+                                                </button>
                                             </div>
                                         </div>
                                     );
@@ -2258,14 +2256,14 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                         </div>
                     </div>
 
-                    {/* Concluded & Completed Raffles Section (Auto-moved & marked completed) */}
+                    {/* Concluded & Completed Raffles Section (Tiny Side-by-Side 3D Squares) */}
                     {raffles.filter(r => r.status === 'Completed').length > 0 && (
-                        <div className="space-y-3 pt-4 border-t border-zinc-800">
-                            <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                                <CheckBadgeIcon className="w-4 h-4 text-emerald-400" />
-                                Concluded & Completed Raffles ({raffles.filter(r => r.status === 'Completed').length})
+                        <div className="space-y-2 pt-3 border-t border-zinc-800">
+                            <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                                <CheckBadgeIcon className="w-3.5 h-3.5 text-emerald-400" />
+                                Concluded Raffles ({raffles.filter(r => r.status === 'Completed').length})
                             </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 perspective-[1000px]">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-2.5 perspective-[1000px]">
                                 {raffles.filter(r => r.status === 'Completed').map(r => {
                                     const winners = r.winners || [];
                                     const prizes = r.prizes || [];
@@ -2273,12 +2271,12 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                     return (
                                         <div 
                                             key={r.id} 
-                                            className="relative group overflow-hidden rounded-2xl bg-zinc-950/90 p-4 border border-zinc-800 shadow-md flex flex-col justify-between aspect-square"
+                                            className="relative group overflow-hidden rounded-xl bg-zinc-950/90 p-2 sm:p-2.5 border border-zinc-800 shadow-[0_6px_16px_rgba(0,0,0,0.7)] hover:border-emerald-500/50 hover:shadow-[0_10px_20px_rgba(16,185,129,0.15)] hover:-translate-y-0.5 hover:rotate-0.5 transition-all duration-200 flex flex-col justify-between aspect-square w-full select-none"
                                         >
-                                            <div>
-                                                <div className="flex items-start justify-between gap-2 mb-1.5">
-                                                    <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-800">
-                                                        COMPLETED & MARKED DONE
+                                            <div className="min-w-0">
+                                                <div className="flex items-center justify-between gap-1 mb-1 min-w-0">
+                                                    <span className="text-[7px] sm:text-[7.5px] px-1 py-0.2 rounded font-bold uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-800 truncate whitespace-nowrap">
+                                                        DONE
                                                     </span>
                                                     <button 
                                                         onClick={() => {
@@ -2286,44 +2284,42 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                                                 deleteDoc('raffles', r.id);
                                                             }
                                                         }}
-                                                        className="p-1 rounded bg-zinc-800 hover:bg-red-900/60 text-zinc-400 hover:text-red-400 text-xs"
+                                                        className="p-1 rounded bg-zinc-800 hover:bg-red-900/60 text-zinc-400 hover:text-red-400 transition-colors"
                                                         title="Delete Raffle"
                                                     >
-                                                        <TrashIcon className="w-3 h-3"/>
+                                                        <TrashIcon className="w-2.5 h-2.5"/>
                                                     </button>
                                                 </div>
 
-                                                <h4 className="font-bold text-sm text-white truncate mb-0.5">{r.name}</h4>
-                                                <p className="text-[10px] text-zinc-500 mb-2 truncate">
-                                                    Draw Date: {new Date(r.drawDate).toLocaleDateString()}
+                                                <h4 className="font-bold text-[10px] sm:text-xs text-white truncate mb-0.5 leading-tight">{r.name}</h4>
+                                                <p className="text-[7.5px] sm:text-[8px] text-zinc-500 mb-1 truncate">
+                                                    Drawn: {new Date(r.drawDate).toLocaleDateString()}
                                                 </p>
 
                                                 {/* Winners Summary */}
-                                                <div className="my-1.5 p-2 rounded-xl bg-black/60 border border-zinc-800/80 space-y-1">
-                                                    <span className="text-[9px] font-mono font-bold uppercase text-amber-400 block">
+                                                <div className="my-0.5 p-1 rounded-md bg-black/60 border border-zinc-800/80">
+                                                    <span className="text-[7px] font-mono font-bold uppercase text-amber-400 block">
                                                         Winners ({winners.length}/{prizes.length})
                                                     </span>
-                                                    {winners.slice(0, 2).map((w, i) => {
+                                                    {winners.slice(0, 1).map((w, i) => {
                                                         const prize = prizes.find(p => p.id === w.prizeId);
                                                         const wPlayer = players.find(p => p.id === w.playerId);
                                                         return (
-                                                            <div key={w.id || i} className="text-[10px] text-zinc-300 flex justify-between truncate">
-                                                                <span className="truncate text-amber-300">🏆 {wPlayer?.name || 'Winner'}</span>
-                                                                <span className="text-zinc-500 truncate">{prize?.name}</span>
+                                                            <div key={w.id || i} className="text-[7.5px] sm:text-[8px] text-zinc-300 truncate mt-0.5">
+                                                                <span className="text-amber-300 font-bold truncate">🏆 {wPlayer?.name || 'Winner'}: </span>
+                                                                <span className="text-zinc-400 truncate">{prize?.name}</span>
                                                             </div>
                                                         );
                                                     })}
                                                 </div>
                                             </div>
 
-                                            <Button
-                                                size="sm"
-                                                variant="secondary"
+                                            <button
                                                 onClick={() => setDrawingRaffle(r)}
-                                                className="w-full text-[10px] py-1.5 text-zinc-300 font-bold"
+                                                className="w-full text-[8px] sm:text-[8.5px] py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded truncate whitespace-nowrap text-center transition-colors"
                                             >
                                                 View Arena & Winners
-                                            </Button>
+                                            </button>
                                         </div>
                                     );
                                 })}

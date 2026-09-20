@@ -1486,11 +1486,11 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                 </div>
             )}
 
-            {/* ACTIVE & UPCOMING RAFFLE EVENTS SHOWCASE - SIDE BY SIDE SQUARES WITH 3D DEPTH */}
-            <DashboardCard title="Tactical Raffle Events & Live Arena" icon={<SparklesIcon className="w-6 h-6 text-amber-400" />}>
-                <div className="p-4 space-y-4">
+            {/* ACTIVE & UPCOMING RAFFLE EVENTS SHOWCASE - TINY SIDE BY SIDE SQUARES WITH 3D DEPTH */}
+            <DashboardCard title="Tactical Raffle Events & Live Arena" icon={<SparklesIcon className="w-5 h-5 text-amber-400" />}>
+                <div className="p-2.5 sm:p-3 space-y-2">
                     {activeRaffles.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 perspective-[1000px]">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-2.5 perspective-[1000px]">
                             {activeRaffles.map(raffle => {
                                 const userTickets = (raffle.tickets || []).filter(isMyTicket);
                                 const prizes = raffle.prizes || [];
@@ -1498,79 +1498,65 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                                 return (
                                     <div 
                                         key={raffle.id}
-                                        className="relative group overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900/95 via-zinc-900 to-amber-950/40 p-4 border border-amber-500/40 shadow-[0_10px_30px_rgba(0,0,0,0.8)] hover:shadow-[0_20px_50px_rgba(245,158,11,0.25)] hover:-translate-y-1 hover:rotate-1 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between aspect-square"
+                                        className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-zinc-900 via-zinc-900/95 to-amber-950/40 p-2 sm:p-2.5 border border-amber-500/40 shadow-[0_6px_16px_rgba(0,0,0,0.7)] hover:shadow-[0_12px_24px_rgba(245,158,11,0.25)] hover:border-amber-400 hover:-translate-y-0.5 hover:rotate-0.5 transition-all duration-200 flex flex-col justify-between aspect-square w-full select-none"
                                     >
-                                        {/* Carbon Texture */}
-                                        <div className="absolute inset-0 bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:14px_14px] opacity-10 pointer-events-none" />
+                                        {/* 3D Top Glow Highlight */}
+                                        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-amber-400/60 to-transparent pointer-events-none" />
 
-                                        <div>
-                                            <div className="flex justify-between items-start mb-1.5">
-                                                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border bg-emerald-950 text-emerald-400 border-emerald-800 animate-pulse">
-                                                    LIVE ARENA ACTIVE
+                                        <div className="min-w-0">
+                                            <div className="flex justify-between items-center mb-1 min-w-0">
+                                                <span className="text-[7.5px] sm:text-[8px] font-mono font-bold px-1.5 py-0.2 rounded-full border bg-emerald-950 text-emerald-400 border-emerald-800 animate-pulse truncate whitespace-nowrap">
+                                                    LIVE ARENA
                                                 </span>
                                             </div>
 
-                                            <h4 className="font-black text-white text-base sm:text-lg line-clamp-1">{raffle.name}</h4>
-
-                                            {raffle.description && (
-                                                <p className="text-[11px] text-zinc-400 my-1 line-clamp-2">{raffle.description}</p>
-                                            )}
+                                            <h4 className="font-bold text-[10px] sm:text-xs text-white truncate mb-0.5 leading-tight">{raffle.name}</h4>
 
                                             {/* Tactical Stats Matrix */}
-                                            <div className="grid grid-cols-2 gap-1.5 p-2 rounded-xl bg-black/60 border border-zinc-800 my-2 text-center">
-                                                <div>
-                                                    <span className="text-[9px] text-zinc-500 uppercase font-mono block">Your Tickets</span>
-                                                    <span className="text-xs font-mono font-bold text-amber-400">{userTickets.length} held</span>
+                                            <div className="grid grid-cols-2 gap-0.5 p-1 rounded-md bg-black/60 border border-zinc-800/80 my-1 text-center">
+                                                <div className="truncate">
+                                                    <span className="text-[6.5px] sm:text-[7px] text-zinc-500 uppercase font-mono block">Your Tix</span>
+                                                    <span className="text-[8px] sm:text-[8.5px] font-mono font-bold text-amber-400 truncate block">{userTickets.length} held</span>
                                                 </div>
-                                                <div>
-                                                    <span className="text-[9px] text-zinc-500 uppercase font-mono block">Prize Spots</span>
-                                                    <span className="text-xs font-mono font-bold text-emerald-400">{prizes.length} available</span>
+                                                <div className="truncate">
+                                                    <span className="text-[6.5px] sm:text-[7px] text-zinc-500 uppercase font-mono block">Prizes</span>
+                                                    <span className="text-[8px] sm:text-[8.5px] font-mono font-bold text-emerald-400 truncate block">{prizes.length} total</span>
                                                 </div>
                                             </div>
 
                                             {/* Prize Showcase Preview */}
                                             {prizes.length > 0 && (
-                                                <div className="space-y-0.5">
-                                                    <span className="text-[9px] text-zinc-500 uppercase font-mono block">Prizes ({prizes.length}):</span>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {prizes.slice(0, 2).map((p, idx) => (
-                                                            <span key={p.id || idx} className="text-[10px] bg-zinc-800/80 text-zinc-300 px-1.5 py-0.5 rounded-lg border border-zinc-700/60 truncate max-w-[110px]">
-                                                                #{p.place || idx + 1} {p.name}
-                                                            </span>
-                                                        ))}
-                                                        {prizes.length > 2 && (
-                                                            <span className="text-[10px] text-zinc-500 self-center">+{prizes.length - 2}</span>
-                                                        )}
-                                                    </div>
+                                                <div className="text-[7.5px] sm:text-[8px] text-zinc-300 truncate bg-zinc-950/80 p-0.5 rounded border border-zinc-800/60">
+                                                    🏆 {prizes[0]?.name || 'Tactical Prize'}
                                                 </div>
                                             )}
                                         </div>
 
-                                        {/* Action Button */}
-                                        <div className="pt-2 border-t border-zinc-800/80">
-                                            <Button
+                                        {/* Action Button - Shrink to fit */}
+                                        <div className="pt-1 border-t border-zinc-800/80 min-w-0">
+                                            <button
                                                 onClick={() => setSelectedRaffleForDashboard(raffle)}
-                                                className="w-full text-xs font-black bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white shadow-md py-2 rounded-xl flex items-center justify-center gap-1"
+                                                className="w-full text-[8px] sm:text-[8.5px] font-black bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white shadow py-1 px-1 rounded flex items-center justify-center gap-0.5 truncate whitespace-nowrap transition-all"
                                             >
-                                                <SparklesIcon className="w-3.5 h-3.5 text-amber-200" />
-                                                <span>Enter Live Arena</span>
-                                            </Button>
+                                                <SparklesIcon className="w-2.5 h-2.5 text-amber-200 shrink-0" />
+                                                <span className="truncate">Enter Arena</span>
+                                            </button>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
                     ) : (
-                        <p className="text-center text-zinc-500 py-8 text-sm">No active running raffle draws at this moment.</p>
+                        <p className="text-center text-zinc-500 py-4 text-xs">No active running raffle draws at this moment.</p>
                     )}
                 </div>
             </DashboardCard>
 
-            {/* CONCLUDED & COMPLETED RAFFLES STAGE (AUTOMATICALLY MOVED) */}
+            {/* CONCLUDED & COMPLETED RAFFLES STAGE (TINY SIDE BY SIDE 3D SQUARES) */}
             {pastRaffles.length > 0 && (
-                <DashboardCard title="Concluded & Completed Raffles Stage" icon={<CheckBadgeIcon className="w-6 h-6 text-emerald-400" />}>
-                    <div className="p-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 perspective-[1000px]">
+                <DashboardCard title="Concluded & Completed Raffles Stage" icon={<CheckBadgeIcon className="w-5 h-5 text-emerald-400" />}>
+                    <div className="p-2.5 sm:p-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-2.5 perspective-[1000px]">
                             {pastRaffles.map(raffle => {
                                 const userTickets = (raffle.tickets || []).filter(isMyTicket);
                                 const winners = raffle.winners || [];
@@ -1579,49 +1565,45 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
                                 return (
                                     <div
                                         key={raffle.id}
-                                        className="relative group overflow-hidden rounded-2xl bg-zinc-950/90 p-4 border border-zinc-800 shadow-[0_10px_25px_rgba(0,0,0,0.8)] hover:border-zinc-700 transition-all duration-300 flex flex-col justify-between aspect-square"
+                                        className="relative group overflow-hidden rounded-xl bg-zinc-950/90 p-2 sm:p-2.5 border border-zinc-800 shadow-[0_6px_16px_rgba(0,0,0,0.7)] hover:border-emerald-500/50 hover:shadow-[0_10px_20px_rgba(16,185,129,0.15)] hover:-translate-y-0.5 hover:rotate-0.5 transition-all duration-200 flex flex-col justify-between aspect-square w-full select-none"
                                     >
-                                        <div>
-                                            <div className="flex justify-between items-start mb-1.5">
-                                                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border bg-emerald-950/80 text-emerald-400 border-emerald-800">
-                                                    COMPLETED & MARKED DONE
+                                        <div className="min-w-0">
+                                            <div className="flex justify-between items-center mb-1 min-w-0">
+                                                <span className="text-[7px] sm:text-[7.5px] font-mono font-bold px-1.5 py-0.2 rounded-full border bg-emerald-950/80 text-emerald-400 border-emerald-800 truncate whitespace-nowrap">
+                                                    COMPLETED
                                                 </span>
                                             </div>
 
-                                            <h4 className="font-bold text-white text-base line-clamp-1">{raffle.name}</h4>
+                                            <h4 className="font-bold text-[10px] sm:text-xs text-white truncate mb-0.5 leading-tight">{raffle.name}</h4>
                                             
-                                            <p className="text-[11px] text-zinc-500 my-1">
-                                                Draw Date: {new Date(raffle.drawDate).toLocaleDateString()}
+                                            <p className="text-[7.5px] sm:text-[8px] text-zinc-500 mb-1 truncate">
+                                                Draw: {new Date(raffle.drawDate).toLocaleDateString()}
                                             </p>
 
                                             {/* Winners Summary */}
-                                            <div className="my-2 p-2 rounded-xl bg-black/60 border border-zinc-800/80 space-y-1">
-                                                <span className="text-[9px] font-mono font-bold uppercase text-amber-400 block">
-                                                    Official Winners ({winners.length}/{prizes.length})
+                                            <div className="my-0.5 p-1 rounded-md bg-black/60 border border-zinc-800/80">
+                                                <span className="text-[7px] font-mono font-bold uppercase text-amber-400 block">
+                                                    Winners ({winners.length}/{prizes.length})
                                                 </span>
-                                                {winners.slice(0, 2).map((w, i) => {
+                                                {winners.slice(0, 1).map((w, i) => {
                                                     const prize = prizes.find(p => p.id === w.prizeId);
                                                     const wPlayer = players.find(p => p.id === w.playerId);
                                                     return (
-                                                        <div key={w.id || i} className="text-[10px] text-zinc-300 flex justify-between truncate">
-                                                            <span className="truncate text-amber-300">🏆 {wPlayer?.name || 'Winner'}</span>
-                                                            <span className="text-zinc-500 truncate">{prize?.name}</span>
+                                                        <div key={w.id || i} className="text-[7.5px] sm:text-[8px] text-zinc-300 truncate mt-0.5">
+                                                            <span className="text-amber-300 font-bold truncate">🏆 {wPlayer?.name || 'Winner'}: </span>
+                                                            <span className="text-zinc-400 truncate">{prize?.name}</span>
                                                         </div>
                                                     );
                                                 })}
-                                                {winners.length > 2 && (
-                                                    <span className="text-[9px] text-zinc-500 block">+{winners.length - 2} more winners</span>
-                                                )}
                                             </div>
                                         </div>
 
-                                        <Button
+                                        <button
                                             onClick={() => setSelectedRaffleForDashboard(raffle)}
-                                            variant="secondary"
-                                            className="w-full text-xs font-bold py-2 rounded-xl text-zinc-300"
+                                            className="w-full text-[8px] sm:text-[8.5px] py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded truncate whitespace-nowrap text-center transition-colors mt-1"
                                         >
-                                            View Full Results & Stage
-                                        </Button>
+                                            View Stage
+                                        </button>
                                     </div>
                                 );
                             })}

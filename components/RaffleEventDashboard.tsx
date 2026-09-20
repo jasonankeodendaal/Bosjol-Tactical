@@ -355,9 +355,50 @@ interface RaffleEventDashboardProps {
     onIssueTickets?: (raffle: Raffle) => void;
 }
 
-export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
+export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = (props) => {
+    return (
+        <RaffleErrorBoundary onClose={props.onClose}>
+            <RaffleEventDashboardInner {...props} />
+        </RaffleErrorBoundary>
+    );
+};
+
+class RaffleErrorBoundary extends React.Component<
+    { onClose: () => void; children: React.ReactNode },
+    { hasError: boolean; error: Error | null }
+> {
+    state = { hasError: false, error: null };
+
+    static getDerivedStateFromError(error: Error) {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, info: any) {
+        console.error("RaffleEventDashboard error caught:", error, info);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="fixed inset-0 z-[100] bg-black/95 text-white flex flex-col items-center justify-center p-6 text-center">
+                    <div className="max-w-md p-6 bg-zinc-900 rounded-2xl border border-red-500/40 shadow-2xl space-y-4">
+                        <div className="w-12 h-12 mx-auto rounded-full bg-red-950 flex items-center justify-center text-red-400 text-xl font-bold">⚠️</div>
+                        <h3 className="text-lg font-black text-white">Live Arena Initialization Notice</h3>
+                        <p className="text-xs text-zinc-400">The raffle stage encountered a configuration format variance. Resetting view...</p>
+                        <Button onClick={this.props.onClose} className="w-full bg-red-600 hover:bg-red-500 text-xs font-bold py-2">
+                            Return to Raffles
+                        </Button>
+                    </div>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
+const RaffleEventDashboardInner: React.FC<RaffleEventDashboardProps> = ({
     raffle,
-    players,
+    players = [],
     currentPlayer,
     isAdmin = false,
     onClose,
@@ -365,6 +406,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
     onIssueTickets,
 }) => {
     const dataContext = useData();
+    const safePlayers = useMemo(() => Array.isArray(players) ? players : [], [players]);
     const [activeTab, setActiveTab] = useState<'stage' | 'prizes' | 'leaderboard' | 'tickets'>('stage');
     const [currentPrizeIndex, setCurrentPrizeIndex] = useState(0);
     const [isSpinning, setIsSpinning] = useState(false);
@@ -375,7 +417,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
     const [ticketSearch, setTicketSearch] = useState('');
     
     // Live winners array tracking
-    const [localWinners, setLocalWinners] = useState<RaffleWinnerDoc[]>(raffle.winners || []);
+    const [localWinners, setLocalWinners] = useState<RaffleWinnerDoc[]>(raffle?.winners || []);
     const [candidateReel, setCandidateReel] = useState<Array<{ ticket: RaffleTicketDoc; player: Player | undefined }>>([]);
     const [activeCandidateIndex, setActiveCandidateIndex] = useState(0);
     const [wheelRotation, setWheelRotation] = useState(0);
@@ -391,19 +433,26 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
-    const prizes = useMemo(() => [...(raffle.prizes || [])].sort((a, b) => a.place - b.place), [raffle.prizes]);
-    const tickets = useMemo(() => raffle.tickets || [], [raffle.tickets]);
+    const prizes = useMemo(() => {
+        const rawPrizes = Array.isArray(raffle?.prizes) ? raffle.prizes : [];
+        return [...rawPrizes].sort((a, b) => ((a?.place ?? 0) - (b?.place ?? 0)));
+    }, [raffle?.prizes]);
+
+    const tickets = useMemo(() => {
+        return Array.isArray(raffle?.tickets) ? raffle.tickets : [];
+    }, [raffle?.tickets]);
+
     const isTopTicketsMode = Boolean(
-        raffle.alwaysChooseMostTickets === true || 
+        raffle?.alwaysChooseMostTickets === true || 
         (raffle as any)?.alwayschoosemosttickets === true ||
-        String(raffle.alwaysChooseMostTickets) === 'true' ||
+        String(raffle?.alwaysChooseMostTickets) === 'true' ||
         String((raffle as any)?.alwayschoosemosttickets) === 'true'
     );
 
     // Available tickets for drawing (unawarded tickets)
     const availableTickets = useMemo(() => {
-        const winningTicketIds = new Set(localWinners.map(w => w.ticketId));
-        return tickets.filter(t => !winningTicketIds.has(t.id));
+        const winningTicketIds = new Set((localWinners || []).map(w => w?.ticketId).filter(Boolean));
+        return tickets.filter(t => t && !winningTicketIds.has(t.id));
     }, [tickets, localWinners]);
 
     // Derived wheel segments for 3D physics wheel
@@ -413,19 +462,19 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
         }
         const maxSegs = Math.min(12, availableTickets.length);
         return availableTickets.slice(0, maxSegs).map((t, i) => {
-            const p = players.find(ply => ply.id === t.playerId);
-            const name = p ? (p.callsign || p.name) : 'Operator';
+            const p = safePlayers.find(ply => ply && (ply.id === t.playerId || (ply.playerCode && ply.playerCode === t.playerId)));
+            const name = p ? (p.callsign || p.name || 'Operator') : 'Operator';
             return {
                 label: name,
-                code: t.code || `TKT-${i + 1}`,
+                code: String(t.code || `TKT-${i + 1}`),
                 ticketId: t.id
             };
         });
-    }, [availableTickets, players]);
+    }, [availableTickets, safePlayers]);
 
     const currentPrize = prizes[currentPrizeIndex] || prizes[0] || { id: 'p_1', name: 'Grand Prize', place: 1 };
-    const isCurrentPrizeDrawn = localWinners.some(w => w.prizeId === currentPrize?.id);
-    const undrawnPrizesCount = prizes.filter(p => !localWinners.some(w => w.prizeId === p.id)).length;
+    const isCurrentPrizeDrawn = (localWinners || []).some(w => w?.prizeId === currentPrize?.id);
+    const undrawnPrizesCount = prizes.filter(p => !(localWinners || []).some(w => w?.prizeId === p?.id)).length;
 
     // Player specific tickets in this raffle (matching both id and playerCode)
     const myTickets = useMemo(() => {
@@ -433,6 +482,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
         const cid = String(currentPlayer.id || '').trim().toLowerCase();
         const ccode = String(currentPlayer.playerCode || '').trim().toLowerCase();
         return tickets.filter(t => {
+            if (!t) return false;
             const tid = String(t.playerId || '').trim().toLowerCase();
             const tcode = String(t.playerCode || '').trim().toLowerCase();
             return (cid && tid === cid) || (ccode && (tid === ccode || tcode === ccode));
@@ -450,7 +500,8 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
         if (!currentPlayer) return 0;
         const cid = String(currentPlayer.id || '').trim().toLowerCase();
         const ccode = String(currentPlayer.playerCode || '').trim().toLowerCase();
-        return localWinners.filter(w => {
+        return (localWinners || []).filter(w => {
+            if (!w) return false;
             const wid = String(w.playerId || '').trim().toLowerCase();
             return (cid && wid === cid) || (ccode && wid === ccode);
         }).length;
@@ -461,38 +512,40 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
         const counts = new Map<string, { count: number; tickets: RaffleTicketDoc[]; player: Player | undefined; wins: Prize[] }>();
         
         tickets.forEach(t => {
+            if (!t || !t.playerId) return;
             const existing = counts.get(t.playerId);
             if (existing) {
                 existing.count++;
                 existing.tickets.push(t);
             } else {
-                const player = players.find(p => p.id === t.playerId);
+                const player = safePlayers.find(p => p && (p.id === t.playerId || (p.playerCode && p.playerCode === t.playerId)));
                 counts.set(t.playerId, { count: 1, tickets: [t], player, wins: [] });
             }
         });
 
         // Add wins
-        localWinners.forEach(w => {
+        (localWinners || []).forEach(w => {
+            if (!w || !w.playerId) return;
             const entry = counts.get(w.playerId);
-            const prize = prizes.find(p => p.id === w.prizeId);
+            const prize = prizes.find(p => p && p.id === w.prizeId);
             if (entry && prize) {
                 entry.wins.push(prize);
             }
         });
 
         return Array.from(counts.values()).sort((a, b) => b.count - a.count);
-    }, [tickets, players, localWinners, prizes]);
+    }, [tickets, safePlayers, localWinners, prizes]);
 
     // Initialize candidate reel for realistic carousel visual
     useEffect(() => {
         if (tickets.length > 0) {
             const reel = tickets.slice(0, 30).map(t => ({
                 ticket: t,
-                player: players.find(p => p.id === t.playerId)
+                player: safePlayers.find(p => p && (p.id === t.playerId || (p.playerCode && p.playerCode === t.playerId)))
             }));
             setCandidateReel(reel);
         }
-    }, [tickets, players]);
+    }, [tickets, safePlayers]);
 
     // Sound toggle handler
     const toggleSound = () => {
@@ -1109,9 +1162,9 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                     <div className="text-xs sm:text-sm font-semibold text-zinc-300 mt-0.5 z-10 truncate max-w-full px-2">
                                         {(() => {
                                             const candidate = availableTickets[activeCandidateIndex];
-                                            const p = players.find(ply => ply.id === candidate?.playerId);
+                                            const p = safePlayers.find(ply => ply && (ply.id === candidate?.playerId || (ply.playerCode && ply.playerCode === candidate?.playerId)));
                                             return p ? (
-                                                <span>{p.name} {p.surname || ''} {p.callsign ? `("${p.callsign}")` : ''}</span>
+                                                <span>{p.name || 'Operator'} {p.surname || ''} {p.callsign ? `("${p.callsign}")` : ''}</span>
                                             ) : (
                                                 <span>Scanning Operator Roster...</span>
                                             );
@@ -1134,7 +1187,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                         {justWon.player?.avatarUrl ? (
                                             <img 
                                                 src={justWon.player.avatarUrl} 
-                                                alt={justWon.player.name}
+                                                alt={justWon.player.name || 'Winner'}
                                                 className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-amber-400 object-cover shadow-[0_4px_20px_rgba(245,158,11,0.4)] mb-1"
                                                 referrerPolicy="no-referrer"
                                             />
@@ -1145,7 +1198,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                         )}
 
                                         <h3 className="text-base sm:text-xl font-black text-white px-2">
-                                            {justWon.player?.name} {justWon.player?.surname || ''}
+                                            {justWon.player?.name || 'Operator'} {justWon.player?.surname || ''}
                                         </h3>
                                         
                                         {justWon.player?.callsign && (
@@ -1176,16 +1229,16 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                             ) : isCurrentPrizeDrawn ? (
                                 /* PREVIOUSLY DRAWN SUMMARY FOR THIS PRIZE */
                                 (() => {
-                                    const winDoc = localWinners.find(w => w.prizeId === currentPrize?.id);
-                                    const winPlayer = players.find(p => p.id === winDoc?.playerId);
-                                    const winTicket = tickets.find(t => t.id === winDoc?.ticketId);
+                                    const winDoc = (localWinners || []).find(w => w?.prizeId === currentPrize?.id);
+                                    const winPlayer = safePlayers.find(p => p && (p.id === winDoc?.playerId || (p.playerCode && p.playerCode === winDoc?.playerId)));
+                                    const winTicket = tickets.find(t => t && t.id === winDoc?.ticketId);
                                     return (
                                         <div className="w-full max-w-sm my-2 p-3 sm:p-4 rounded-2xl bg-black/60 border border-emerald-500/40 shadow-2xl backdrop-blur-xl flex flex-col items-center justify-center">
                                             <span className="text-[10px] sm:text-xs font-mono text-emerald-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1.5">
                                                 <CheckBadgeIcon className="w-4 h-4"/> Prize Claimed
                                             </span>
                                             <h3 className="text-sm sm:text-base font-bold text-white">
-                                                {winPlayer?.name} {winPlayer?.surname || ''}
+                                                {winPlayer?.name || 'Operator'} {winPlayer?.surname || ''}
                                             </h3>
                                             {winPlayer?.callsign && (
                                                 <span className="text-xs font-mono font-bold text-amber-400">
@@ -1639,22 +1692,24 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-96 overflow-y-auto p-1">
                                     {tickets
                                         .filter(t => {
+                                            if (!t) return false;
                                             if (!ticketSearch) return true;
                                             const q = ticketSearch.toLowerCase();
-                                            const owner = players.find(p => p.id === t.playerId || (p.playerCode && t.playerId === p.playerCode) || (t.playerCode && p.playerCode === t.playerCode));
-                                            const nameMatch = t.playerName && t.playerName.toLowerCase().includes(q);
+                                            const owner = safePlayers.find(p => p && (p.id === t.playerId || (p.playerCode && t.playerId === p.playerCode) || (t.playerCode && p.playerCode === t.playerCode)));
+                                            const nameMatch = t.playerName && String(t.playerName).toLowerCase().includes(q);
                                             const ownerMatch = owner && (
-                                                owner.name.toLowerCase().includes(q) ||
-                                                (owner.surname && owner.surname.toLowerCase().includes(q)) ||
-                                                (owner.callsign && owner.callsign.toLowerCase().includes(q)) ||
-                                                (owner.playerCode && owner.playerCode.toLowerCase().includes(q))
+                                                (owner.name && String(owner.name).toLowerCase().includes(q)) ||
+                                                (owner.surname && String(owner.surname).toLowerCase().includes(q)) ||
+                                                (owner.callsign && String(owner.callsign).toLowerCase().includes(q)) ||
+                                                (owner.playerCode && String(owner.playerCode).toLowerCase().includes(q))
                                             );
-                                            return t.code.toLowerCase().includes(q) || Boolean(nameMatch) || Boolean(ownerMatch);
+                                            const codeMatch = t.code && String(t.code).toLowerCase().includes(q);
+                                            return Boolean(codeMatch) || Boolean(nameMatch) || Boolean(ownerMatch);
                                         })
                                         .map(ticket => {
-                                            const isWinningTicket = localWinners.some(w => w.ticketId === ticket.id);
-                                            const owner = players.find(p => p.id === ticket.playerId || (p.playerCode && ticket.playerId === p.playerCode) || (ticket.playerCode && p.playerCode === ticket.playerCode));
-                                            const ownerName = owner ? `${owner.name} ${owner.surname || ''}`.trim() : (ticket.playerName || 'Operator');
+                                            const isWinningTicket = (localWinners || []).some(w => w?.ticketId === ticket.id);
+                                            const owner = safePlayers.find(p => p && (p.id === ticket.playerId || (p.playerCode && ticket.playerId === p.playerCode) || (ticket.playerCode && p.playerCode === ticket.playerCode)));
+                                            const ownerName = owner ? `${owner.name || 'Operator'} ${owner.surname || ''}`.trim() : (ticket.playerName || 'Operator');
                                             const ownerCallsign = owner?.callsign || ticket.playerCallsign;
 
                                             return (
@@ -1668,7 +1723,7 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                                 >
                                                     <div className="flex items-center justify-between mb-1 gap-1">
                                                         <span className="font-mono text-xs font-black text-amber-400 truncate">
-                                                            {ticket.code}
+                                                            {ticket.code || 'TKT-????'}
                                                         </span>
                                                         {isWinningTicket && <span className="text-xs shrink-0">🏆</span>}
                                                     </div>

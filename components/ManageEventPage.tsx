@@ -9,7 +9,7 @@ import { BadgePill } from './BadgePill';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
-import { QrCode, Ban, RotateCcw, Database, Sparkles, Image as ImageIcon, Palette, ClipboardList, Users, Check, Trophy, Award, UserPlus, Phone, UserX, Save, LayoutGrid, Layers, Shield, Sliders, Clock, MapPin, DollarSign, Flame, FileText, ChevronRight } from 'lucide-react';
+import { QrCode, Ban, RotateCcw, Database, Sparkles, Image as ImageIcon, Palette, ClipboardList, Users, Check, Trophy, Award, UserPlus, Phone, UserX, Save, LayoutGrid, Layers, Shield, Sliders, Clock, MapPin, DollarSign, Flame, FileText, ChevronRight, ChevronLeft } from 'lucide-react';
 import { EventQRCodeModal } from './EventQRCodeModal';
 import { EventPosterModal } from './EventPosterModal';
 import { EquipmentRentalsSummaryModal } from './EquipmentRentalsSummaryModal';
@@ -110,6 +110,42 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
 
     const [liveStats, setLiveStats] = useState<Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>>>(event?.liveStats || {});
     const [showAddGuestModal, setShowAddGuestModal] = useState(false);
+
+    // Pill Navigation Horizontal Scrolling & Indicator State
+    const navScrollRef = useRef<HTMLDivElement>(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+
+    const updateNavScrollState = () => {
+        const el = navScrollRef.current;
+        if (el) {
+            const hasOverflow = el.scrollWidth > el.clientWidth + 2;
+            setCanScrollLeft(el.scrollLeft > 6);
+            setCanScrollRight(hasOverflow && el.scrollLeft + el.clientWidth < el.scrollWidth - 6);
+        }
+    };
+
+    useEffect(() => {
+        updateNavScrollState();
+        const el = navScrollRef.current;
+        if (!el) return;
+        const handleResize = () => updateNavScrollState();
+        window.addEventListener('resize', handleResize);
+        const timer = setTimeout(updateNavScrollState, 150);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            clearTimeout(timer);
+        };
+    }, [formData.eventBadges, formData.teamCount, attendeesDetails.length]);
+
+    const scrollNav = (direction: 'left' | 'right') => {
+        const el = navScrollRef.current;
+        if (el) {
+            const scrollAmount = direction === 'left' ? -160 : 160;
+            el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            setTimeout(updateNavScrollState, 250);
+        }
+    };
     
     // --- Audio Recording State & Handlers ---
     const [isRecording, setIsRecording] = useState(false);
@@ -903,40 +939,84 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                 </div>
             </header>
 
-            {/* Modern Section Navigator Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-semibold w-full">
-                {[
-                    { id: 'all', label: 'All Panels (Side-by-Side)', icon: LayoutGrid },
-                    { id: 'details', label: '1. Mission & Rules', icon: FileText },
-                    { id: 'gear', label: '2. Gear & Badges', icon: Shield, badge: (formData.eventBadges || []).length > 0 ? `${(formData.eventBadges || []).length} Badges` : undefined },
-                    { id: 'teams', label: '3. Tactical Teams', icon: Users, badge: `${formData.teamCount || 2} Teams` },
-                    { id: 'roster', label: '4. Attendees & Finalize', icon: CheckCircleIcon, badge: `${attendeesDetails.length} Checked-in` },
-                ].map(tab => {
-                    const Icon = tab.icon;
-                    const isActive = activeSection === tab.id;
-                    return (
-                        <button
-                            key={tab.id}
-                            type="button"
-                            onClick={() => setActiveSection(tab.id as any)}
-                            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0 text-[11px] sm:text-xs cursor-pointer ${
-                                isActive
-                                    ? 'bg-red-600 text-white shadow-md shadow-red-950 font-bold'
-                                    : 'bg-zinc-900/80 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
-                            }`}
-                        >
-                            <Icon className="w-3.5 h-3.5" />
-                            <span>{tab.label}</span>
-                            {tab.badge && (
-                                <span className={`text-[9px] sm:text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold ${
-                                    isActive ? 'bg-black/30 text-white' : 'bg-zinc-800 text-zinc-300'
-                                }`}>
-                                    {tab.badge}
-                                </span>
-                            )}
-                        </button>
-                    );
-                })}
+            {/* Shrink-to-fit Pill Shaped Quick Navigation with Left & Right Scroll Arrows */}
+            <div className="relative flex items-center gap-1 sm:gap-1.5 w-full bg-zinc-950/80 p-1 sm:p-1.5 rounded-2xl border border-zinc-800/90 shadow-inner">
+                {/* Left Scroll Arrow Button */}
+                <button
+                    type="button"
+                    onClick={() => scrollNav('left')}
+                    disabled={!canScrollLeft}
+                    aria-label="Scroll navigation left"
+                    className={`p-1 sm:p-1.5 rounded-xl border transition-all duration-200 shrink-0 flex items-center justify-center cursor-pointer ${
+                        canScrollLeft
+                            ? 'bg-zinc-900 border-zinc-700 text-amber-400 hover:text-white hover:bg-zinc-800 hover:border-amber-500 shadow-md active:scale-95'
+                            : 'bg-zinc-950/40 border-zinc-900 text-zinc-700 opacity-40 cursor-not-allowed'
+                    }`}
+                    title={canScrollLeft ? "Scroll left" : "Start of navigation"}
+                >
+                    <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+
+                {/* Pill Navigation Scroll Container */}
+                <div
+                    ref={navScrollRef}
+                    onScroll={updateNavScrollState}
+                    className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar scroll-smooth w-full py-0.5 px-0.5"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                    {[
+                        { id: 'all', label: 'All Panels (Side-by-Side)', shortLabel: 'All Panels', icon: LayoutGrid },
+                        { id: 'details', label: '1. Mission & Rules', shortLabel: '1. Mission', icon: FileText },
+                        { id: 'gear', label: '2. Gear & Badges', shortLabel: '2. Gear', icon: Shield, badge: (formData.eventBadges || []).length > 0 ? `${(formData.eventBadges || []).length}` : undefined },
+                        { id: 'teams', label: '3. Tactical Teams', shortLabel: '3. Teams', icon: Users, badge: `${formData.teamCount || 2}` },
+                        { id: 'roster', label: '4. Attendees & Finalize', shortLabel: '4. Attendees', icon: CheckCircleIcon, badge: `${attendeesDetails.length}` },
+                    ].map(tab => {
+                        const Icon = tab.icon;
+                        const isActive = activeSection === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => {
+                                    setActiveSection(tab.id as any);
+                                    setTimeout(updateNavScrollState, 100);
+                                }}
+                                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all duration-200 flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0 text-[10px] sm:text-xs cursor-pointer ${
+                                    isActive
+                                        ? 'bg-red-600 text-white shadow-md shadow-red-950 font-bold border border-red-500/80 scale-[1.02]'
+                                        : 'bg-zinc-900/90 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/90 border border-zinc-800/80'
+                                }`}
+                            >
+                                <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                                <span className="hidden md:inline">{tab.label}</span>
+                                <span className="md:hidden">{tab.shortLabel}</span>
+                                {tab.badge && (
+                                    <span className={`text-[8px] sm:text-[9px] font-mono px-1.5 py-0.2 rounded-full font-bold shrink-0 ${
+                                        isActive ? 'bg-black/40 text-white border border-white/20' : 'bg-zinc-800 text-zinc-300 border border-zinc-700/60'
+                                    }`}>
+                                        {tab.badge}
+                                    </span>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Right Scroll Arrow Button */}
+                <button
+                    type="button"
+                    onClick={() => scrollNav('right')}
+                    disabled={!canScrollRight}
+                    aria-label="Scroll navigation right"
+                    className={`p-1 sm:p-1.5 rounded-xl border transition-all duration-200 shrink-0 flex items-center justify-center cursor-pointer ${
+                        canScrollRight
+                            ? 'bg-zinc-900 border-zinc-700 text-amber-400 hover:text-white hover:bg-zinc-800 hover:border-amber-500 shadow-md animate-pulse active:scale-95'
+                            : 'bg-zinc-950/40 border-zinc-900 text-zinc-700 opacity-40 cursor-not-allowed'
+                    }`}
+                    title={canScrollRight ? "Scroll right" : "End of navigation"}
+                >
+                    <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
             </div>
 
             {/* Side-by-Side Master Layout */}

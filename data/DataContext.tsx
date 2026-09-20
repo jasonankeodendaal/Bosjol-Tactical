@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import { extractAndCleanStorageUrlsFromDoc } from '../utils/storageCleaner';
 import * as mock from '../constants';
 import { getRankForPlayer } from '../utils/rankUtils';
-import { normalizePlayerRow, normalizeRankRow, normalizeGameTypeRow, normalizeSignupRow, normalizeEventRow, prepareSupabasePayload } from '../utils/supabaseSchema';
+import { normalizePlayerRow, normalizeRankRow, normalizeGameTypeRow, normalizeSignupRow, normalizeEventRow, normalizeInventoryRow, prepareSupabasePayload } from '../utils/supabaseSchema';
 import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters, AdminNotification, PlayerHonor, TacticalRuleSet, GameType } from '../types';
 import { AuthContext } from '../auth/AuthContext';
 
@@ -67,21 +67,7 @@ function normalizeCollectionItem<T>(collectionName: string, item: any): T {
         } as unknown as T;
     }
     if (collectionName === 'inventory') {
-        const salePrice = Number(item.salePrice ?? item.saleprice ?? item.pricePerUnit ?? item.priceperunit ?? 0) || 0;
-        const stock = Number(item.stock ?? item.quantity ?? 0) || 0;
-        const isRental = !!(item.isRental ?? item.isrental ?? (item.name ? /rental/i.test(item.name) : false));
-        return {
-            ...item,
-            id: String(item.id || ''),
-            name: item.name || '',
-            category: item.category || 'Gear',
-            salePrice,
-            stock,
-            isRental,
-            type: item.type || 'Gear',
-            condition: item.condition || 'New',
-            description: item.description || '',
-        } as unknown as T;
+        return normalizeInventoryRow(item) as unknown as T;
     }
     if (collectionName === 'raffles') {
         let tickets = item.tickets || item.soldTickets || item.soldtickets || [];
@@ -393,7 +379,11 @@ async function safeUpsertRow(table: string, initialPayload: any): Promise<boolea
                 }
             }
 
-            console.warn(`Supabase upsert notice for ${tableName}:`, msg);
+            if (msg.includes('row-level security') || msg.includes('violates') || msg.includes('permission denied')) {
+                console.warn(`[Supabase RLS Error] Row Level Security blocked writing to table '${tableName}'. Run the provided SQL migration in Supabase SQL Editor to enable public write access:`, msg);
+            } else {
+                console.warn(`Supabase upsert notice for ${tableName}:`, msg);
+            }
             break;
         }
 
@@ -868,7 +858,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (IS_LIVE_DATA && supabase) {
             try {
                 const preparedPayload = prepareSupabasePayload(collectionName, mergedDoc, ranks);
-                await safeUpsertRow(collectionName, preparedPayload);
+                const success = await safeUpsertRow(collectionName, preparedPayload);
+                if (!success) {
+                    console.warn(`[Supabase Persistence Warning] Could not persist update to table '${collectionName}' for id '${id}'. Ensure the table schema and RLS policies are applied in Supabase.`);
+                }
             } catch (err: any) {
                 console.warn(`Network error in updateDoc (${collectionName}):`, err?.message || err);
             }

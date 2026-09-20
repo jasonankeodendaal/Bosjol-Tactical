@@ -1,4 +1,4 @@
-import type { Player, Rank, Tier, Badge, LegendaryBadge, GameEvent, GamificationRule, GameType } from '../types';
+import type { Player, Rank, Tier, Badge, LegendaryBadge, GameEvent, GamificationRule, GameType, InventoryItem } from '../types';
 import { getRankForPlayer } from './rankUtils';
 import { generatePlayerCodeFromName } from './playerCodeGenerator';
 
@@ -587,31 +587,52 @@ CREATE TABLE IF NOT EXISTS public.inventory (
     stock NUMERIC DEFAULT 0,
     "pricePerUnit" NUMERIC DEFAULT 0,
     priceperunit NUMERIC DEFAULT 0,
+    price_per_unit NUMERIC DEFAULT 0,
     "salePrice" NUMERIC DEFAULT 0,
     saleprice NUMERIC DEFAULT 0,
+    sale_price NUMERIC DEFAULT 0,
+    price NUMERIC DEFAULT 0,
+    "rentalPrice" NUMERIC DEFAULT 0,
+    rentalprice NUMERIC DEFAULT 0,
+    rental_price NUMERIC DEFAULT 0,
     type TEXT DEFAULT 'Gear',
     "isRental" BOOLEAN DEFAULT false,
     isrental BOOLEAN DEFAULT false,
+    is_rental BOOLEAN DEFAULT false,
     description TEXT DEFAULT '',
     condition TEXT DEFAULT 'New',
     "serialNumber" TEXT DEFAULT '',
     serialnumber TEXT DEFAULT '',
+    serial_number TEXT DEFAULT '',
     "supplierId" TEXT,
     supplierid TEXT,
+    supplier_id TEXT,
     status TEXT DEFAULT 'In Stock',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Comprehensive Column Aliases for public.inventory (Handles camelCase, lowercase, and snake_case)
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "salePrice" NUMERIC DEFAULT 0;
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS saleprice NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS sale_price NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS price NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "pricePerUnit" NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS priceperunit NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS price_per_unit NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "rentalPrice" NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS rentalprice NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS rental_price NUMERIC DEFAULT 0;
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS stock NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS quantity NUMERIC DEFAULT 0;
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'Gear';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "isRental" BOOLEAN DEFAULT false;
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS isrental BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS is_rental BOOLEAN DEFAULT false;
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS condition TEXT DEFAULT 'New';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "serialNumber" TEXT DEFAULT '';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS serialnumber TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS serial_number TEXT DEFAULT '';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "purchaseDate" TEXT DEFAULT '';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS purchasedate TEXT DEFAULT '';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "lastServiceDate" TEXT DEFAULT '';
@@ -619,12 +640,38 @@ ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS lastservicedate TEXT DEFAU
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS sku TEXT DEFAULT '';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "purchasePrice" NUMERIC DEFAULT 0;
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS purchaseprice NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS purchase_price NUMERIC DEFAULT 0;
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "reorderLevel" NUMERIC DEFAULT 0;
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS reorderlevel NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS reorder_level NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "supplierId" TEXT;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS supplierid TEXT;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS supplier_id TEXT;
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "warrantyInfo" TEXT DEFAULT '';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS warrantyinfo TEXT DEFAULT '';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "imageUrl" TEXT DEFAULT '';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS imageurl TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT '';
+
+-- Row Level Security & Full Access for inventory
+ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public full access on inventory" ON public.inventory;
+CREATE POLICY "Allow public full access on inventory" ON public.inventory FOR ALL USING (true) WITH CHECK (true);
+GRANT ALL ON TABLE public.inventory TO anon, authenticated, service_role;
+
+-- Full Replica Identity for instant live Realtime sync
+ALTER TABLE public.inventory REPLICA IDENTITY FULL;
+
+-- Add inventory to Supabase Realtime publication
+DO $$
+BEGIN
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.inventory;
+    EXCEPTION 
+        WHEN duplicate_object THEN NULL;
+        WHEN OTHERS THEN NULL;
+    END;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.suppliers (
     id TEXT PRIMARY KEY,
@@ -1110,6 +1157,55 @@ export function normalizeEventRow(raw: any): GameEvent {
 }
 
 /**
+ * Normalizes a raw inventory item row from Supabase into a fully-typed InventoryItem object.
+ * Robustly checks all pricing, rental, stock, and metadata column aliases so rental price updates never fallback.
+ */
+export function normalizeInventoryRow(raw: any): InventoryItem {
+    if (!raw) return raw;
+    const salePrice = Number(
+        raw.salePrice ?? 
+        raw.saleprice ?? 
+        raw.sale_price ?? 
+        raw.price ?? 
+        raw.pricePerUnit ?? 
+        raw.priceperunit ?? 
+        raw.price_per_unit ?? 
+        raw.rentalPrice ?? 
+        raw.rentalprice ?? 
+        raw.rental_price ?? 
+        0
+    ) || 0;
+    const stock = Number(raw.stock ?? raw.quantity ?? 0) || 0;
+    const rawIsRental = raw.isRental ?? raw.isrental ?? raw.is_rental;
+    const isRental = rawIsRental !== undefined 
+        ? Boolean(rawIsRental) 
+        : (raw.name ? /rental/i.test(String(raw.name)) : false);
+    const purchasePrice = Number(raw.purchasePrice ?? raw.purchaseprice ?? raw.purchase_price ?? 0) || 0;
+    const reorderLevel = Number(raw.reorderLevel ?? raw.reorderlevel ?? raw.reorder_level ?? 0) || 0;
+
+    return {
+        ...raw,
+        id: String(raw.id || ''),
+        name: raw.name || '',
+        category: raw.category || 'Gear',
+        salePrice,
+        pricePerUnit: salePrice,
+        stock,
+        quantity: stock,
+        isRental,
+        type: raw.type || 'Gear',
+        condition: raw.condition || 'New',
+        description: raw.description || '',
+        supplierId: raw.supplierId || raw.supplierid || raw.supplier_id || '',
+        sku: raw.sku || '',
+        purchasePrice,
+        reorderLevel,
+        serialNumber: raw.serialNumber || raw.serialnumber || raw.serial_number || '',
+        imageUrl: raw.imageUrl || raw.imageurl || raw.image_url || '',
+    } as InventoryItem;
+}
+
+/**
  * Prepares a clean, Postgres/Supabase-compatible payload for writing to Supabase.
  * Supplies matching column aliases (camelCase and unquoted) and ensures JSON objects are formatted.
  */
@@ -1193,24 +1289,74 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
     }
 
     if (collectionName === 'inventory') {
-        const salePrice = Number(item.salePrice ?? item.saleprice ?? item.pricePerUnit ?? item.priceperunit ?? 0) || 0;
+        const salePrice = Number(
+            item.salePrice ?? 
+            item.saleprice ?? 
+            item.sale_price ?? 
+            item.price ?? 
+            item.pricePerUnit ?? 
+            item.priceperunit ?? 
+            item.price_per_unit ?? 
+            item.rentalPrice ?? 
+            item.rentalprice ?? 
+            item.rental_price ?? 
+            0
+        ) || 0;
         const stock = Number(item.stock ?? item.quantity ?? 0) || 0;
-        const isRental = !!(item.isRental || item.isrental);
+        const rawIsRental = item.isRental ?? item.isrental ?? item.is_rental;
+        const isRental = rawIsRental !== undefined 
+            ? Boolean(rawIsRental) 
+            : (item.name ? /rental/i.test(String(item.name)) : false);
+        const purchasePrice = Number(item.purchasePrice ?? item.purchaseprice ?? item.purchase_price ?? 0) || 0;
+        const reorderLevel = Number(item.reorderLevel ?? item.reorderlevel ?? item.reorder_level ?? 0) || 0;
+        const supplierId = String(item.supplierId || item.supplierid || item.supplier_id || '');
+        const serialNumber = String(item.serialNumber || item.serialnumber || item.serial_number || '');
+        const imageUrl = String(item.imageUrl || item.imageurl || item.image_url || '');
+
         return {
             ...item,
             id: String(item.id),
             name: item.name || '',
             category: item.category || 'Gear',
-            salePrice: salePrice,
-            saleprice: salePrice,
-            pricePerUnit: salePrice,
-            priceperunit: salePrice,
-            stock: stock,
-            quantity: stock,
-            isRental: isRental,
-            isrental: isRental,
+            type: item.type || 'Gear',
             condition: item.condition || 'New',
             description: item.description || '',
+            // Populate all price column aliases so Supabase saves regardless of column casing
+            salePrice: salePrice,
+            saleprice: salePrice,
+            sale_price: salePrice,
+            price: salePrice,
+            pricePerUnit: salePrice,
+            priceperunit: salePrice,
+            price_per_unit: salePrice,
+            rentalPrice: salePrice,
+            rentalprice: salePrice,
+            rental_price: salePrice,
+            // Stock aliases
+            stock: stock,
+            quantity: stock,
+            // Rental flag aliases
+            isRental: isRental,
+            isrental: isRental,
+            is_rental: isRental,
+            // Accounting & audit aliases
+            purchasePrice: purchasePrice,
+            purchaseprice: purchasePrice,
+            purchase_price: purchasePrice,
+            reorderLevel: reorderLevel,
+            reorderlevel: reorderLevel,
+            reorder_level: reorderLevel,
+            // Supplier & metadata aliases
+            supplierId: supplierId,
+            supplierid: supplierId,
+            supplier_id: supplierId,
+            sku: item.sku || '',
+            serialNumber: serialNumber,
+            serialnumber: serialNumber,
+            serial_number: serialNumber,
+            imageUrl: imageUrl,
+            imageurl: imageUrl,
+            image_url: imageUrl,
         };
     }
 
@@ -1920,6 +2066,108 @@ AS $$
        OR LOWER(COALESCE(t->>'playercode', '')) = LOWER(p_player_id)
     ORDER BY r.drawdate DESC NULLS LAST;
 $$;
+`;
+
+export const INVENTORY_SQL_SCHEMA_MIGRATION = `-- =========================================================================
+-- BOSJOL TACTICAL AIRSOFT - INVENTORY & RENTAL PRICING LIVE SYNC SQL FIX
+-- Run this in your Supabase SQL Editor (Dashboard -> SQL Editor -> New Query -> Run)
+-- Ensures rental prices, quantities, and stock save permanently and sync live.
+-- =========================================================================
+
+-- 1. Create table if not exists with primary pricing columns
+CREATE TABLE IF NOT EXISTS public.inventory (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    category TEXT DEFAULT 'Gear',
+    quantity NUMERIC DEFAULT 0,
+    stock NUMERIC DEFAULT 0,
+    "pricePerUnit" NUMERIC DEFAULT 0,
+    priceperunit NUMERIC DEFAULT 0,
+    price_per_unit NUMERIC DEFAULT 0,
+    "salePrice" NUMERIC DEFAULT 0,
+    saleprice NUMERIC DEFAULT 0,
+    sale_price NUMERIC DEFAULT 0,
+    price NUMERIC DEFAULT 0,
+    "rentalPrice" NUMERIC DEFAULT 0,
+    rentalprice NUMERIC DEFAULT 0,
+    rental_price NUMERIC DEFAULT 0,
+    type TEXT DEFAULT 'Gear',
+    "isRental" BOOLEAN DEFAULT false,
+    isrental BOOLEAN DEFAULT false,
+    is_rental BOOLEAN DEFAULT false,
+    description TEXT DEFAULT '',
+    condition TEXT DEFAULT 'New',
+    "serialNumber" TEXT DEFAULT '',
+    serialnumber TEXT DEFAULT '',
+    serial_number TEXT DEFAULT '',
+    "supplierId" TEXT,
+    supplierid TEXT,
+    supplier_id TEXT,
+    status TEXT DEFAULT 'In Stock',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. Add all missing price and rental column variants safely (Idempotent)
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "salePrice" NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS saleprice NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS sale_price NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS price NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "pricePerUnit" NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS priceperunit NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS price_per_unit NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "rentalPrice" NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS rentalprice NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS rental_price NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS stock NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS quantity NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'Gear';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "isRental" BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS isrental BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS is_rental BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS condition TEXT DEFAULT 'New';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "serialNumber" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS serialnumber TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS serial_number TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "purchaseDate" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS purchasedate TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "lastServiceDate" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS lastservicedate TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS sku TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "purchasePrice" NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS purchaseprice NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS purchase_price NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "reorderLevel" NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS reorderlevel NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS reorder_level NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "supplierId" TEXT;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS supplierid TEXT;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS supplier_id TEXT;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "warrantyInfo" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS warrantyinfo TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "imageUrl" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS imageurl TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT '';
+
+-- 3. Row Level Security & Permissions (Fixes silent write rejections)
+ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public full access on inventory" ON public.inventory;
+CREATE POLICY "Allow public full access on inventory" ON public.inventory FOR ALL USING (true) WITH CHECK (true);
+GRANT ALL ON TABLE public.inventory TO anon, authenticated, service_role;
+
+-- 4. Enable Full Replica Identity for instant Realtime sync
+ALTER TABLE public.inventory REPLICA IDENTITY FULL;
+
+-- 5. Add to Realtime Publication so changes broadcast across devices
+DO $$
+BEGIN
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.inventory;
+    EXCEPTION 
+        WHEN duplicate_object THEN NULL;
+        WHEN OTHERS THEN NULL;
+    END;
+END $$;
 `;
 
 

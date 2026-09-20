@@ -4,9 +4,10 @@ import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
 import { ArchiveBoxIcon, PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, InformationCircleIcon } from './icons/Icons';
-import { HelpCircle, Sparkles, ChevronRight, Copy, Check, ShieldCheck, Tag, Layers, RefreshCw, Cpu } from 'lucide-react';
+import { HelpCircle, Sparkles, ChevronRight, Copy, Check, ShieldCheck, Tag, Layers, RefreshCw, Cpu, Database, CheckCircle2 } from 'lucide-react';
 import { INVENTORY_CATEGORIES, INVENTORY_CONDITIONS } from '../constants';
 import { BadgePill } from './BadgePill';
+import { INVENTORY_SQL_SCHEMA_MIGRATION } from '../utils/supabaseSchema';
 
 interface InventoryTabProps {
     inventory: InventoryItem[];
@@ -202,6 +203,9 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInvent
     const [deletingItem, setDeletingItem] = useState<InventoryItem | null>(null);
     const [filter, setFilter] = useState<'all' | 'rental' | 'sale' | 'inspection'>('all');
     const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
+    const [showSqlModal, setShowSqlModal] = useState<boolean>(false);
+    const [isCopied, setIsCopied] = useState<boolean>(false);
+    const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
 
     const filteredInventory = useMemo(() => {
         if (filter === 'rental') return inventory.filter(i => i.isRental);
@@ -210,14 +214,23 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInvent
         return inventory;
     }, [inventory, filter]);
 
+    const handleCopySql = () => {
+        navigator.clipboard.writeText(INVENTORY_SQL_SCHEMA_MIGRATION);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2500);
+    };
+
     const handleSave = (item: InventoryItem | Omit<InventoryItem, 'id'>) => {
         const autoRental = item.isRental || (item.name ? isRentalName(item.name) : false);
         const itemToSave = { ...item, isRental: autoRental };
         if ('id' in itemToSave && itemToSave.id) {
             updateDoc('inventory', itemToSave as InventoryItem);
+            setSavedFeedback(`"${itemToSave.name || 'Item'}" updated! Live sync active.`);
         } else {
             addDoc('inventory', itemToSave);
+            setSavedFeedback(`"${itemToSave.name || 'Item'}" added! Live sync active.`);
         }
+        setTimeout(() => setSavedFeedback(null), 3500);
         setIsEditing(null);
     };
 
@@ -225,6 +238,8 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInvent
         if (!deletingItem) return;
         deleteDoc('inventory', deletingItem.id);
         setDeletingItem(null);
+        setSavedFeedback('Item removed.');
+        setTimeout(() => setSavedFeedback(null), 3000);
     };
 
     return (
@@ -309,15 +324,123 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInvent
                                     Set reorder thresholds to receive low-stock alerts. If equipment is damaged, switch condition to <strong className="text-white">"Needs Inspection"</strong> to flag it for field servicing.
                                 </p>
                             </div>
+
+                            {/* Step 5 */}
+                            <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-1.5 md:col-span-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px] uppercase tracking-wider">
+                                        <Database className="w-3.5 h-3.5" />
+                                        <span>5. Supabase Live Sync & Rental Price Persistence</span>
+                                    </div>
+                                    <button 
+                                        onClick={() => { setShowGuideModal(false); setShowSqlModal(true); }}
+                                        className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold underline"
+                                    >
+                                        Open SQL Fix
+                                    </button>
+                                </div>
+                                <p className="text-[11px] text-zinc-300 leading-relaxed">
+                                    If rental price updates are not staying saved after browser reload, execute the Supabase SQL schema script. This provides all Postgres column aliases (<code className="text-emerald-300 bg-black/40 px-1 py-0.5 rounded">salePrice</code>, <code className="text-emerald-300 bg-black/40 px-1 py-0.5 rounded">saleprice</code>, <code className="text-emerald-300 bg-black/40 px-1 py-0.5 rounded">rental_price</code>) and enables full Row Level Security write permissions.
+                                </p>
+                            </div>
                         </div>
 
-                        <div className="pt-2 flex justify-end">
+                        <div className="pt-2 flex justify-between items-center">
+                            <Button size="sm" variant="secondary" onClick={() => { setShowGuideModal(false); setShowSqlModal(true); }}>
+                                <Database className="w-3.5 h-3.5 mr-1 text-emerald-400" />
+                                View Supabase SQL
+                            </Button>
                             <Button size="sm" variant="primary" onClick={() => setShowGuideModal(false)}>
                                 Got it
                             </Button>
                         </div>
                     </div>
                 </Modal>
+            )}
+
+            {/* Supabase SQL Live Sync Modal */}
+            {showSqlModal && (
+                <Modal isOpen={true} onClose={() => setShowSqlModal(false)} title="Supabase Inventory & Rental Pricing Sync Fix">
+                    <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1 text-xs text-zinc-300 custom-scrollbar">
+                        <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-950/40 via-zinc-900 to-zinc-900 border border-emerald-500/30 flex items-start gap-3">
+                            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 shrink-0 mt-0.5">
+                                <Database className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-white mb-0.5">Live Sync & Rental Price Persistence SQL</h4>
+                                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                                    This SQL script ensures the <code className="text-emerald-300 font-mono">public.inventory</code> table supports all price column variants (<code className="text-zinc-200">"salePrice"</code>, <code className="text-zinc-200">saleprice</code>, <code className="text-zinc-200">rentalprice</code>, <code className="text-zinc-200">price</code>), grants full RLS write permissions, and configures Supabase Realtime broadcast.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Step Instructions */}
+                        <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-3 space-y-2">
+                            <h5 className="font-bold text-white text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                How to Apply in 30 Seconds:
+                            </h5>
+                            <ol className="list-decimal list-inside space-y-1 text-[11px] text-zinc-300 leading-relaxed">
+                                <li>Open your <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline hover:text-emerald-300 font-medium">Supabase Project Dashboard</a>.</li>
+                                <li>In the left navigation sidebar, click <strong>SQL Editor</strong> &rarr; <strong>New Query</strong>.</li>
+                                <li>Click the <strong>Copy SQL Snippet</strong> button below, paste it into the editor, and click <strong>Run</strong>.</li>
+                            </ol>
+                        </div>
+
+                        {/* Code Container with Copy Button */}
+                        <div className="relative rounded-xl border border-zinc-800 bg-black/70 overflow-hidden">
+                            <div className="flex items-center justify-between px-3 py-2 bg-zinc-900/90 border-b border-zinc-800">
+                                <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+                                    inventory_pricing_sync.sql
+                                </span>
+                                <button
+                                    onClick={handleCopySql}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition-all shadow-sm"
+                                >
+                                    {isCopied ? (
+                                        <>
+                                            <Check className="w-3.5 h-3.5 text-white" />
+                                            <span>Copied to Clipboard!</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Copy className="w-3.5 h-3.5 text-white" />
+                                            <span>Copy SQL Snippet</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                            <pre className="p-3.5 font-mono text-[10px] sm:text-[11px] leading-relaxed text-emerald-300/90 overflow-x-auto max-h-[300px] select-all custom-scrollbar">
+                                {INVENTORY_SQL_SCHEMA_MIGRATION}
+                            </pre>
+                        </div>
+
+                        <div className="pt-2 flex justify-end gap-2">
+                            <Button size="sm" variant="secondary" onClick={() => setShowSqlModal(false)}>
+                                Close
+                            </Button>
+                            <Button size="sm" variant="primary" onClick={handleCopySql}>
+                                {isCopied ? 'Copied!' : 'Copy SQL'}
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* Saved Notification Banner */}
+            {savedFeedback && (
+                <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs shadow-lg animate-in fade-in slide-in-from-top-1">
+                    <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span className="font-medium">{savedFeedback}</span>
+                    </div>
+                    <button 
+                        onClick={() => setSavedFeedback(null)}
+                        className="text-emerald-400/60 hover:text-emerald-200 text-xs px-1"
+                    >
+                        &times;
+                    </button>
+                </div>
             )}
 
             {/* Tiny Clickable Explanation Banner */}
@@ -365,7 +488,17 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ inventory, setInvent
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                    <Button 
+                        onClick={() => setShowSqlModal(true)} 
+                        variant="secondary" 
+                        size="sm" 
+                        className="!py-1 !px-2.5 text-xs text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                        title="View SQL query to ensure Supabase persists all rental price edits"
+                    >
+                        <Database className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
+                        Supabase SQL Sync
+                    </Button>
                     <Button onClick={() => setIsEditing({})} size="sm" className="!py-1 !px-2.5 text-xs">
                         <PlusIcon className="w-4 h-4 mr-1"/>Add Item
                     </Button>

@@ -31,6 +31,7 @@ import { EventCountdownNotification } from './EventCountdownNotification';
 import { PlayerEventFullView } from './PlayerEventFullView';
 import { PlayerXpGrowthChart } from './PlayerXpGrowthChart';
 import { MobileNotificationManager } from './MobileNotificationManager';
+import { ErrorBoundary } from './ErrorBoundary';
 
 const SponsorModal: React.FC<{ sponsor: Sponsor, onClose: () => void, onImageClick: (url: string) => void, backgroundUrl?: string }> = ({ sponsor, onClose, onImageClick, backgroundUrl }) => {
     const defaultBg = "https://www.toptal.com/designers/subtlepatterns/uploads/dark-geometric.png";
@@ -2185,16 +2186,18 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
 
             <AnimatePresence>
                 {selectedEvent && (
-                    <PlayerEventFullView
-                        event={selectedEvent}
-                        player={player}
-                        locations={locations}
-                        signups={signups}
-                        onClose={() => setSelectedEvent(null)}
-                        onSignUp={(id, requestedGearIds, note, voteGameTypeId) => {
-                            onEventSignUp(id, requestedGearIds, note, voteGameTypeId);
-                        }}
-                    />
+                    <ErrorBoundary fallbackTitle="Unable to load Event Details" onReset={() => setSelectedEvent(null)}>
+                        <PlayerEventFullView
+                            event={selectedEvent}
+                            player={player}
+                            locations={locations}
+                            signups={signups}
+                            onClose={() => setSelectedEvent(null)}
+                            onSignUp={(id, requestedGearIds, note, voteGameTypeId) => {
+                                onEventSignUp(id, requestedGearIds, note, voteGameTypeId);
+                            }}
+                        />
+                    </ErrorBoundary>
                 )}
             </AnimatePresence>
         </div>

@@ -72,11 +72,25 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     const [activeSection, setActiveSection] = useState<'all' | 'details' | 'gear' | 'teams' | 'roster'>('all');
     const [formData, setFormData] = useState<Omit<GameEvent, 'id'>>(() => {
         if (!event) return defaultEvent;
-        // Ensure date is in 'YYYY-MM-DD' format for the input
-        const date = new Date(event.date).toISOString().split('T')[0];
+        // Ensure date is in 'YYYY-MM-DD' format for the input safely
+        let dateStr = new Date().toISOString().split('T')[0];
+        try {
+            if (event.date) {
+                const parsed = new Date(event.date);
+                if (!isNaN(parsed.getTime())) {
+                    dateStr = parsed.toISOString().split('T')[0];
+                } else {
+                    dateStr = event.date;
+                }
+            }
+        } catch {
+            dateStr = event.date || new Date().toISOString().split('T')[0];
+        }
         return { 
+            ...defaultEvent,
             ...event, 
-            date,
+            date: dateStr,
+            attendees: Array.isArray(event.attendees) ? event.attendees : [],
             eventBadges: event.eventBadges || [],
             awardedBadges: event.awardedBadges || {},
         };
@@ -88,7 +102,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
         (formData.attendees || []).forEach(a => {
             count += (a.rentedGearIds || []).length;
         });
-        signups.filter(s => s.eventId === event?.id).forEach(s => {
+        (signups || []).filter(s => s.eventId === event?.id).forEach(s => {
             count += (s.requestedGearIds || []).length;
         });
         return count;
@@ -107,6 +121,48 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
         });
         return { assignedCommendationsCount: totalCount, assignedOperatorsCount: opsCount };
     }, [formData.awardedBadges]);
+
+    const signedUpPlayersDetails = useMemo(() => {
+        const eventSignups = (signups || []).filter(s => s.eventId === event?.id);
+        return eventSignups.map(s => {
+            const p = (players || []).find(x => x.id === s.playerId);
+            return {
+                id: s.playerId,
+                name: s.playerName || (p ? `${p.name} ${p.surname || ''}`.trim() : s.playerId),
+                callsign: s.playerCallsign || p?.callsign || p?.name || 'Operator',
+                isGuest: s.isGuest || false,
+                signup: s,
+                playerObj: p
+            };
+        });
+    }, [signups, event?.id, players]);
+
+    const attendeesDetails = useMemo(() => {
+        const attendeesList = Array.isArray(formData.attendees) ? formData.attendees : [];
+        return attendeesList.map(a => {
+            if (a.isGuest) {
+                return {
+                    id: a.playerId,
+                    name: a.guestName || 'Guest Operator',
+                    callsign: a.guestCallsign || 'Guest',
+                    avatarUrl: '',
+                    isGuest: true,
+                    attendee: a,
+                    playerObj: undefined
+                };
+            }
+            const p = (players || []).find(x => x.id === a.playerId);
+            return {
+                id: a.playerId,
+                name: p ? `${p.name} ${p.surname || ''}`.trim() : a.playerId,
+                callsign: p?.callsign || p?.name || 'Operator',
+                avatarUrl: p?.avatarUrl || '',
+                isGuest: false,
+                attendee: a,
+                playerObj: p
+            };
+        });
+    }, [formData.attendees, players]);
 
     const [liveStats, setLiveStats] = useState<Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>>>(event?.liveStats || {});
     const [showAddGuestModal, setShowAddGuestModal] = useState(false);
@@ -221,48 +277,6 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     };
     // --- End Audio Recording ---
 
-
-    const signedUpPlayersDetails = useMemo(() => {
-        const eventSignups = signups.filter(s => s.eventId === event?.id);
-        return eventSignups.map(s => {
-            const p = players.find(x => x.id === s.playerId);
-            return {
-                id: s.playerId,
-                name: s.playerName || (p ? `${p.name} ${p.surname || ''}`.trim() : s.playerId),
-                callsign: s.playerCallsign || p?.callsign || p?.name || 'Operator',
-                isGuest: s.isGuest || false,
-                signup: s,
-                playerObj: p
-            };
-        });
-    }, [signups, event?.id, players]);
-
-    const attendeesDetails = useMemo(() => {
-        return formData.attendees.map(a => {
-            if (a.isGuest) {
-                return {
-                    id: a.playerId,
-                    name: a.guestName || 'Guest Operator',
-                    callsign: a.guestCallsign || 'Guest',
-                    avatarUrl: '',
-                    isGuest: true,
-                    attendee: a,
-                    playerObj: undefined
-                };
-            }
-            const p = players.find(x => x.id === a.playerId);
-            return {
-                id: a.playerId,
-                name: p ? `${p.name} ${p.surname || ''}`.trim() : a.playerId,
-                callsign: p?.callsign || p?.name || 'Operator',
-                avatarUrl: p?.avatarUrl || '',
-                isGuest: false,
-                attendee: a,
-                playerObj: p
-            };
-        });
-    }, [formData.attendees, players]);
-    
     const handleStatChange = (playerId: string, stat: keyof PlayerStats, value: number) => {
         setLiveStats(prev => ({
             ...prev,

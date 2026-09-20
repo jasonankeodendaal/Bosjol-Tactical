@@ -29,6 +29,7 @@ import { RuleShowcaseModal } from './components/RuleShowcaseModal';
 import { PromotionCelebrationModal } from './components/PromotionCelebrationModal';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { PWAOfflineIndicator } from './components/PWAOfflineIndicator';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 
 // --- Creator Popup Component and Icons ---
@@ -837,11 +838,13 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <DataProvider>
-          <AppContent />
-      </DataProvider>
-    </AuthProvider>
+    <ErrorBoundary fallbackTitle="Tactical Applet Recovery">
+      <AuthProvider>
+        <DataProvider>
+            <AppContent />
+        </DataProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 };
 

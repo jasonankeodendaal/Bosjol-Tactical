@@ -1275,23 +1275,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     if (view === 'manage_event') {
         const eventToManage = selectedEventId ? events.find(e => e.id === selectedEventId) : undefined;
         return (
-            <ManageEventPage 
-                event={eventToManage}
-                players={props.players}
-                inventory={props.inventory}
-                gamificationSettings={props.gamificationSettings}
-                legendaryBadges={props.legendaryBadges}
-                onBack={() => setView('dashboard')}
-                onSave={handleSaveEvent}
-                onDelete={handleDeleteEvent}
-                setPlayers={props.setPlayers}
-                setTransactions={props.setTransactions}
-                signups={signups}
-                setDoc={setDoc}
-                deleteDoc={deleteDoc}
-                companyDetails={companyDetails}
-            />
-        )
+            <ErrorBoundary fallbackTitle="Unable to load Event Management" onReset={() => setView('dashboard')}>
+                <ManageEventPage 
+                    event={eventToManage}
+                    players={props.players}
+                    inventory={props.inventory}
+                    gamificationSettings={props.gamificationSettings}
+                    legendaryBadges={props.legendaryBadges}
+                    onBack={() => setView('dashboard')}
+                    onSave={handleSaveEvent}
+                    onDelete={handleDeleteEvent}
+                    setPlayers={props.setPlayers}
+                    setTransactions={props.setTransactions}
+                    signups={signups}
+                    setDoc={setDoc}
+                    deleteDoc={deleteDoc}
+                    companyDetails={companyDetails}
+                />
+            </ErrorBoundary>
+        );
     }
 
     return (

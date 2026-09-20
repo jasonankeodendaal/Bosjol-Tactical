@@ -9,7 +9,6 @@ import { DashboardCard } from './DashboardCard';
 import { DataContext } from '../data/DataContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { resolveRankIcon, getRankBadgeSvg, DEFAULT_RANKS } from '../utils/rankUtils';
-import { LEGENDARY_BADGES_SQL } from '../utils/supabaseSchema';
 import { Search, Grid3X3, Layers, ChevronRight, ChevronLeft, Eye, X } from 'lucide-react';
 
 

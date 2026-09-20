@@ -69,6 +69,47 @@ function normalizeCollectionItem<T>(collectionName: string, item: any): T {
     if (collectionName === 'inventory') {
         return normalizeInventoryRow(item) as unknown as T;
     }
+    if (collectionName === 'transactions') {
+        const playerId = String(item.playerId || item.playerid || item.relatedPlayerId || item.relatedplayerid || '');
+        const paymentMethod = String(item.paymentMethod || item.paymentmethod || item.payment_method || 'Cash');
+        const receiptNumber = String(item.receiptNumber || item.receiptnumber || item.receipt_number || '');
+        let items = item.items || [];
+        if (typeof items === 'string') {
+            try { items = JSON.parse(items); } catch { items = []; }
+        }
+        if (!Array.isArray(items)) items = [];
+        return {
+            ...item,
+            id: String(item.id || ''),
+            description: String(item.description || 'Transaction'),
+            amount: Number(item.amount || 0),
+            type: item.type || 'Retail Revenue',
+            date: item.date || item.created_at || new Date().toISOString(),
+            playerId,
+            playerid: playerId,
+            relatedPlayerId: playerId,
+            relatedplayerid: playerId,
+            eventId: String(item.eventId || item.eventid || item.relatedEventId || ''),
+            relatedEventId: String(item.eventId || item.eventid || item.relatedEventId || ''),
+            status: item.status || 'completed',
+            paymentStatus: item.paymentStatus || 'Paid',
+            paymentMethod,
+            receiptNumber,
+            items,
+            subtotal: Number(item.subtotal ?? item.amount ?? 0),
+            discount: Number(item.discount || 0),
+            notes: item.notes || '',
+            cashierName: item.cashierName || item.cashiername || 'Admin',
+            customerName: item.customerName || item.customername || '',
+            customerCallsign: item.customerCallsign || item.customercallsign || '',
+            customerCode: item.customerCode || item.customercode || '',
+            expenseName: String(item.expenseName || item.expensename || item.expense_name || ''),
+            expenseReason: String(item.expenseReason || item.expensereason || item.expense_reason || ''),
+            receiptImageUrl: String(item.receiptImageUrl || item.receiptimageurl || item.receipt_image_url || item.slipImageUrl || item.slipimageurl || item.slip_image_url || ''),
+            category: String(item.category || (item.type === 'Expense' ? 'Business Expense' : '')),
+            paidTo: String(item.paidTo || item.paidto || item.paid_to || item.vendor || ''),
+        } as unknown as T;
+    }
     if (collectionName === 'raffles') {
         let tickets = item.tickets || item.soldTickets || item.soldtickets || [];
         if (typeof tickets === 'string') {

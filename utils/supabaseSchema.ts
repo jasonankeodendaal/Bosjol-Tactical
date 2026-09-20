@@ -652,6 +652,12 @@ ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS warrantyinfo TEXT DEFAULT 
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "imageUrl" TEXT DEFAULT '';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS imageurl TEXT DEFAULT '';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "availableInShop" BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS availableinshop BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS available_in_shop BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "inShop" BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS inshop BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS in_shop BOOLEAN DEFAULT false;
 
 -- Row Level Security & Full Access for inventory
 ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
@@ -688,15 +694,67 @@ CREATE TABLE IF NOT EXISTS public.transactions (
     id TEXT PRIMARY KEY,
     description TEXT NOT NULL,
     amount NUMERIC DEFAULT 0,
-    type TEXT DEFAULT 'income',
+    type TEXT DEFAULT 'Retail Revenue',
     date TEXT DEFAULT '',
     "playerId" TEXT,
     playerid TEXT,
     "eventId" TEXT,
     eventid TEXT,
     status TEXT DEFAULT 'completed',
+    "paymentMethod" TEXT DEFAULT 'Cash',
+    paymentmethod TEXT DEFAULT 'Cash',
+    payment_method TEXT DEFAULT 'Cash',
+    "receiptNumber" TEXT,
+    receiptnumber TEXT,
+    receipt_number TEXT,
+    items JSONB DEFAULT '[]'::jsonb,
+    notes TEXT DEFAULT '',
+    subtotal NUMERIC DEFAULT 0,
+    discount NUMERIC DEFAULT 0,
+    "cashierName" TEXT DEFAULT 'Admin',
+    cashiername TEXT DEFAULT 'Admin',
+    "customerName" TEXT DEFAULT '',
+    customername TEXT DEFAULT '',
+    "customerCallsign" TEXT DEFAULT '',
+    customercallsign TEXT DEFAULT '',
+    "customerCode" TEXT DEFAULT '',
+    customercode TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure all transaction columns exist safely
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT DEFAULT 'Cash';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paymentmethod TEXT DEFAULT 'Cash';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'Cash';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "receiptNumber" TEXT;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS receiptnumber TEXT;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS receipt_number TEXT;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS items JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS subtotal NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS discount NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "cashierName" TEXT DEFAULT 'Admin';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS cashiername TEXT DEFAULT 'Admin';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "customerName" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS customername TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "customerCallsign" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS customercallsign TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "customerCode" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS customercode TEXT DEFAULT '';
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public full access on transactions" ON public.transactions;
+CREATE POLICY "Allow public full access on transactions" ON public.transactions FOR ALL USING (true) WITH CHECK (true);
+GRANT ALL ON TABLE public.transactions TO anon, authenticated, service_role;
+ALTER TABLE public.transactions REPLICA IDENTITY FULL;
+DO $$
+BEGIN
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
+    EXCEPTION 
+        WHEN duplicate_object THEN NULL;
+        WHEN OTHERS THEN NULL;
+    END;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.locations (
     id TEXT PRIMARY KEY,
@@ -1182,6 +1240,15 @@ export function normalizeInventoryRow(raw: any): InventoryItem {
         : (raw.name ? /rental/i.test(String(raw.name)) : false);
     const purchasePrice = Number(raw.purchasePrice ?? raw.purchaseprice ?? raw.purchase_price ?? 0) || 0;
     const reorderLevel = Number(raw.reorderLevel ?? raw.reorderlevel ?? raw.reorder_level ?? 0) || 0;
+    const availableInShop = Boolean(
+        raw.availableInShop ?? 
+        raw.availableinshop ?? 
+        raw.available_in_shop ?? 
+        raw.inShop ?? 
+        raw.inshop ?? 
+        raw.in_shop ?? 
+        false
+    );
 
     return {
         ...raw,
@@ -1193,6 +1260,7 @@ export function normalizeInventoryRow(raw: any): InventoryItem {
         stock,
         quantity: stock,
         isRental,
+        availableInShop,
         type: raw.type || 'Gear',
         condition: raw.condition || 'New',
         description: raw.description || '',
@@ -1357,6 +1425,71 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
             imageUrl: imageUrl,
             imageurl: imageUrl,
             image_url: imageUrl,
+            // Shop showcase & sales availability aliases
+            availableInShop: Boolean(item.availableInShop),
+            availableinshop: Boolean(item.availableInShop),
+            available_in_shop: Boolean(item.availableInShop),
+            inShop: Boolean(item.availableInShop),
+            inshop: Boolean(item.availableInShop),
+            in_shop: Boolean(item.availableInShop),
+        };
+    }
+
+    if (collectionName === 'transactions') {
+        const playerId = String(item.playerId || item.playerid || item.relatedPlayerId || item.relatedplayerid || '');
+        const paymentMethod = String(item.paymentMethod || item.paymentmethod || item.payment_method || 'Cash');
+        const receiptNumber = String(item.receiptNumber || item.receiptnumber || item.receipt_number || '');
+        let items = item.items || [];
+        if (typeof items === 'string') {
+            try { items = JSON.parse(items); } catch { items = []; }
+        }
+        return {
+            ...item,
+            id: String(item.id),
+            description: String(item.description || 'Transaction'),
+            amount: Number(item.amount || 0),
+            type: String(item.type || 'Retail Revenue'),
+            date: String(item.date || new Date().toISOString()),
+            playerId,
+            playerid: playerId,
+            relatedPlayerId: playerId,
+            relatedplayerid: playerId,
+            eventId: String(item.eventId || item.eventid || item.relatedEventId || ''),
+            eventid: String(item.eventId || item.eventid || item.relatedEventId || ''),
+            relatedEventId: String(item.eventId || item.eventid || item.relatedEventId || ''),
+            status: String(item.status || 'completed'),
+            paymentStatus: String(item.paymentStatus || 'Paid'),
+            paymentMethod,
+            paymentmethod: paymentMethod,
+            payment_method: paymentMethod,
+            receiptNumber,
+            receiptnumber: receiptNumber,
+            receipt_number: receiptNumber,
+            items,
+            subtotal: Number(item.subtotal ?? item.amount ?? 0),
+            discount: Number(item.discount || 0),
+            notes: String(item.notes || ''),
+            cashierName: String(item.cashierName || item.cashiername || 'Admin'),
+            cashiername: String(item.cashierName || item.cashiername || 'Admin'),
+            customerName: String(item.customerName || item.customername || ''),
+            customername: String(item.customerName || item.customername || ''),
+            customerCallsign: String(item.customerCallsign || item.customercallsign || ''),
+            customercallsign: String(item.customerCallsign || item.customercallsign || ''),
+            customerCode: String(item.customerCode || item.customercode || ''),
+            customercode: String(item.customerCode || item.customercode || ''),
+            expenseName: String(item.expenseName || item.expensename || item.expense_name || ''),
+            expensename: String(item.expenseName || item.expensename || item.expense_name || ''),
+            expense_name: String(item.expenseName || item.expensename || item.expense_name || ''),
+            expenseReason: String(item.expenseReason || item.expensereason || item.expense_reason || ''),
+            expensereason: String(item.expenseReason || item.expensereason || item.expense_reason || ''),
+            expense_reason: String(item.expenseReason || item.expensereason || item.expense_reason || ''),
+            receiptImageUrl: String(item.receiptImageUrl || item.receiptimageurl || item.receipt_image_url || item.slipImageUrl || item.slipimageurl || item.slip_image_url || ''),
+            receiptimageurl: String(item.receiptImageUrl || item.receiptimageurl || item.receipt_image_url || item.slipImageUrl || item.slipimageurl || item.slip_image_url || ''),
+            receipt_image_url: String(item.receiptImageUrl || item.receiptimageurl || item.receipt_image_url || item.slipImageUrl || item.slipimageurl || item.slip_image_url || ''),
+            category: String(item.category || (item.type === 'Expense' ? 'Business Expense' : '')),
+            paidTo: String(item.paidTo || item.paidto || item.paid_to || item.vendor || ''),
+            paidto: String(item.paidTo || item.paidto || item.paid_to || item.vendor || ''),
+            paid_to: String(item.paidTo || item.paidto || item.paid_to || item.vendor || ''),
         };
     }
 
@@ -2148,6 +2281,12 @@ ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS warrantyinfo TEXT DEFAULT 
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "imageUrl" TEXT DEFAULT '';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS imageurl TEXT DEFAULT '';
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "availableInShop" BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS availableinshop BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS available_in_shop BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "inShop" BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS inshop BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS in_shop BOOLEAN DEFAULT false;
 
 -- 3. Row Level Security & Permissions (Fixes silent write rejections)
 ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
@@ -2169,6 +2308,270 @@ BEGIN
     END;
 END $$;
 `;
+
+export const SHOP_AND_EXPENSES_SQL_SCHEMA = `-- =========================================================================
+-- BOSJOL TACTICAL: SHOP SHOWCASE, POINT-OF-SALE & PLAYER EXPENSES MIGRATION
+-- Run this idempotent script in the Supabase SQL Editor to enable all
+-- Tactical Shop, POS Cart Checkout, and Player Expense features.
+-- =========================================================================
+
+-- 1. Ensure Inventory table exists with Shop availability and Product Image
+CREATE TABLE IF NOT EXISTS public.inventory (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    category TEXT DEFAULT 'Gear',
+    quantity NUMERIC DEFAULT 0,
+    stock NUMERIC DEFAULT 0,
+    "salePrice" NUMERIC DEFAULT 0,
+    saleprice NUMERIC DEFAULT 0,
+    "pricePerUnit" NUMERIC DEFAULT 0,
+    priceperunit NUMERIC DEFAULT 0,
+    price NUMERIC DEFAULT 0,
+    "rentalPrice" NUMERIC DEFAULT 0,
+    rentalprice NUMERIC DEFAULT 0,
+    type TEXT DEFAULT 'Gear',
+    "isRental" BOOLEAN DEFAULT false,
+    isrental BOOLEAN DEFAULT false,
+    "availableInShop" BOOLEAN DEFAULT false,
+    availableinshop BOOLEAN DEFAULT false,
+    available_in_shop BOOLEAN DEFAULT false,
+    "inShop" BOOLEAN DEFAULT false,
+    description TEXT DEFAULT '',
+    condition TEXT DEFAULT 'New',
+    "serialNumber" TEXT DEFAULT '',
+    serialnumber TEXT DEFAULT '',
+    sku TEXT DEFAULT '',
+    "imageUrl" TEXT DEFAULT '',
+    imageurl TEXT DEFAULT '',
+    image_url TEXT DEFAULT '',
+    "supplierId" TEXT,
+    supplierid TEXT,
+    status TEXT DEFAULT 'In Stock',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Idempotent column additions for inventory shop showcase
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "availableInShop" BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS availableinshop BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS available_in_shop BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "inShop" BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS inshop BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS in_shop BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "imageUrl" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS imageurl TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "salePrice" NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS saleprice NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS stock NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS quantity NUMERIC DEFAULT 0;
+
+-- 2. Ensure Transactions table exists with POS & Player Expense fields
+CREATE TABLE IF NOT EXISTS public.transactions (
+    id TEXT PRIMARY KEY,
+    description TEXT NOT NULL,
+    amount NUMERIC DEFAULT 0,
+    type TEXT DEFAULT 'Retail Revenue',
+    date TEXT DEFAULT '',
+    "playerId" TEXT,
+    playerid TEXT,
+    "eventId" TEXT,
+    eventid TEXT,
+    status TEXT DEFAULT 'completed',
+    "paymentMethod" TEXT DEFAULT 'Cash',
+    paymentmethod TEXT DEFAULT 'Cash',
+    payment_method TEXT DEFAULT 'Cash',
+    "receiptNumber" TEXT,
+    receiptnumber TEXT,
+    receipt_number TEXT,
+    items JSONB DEFAULT '[]'::jsonb,
+    notes TEXT DEFAULT '',
+    subtotal NUMERIC DEFAULT 0,
+    discount NUMERIC DEFAULT 0,
+    "cashierName" TEXT DEFAULT 'Admin',
+    cashiername TEXT DEFAULT 'Admin',
+    "customerName" TEXT DEFAULT '',
+    customername TEXT DEFAULT '',
+    "customerCallsign" TEXT DEFAULT '',
+    customercallsign TEXT DEFAULT '',
+    "customerCode" TEXT DEFAULT '',
+    customercode TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Idempotent column additions for transactions / sales / expenses
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT DEFAULT 'Cash';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paymentmethod TEXT DEFAULT 'Cash';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'Cash';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "receiptNumber" TEXT;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS receiptnumber TEXT;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS receipt_number TEXT;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS items JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS subtotal NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS discount NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "cashierName" TEXT DEFAULT 'Admin';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS cashiername TEXT DEFAULT 'Admin';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "customerName" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS customername TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "customerCallsign" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS customercallsign TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "customerCode" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS customercode TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "playerId" TEXT;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS playerid TEXT;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "expenseName" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS expensename TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS expense_name TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "expenseReason" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS expensereason TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS expense_reason TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "receiptImageUrl" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS receiptimageurl TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS receipt_image_url TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "category" TEXT DEFAULT 'Business Expense';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'Business Expense';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "paidTo" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paidto TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paid_to TEXT DEFAULT '';
+
+-- 3. Row Level Security & Permissions
+ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public full access on inventory" ON public.inventory;
+CREATE POLICY "Allow public full access on inventory" ON public.inventory FOR ALL USING (true) WITH CHECK (true);
+GRANT ALL ON TABLE public.inventory TO anon, authenticated, service_role;
+
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public full access on transactions" ON public.transactions;
+CREATE POLICY "Allow public full access on transactions" ON public.transactions FOR ALL USING (true) WITH CHECK (true);
+GRANT ALL ON TABLE public.transactions TO anon, authenticated, service_role;
+
+-- 4. Enable Full Replica Identity for instant live Realtime sync
+ALTER TABLE public.inventory REPLICA IDENTITY FULL;
+ALTER TABLE public.transactions REPLICA IDENTITY FULL;
+
+-- 5. Add to Realtime Publication
+DO $$
+BEGIN
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.inventory;
+    EXCEPTION 
+        WHEN duplicate_object THEN NULL;
+        WHEN OTHERS THEN NULL;
+    END;
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
+    EXCEPTION 
+        WHEN duplicate_object THEN NULL;
+        WHEN OTHERS THEN NULL;
+    END;
+END $$;
+`;
+
+export const BUSINESS_EXPENSES_SQL_SCHEMA = `-- =========================================================================
+-- BOSJOL TACTICAL: BUSINESS EXPENSES & SLIP UPLOADS LIVE SYNC MIGRATION
+-- Run this idempotent script in the Supabase SQL Editor to enable full
+-- business expense tracking, receipt/slip photo storage, and live sync.
+-- =========================================================================
+
+-- 1. Ensure transactions table exists with all standard and expense fields
+CREATE TABLE IF NOT EXISTS public.transactions (
+    id TEXT PRIMARY KEY,
+    description TEXT NOT NULL,
+    amount NUMERIC DEFAULT 0,
+    type TEXT DEFAULT 'Expense',
+    date TEXT DEFAULT '',
+    "playerId" TEXT,
+    playerid TEXT,
+    "eventId" TEXT,
+    eventid TEXT,
+    status TEXT DEFAULT 'completed',
+    "paymentStatus" TEXT DEFAULT 'Paid',
+    paymentstatus TEXT DEFAULT 'Paid',
+    "paymentMethod" TEXT DEFAULT 'Cash',
+    paymentmethod TEXT DEFAULT 'Cash',
+    payment_method TEXT DEFAULT 'Cash',
+    "receiptNumber" TEXT,
+    receiptnumber TEXT,
+    receipt_number TEXT,
+    items JSONB DEFAULT '[]'::jsonb,
+    notes TEXT DEFAULT '',
+    subtotal NUMERIC DEFAULT 0,
+    discount NUMERIC DEFAULT 0,
+    "cashierName" TEXT DEFAULT 'Admin',
+    cashiername TEXT DEFAULT 'Admin',
+    "customerName" TEXT DEFAULT '',
+    customername TEXT DEFAULT '',
+    "customerCallsign" TEXT DEFAULT '',
+    customercallsign TEXT DEFAULT '',
+    "customerCode" TEXT DEFAULT '',
+    customercode TEXT DEFAULT '',
+    "expenseName" TEXT DEFAULT '',
+    expensename TEXT DEFAULT '',
+    expense_name TEXT DEFAULT '',
+    "expenseReason" TEXT DEFAULT '',
+    expensereason TEXT DEFAULT '',
+    expense_reason TEXT DEFAULT '',
+    "receiptImageUrl" TEXT DEFAULT '',
+    receiptimageurl TEXT DEFAULT '',
+    receipt_image_url TEXT DEFAULT '',
+    category TEXT DEFAULT 'Business Expense',
+    "paidTo" TEXT DEFAULT '',
+    paidto TEXT DEFAULT '',
+    paid_to TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. Idempotently add any missing business expense columns (both quoted and unquoted)
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "expenseName" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS expensename TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS expense_name TEXT DEFAULT '';
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "expenseReason" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS expensereason TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS expense_reason TEXT DEFAULT '';
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "receiptImageUrl" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS receiptimageurl TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS receipt_image_url TEXT DEFAULT '';
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "category" TEXT DEFAULT 'Business Expense';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'Business Expense';
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "paidTo" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paidto TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paid_to TEXT DEFAULT '';
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT DEFAULT 'Cash';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paymentmethod TEXT DEFAULT 'Cash';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'Cash';
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "paymentStatus" TEXT DEFAULT 'Paid';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paymentstatus TEXT DEFAULT 'Paid';
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT '';
+
+-- 3. Row Level Security & Open Access Policies
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public full access on transactions" ON public.transactions;
+CREATE POLICY "Allow public full access on transactions" ON public.transactions FOR ALL USING (true) WITH CHECK (true);
+GRANT ALL ON TABLE public.transactions TO anon, authenticated, service_role;
+
+-- 4. Enable Full Replica Identity for Realtime Event Payloads
+ALTER TABLE public.transactions REPLICA IDENTITY FULL;
+
+-- 5. Ensure Table is Included in Supabase Realtime Publication Channel
+DO $$
+BEGIN
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
+    EXCEPTION 
+        WHEN duplicate_object THEN NULL;
+        WHEN OTHERS THEN NULL;
+    END;
+END $$;
+`;
+
+
 
 
 

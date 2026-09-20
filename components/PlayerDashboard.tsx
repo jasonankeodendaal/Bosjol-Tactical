@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // FIX: Changed RankTier and SubRank to Rank and Tier respectively.
-import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, Rank, Tier, PlayerRole, RaffleTicketDoc } from '../types';
+import type { Player, Sponsor, GameEvent, PlayerStats, MatchRecord, InventoryItem, Badge, LegendaryBadge, Raffle, Location, Signup, Rank, Tier, PlayerRole, RaffleTicketDoc, Transaction } from '../types';
 import { DashboardCard } from './DashboardCard';
 import { EventCard } from './EventCard';
 import { UserIcon, ClipboardListIcon, CalendarIcon, ShieldCheckIcon, ChartBarIcon, TrophyIcon, SparklesIcon, HomeIcon, ChartPieIcon, CrosshairsIcon, CogIcon, UsersIcon, CurrencyDollarIcon, XIcon, CheckCircleIcon, UserCircleIcon, Bars3Icon, ChevronDownIcon, TicketIcon, CrownIcon, GlobeAltIcon, AtSymbolIcon, PhoneIcon, MapPinIcon, InformationCircleIcon, CheckBadgeIcon } from './icons/Icons';
@@ -20,11 +20,13 @@ import { UrlOrUploadField } from './UrlOrUploadField';
 import { PlayerRankShowcase } from './PlayerRankShowcase';
 import { PlayerRulesView } from './PlayerRulesView';
 import { PlayerGameTypesView } from './PlayerGameTypesView';
+import { PlayerShopShowcase } from './PlayerShopShowcase';
+import { PlayerExpenseHistoryTab } from './PlayerExpenseHistoryTab';
 import { RaffleEventDashboard } from './RaffleEventDashboard';
 import { getRankForPlayer, getRankProgression, FALLBACK_RECRUIT_TIER } from '../utils/rankUtils';
 import { resolveRankIcon, getRankBadgeSvg } from '../utils/rankBadges';
 import { calculatePlayerPerformance } from '../utils/playerPerformanceUtils';
-import { QrCode, Camera, ShieldCheck, LayoutGrid, CalendarDays, Bell } from 'lucide-react';
+import { QrCode, Camera, ShieldCheck, LayoutGrid, CalendarDays, Bell, ShoppingBag, Receipt } from 'lucide-react';
 import { EventQRScannerModal } from './EventQRScannerModal';
 import { EventCalendarView } from './EventCalendarView';
 import { EventCountdownNotification } from './EventCountdownNotification';
@@ -234,10 +236,12 @@ interface PlayerDashboardProps {
     ranks: Rank[];
     locations: Location[];
     signups: Signup[];
+    inventory?: InventoryItem[];
+    transactions?: Transaction[];
     onOpenInfoModal?: (ruleSetId?: string) => void;
 }
 
-type Tab = 'Overview' | 'Events' | 'Game Types' | 'Raffles' | 'Ranks' | 'Rules' | 'Stats' | 'Achievements' | 'Settings';
+type Tab = 'Overview' | 'Events' | 'Game Types' | 'Shop' | 'Expenses' | 'Raffles' | 'Ranks' | 'Rules' | 'Stats' | 'Achievements' | 'Settings';
 
 const ProgressBar: React.FC<{ value: number; max: number; isThin?: boolean }> = ({ value, max, isThin=false }) => {
     const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -266,6 +270,8 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Overview', icon: <HomeIcon className="w-5 h-5"/>},
         {name: 'Events', icon: <CalendarIcon className="w-5 h-5"/>},
         {name: 'Game Types', icon: <CrosshairsIcon className="w-5 h-5"/>},
+        {name: 'Shop', icon: <ShoppingBag className="w-5 h-5 text-amber-400"/>},
+        {name: 'Expenses', icon: <Receipt className="w-5 h-5 text-emerald-400"/>},
         {name: 'Raffles', icon: <TicketIcon className="w-5 h-5"/>},
         {name: 'Ranks', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Rules', icon: <InformationCircleIcon className="w-5 h-5"/>},
@@ -2026,7 +2032,7 @@ const SettingsTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'onPlayerUpdat
 
 
 export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
-    const { player, players, sponsors, events, onEventSignUp, legendaryBadges, raffles, ranks, locations, signups, onPlayerUpdate, onOpenInfoModal } = props;
+    const { player, players, sponsors, events, onEventSignUp, legendaryBadges, raffles, ranks, locations, signups, inventory, transactions, onPlayerUpdate, onOpenInfoModal } = props;
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
     const [showQRScanner, setShowQRScanner] = useState<boolean>(false);
     const [showNotificationModal, setShowNotificationModal] = useState<boolean>(false);
@@ -2138,6 +2144,19 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                                 />
                             )}
                             {activeTab === 'Game Types' && <PlayerGameTypesView />}
+                            {activeTab === 'Shop' && (
+                                <PlayerShopShowcase inventory={inventory || data?.inventory || []} />
+                            )}
+                            {activeTab === 'Expenses' && (
+                                <PlayerExpenseHistoryTab 
+                                    player={player}
+                                    transactions={transactions || data?.transactions || []}
+                                    signups={signups || data?.signups || []}
+                                    events={events || data?.events || []}
+                                    raffles={raffles || data?.raffles || []}
+                                    inventory={inventory || data?.inventory || []}
+                                />
+                            )}
                             {activeTab === 'Raffles' && <RafflesTab raffles={raffles} player={player} players={players} />}
                             {activeTab === 'Ranks' && <RankAndLeaderboardTab ranks={ranks} player={player} players={players} events={events} onNavigateTab={(t) => setActiveTab(t as Tab)} />}
                             {activeTab === 'Rules' && <PlayerRulesView onOpenInfoModal={onOpenInfoModal} />}

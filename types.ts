@@ -166,6 +166,8 @@ export interface InventoryItem {
   stock: number;
   type: 'Weapon' | 'Gear' | 'Consumable'; // This can be deprecated or used as a broader category
   isRental: boolean;
+  availableInShop?: boolean; // When true, showcased in shop and available for counter sales
+  imageUrl?: string; // Product showcase image
   // New advanced fields
   category: InventoryCategory;
   condition: InventoryCondition;
@@ -418,6 +420,20 @@ export interface Supplier {
 }
 
 export type TransactionType = 'Event Revenue' | 'Rental Revenue' | 'Retail Revenue' | 'Expense';
+export type SalePaymentMethod = 'Cash' | 'Card' | 'EFT';
+
+export interface SaleItem {
+    id?: string;
+    inventoryId?: string;
+    name: string;
+    price: number;
+    quantity: number;
+    total: number;
+    category?: string;
+    isManual?: boolean;
+    imageUrl?: string;
+    sku?: string;
+}
 
 export interface Transaction {
     id: string;
@@ -428,7 +444,25 @@ export interface Transaction {
     relatedEventId?: string;
     relatedInventoryId?: string;
     relatedPlayerId?: string;
+    playerId?: string;
     paymentStatus?: PaymentStatus;
+    // Enhanced shop & POS fields
+    paymentMethod?: SalePaymentMethod | string;
+    receiptNumber?: string;
+    items?: SaleItem[];
+    subtotal?: number;
+    discount?: number;
+    notes?: string;
+    cashierName?: string;
+    customerName?: string;
+    customerCallsign?: string;
+    customerCode?: string;
+    // Business expense & slip upload fields
+    expenseName?: string;
+    expenseReason?: string;
+    receiptImageUrl?: string;
+    category?: string;
+    paidTo?: string;
 }
 
 export interface Location {

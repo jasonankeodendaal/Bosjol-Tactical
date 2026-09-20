@@ -806,6 +806,8 @@ const AppContent: React.FC = () => {
                                     ranks={ranks}
                                     locations={data.locations}
                                     signups={signups}
+                                    inventory={data.inventory}
+                                    transactions={data.transactions}
                                     onOpenInfoModal={(ruleSetId) => { setSelectedRuleSetId(ruleSetId || null); setShowRuleShowcase(true); }}
                                 />
                             )}

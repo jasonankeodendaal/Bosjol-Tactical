@@ -28,12 +28,13 @@ import { SettingsTab } from './SettingsTab';
 import { AboutTab } from './AboutTab';
 import { AdminNotificationsTab } from './AdminNotificationsTab';
 import { AdminRulesManager } from './AdminRulesManager';
+import { AdminShopTab } from './AdminShopTab';
 import { DataContext, DataContextType } from '../data/DataContext';
 import { AuthContext } from '../auth/AuthContext';
 import { SendCredentialsModal } from './SendCredentialsModal';
 
 import { AdminGameTypesManager } from './AdminGameTypesManager';
-import { Eye, EyeOff, Sparkles, Search, Grid3X3, Layers, Award, ChevronRight, ChevronLeft, ArrowUpRight } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, Search, Grid3X3, Layers, Award, ChevronRight, ChevronLeft, ArrowUpRight, ShoppingBag } from 'lucide-react';
 
 export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' | 'seedInitialData' | 'updatePlayerDoc' | 'addEventDoc' | 'deleteEventDoc' | 'updateEventDoc'> & {
     onDeleteAllData: () => void;
@@ -43,7 +44,7 @@ export type AdminDashboardProps = Omit<DataContextType, 'loading' | 'isSeeding' 
 };
 
 
-type Tab = 'Events' | 'Game Types' | 'Players' | 'Notifications' | 'Rules' | 'Progression' | 'Ranks' | 'Inventory' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'About';
+type Tab = 'Events' | 'Game Types' | 'Players' | 'Notifications' | 'Rules' | 'Progression' | 'Ranks' | 'Inventory' | 'Shop' | 'Locations' | 'Suppliers' | 'Finance' | 'Vouchers & Raffles' | 'Sponsors' | 'Leaderboard' | 'Settings' | 'About';
 type View = 'dashboard' | 'player_profile' | 'manage_event';
 
 const NewPlayerModal: React.FC<{
@@ -374,6 +375,7 @@ const Tabs: React.FC<{ activeTab: Tab; setActiveTab: (tab: Tab) => void; }> = ({
         {name: 'Progression', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Ranks', icon: <ShieldCheckIcon className="w-5 h-5"/>},
         {name: 'Inventory', icon: <ArchiveBoxIcon className="w-5 h-5"/>},
+        {name: 'Shop', icon: <ShoppingBag className="w-5 h-5 text-amber-400"/>},
         {name: 'Locations', icon: <MapPinIcon className="w-5 h-5"/>},
         {name: 'Suppliers', icon: <TruckIcon className="w-5 h-5"/>},
         {name: 'Finance', icon: <CurrencyDollarIcon className="w-5 h-5"/>},
@@ -1339,6 +1341,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         suppliers={props.suppliers}
                         addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
                     />}
+                    {activeTab === 'Shop' && <AdminShopTab 
+                        inventory={props.inventory}
+                        players={props.players}
+                        transactions={props.transactions || dataContext?.transactions || []}
+                        addDoc={props.addDoc}
+                        updateDoc={props.updateDoc}
+                        companyDetails={props.companyDetails}
+                        onViewPlayer={handleViewPlayer}
+                    />}
                     {activeTab === 'Locations' && <LocationsTab 
                         locations={props.locations} setLocations={props.setLocations}
                         addDoc={props.addDoc} updateDoc={props.updateDoc} deleteDoc={props.deleteDoc}
@@ -1353,6 +1364,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         events={props.events}
                         locations={props.locations}
                         companyDetails={props.companyDetails}
+                        addDoc={props.addDoc}
+                        updateDoc={props.updateDoc}
+                        deleteDoc={props.deleteDoc}
                     />}
                     {activeTab === 'Vouchers & Raffles' && <VouchersRafflesTab 
                         vouchers={props.vouchers} setVouchers={props.setVouchers}

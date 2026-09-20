@@ -3,10 +3,9 @@ import type { Voucher, Raffle, Prize, Player, GameEvent, VoucherRedemption, Raff
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
-import { TicketIcon, PlusIcon, PencilIcon, TrashIcon, TrophyIcon, UserIcon, CheckCircleIcon, SparklesIcon, ClipboardListIcon, CheckBadgeIcon } from './icons/Icons';
+import { TicketIcon, PlusIcon, PencilIcon, TrashIcon, TrophyIcon, UserIcon, CheckCircleIcon, SparklesIcon, CheckBadgeIcon } from './icons/Icons';
 import { useData } from '../data/DataContext';
 import { RaffleEventDashboard } from './RaffleEventDashboard';
-import { RAFFLES_SQL_SCHEMA_MIGRATION } from '../utils/supabaseSchema';
 import { supabase } from '../supabaseClient';
 import { generateDynamicTicketCodes, formatDynamicTicketCode } from '../utils/raffleUtils';
 
@@ -859,60 +858,6 @@ const IssueTicketsModal: React.FC<{
 };
 
 // ==========================================
-// SUPABASE RAFFLE SQL SCHEMA & MIGRATION MODAL
-// ==========================================
-const RaffleSqlModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const [copied, setCopied] = useState(false);
-
-    const handleCopy = () => {
-        navigator.clipboard.writeText(RAFFLES_SQL_SCHEMA_MIGRATION);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
-    };
-
-    return (
-        <Modal isOpen={true} onClose={onClose} title="Supabase SQL Setup for Tactical Raffles">
-            <div className="space-y-4 text-left">
-                <div className="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3 text-xs text-amber-200">
-                    <p className="font-bold mb-1">⚡ Complete PostgreSQL Setup for Tactical Raffles</p>
-                    <p className="text-zinc-400">
-                        Run this SQL script in your Supabase SQL Editor (<strong>SQL Editor → New Query → Run</strong>). It provisions the <code>raffles</code> table, tickets JSONB columns, relational <code>raffle_tickets</code> table, RLS policies, realtime publication, and the atomic <code>issue_raffle_tickets</code> stored procedure.
-                    </p>
-                </div>
-
-                <div className="relative">
-                    <pre className="p-3 bg-zinc-950 rounded-xl border border-zinc-800 text-[11px] font-mono text-zinc-300 max-h-80 overflow-y-auto overflow-x-auto whitespace-pre leading-relaxed">
-                        {RAFFLES_SQL_SCHEMA_MIGRATION}
-                    </pre>
-                    <button
-                        onClick={handleCopy}
-                        className="absolute top-2 right-2 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow transition-all flex items-center gap-1.5"
-                    >
-                        {copied ? (
-                            <>
-                                <CheckCircleIcon className="w-3.5 h-3.5 text-emerald-300" />
-                                <span>Copied!</span>
-                            </>
-                        ) : (
-                            <>
-                                <ClipboardListIcon className="w-3.5 h-3.5" />
-                                <span>Copy SQL Snippet</span>
-                            </>
-                        )}
-                    </button>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                    <Button onClick={onClose} variant="secondary">
-                        Close
-                    </Button>
-                </div>
-            </div>
-        </Modal>
-    );
-};
-
-// ==========================================
 // INTERACTIVE LIVE RAFFLE DRAW ARENA MODAL
 // ==========================================
 const LiveRaffleDrawArena: React.FC<{
@@ -1693,7 +1638,6 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
     const [drawingRaffle, setDrawingRaffle] = useState<Raffle | null>(null);
     const [viewingRedemptionsVoucherId, setViewingRedemptionsVoucherId] = useState<string | null>(null);
     const [viewingTicketsRaffleId, setViewingTicketsRaffleId] = useState<string | null>(null);
-    const [isViewingRaffleSql, setIsViewingRaffleSql] = useState(false);
 
     // Save Voucher Handler
     const handleSaveVoucher = async (voucher: Voucher | Omit<Voucher, 'id'>) => {
@@ -1935,10 +1879,6 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                 />
             )}
 
-            {isViewingRaffleSql && (
-                <RaffleSqlModal onClose={() => setIsViewingRaffleSql(false)} />
-            )}
-
             {/* Top Navigation Toggle */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
                 <div className="flex items-center gap-3">
@@ -1979,20 +1919,9 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                             <PlusIcon className="w-4 h-4 mr-1.5"/> Create New Voucher
                         </Button>
                     ) : (
-                        <div className="flex items-center gap-2">
-                            <Button 
-                                onClick={() => setIsViewingRaffleSql(true)} 
-                                size="sm" 
-                                variant="secondary"
-                                className="border-amber-500/40 text-amber-400 hover:bg-amber-950/40 text-xs flex items-center gap-1.5"
-                                title="View and copy Supabase SQL migration for Raffles"
-                            >
-                                <ClipboardListIcon className="w-4 h-4"/> Supabase SQL Setup
-                            </Button>
-                            <Button onClick={() => setIsEditingRaffle({})} size="sm" className="bg-amber-600 hover:bg-amber-500">
-                                <PlusIcon className="w-4 h-4 mr-1.5"/> Create New Raffle
-                            </Button>
-                        </div>
+                        <Button onClick={() => setIsEditingRaffle({})} size="sm" className="bg-amber-600 hover:bg-amber-500">
+                            <PlusIcon className="w-4 h-4 mr-1.5"/> Create New Raffle
+                        </Button>
                     )}
                 </div>
             </div>

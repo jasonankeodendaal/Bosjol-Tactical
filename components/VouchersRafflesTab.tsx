@@ -2192,12 +2192,6 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                                 <div>
                                                     <h4 className="font-bold text-base text-white flex items-center gap-2">
                                                         <span>{r.name}</span>
-                                                        {r.alwaysChooseMostTickets && (
-                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 inline-flex items-center gap-1" title="Draw engine will prioritize top ticket holders">
-                                                                <TrophyIcon className="w-3 h-3 text-amber-400" />
-                                                                Top Buyer Priority
-                                                            </span>
-                                                        )}
                                                     </h4>
                                                     <p className="text-xs text-zinc-400">
                                                         Draw Date: {new Date(r.drawDate).toLocaleDateString()} • {r.location}

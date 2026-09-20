@@ -702,11 +702,6 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                             }`}>
                                 {raffle.status === 'Completed' ? 'CONCLUDED' : 'LIVE ARENA'}
                             </span>
-                            {isTopTicketsMode && isAdmin && (
-                                <span className="hidden md:inline-flex text-[9px] sm:text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                                    👑 TOP BUYER PRIORITY
-                                </span>
-                            )}
                         </div>
                         <p className="text-[10px] sm:text-[11px] text-zinc-400 flex items-center gap-1.5 truncate">
                             <span>Pool: <strong className="text-white font-mono">{tickets.length}</strong> tix</span>
@@ -1252,11 +1247,6 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                     Total ticket distribution across {leaderboardStats.length} participating operators
                                 </p>
                             </div>
-                            {isTopTicketsMode && (
-                                <span className="text-xs font-bold bg-amber-500/20 text-amber-300 px-3 py-1 rounded-lg border border-amber-500/40">
-                                    👑 Top Buyers Priority (Admin Only)
-                                </span>
-                            )}
                         </div>
 
                         {/* Top Contender Leaderboard Table */}

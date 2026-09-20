@@ -571,19 +571,52 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
                                     {event.eventBadges.map(badgeId => {
                                         const badge = dataContext.legendaryBadges.find(b => b.id === badgeId);
                                         if (!badge) return null;
+
+                                        const awardedPlayerIds = Object.entries(event.awardedBadges || {})
+                                            .filter(([_, badges]) => Array.isArray(badges) && badges.includes(badgeId))
+                                            .map(([pId]) => pId);
+
+                                        const awardedPlayers = awardedPlayerIds
+                                            .map(pId => (dataContext?.players || []).find(p => p.id === pId))
+                                            .filter(Boolean) as Player[];
+
                                         return (
                                             <div 
                                                 key={badgeId} 
-                                                className="p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-amber-500/40 text-center transition-all group"
+                                                className="p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-amber-500/40 text-center transition-all group flex flex-col justify-between"
                                                 title={badge.description}
                                             >
-                                                {badge.iconUrl ? (
-                                                    <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 mx-auto object-contain group-hover:scale-110 transition-transform" />
-                                                ) : (
-                                                    <Trophy className="w-10 h-10 mx-auto text-amber-400" />
-                                                )}
-                                                <p className="text-xs font-bold text-amber-300 mt-1 truncate">{badge.name}</p>
-                                                <p className="text-[10px] text-zinc-400 line-clamp-1">{badge.description}</p>
+                                                <div>
+                                                    {badge.iconUrl ? (
+                                                        <img src={badge.iconUrl} alt={badge.name} className="w-10 h-10 mx-auto object-contain group-hover:scale-110 transition-transform" />
+                                                    ) : (
+                                                        <Trophy className="w-10 h-10 mx-auto text-amber-400" />
+                                                    )}
+                                                    <p className="text-xs font-bold text-amber-300 mt-1 truncate">{badge.name}</p>
+                                                    <p className="text-[10px] text-zinc-400 line-clamp-1">{badge.description}</p>
+                                                </div>
+
+                                                {/* Awardee badge footer */}
+                                                <div className="mt-2 pt-1.5 border-t border-white/5">
+                                                    {event.status === 'Completed' ? (
+                                                        awardedPlayers.length > 0 ? (
+                                                            <div className="space-y-0.5">
+                                                                <span className="text-[9px] uppercase font-bold text-amber-400 tracking-wider block">Awarded To:</span>
+                                                                <div className="flex flex-wrap justify-center gap-1">
+                                                                    {awardedPlayers.map(p => (
+                                                                        <span key={p.id} className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono font-bold border border-amber-500/30 truncate max-w-[100px]">
+                                                                            {p.callsign || p.name}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] text-zinc-500 italic">Not awarded</span>
+                                                        )
+                                                    ) : (
+                                                        <span className="text-[10px] text-zinc-500 font-mono">Selective Admin Award</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         );
                                     })}

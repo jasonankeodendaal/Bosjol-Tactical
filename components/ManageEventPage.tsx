@@ -9,7 +9,7 @@ import { BadgePill } from './BadgePill';
 import { InfoTooltip } from './InfoTooltip';
 import { DataContext } from '../data/DataContext';
 import { UrlOrUploadField } from './UrlOrUploadField';
-import { QrCode, Ban, RotateCcw, Database, Sparkles, Image as ImageIcon, Palette, ClipboardList, Users } from 'lucide-react';
+import { QrCode, Ban, RotateCcw, Database, Sparkles, Image as ImageIcon, Palette, ClipboardList, Users, Check, Trophy, Award } from 'lucide-react';
 import { EventQRCodeModal } from './EventQRCodeModal';
 import { EventPosterModal } from './EventPosterModal';
 import { EquipmentRentalsSummaryModal } from './EquipmentRentalsSummaryModal';
@@ -47,6 +47,7 @@ const defaultEvent: Omit<GameEvent, 'id'> = {
     gameFee: 0,
     gearForRent: [],
     eventBadges: [],
+    awardedBadges: {},
     liveStats: {},
     teamCount: 2,
     teams: { alpha: [], bravo: [] },
@@ -71,7 +72,12 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
         if (!event) return defaultEvent;
         // Ensure date is in 'YYYY-MM-DD' format for the input
         const date = new Date(event.date).toISOString().split('T')[0];
-        return { ...event, date };
+        return { 
+            ...event, 
+            date,
+            eventBadges: event.eventBadges || [],
+            awardedBadges: event.awardedBadges || {},
+        };
     });
     
     // Total rental items count across attendees and signups
@@ -86,6 +92,20 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
         return count;
     }, [formData.attendees, signups, event?.id]);
     
+    // Counts for assigned commendations
+    const { assignedCommendationsCount, assignedOperatorsCount } = useMemo(() => {
+        const awarded = formData.awardedBadges || {};
+        let totalCount = 0;
+        let opsCount = 0;
+        Object.values(awarded).forEach(badgeList => {
+            if (Array.isArray(badgeList) && badgeList.length > 0) {
+                totalCount += badgeList.length;
+                opsCount += 1;
+            }
+        });
+        return { assignedCommendationsCount: totalCount, assignedOperatorsCount: opsCount };
+    }, [formData.awardedBadges]);
+
     const [liveStats, setLiveStats] = useState<Record<string, Partial<Pick<PlayerStats, 'kills' | 'deaths' | 'headshots'>>>>(event?.liveStats || {});
     
     // --- Audio Recording State & Handlers ---
@@ -363,11 +383,27 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
     
                 const currentStats = mutablePlayer.stats || { kills: 0, deaths: 0, headshots: 0, gamesPlayed: 0, xp: 0 };
                 
-                // Check and award event badges to attendee
-                const eventBadgeIds = formData.eventBadges || [];
-                const availableBadges = dataContext?.badges || [];
-                const badgesToAward = availableBadges.filter(b => eventBadgeIds.includes(b.id));
-                const newBadgesForPlayer = badgesToAward.filter(b => !(mutablePlayer.badges || []).some(pb => pb.id === b.id));
+                // Check and award ONLY explicitly assigned commendation badges to this specific player
+                const playerAssignedBadgeIds = formData.awardedBadges?.[player.id] || [];
+                
+                const allAvailableBadges: (Badge | LegendaryBadge)[] = [
+                    ...(legendaryBadges || []),
+                    ...(dataContext?.badges || []),
+                ];
+                
+                const badgesToAward = allAvailableBadges.filter(b => playerAssignedBadgeIds.includes(b.id));
+
+                const isLegendary = (bId: string) => (legendaryBadges || []).some(lb => lb.id === bId);
+
+                const newLegendaryBadges = badgesToAward
+                    .filter(b => isLegendary(b.id))
+                    .filter(b => !(mutablePlayer.legendaryBadges || []).some(pb => pb.id === b.id)) as LegendaryBadge[];
+
+                const newStandardBadges = badgesToAward
+                    .filter(b => !isLegendary(b.id))
+                    .filter(b => !(mutablePlayer.badges || []).some(pb => pb.id === b.id)) as Badge[];
+
+                const combinedNewBadges = [...newLegendaryBadges, ...newStandardBadges];
 
                 mutablePlayer = {
                     ...mutablePlayer,
@@ -379,17 +415,20 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                         headshots: (currentStats.headshots || 0) + headshotsToAdd,
                         gamesPlayed: (currentStats.gamesPlayed || 0) + 1,
                     },
-                    badges: newBadgesForPlayer.length > 0 
-                        ? [...(mutablePlayer.badges || []), ...newBadgesForPlayer] 
+                    badges: newStandardBadges.length > 0 
+                        ? [...(mutablePlayer.badges || []), ...newStandardBadges] 
                         : (mutablePlayer.badges || []),
+                    legendaryBadges: newLegendaryBadges.length > 0
+                        ? [...(mutablePlayer.legendaryBadges || []), ...newLegendaryBadges]
+                        : (mutablePlayer.legendaryBadges || []),
                     matchHistory: [...(mutablePlayer.matchHistory || []), newMatchRecord]
                 };
 
-                // Trigger badge earned notifications
-                newBadgesForPlayer.forEach(badge => {
+                // Trigger commendation awarded notifications ONLY for explicitly assigned badges
+                combinedNewBadges.forEach(badge => {
                     dataContext?.createNotification?.({
-                        title: `Badge Earned: ${mutablePlayer.name}`,
-                        message: `${mutablePlayer.name} (${mutablePlayer.playerCode}) earned the "${badge.name}" badge in ${formData.title}!`,
+                        title: `Commendation Awarded: ${mutablePlayer.name}`,
+                        message: `${mutablePlayer.name} (${mutablePlayer.playerCode}) was awarded the "${badge.name}" commendation in ${formData.title}!`,
                         type: 'badge_earned',
                         playerId: mutablePlayer.id,
                         playerName: `${mutablePlayer.name} ${mutablePlayer.surname || ''}`.trim(),
@@ -461,6 +500,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                 (orig.stats?.deaths ?? 0) !== (p.stats?.deaths ?? 0) ||
                 (orig.stats?.headshots ?? 0) !== (p.stats?.headshots ?? 0) ||
                 (orig.badges?.length || 0) !== (p.badges?.length || 0) ||
+                (orig.legendaryBadges?.length || 0) !== (p.legendaryBadges?.length || 0) ||
                 (orig.matchHistory?.length || 0) !== (p.matchHistory?.length || 0) ||
                 (orig.xpAdjustments?.length || 0) !== (p.xpAdjustments?.length || 0) ||
                 orig.rank?.id !== p.rank?.id
@@ -482,6 +522,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             ...(event || {}), ...formData,
             id: event?.id || '', status: 'Completed',
             liveStats: liveStats,
+            awardedBadges: formData.awardedBadges || {},
         };
         onSave(finalEventData);
         dataContext?.logActivity(`Finalized event: ${finalEventData.title}`, { eventId: finalEventData.id });
@@ -535,7 +576,41 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             const newBadges = eventBadges.includes(badgeId)
                 ? eventBadges.filter(id => id !== badgeId)
                 : [...eventBadges, badgeId];
-            return { ...prev, eventBadges: newBadges };
+            
+            // If an event badge was removed from the event's roster, also clean it up from player awards
+            const nextAwarded = { ...(prev.awardedBadges || {}) };
+            if (!newBadges.includes(badgeId)) {
+                Object.keys(nextAwarded).forEach(pId => {
+                    nextAwarded[pId] = (nextAwarded[pId] || []).filter(id => id !== badgeId);
+                    if (nextAwarded[pId].length === 0) {
+                        delete nextAwarded[pId];
+                    }
+                });
+            }
+
+            return { ...prev, eventBadges: newBadges, awardedBadges: nextAwarded };
+        });
+    };
+
+    const handleTogglePlayerAwardedBadge = (playerId: string, badgeId: string) => {
+        setFormData(prev => {
+            const currentAwarded: Record<string, string[]> = { ...(prev.awardedBadges || {}) };
+            const playerBadges = [...(currentAwarded[playerId] || [])];
+            const hasBadge = playerBadges.includes(badgeId);
+            const nextBadges = hasBadge
+                ? playerBadges.filter(id => id !== badgeId)
+                : [...playerBadges, badgeId];
+
+            if (nextBadges.length === 0) {
+                delete currentAwarded[playerId];
+            } else {
+                currentAwarded[playerId] = nextBadges;
+            }
+
+            return {
+                ...prev,
+                awardedBadges: currentAwarded,
+            };
         });
     };
 
@@ -556,6 +631,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             ...formData,
             id: event?.id || '',
             liveStats: liveStats,
+            awardedBadges: formData.awardedBadges || {},
         };
         onSave(eventData);
     };
@@ -572,6 +648,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             id: event.id,
             status: 'Cancelled',
             liveStats: liveStats,
+            awardedBadges: formData.awardedBadges || {},
         };
 
         setFormData(prev => ({ ...prev, status: 'Cancelled' }));
@@ -594,6 +671,7 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
             id: event.id,
             status: 'Upcoming',
             liveStats: liveStats,
+            awardedBadges: formData.awardedBadges || {},
         };
 
         setFormData(prev => ({ ...prev, status: 'Upcoming' }));
@@ -833,7 +911,12 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Event Commendations (Badges)</label>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-gray-400">Available Event Commendations (Badges)</label>
+                                    <span className="text-[11px] font-mono text-zinc-500">
+                                        {(formData.eventBadges || []).length} available for this mission
+                                    </span>
+                                </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto bg-zinc-900/50 p-2 rounded-md border border-zinc-700/50">
                                     {legendaryBadges.map(badge => (
                                         <label key={badge.id} className="flex items-center gap-3 p-2 rounded-md bg-zinc-800 hover:bg-zinc-700 cursor-pointer">
@@ -851,6 +934,116 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                             <span className="text-sm text-amber-300">{badge.name}</span>
                                         </label>
                                     ))}
+                                </div>
+
+                                {/* Operator-by-Operator Commendation Assignment Panel */}
+                                <div className="mt-3 p-3.5 bg-zinc-950/90 rounded-xl border border-amber-500/30 space-y-3 shadow-inner">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2 border-b border-zinc-800">
+                                        <div className="flex items-center gap-2">
+                                            <Trophy className="w-4 h-4 text-amber-400" />
+                                            <span className="text-xs font-black uppercase tracking-wider text-amber-300">
+                                                Assign Commendations to Specific Operators
+                                            </span>
+                                        </div>
+                                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                                            assignedCommendationsCount > 0 
+                                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' 
+                                                : 'bg-zinc-800 text-zinc-500'
+                                        }`}>
+                                            {assignedCommendationsCount} awarded to {assignedOperatorsCount} operator{assignedOperatorsCount === 1 ? '' : 's'}
+                                        </span>
+                                    </div>
+
+                                    <p className="text-xs text-zinc-400 leading-relaxed">
+                                        Commendation badges are <span className="text-amber-300 font-bold">not</span> awarded to every attendee. Admins must explicitly click and assign which operator earned which badge for notable combat or tactical performance.
+                                    </p>
+
+                                    {(formData.eventBadges || []).length === 0 ? (
+                                        <div className="p-3.5 rounded-lg bg-zinc-900/60 border border-zinc-800/80 text-center text-xs text-zinc-500">
+                                            Select one or more available commendations in the list above to enable operator assignment.
+                                        </div>
+                                    ) : attendeesDetails.length === 0 ? (
+                                        <div className="p-3.5 rounded-lg bg-zinc-900/60 border border-zinc-800/80 text-center text-xs text-zinc-500">
+                                            No operators checked in yet. Check in attendees in the right panel to award them commendations.
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                                            {attendeesDetails.map(player => {
+                                                const playerAssigned = formData.awardedBadges?.[player.id] || [];
+                                                const activeBadgesList = legendaryBadges.filter(b => (formData.eventBadges || []).includes(b.id));
+
+                                                return (
+                                                    <div 
+                                                        key={player.id}
+                                                        className={`p-2.5 rounded-lg border transition-all ${
+                                                            playerAssigned.length > 0 
+                                                                ? 'bg-amber-950/20 border-amber-500/40 shadow-sm' 
+                                                                : 'bg-zinc-900/60 border-zinc-800'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center justify-between gap-2 mb-2">
+                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                {player.avatarUrl ? (
+                                                                    <img src={player.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover border border-zinc-700 shrink-0" />
+                                                                ) : (
+                                                                    <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-black text-amber-400 border border-zinc-700 shrink-0">
+                                                                        {(player.callsign || player.name || 'O')[0].toUpperCase()}
+                                                                    </div>
+                                                                )}
+                                                                <div className="min-w-0">
+                                                                    <span className="text-xs font-bold text-white truncate block">
+                                                                        {player.name}
+                                                                    </span>
+                                                                    <span className="text-[10px] text-zinc-400 font-mono">
+                                                                        Callsign: <strong className="text-zinc-300">{player.callsign || 'N/A'}</strong> ({player.playerCode})
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded shrink-0 ${
+                                                                playerAssigned.length > 0 
+                                                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
+                                                                    : 'bg-zinc-800 text-zinc-500'
+                                                            }`}>
+                                                                {playerAssigned.length} Badge{playerAssigned.length === 1 ? '' : 's'}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Badge selection pills for this player */}
+                                                        <div className="flex flex-wrap gap-1.5 pt-1">
+                                                            {activeBadgesList.map(badge => {
+                                                                const isSelected = playerAssigned.includes(badge.id);
+                                                                return (
+                                                                    <button
+                                                                        key={badge.id}
+                                                                        type="button"
+                                                                        onClick={() => handleTogglePlayerAwardedBadge(player.id, badge.id)}
+                                                                        className={`px-2 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                                                            isSelected 
+                                                                                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/30 font-bold scale-[1.02]' 
+                                                                                : 'bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 hover:border-zinc-500'
+                                                                        }`}
+                                                                        title={badge.description}
+                                                                    >
+                                                                        {badge.iconUrl && badge.iconUrl.trim() !== '' ? (
+                                                                            <img src={badge.iconUrl} alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
+                                                                        ) : (
+                                                                            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-black' : 'text-amber-400'}`} />
+                                                                        )}
+                                                                        <span className="truncate max-w-[130px]">{badge.name}</span>
+                                                                        {isSelected ? (
+                                                                            <Check className="w-3 h-3 text-black stroke-[3]" />
+                                                                        ) : (
+                                                                            <PlusIcon className="w-3 h-3 text-zinc-400" />
+                                                                        )}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className="bg-zinc-900/60 p-4 rounded-xl border border-zinc-800 space-y-2 mt-4">
@@ -1128,17 +1321,43 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                         <div className="p-6">
                             {attendeesDetails.length > 0 ? (
                                 <ul className="space-y-3">
-                                    {attendeesDetails.map(player => (
-                                        <li key={player.id} className="bg-zinc-900/60 p-3 rounded-lg border border-zinc-800 flex items-center justify-between">
-                                            <div>
-                                                <p className="font-bold text-white text-sm">{player.name}</p>
-                                                <p className="text-xs text-zinc-400 font-mono">Callsign: {player.callsign || 'N/A'}</p>
-                                            </div>
-                                            <span className="px-2.5 py-1 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-xs font-mono font-bold">
-                                                +{formData.participationXp || 500} RP
-                                            </span>
-                                        </li>
-                                    ))}
+                                    {attendeesDetails.map(player => {
+                                        const playerAssigned = formData.awardedBadges?.[player.id] || [];
+                                        const assignedBadges = legendaryBadges.filter(b => playerAssigned.includes(b.id));
+
+                                        return (
+                                            <li key={player.id} className="bg-zinc-900/60 p-3 rounded-lg border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2.5">
+                                                    {player.avatarUrl ? (
+                                                        <img src={player.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-zinc-700 shrink-0" />
+                                                    ) : (
+                                                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-black text-amber-400 border border-zinc-700 shrink-0">
+                                                            {(player.callsign || player.name || 'O')[0].toUpperCase()}
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <p className="font-bold text-white text-sm">{player.name}</p>
+                                                        <p className="text-xs text-zinc-400 font-mono">Callsign: {player.callsign || 'N/A'} ({player.playerCode})</p>
+                                                        {assignedBadges.length > 0 && (
+                                                            <div className="flex flex-wrap gap-1 mt-1.5">
+                                                                {assignedBadges.map(b => (
+                                                                    <span key={b.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/40 text-[10px] text-amber-300 font-semibold font-mono">
+                                                                        <Award className="w-2.5 h-2.5 text-amber-400" />
+                                                                        {b.name}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 self-end sm:self-auto">
+                                                    <span className="px-2.5 py-1 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-xs font-mono font-bold">
+                                                        +{formData.participationXp || 500} RP
+                                                    </span>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
                                 </ul>
                             ) : (
                                 <p className="text-zinc-500 text-sm text-center py-4">No operators checked in yet.</p>
@@ -1235,6 +1454,25 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                                         {(formData.teamCount || 2) === 4 && <option value="delta">Delta Team</option>}
                                         <option value="tie">Draw / Tie</option>
                                     </select>
+                                </div>
+                                <div className={`p-2.5 rounded-lg border text-xs ${
+                                    assignedCommendationsCount > 0 
+                                        ? 'bg-amber-950/20 border-amber-500/40 text-amber-200' 
+                                        : 'bg-zinc-950/60 border-zinc-800 text-zinc-400'
+                                }`}>
+                                    <div className="flex items-center gap-1.5 font-bold mb-1">
+                                        <Trophy className={`w-3.5 h-3.5 ${assignedCommendationsCount > 0 ? 'text-amber-400' : 'text-zinc-500'}`} />
+                                        <span>Commendations Distribution</span>
+                                    </div>
+                                    {assignedCommendationsCount > 0 ? (
+                                        <p className="text-[11px] text-amber-300/90 leading-tight">
+                                            <strong>{assignedCommendationsCount}</strong> badge{assignedCommendationsCount === 1 ? '' : 's'} will be awarded specifically to <strong>{assignedOperatorsCount}</strong> designated operator{assignedOperatorsCount === 1 ? '' : 's'}. Unassigned operators receive 0 badges.
+                                        </p>
+                                    ) : (
+                                        <p className="text-[11px] text-zinc-500 leading-tight">
+                                            No commendations assigned. Standard attendance/win RP only.
+                                        </p>
+                                    )}
                                 </div>
                                 <Button onClick={handleFinalizeEvent} variant="primary" className="w-full !bg-green-600 hover:!bg-green-500 mt-2">
                                     <CheckCircleIcon className="w-5 h-5 mr-2" />

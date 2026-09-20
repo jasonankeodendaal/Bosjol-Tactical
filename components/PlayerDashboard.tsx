@@ -1487,15 +1487,15 @@ const RafflesTab: React.FC<Pick<PlayerDashboardProps, 'raffles' | 'player' | 'pl
             <DashboardCard title="My Active Raffle Tickets" icon={<TicketIcon className="w-6 h-6 text-red-500" />}>
                 <div className="p-4 space-y-2 max-h-60 overflow-y-auto">
                     {myTickets.length > 0 ? myTickets.map(ticket => (
-                        <div key={ticket.id} className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 flex justify-between items-center hover:border-zinc-700 transition-colors">
-                            <div className="flex items-center gap-2.5">
+                        <div key={ticket.id} className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 flex justify-between items-center hover:border-zinc-700 transition-colors gap-2">
+                            <div className="flex items-center gap-2.5 min-w-0">
                                 <TicketIcon className="w-4 h-4 text-red-400 shrink-0" />
-                                <div>
-                                    <p className="font-bold text-white text-sm">{ticket.raffleName}</p>
-                                    <p className="text-xs text-red-400 font-mono font-bold tracking-wider">{ticket.code}</p>
+                                <div className="min-w-0">
+                                    <p className="font-bold text-white text-sm truncate max-w-[180px] sm:max-w-xs">{ticket.raffleName}</p>
+                                    <p className="text-xs text-red-400 font-mono font-bold tracking-wider truncate">{ticket.code}</p>
                                 </div>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right shrink-0">
                                 <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${ticket.raffleStatus === 'Active' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-zinc-800 text-zinc-400'}`}>
                                     {ticket.raffleStatus || 'Active'}
                                 </span>

@@ -2020,15 +2020,15 @@ export const VouchersRafflesTab: React.FC<VouchersRafflesTabProps> = (props) => 
                                                         const callsign = p?.callsign || t.playerCallsign;
                                                         const pCode = p?.playerCode || t.playerCode;
                                                         return (
-                                                            <div key={t.id || i} className="flex items-center justify-between py-1.5 border-b border-zinc-800/60 last:border-0 hover:bg-zinc-900/40 px-1 rounded transition-colors">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="font-mono text-amber-400 font-bold text-xs bg-amber-950/40 px-2 py-0.5 rounded border border-amber-900/40">{t.code}</span>
-                                                                    {pCode && <span className="text-[10px] text-zinc-500 font-mono">[{pCode}]</span>}
+                                                            <div key={t.id || i} className="flex items-center justify-between py-1.5 border-b border-zinc-800/60 last:border-0 hover:bg-zinc-900/40 px-1 rounded transition-colors gap-2">
+                                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                                    <span className="font-mono text-amber-400 font-bold text-[11px] sm:text-xs bg-amber-950/40 px-2 py-0.5 rounded border border-amber-900/40 shrink-0">{t.code}</span>
+                                                                    {pCode && <span className="text-[10px] text-zinc-500 font-mono shrink-0 hidden sm:inline">[{pCode}]</span>}
                                                                 </div>
-                                                                <div className="text-right">
-                                                                    <span className="text-white font-semibold text-xs">{displayName}</span>
-                                                                    {callsign && <span className="text-amber-400 font-mono text-[10px] ml-1">("{callsign}")</span>}
-                                                                    <span className="text-zinc-500 ml-1.5 text-[10px]">({t.paymentStatus})</span>
+                                                                <div className="text-right min-w-0 truncate">
+                                                                    <span className="text-white font-semibold text-xs truncate max-w-[130px] sm:max-w-[200px] inline-block align-bottom">{displayName}</span>
+                                                                    {callsign && <span className="text-amber-400 font-mono text-[10px] ml-1 truncate max-w-[90px] inline-block align-bottom">("{callsign}")</span>}
+                                                                    <span className="text-zinc-500 ml-1.5 text-[10px] shrink-0">({t.paymentStatus || 'Valid'})</span>
                                                                 </div>
                                                             </div>
                                                         );

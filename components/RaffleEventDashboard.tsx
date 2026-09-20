@@ -1461,13 +1461,13 @@ export const RaffleEventDashboard: React.FC<RaffleEventDashboardProps> = ({
                                                             : 'bg-zinc-950/70 border-zinc-800/80'
                                                     }`}
                                                 >
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className="font-mono text-xs font-black text-amber-400">
+                                                    <div className="flex items-center justify-between mb-1 gap-1">
+                                                        <span className="font-mono text-xs font-black text-amber-400 truncate">
                                                             {ticket.code}
                                                         </span>
-                                                        {isWinningTicket && <span className="text-xs">🏆</span>}
+                                                        {isWinningTicket && <span className="text-xs shrink-0">🏆</span>}
                                                     </div>
-                                                    <p className="text-[11px] text-zinc-300 truncate font-semibold">
+                                                    <p className="text-[11px] text-zinc-300 truncate font-semibold" title={`${ownerName} ${ownerCallsign ? `("${ownerCallsign}")` : ''}`}>
                                                         {ownerName} {ownerCallsign ? `("${ownerCallsign}")` : ''}
                                                     </p>
                                                 </div>

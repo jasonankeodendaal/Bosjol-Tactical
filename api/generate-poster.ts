@@ -13,6 +13,77 @@ const FALLBACK_TACTICAL_IMAGES: Record<string, string> = {
 const generatedPosterCache = new Map<string, string>();
 let global429CooldownUntil = 0;
 
+// Request Queue & Concurrency Controller to prevent parallel request spikes
+class PosterGenerationQueue {
+  private activeCount = 0;
+  private maxConcurrent = 1; // Process 1 image request at a time to stay within rate limits
+  private queue: Array<() => Promise<any>> = [];
+
+  enqueue<T>(task: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          const res = await task();
+          resolve(res);
+        } catch (err) {
+          reject(err);
+        }
+      });
+      this.processNext();
+    });
+  }
+
+  private async processNext() {
+    if (this.activeCount >= this.maxConcurrent || this.queue.length === 0) return;
+    this.activeCount++;
+    const nextTask = this.queue.shift();
+    if (nextTask) {
+      try {
+        await nextTask();
+      } finally {
+        this.activeCount--;
+        this.processNext();
+      }
+    } else {
+      this.activeCount--;
+    }
+  }
+}
+
+const posterQueue = new PosterGenerationQueue();
+
+// Exponential Backoff Retry Executor for Gemini API calls
+async function executeWithExponentialBackoff<T>(
+  operation: (attempt: number) => Promise<T>,
+  maxRetries = 3,
+  initialDelayMs = 2000,
+  factor = 2.2
+): Promise<T> {
+  let lastError: any = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation(attempt);
+    } catch (err: any) {
+      lastError = err;
+      const errStr = err?.message || String(err);
+      const isRateLimit = errStr.includes('429') || errStr.includes('quota') || errStr.includes('RESOURCE_EXHAUSTED');
+
+      if (!isRateLimit || attempt === maxRetries) {
+        throw err;
+      }
+
+      // Calculate exponential backoff delay with random jitter (±20%)
+      const baseDelay = initialDelayMs * Math.pow(factor, attempt - 1);
+      const jitter = baseDelay * 0.2 * (Math.random() - 0.5);
+      const delayMs = Math.round(baseDelay + jitter);
+
+      console.warn(`[Poster Queue] Gemini Rate Limit (429) hit on attempt ${attempt}/${maxRetries}. Retrying in ${delayMs}ms with exponential backoff...`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  throw lastError;
+}
+
 function formatGeminiErrorMessage(raw: any, cooldownSec = 45): string {
   if (!raw) return 'Tactical base plate active.';
   let str = typeof raw === 'string' ? raw : (raw?.message || JSON.stringify(raw));
@@ -196,51 +267,85 @@ Lighting: Volumetric tactical smoke, neon accents, dramatic rim lighting, extrem
     let imageUrl = '';
     let lastError: any = null;
 
-    for (const modelName of modelsToTry) {
-      try {
-        if (modelName === 'imagen-3.0-generate-001') {
-          const imgRes = await (ai.models as any).generateImages({
-            model: 'imagen-3.0-generate-001',
-            prompt: fullPrompt,
-            config: {
-              numberOfImages: 1,
-              aspectRatio: '3:4',
-              outputMimeType: 'image/jpeg'
-            }
-          });
-          if (imgRes?.generatedImages?.[0]?.image?.imageBytes) {
-            imageUrl = `data:image/jpeg;base64,${imgRes.generatedImages[0].image.imageBytes}`;
-            break;
-          }
-        } else {
-          const config: any = {};
-          if (modelName.includes('flash') || modelName.includes('pro')) {
-            config.imageConfig = {
-              aspectRatio: '3:4',
-              imageSize: '1K'
-            };
-          }
+    // Execute artwork generation using PosterQueue & Exponential Backoff
+    try {
+      imageUrl = await posterQueue.enqueue(async () => {
+        return await executeWithExponentialBackoff(async (_attempt) => {
+          let generated = '';
+          for (const modelName of modelsToTry) {
+            try {
+              if (modelName === 'imagen-3.0-generate-001') {
+                const imgRes = await (ai.models as any).generateImages({
+                  model: 'imagen-3.0-generate-001',
+                  prompt: fullPrompt,
+                  config: {
+                    numberOfImages: 1,
+                    aspectRatio: '3:4',
+                    outputMimeType: 'image/jpeg'
+                  }
+                });
+                if (imgRes?.generatedImages?.[0]?.image?.imageBytes) {
+                  generated = `data:image/jpeg;base64,${imgRes.generatedImages[0].image.imageBytes}`;
+                  break;
+                }
+              } else {
+                const config: any = {};
+                if (modelName.includes('flash') || modelName.includes('pro')) {
+                  config.imageConfig = {
+                    aspectRatio: '3:4',
+                    imageSize: '1K'
+                  };
+                }
 
-          const response = await ai.models.generateContent({
-            model: modelName,
-            contents: { parts },
-            config
-          });
+                const response = await ai.models.generateContent({
+                  model: modelName,
+                  contents: { parts },
+                  config
+                });
 
-          if (response.candidates?.[0]?.content?.parts) {
-            for (const part of response.candidates[0].content.parts) {
-              if (part.inlineData) {
-                imageUrl = `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
-                break;
+                if (response.candidates?.[0]?.content?.parts) {
+                  for (const part of response.candidates[0].content.parts) {
+                    if (part.inlineData) {
+                      generated = `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
+                      break;
+                    }
+                  }
+                }
+
+                if (generated) break;
               }
+            } catch (err: any) {
+              lastError = err;
+              const errStr = err?.message || String(err);
+              if (errStr.includes('429') || errStr.includes('quota') || errStr.includes('RESOURCE_EXHAUSTED')) {
+                throw err; // Re-throw 429 to trigger exponential backoff retry loop
+              }
+              console.warn(`[Vercel Serverless] Attempt with ${modelName} failed:`, errStr);
             }
           }
 
-          if (imageUrl) break;
-        }
-      } catch (err: any) {
-        lastError = err;
-        console.warn(`[Vercel Serverless] Attempt with ${modelName} failed:`, err?.message || err);
+          if (!generated) {
+            throw lastError || new Error('Image generation yielded no valid image data');
+          }
+
+          return generated;
+        }, 3, 2000, 2.2);
+      });
+    } catch (queueErr: any) {
+      lastError = queueErr;
+      const errStr = queueErr?.message || String(queueErr);
+      if (errStr.includes('429') || errStr.includes('quota') || errStr.includes('RESOURCE_EXHAUSTED')) {
+        global429CooldownUntil = Date.now() + 45000;
+        const fallbackImage = FALLBACK_TACTICAL_IMAGES[subjectType] || FALLBACK_TACTICAL_IMAGES.tactical_operator;
+        const noticeMsg = formatGeminiErrorMessage(queueErr, 45);
+        return res.status(200).json({
+          success: true,
+          imageUrl: fallbackImage,
+          apiKeyConfigured: true,
+          fallbackUsed: true,
+          cooldownSec: 45,
+          notice: noticeMsg
+        });
       }
     }
 

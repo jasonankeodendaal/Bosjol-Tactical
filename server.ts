@@ -34,7 +34,11 @@ const FALLBACK_TACTICAL_IMAGES: Record<string, string> = {
   heavy_juggernaut: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80'
 };
 
-function formatGeminiErrorMessage(raw: any): string {
+// In-memory poster cache & rate-limit cooldown tracker
+const generatedPosterCache = new Map<string, string>();
+let global429CooldownUntil = 0;
+
+function formatGeminiErrorMessage(raw: any, cooldownSec = 45): string {
   if (!raw) return 'Tactical base plate active.';
   let str = typeof raw === 'string' ? raw : (raw?.message || JSON.stringify(raw));
   try {
@@ -52,7 +56,7 @@ function formatGeminiErrorMessage(raw: any): string {
     if (str.includes('limit: 0')) {
       return 'Google Gemini Free Tier Quota (429): Free tier API keys have a limit of 0 requests for image generation models unless billing is enabled in Google AI Studio. We loaded a high-definition tactical base plate. To generate bespoke AI images, link billing in Google AI Studio or upload a custom field image.';
     }
-    return 'Google Gemini Rate Limit (429): Per-minute quota exceeded. Tactical base plate active. You can retry in a few moments or upload your own field photo.';
+    return `Google Gemini Rate Limit (429): Per-minute generation limit reached. High-definition tactical base plate active. Retry available in ${cooldownSec} seconds or upload your own field photo.`;
   }
 
   if (str.includes('API_KEY_INVALID') || str.includes('403') || str.includes('PERMISSION_DENIED')) {
@@ -80,15 +84,42 @@ app.post('/api/generate-poster', async (req, res) => {
       date,
       startTime,
       briefingTime,
-      subjectType,
+      subjectType = 'tactical_operator',
       hypeText,
       layoutStyle,
       generateMode
     } = req.body;
 
+    const fallbackImage = FALLBACK_TACTICAL_IMAGES[subjectType] || FALLBACK_TACTICAL_IMAGES.tactical_operator;
+
+    // Check if global 429 rate limit cooldown is currently active
+    const now = Date.now();
+    if (now < global429CooldownUntil) {
+      const remainingSec = Math.ceil((global429CooldownUntil - now) / 1000);
+      return res.status(200).json({
+        success: true,
+        imageUrl: fallbackImage,
+        apiKeyConfigured: true,
+        fallbackUsed: true,
+        cooldownSec: remainingSec,
+        notice: `Google Gemini Rate Limit (429): Per-minute generation limit reached. High-definition tactical base plate active. Retry available in ${remainingSec}s or upload your own field photo.`
+      });
+    }
+
+    // Check in-memory cache for recent identical poster generation
+    const cacheKey = `${subjectType}_${title || ''}_${generateMode || 'full'}`;
+    if (generatedPosterCache.has(cacheKey)) {
+      return res.json({
+        imageUrl: generatedPosterCache.get(cacheKey),
+        success: true,
+        isFullPoster: generateMode !== 'plate_only',
+        apiKeyConfigured: true,
+        cached: true
+      });
+    }
+
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.API_KEY;
     if (!apiKey) {
-      const fallbackImage = FALLBACK_TACTICAL_IMAGES[subjectType] || FALLBACK_TACTICAL_IMAGES.tactical_operator;
       return res.status(200).json({
         success: true,
         imageUrl: fallbackImage,
@@ -129,44 +160,12 @@ app.post('/api/generate-poster', async (req, res) => {
 
     let fullPrompt = '';
     if (isFullPoster) {
-      fullPrompt = `Masterpiece promotional marketing event poster for "Bosjol Tactical Airsoft", 3D cinematic realism, luxurious top-class movie poster quality, 8k resolution, octane render, extreme depth of field, dramatic volumetric atmospheric lighting, heavy grunge textures (dirt, mud, paint splatters, distressed wood, metallic scratches). Aspect ratio portrait 3:4.
-
-SCENARIO & AESTHETIC:
-- Main Subject: ${subjectDesc}.
-- Environment: War-torn airsoft arena with barricaded wooden fortresses, tall watchtowers, stacked rubber tires, and military ammo crates.
-- Lighting: Extreme contrast, atmospheric volumetric tactical smoke (symmetrical red vs blue smoke explosions or toxic neon lime-green glow).
-${prompt ? `Event Directive: ${prompt}` : ''}
-
-POSTER GRAPHIC DESIGN ELEMENTS (TOP TO BOTTOM TO RENDER ON POSTER):
-1. TOP HEADER: "BOSJOL TACTICAL AIRSOFT PRESENTS" in spaced-out military stencil typography with tactical crest and team flags.
-2. HERO TITLE & 3D ANCHORS:
-   - Massive dead-center 3D distressed military stencil title: "${titleStr}" with 3D embossed texture and contrasting dual colors.
-   - Hanging metallic engraved steel dog tags with specular chain links.
-   - Flanking red splatter or crosshair "5XP" arcade badge with gold ring.
-   - Angled stencil graffiti on wooden crates: "${hypePhrase}" and "MORE THAN A GAME".
-3. TACTICAL INFO MODULES (MID-SECTION):
-   - A uniform horizontal row of 4 semi-transparent glowing rectangular boxes with thin neon borders and minimalist vector icons:
-     * Box 1: [Calendar icon] "${eventDateStr}"
-     * Box 2: [Clock icon] "${eventTimeStr}"
-     * Box 3: [Map Pin icon] "${locationStr}"
-     * Box 4: [Coins icon] "${pricingStr}"
-4. RULES & MISSION BRIEF:
-   - Tactical Mission Brief banner: "${rulesBrief.substring(0, 140)}".
-   - Two-column layout with Standard Rules (green numbered steps) and Virus/Variant Rules (red biohazard icon).
-5. FOOTER:
-   - Dark lower third with operators aiming weapons behind sandbags, tires, and crates with graffiti.
-   - Spaced-out white core value icons: "🎯 TEAMWORK  •  ⚡ STRATEGY  •  🚩 OBJECTIVE  •  ⭐ VICTORY".
-   - Footer text: "BOSJOL TACTICAL AIRSOFT • WWW.BOSJOLAIRSOFT.CO.ZA".`;
+      fullPrompt = `Masterpiece promotional marketing event poster for "Bosjol Tactical Airsoft", 3D cinematic realism, luxurious top-class movie poster quality, 8k resolution, octane render, extreme depth of field, dramatic volumetric atmospheric lighting, heavy grunge textures. Aspect ratio portrait 3:4. Title: "${titleStr}". Scenario: ${subjectDesc}.`;
     } else {
-      fullPrompt = `Hyper-realistic 3D cinematic background plate for "Bosjol Tactical Airsoft" event poster. 8k resolution, top-class photorealism, luxurious octane render aesthetic.
-Subject: ${subjectDesc}.
-Environment: War-torn woodlands with barricaded wooden fortresses, watchtowers, stacked tires, and ammo crates.
-Lighting: Volumetric tactical smoke, neon accents, dramatic rim lighting, extreme depth of field, heavy grunge textures. Clean cinematic background artwork without flat text overlay. Aspect ratio 3:4 portrait. ${prompt ? `Theme: ${prompt}` : ''}`;
+      fullPrompt = `Hyper-realistic 3D cinematic background plate for "Bosjol Tactical Airsoft" event poster. 8k resolution, top-class photorealism, luxurious octane render aesthetic. Subject: ${subjectDesc}. Aspect ratio 3:4 portrait.`;
     }
 
     const parts: any[] = [];
-
-    // If user provided an existing uploaded image or background image, pass it to Gemini as inline data for reference
     if (bgImageUrl && typeof bgImageUrl === 'string' && bgImageUrl.startsWith('data:image/')) {
       const matches = bgImageUrl.match(/^data:(image\/\w+);base64,(.+)$/);
       if (matches) {
@@ -178,10 +177,9 @@ Lighting: Volumetric tactical smoke, neon accents, dramatic rim lighting, extrem
         });
       }
     }
-
     parts.push({ text: fullPrompt });
 
-    // Multi-model execution with graceful fallbacks
+    // Primary & Fallback Models
     const modelsToTry = [
       'gemini-3.1-flash-image',
       'imagen-3.0-generate-001',
@@ -208,19 +206,16 @@ Lighting: Volumetric tactical smoke, neon accents, dramatic rim lighting, extrem
             break;
           }
         } else {
-          const config: any = {};
-          if (modelName.includes('flash') || modelName.includes('pro')) {
-            config.imageConfig = {
+          const config: any = {
+            imageConfig: {
               aspectRatio: '3:4',
               imageSize: '1K'
-            };
-          }
+            }
+          };
 
           const response = await ai.models.generateContent({
             model: modelName,
-            contents: {
-              parts
-            },
+            contents: { parts },
             config
           });
 
@@ -233,36 +228,58 @@ Lighting: Volumetric tactical smoke, neon accents, dramatic rim lighting, extrem
             }
           }
 
-          if (imageUrl) {
-            break;
-          }
+          if (imageUrl) break;
         }
       } catch (err: any) {
         lastError = err;
-        console.warn(`Poster generation attempt with ${modelName} failed, trying next fallback:`, err?.message || err);
+        const errStr = err?.message || String(err);
+        console.warn(`Poster generation attempt with ${modelName} failed:`, errStr);
+
+        // If rate limit (429 / quota) occurred, activate global server cooldown and exit immediately without spamming remaining models
+        if (errStr.includes('429') || errStr.includes('quota') || errStr.includes('RESOURCE_EXHAUSTED')) {
+          global429CooldownUntil = Date.now() + 45000; // 45s cooldown
+          const noticeMsg = formatGeminiErrorMessage(err, 45);
+          return res.status(200).json({
+            success: true,
+            imageUrl: fallbackImage,
+            apiKeyConfigured: true,
+            fallbackUsed: true,
+            cooldownSec: 45,
+            notice: noticeMsg
+          });
+        }
       }
     }
 
     if (!imageUrl) {
-      const fallbackImage = FALLBACK_TACTICAL_IMAGES[subjectType] || FALLBACK_TACTICAL_IMAGES.tactical_operator;
-      const errorMsg = formatGeminiErrorMessage(lastError);
+      const errorMsg = formatGeminiErrorMessage(lastError, 45);
       return res.status(200).json({ 
         success: true, 
         imageUrl: fallbackImage, 
         apiKeyConfigured: true, 
         fallbackUsed: true, 
+        cooldownSec: lastError?.message?.includes('429') ? 45 : 0,
         notice: errorMsg 
       });
+    }
+
+    // Cache generated image
+    if (cacheKey) {
+      generatedPosterCache.set(cacheKey, imageUrl);
+      if (generatedPosterCache.size > 20) {
+        const firstKey = generatedPosterCache.keys().next().value;
+        if (firstKey) generatedPosterCache.delete(firstKey);
+      }
     }
 
     res.json({ imageUrl, success: true, isFullPoster, apiKeyConfigured: true });
   } catch (error: any) {
     console.warn('Error in poster generation route:', error?.message || error);
-    const fallbackImage = 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=1200&q=80';
+    const fallbackImage = FALLBACK_TACTICAL_IMAGES.tactical_operator;
     res.status(200).json({ 
       success: true, 
       imageUrl: fallbackImage, 
-      notice: 'Encountered temporary issue. Using high-definition tactical base plate.' 
+      notice: 'Encountered temporary issue. High-definition tactical base plate active.' 
     });
   }
 });

@@ -9,7 +9,11 @@ const FALLBACK_TACTICAL_IMAGES: Record<string, string> = {
   heavy_juggernaut: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80'
 };
 
-function formatGeminiErrorMessage(raw: any): string {
+// In-memory poster cache & rate-limit cooldown tracker for serverless instance
+const generatedPosterCache = new Map<string, string>();
+let global429CooldownUntil = 0;
+
+function formatGeminiErrorMessage(raw: any, cooldownSec = 45): string {
   if (!raw) return 'Tactical base plate active.';
   let str = typeof raw === 'string' ? raw : (raw?.message || JSON.stringify(raw));
   try {
@@ -27,7 +31,7 @@ function formatGeminiErrorMessage(raw: any): string {
     if (str.includes('limit: 0')) {
       return 'Google Gemini Free Tier Quota (429): Free tier API keys have a limit of 0 requests for image generation models unless billing is enabled in Google AI Studio. We loaded a high-definition tactical base plate. To generate bespoke AI images, link billing in Google AI Studio or upload a custom field image.';
     }
-    return 'Google Gemini Rate Limit (429): Per-minute quota exceeded. Tactical base plate active. You can retry in a few moments or upload your own field photo.';
+    return `Google Gemini Rate Limit (429): Per-minute generation limit reached. High-definition tactical base plate active. Retry available in ${cooldownSec} seconds or upload your own field photo.`;
   }
 
   if (str.includes('API_KEY_INVALID') || str.includes('403') || str.includes('PERMISSION_DENIED')) {

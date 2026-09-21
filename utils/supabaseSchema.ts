@@ -1502,6 +1502,12 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
             profitDate: String(item.profitDate || item.profitdate || item.profit_date || ''),
             profitdate: String(item.profitDate || item.profitdate || item.profit_date || ''),
             profit_date: String(item.profitDate || item.profitdate || item.profit_date || ''),
+            amountTendered: Number(item.amountTendered ?? item.amounttendered ?? item.amount_tendered ?? 0),
+            amounttendered: Number(item.amountTendered ?? item.amounttendered ?? item.amount_tendered ?? 0),
+            amount_tendered: Number(item.amountTendered ?? item.amounttendered ?? item.amount_tendered ?? 0),
+            changeDue: Number(item.changeDue ?? item.changedue ?? item.change_due ?? 0),
+            changedue: Number(item.changeDue ?? item.changedue ?? item.change_due ?? 0),
+            change_due: Number(item.changeDue ?? item.changedue ?? item.change_due ?? 0),
         };
     }
 
@@ -2580,6 +2586,14 @@ ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profit_reason TEXT DEFA
 ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "profitDate" TEXT DEFAULT '';
 ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profitdate TEXT DEFAULT '';
 ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profit_date TEXT DEFAULT '';
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "amountTendered" NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS amounttendered NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS amount_tendered NUMERIC DEFAULT 0;
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "changeDue" NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS changedue NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS change_due NUMERIC DEFAULT 0;
 
 ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT DEFAULT 'Cash';
 ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paymentmethod TEXT DEFAULT 'Cash';

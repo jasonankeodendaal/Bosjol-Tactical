@@ -528,9 +528,12 @@ export const FinanceTab: React.FC<{
             if (viewCategory === 'profits' && (!t.profitMade || Number(t.profitMade) <= 0)) return false;
 
             // Player and event filters
-            if (playerFilter !== 'all' && t.relatedPlayerId !== playerFilter) return false;
-            if (eventFilter !== 'all' && t.relatedEventId !== eventFilter) return false;
-            if (eventIdsInLocation && t.relatedEventId && !eventIdsInLocation.includes(t.relatedEventId)) return false;
+            const pId = t.relatedPlayerId || t.playerId;
+            if (playerFilter !== 'all' && pId !== playerFilter) return false;
+            
+            const eId = t.relatedEventId || t.eventId;
+            if (eventFilter !== 'all' && eId !== eventFilter) return false;
+            if (eventIdsInLocation && eId && !eventIdsInLocation.includes(eId)) return false;
 
             // Global Category Filter
             if (categoryFilter !== 'all') {

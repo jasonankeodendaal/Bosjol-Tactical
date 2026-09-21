@@ -9,6 +9,7 @@ import { UrlOrUploadField } from './UrlOrUploadField';
 import { useData } from '../data/DataContext';
 import { getTierForPlayer, getRankProgression, FALLBACK_RECRUIT_TIER, resolveRankIcon, getRankBadgeSvg } from '../utils/rankUtils';
 import { MOCK_BADGES } from '../constants';
+import { PlayerGrowthComparisonTable } from './PlayerGrowthComparisonTable';
 
 // Player Profile / Stats Popup Modal
 const PlayerStatsModal: React.FC<{
@@ -637,7 +638,7 @@ const AdminHonorModal: React.FC<{
 export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string, isAdmin?: boolean }> = ({ players, currentPlayerId, isAdmin }) => {
     const dataContext = useData();
     const honors = dataContext?.honors || [];
-    const [viewMode, setViewMode] = useState<'leaderboard' | 'honors'>('leaderboard');
+    const [viewMode, setViewMode] = useState<'leaderboard' | 'honors' | 'comparison'>('leaderboard');
     const [honorFilter, setHonorFilter] = useState<string>('all');
     const [editingHonor, setEditingHonor] = useState<Partial<PlayerHonor> | null>(null);
     const [selectedPlayerForModal, setSelectedPlayerForModal] = useState<Player | null>(null);
@@ -718,6 +719,12 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
                     >
                         <TrophyIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Hall of Fame ({honors.length})
                     </button>
+                    <button
+                        onClick={() => setViewMode('comparison')}
+                        className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1 ${viewMode === 'comparison' ? 'bg-indigo-600 text-white shadow' : 'text-zinc-400 hover:text-white'}`}
+                    >
+                        <ChartBarIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Growth Matrix
+                    </button>
                 </div>
 
                 {viewMode === 'honors' && (
@@ -777,6 +784,14 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
                         </ul>
                     </div>
                 </>
+            ) : viewMode === 'comparison' ? (
+                <div className="flex-grow overflow-y-auto p-2 sm:p-4">
+                    <PlayerGrowthComparisonTable
+                        players={players}
+                        currentPlayerId={currentPlayerId}
+                        title="CAREER GROWTH & PERFORMANCE MATRIX"
+                    />
+                </div>
             ) : (
                 <div className="flex-grow overflow-y-auto p-2 sm:p-4 space-y-3">
                     {filteredHonors.length > 0 ? (

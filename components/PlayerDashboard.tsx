@@ -18,6 +18,7 @@ import { DataContext } from '../data/DataContext';
 import { Loader } from './Loader';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { PlayerRankShowcase } from './PlayerRankShowcase';
+import { PlayerGrowthComparisonTable } from './PlayerGrowthComparisonTable';
 import { PlayerRulesView } from './PlayerRulesView';
 import { PlayerGameTypesView } from './PlayerGameTypesView';
 import { PlayerShopShowcase } from './PlayerShopShowcase';
@@ -937,6 +938,9 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                     </motion.div>
                 </div>
             </div>
+
+            {/* 3D Free View Open Spaced Growth Leaderboard Performance Comparison Matrix */}
+            <PlayerGrowthComparisonTable players={players} currentPlayerId={player.id} />
 
             {/* Free View 3D Floating Sponsorships & Partners Stage */}
             <div className="relative overflow-hidden py-3 px-2 sm:px-4 my-2 group pointer-events-auto">

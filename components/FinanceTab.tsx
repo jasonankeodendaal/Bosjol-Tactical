@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 
 type TimeFilter = 'day' | 'week' | 'month' | '90days' | 'all';
-type ViewCategory = 'all' | 'revenue' | 'expenses';
+type ViewCategory = 'all' | 'revenue' | 'expenses' | 'profits';
 
 const EXPENSE_CATEGORIES = [
     'Fuel & Power Generation',
@@ -370,6 +370,7 @@ export const FinanceTab: React.FC<{
             // View Category Filter
             if (viewCategory === 'revenue' && t.type === 'Expense') return false;
             if (viewCategory === 'expenses' && t.type !== 'Expense') return false;
+            if (viewCategory === 'profits' && (!t.profitMade || Number(t.profitMade) <= 0)) return false;
 
             // Player and event filters
             if (playerFilter !== 'all' && t.relatedPlayerId !== playerFilter) return false;
@@ -408,6 +409,8 @@ export const FinanceTab: React.FC<{
         let expenseCount = 0;
         let verifiedSlipsCount = 0;
         let outstanding = 0;
+        let totalProfitsMade = 0;
+        let profitsCount = 0;
 
         for (const t of transactions) {
             // Respect timeFilter for overall metrics
@@ -429,6 +432,10 @@ export const FinanceTab: React.FC<{
                 if (t.receiptImageUrl && t.receiptImageUrl.trim() !== '') {
                     verifiedSlipsCount += 1;
                 }
+                if (t.profitMade && Number(t.profitMade) > 0) {
+                    totalProfitsMade += Number(t.profitMade);
+                    profitsCount += 1;
+                }
             } else if (t.type in revenueByType) {
                 revenueByType[t.type as keyof typeof revenueByType] += Number(t.amount || 0);
                 if (t.paymentStatus === 'Unpaid') {
@@ -447,6 +454,8 @@ export const FinanceTab: React.FC<{
             verifiedSlipsCount,
             netProfit: totalRevenue - expenses,
             outstanding,
+            totalProfitsMade,
+            profitsCount,
         };
     }, [transactions, timeFilter]);
     
@@ -621,7 +630,7 @@ export const FinanceTab: React.FC<{
             </div>
              
             {/* Stat Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                 <StatCard 
                     title="Total Gross" 
                     value={`R${metrics.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} 
@@ -632,7 +641,13 @@ export const FinanceTab: React.FC<{
                     title="Business Expenses" 
                     value={`R${metrics.expenses.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} 
                     colorClass="text-red-400" 
-                    subtitle={`${metrics.expenseCount} entries (${metrics.verifiedSlipsCount} with slips)`}
+                    subtitle={`${metrics.expenseCount} entries (${metrics.verifiedSlipsCount} slips)`}
+                />
+                <StatCard 
+                    title="Profits & Returns" 
+                    value={`R${metrics.totalProfitsMade.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} 
+                    colorClass="text-emerald-400" 
+                    subtitle={`${metrics.profitsCount} profit items`}
                 />
                 <StatCard 
                     title="Net Profit" 
@@ -644,7 +659,7 @@ export const FinanceTab: React.FC<{
                     title="Unpaid Dues" 
                     value={`R${metrics.outstanding.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} 
                     colorClass="text-amber-400" 
-                    subtitle="Pending participant fees"
+                    subtitle="Pending fees"
                 />
                 <div className="col-span-2 sm:col-span-1 p-2.5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 flex flex-col justify-center space-y-1 text-[10px]">
                     <div className="flex justify-between items-center"><span className="text-zinc-400">Events:</span> <span className="font-bold text-emerald-400 font-mono">R{(metrics['Event Revenue'] || 0).toFixed(0)}</span></div>
@@ -653,9 +668,9 @@ export const FinanceTab: React.FC<{
                 </div>
             </div>
 
-            {/* View Mode Switcher: All Activity vs Revenue vs Business Expenses */}
+            {/* View Mode Switcher: All Activity vs Revenue vs Business Expenses vs Profits */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-1.5 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
                     <button
                         onClick={() => setViewCategory('all')}
                         className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${viewCategory === 'all' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-400 hover:text-white'}`}
@@ -674,6 +689,13 @@ export const FinanceTab: React.FC<{
                     >
                         <Receipt className="w-3.5 h-3.5" />
                         <span>Business Expenses ({metrics.expenseCount})</span>
+                    </button>
+                    <button
+                        onClick={() => setViewCategory('profits')}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 ${viewCategory === 'profits' ? 'bg-emerald-950/70 text-emerald-400 border border-emerald-500/30' : 'text-zinc-400 hover:text-white'}`}
+                    >
+                        <ArrowTrendingUpIcon className="w-3.5 h-3.5" />
+                        <span>Profits & Returns ({metrics.profitsCount})</span>
                     </button>
                 </div>
 
@@ -736,7 +758,7 @@ export const FinanceTab: React.FC<{
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
                             <FileText className="w-3.5 h-3.5 text-zinc-400" />
-                            {viewCategory === 'expenses' ? 'Business Expense Records' : 'Ledger Entries'} ({filteredTransactions.length})
+                            {viewCategory === 'expenses' ? 'Business Expense Records' : viewCategory === 'profits' ? 'Profits & ROI Returns Records' : 'Ledger Entries'} ({filteredTransactions.length})
                         </span>
 
                         {viewCategory === 'expenses' && (
@@ -754,7 +776,11 @@ export const FinanceTab: React.FC<{
                             <div className="text-center py-10 px-4 bg-zinc-950/40 rounded-xl border border-zinc-800/50">
                                 <Receipt className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
                                 <p className="text-xs text-zinc-400 font-bold">No records found for current filters</p>
-                                <p className="text-[11px] text-zinc-500 mt-1">Adjust the timeframe or log a new business expense above.</p>
+                                <p className="text-[11px] text-zinc-500 mt-1">
+                                    {viewCategory === 'profits' 
+                                        ? 'No profits/returns logged yet. Add profit details when logging or editing any business expense.' 
+                                        : 'Adjust the timeframe or log a new business expense above.'}
+                                </p>
                                 {viewCategory === 'expenses' && (
                                     <Button onClick={handleOpenNewExpense} variant="danger" size="sm" className="mt-3 !py-1 text-xs">
                                         <Plus className="w-3.5 h-3.5 mr-1" /> Add Business Expense
@@ -764,8 +790,68 @@ export const FinanceTab: React.FC<{
                         ) : (
                             [...filteredTransactions].reverse().map(t => {
                                 const isExpense = t.type === 'Expense';
+                                const isProfitItem = viewCategory === 'profits' || (t.profitMade && Number(t.profitMade) > 0);
                                 const player = players.find(p => p.id === t.relatedPlayerId);
                                 const hasSlip = Boolean(t.receiptImageUrl && t.receiptImageUrl.trim() !== '');
+
+                                if (viewCategory === 'profits') {
+                                    return (
+                                        <div 
+                                            key={t.id} 
+                                            className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-900/40 hover:border-emerald-600/50 transition-all space-y-2"
+                                        >
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0 flex-1 space-y-1">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                                                            <ArrowTrendingUpIcon className="w-3 h-3" /> Profit / Return
+                                                        </span>
+                                                        <span className="text-[10px] text-zinc-400 font-mono">
+                                                            Source: {t.expenseName || t.description} (Cost: R{t.amount.toFixed(0)})
+                                                        </span>
+                                                    </div>
+
+                                                    <p className="font-bold text-white text-xs">
+                                                        {t.profitName || 'Resale / Return Revenue'}
+                                                    </p>
+
+                                                    {t.profitReason && (
+                                                        <p className="text-[11px] text-zinc-300 italic">
+                                                            "{t.profitReason}"
+                                                        </p>
+                                                    )}
+
+                                                    <div className="flex items-center gap-3 text-[10px] text-zinc-400">
+                                                        <span>Realized: {t.profitDate ? new Date(t.profitDate).toLocaleDateString() : new Date(t.date).toLocaleDateString()}</span>
+                                                        {t.paidTo && <span>&bull; Vendor: <strong className="text-zinc-300">{t.paidTo}</strong></span>}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                                    <div className="font-mono font-black text-emerald-400 text-sm">
+                                                        +R{Number(t.profitMade || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}
+                                                    </div>
+                                                    <div className="flex items-center gap-1 mt-1">
+                                                        <button
+                                                            onClick={() => setInspectingExpense(t)}
+                                                            className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors text-[10px]"
+                                                            title="Inspect full details"
+                                                        >
+                                                            <Eye className="w-3 h-3" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleOpenEditExpense(t)}
+                                                            className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors text-[10px]"
+                                                            title="Edit expense & profit"
+                                                        >
+                                                            <Edit3 className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                }
 
                                 return (
                                     <div 
@@ -802,6 +888,12 @@ export const FinanceTab: React.FC<{
                                                             <ImageIcon className="w-2.5 h-2.5" />
                                                             <span>Slip Attached</span>
                                                         </button>
+                                                    )}
+
+                                                    {Boolean(t.profitMade && Number(t.profitMade) > 0) && (
+                                                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                                                            +R{Number(t.profitMade).toFixed(0)} Profit
+                                                        </span>
                                                     )}
                                                 </div>
 

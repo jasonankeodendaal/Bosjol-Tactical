@@ -353,6 +353,14 @@ async function safeUpsertRow(table: string, initialPayload: any): Promise<boolea
             delete currentPayload[col];
         }
 
+        // Sanitize any empty string values for date/timestamp fields to null to prevent Postgres TIMESTAMPTZ errors
+        Object.keys(currentPayload).forEach(key => {
+            const val = currentPayload[key];
+            if (val === '' && (key.toLowerCase().includes('date') || key.toLowerCase().includes('time') || key.toLowerCase().includes('at'))) {
+                currentPayload[key] = null;
+            }
+        });
+
         let attempts = 0;
         const maxAttempts = Math.max(50, Object.keys(currentPayload).length + 10);
         let isMissingRelation = false;
@@ -371,6 +379,20 @@ async function safeUpsertRow(table: string, initialPayload: any): Promise<boolea
             if (relationNotFound && attempts === 1) {
                 isMissingRelation = true;
                 break;
+            }
+
+            // Handle invalid timestamp/date syntax error by turning any remaining empty strings into null
+            if (msg.includes('invalid input syntax for type timestamp') || msg.includes('invalid input syntax for type date') || msg.includes('time zone')) {
+                let fixedAny = false;
+                Object.keys(currentPayload).forEach(k => {
+                    if (currentPayload[k] === '') {
+                        currentPayload[k] = null;
+                        fixedAny = true;
+                    }
+                });
+                if (fixedAny && attempts < 5) {
+                    continue;
+                }
             }
 
             const match = msg.match(/Could not find the '([^']+)' column/i) || 
@@ -843,17 +865,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         if (IS_LIVE_DATA && supabase) {
-            try {
-                const preparedPayload = prepareSupabasePayload(collectionName, payload, ranks);
-                const success = await safeUpsertRow(collectionName, preparedPayload);
-                if (success) {
-                    recordDatabaseActivity('writes', 1);
-                }
-                return payload.id;
-            } catch (err: any) {
-                console.warn(`Network error in addDoc (${collectionName}):`, err?.message || err);
-                return payload.id;
+            const preparedPayload = prepareSupabasePayload(collectionName, payload, ranks);
+            const success = await safeUpsertRow(collectionName, preparedPayload);
+            if (!success) {
+                console.error(`[Supabase Sync Error] safeUpsertRow failed for table '${collectionName}'`);
+                throw new Error(`Failed to insert record into Supabase PostgreSQL table '${collectionName}'. Check schema or run SQL migration script.`);
             }
+            recordDatabaseActivity('writes', 1);
+            return payload.id;
         } else {
             return payload.id;
         }
@@ -879,14 +898,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         if (IS_LIVE_DATA && supabase) {
-            try {
-                const preparedPayload = prepareSupabasePayload(collectionName, mergedDoc, ranks);
-                const success = await safeUpsertRow(collectionName, preparedPayload);
-                if (!success) {
-                    console.warn(`[Supabase Persistence Warning] Could not persist update to table '${collectionName}' for id '${id}'. Ensure the table schema and RLS policies are applied in Supabase.`);
-                }
-            } catch (err: any) {
-                console.warn(`Network error in updateDoc (${collectionName}):`, err?.message || err);
+            const preparedPayload = prepareSupabasePayload(collectionName, mergedDoc, ranks);
+            const success = await safeUpsertRow(collectionName, preparedPayload);
+            if (!success) {
+                console.error(`[Supabase Sync Error] safeUpsertRow failed for table '${collectionName}' (id: ${id})`);
+                throw new Error(`Failed to update record in Supabase PostgreSQL table '${collectionName}'. Check schema or run SQL migration script.`);
             }
         }
     }, [ranks]);

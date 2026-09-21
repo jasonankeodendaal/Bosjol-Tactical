@@ -1586,13 +1586,24 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
         const receiptImageUrl = String(item.receiptImageUrl || item.receiptimageurl || item.receipt_image_url || item.slipImageUrl || item.slipimageurl || item.slip_image_url || '');
         const paymentStatus = String(item.paymentStatus || item.paymentstatus || item.payment_status || 'Paid');
         const desc = String(item.description || item.expenseName || item.expensename || item.profitName || item.profitname || 'Expense');
+        
+        // Helper to format timestamps safely for PostgreSQL TIMESTAMPTZ columns (never return empty string "")
+        const formatPgTimestamp = (val: any): string | null => {
+            if (!val || typeof val !== 'string' || val.trim() === '') return null;
+            const parsed = new Date(val);
+            return isNaN(parsed.getTime()) ? null : parsed.toISOString();
+        };
+
+        const safeTxDate = formatPgTimestamp(item.date) || new Date().toISOString();
+        const safeProfitDate = formatPgTimestamp(item.profitDate || item.profitdate || item.profit_date);
+
         return {
             ...item,
             id: String(item.id),
             description: desc,
             amount: Number(item.amount || 0),
-            type: String(item.type || 'Retail Revenue'),
-            date: String(item.date || new Date().toISOString()),
+            type: String(item.type || 'Expense'),
+            date: safeTxDate,
             playerId,
             playerid: playerId,
             relatedPlayerId: playerId,
@@ -1647,9 +1658,9 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
             profitReason: String(item.profitReason || item.profitreason || item.profit_reason || ''),
             profitreason: String(item.profitReason || item.profitreason || item.profit_reason || ''),
             profit_reason: String(item.profitReason || item.profitreason || item.profit_reason || ''),
-            profitDate: String(item.profitDate || item.profitdate || item.profit_date || ''),
-            profitdate: String(item.profitDate || item.profitdate || item.profit_date || ''),
-            profit_date: String(item.profitDate || item.profitdate || item.profit_date || ''),
+            profitDate: safeProfitDate,
+            profitdate: safeProfitDate,
+            profit_date: safeProfitDate,
             amountTendered: Number(item.amountTendered ?? item.amounttendered ?? item.amount_tendered ?? 0),
             amounttendered: Number(item.amountTendered ?? item.amounttendered ?? item.amount_tendered ?? 0),
             amount_tendered: Number(item.amountTendered ?? item.amounttendered ?? item.amount_tendered ?? 0),

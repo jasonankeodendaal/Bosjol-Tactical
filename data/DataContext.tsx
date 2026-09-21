@@ -248,7 +248,10 @@ function useCollection<T extends {id: string}>(
                 }
                 lastError = resError;
                 const msg = resError?.message || '';
-                const isMissingRelation = msg.includes('relation') || msg.includes('Could not find') || msg.includes('schema cache');
+                const isMissingRelation = (resError as any)?.code === '42P01' || 
+                                          (msg.toLowerCase().includes('relation') && msg.toLowerCase().includes('does not exist') && !msg.toLowerCase().includes('column')) || 
+                                          (msg.includes('Could not find') && msg.includes('table')) || 
+                                          msg.includes('schema cache');
                 if (!isMissingRelation) {
                     break;
                 }
@@ -337,9 +340,10 @@ function extractDocumentField(rawRow: Record<string, any>, key: string, fallback
 const knownMissingColsPerTable: Record<string, Set<string>> = {};
 
 // Helper to safely upsert a row to Supabase, stripping missing columns automatically if table schema does not include them yet
-async function safeUpsertRow(table: string, initialPayload: any): Promise<boolean> {
-    if (!supabase) return false;
+async function safeUpsertRow(table: string, initialPayload: any): Promise<{ success: boolean; error?: string }> {
+    if (!supabase) return { success: false, error: 'Supabase client is not initialized' };
     const candidates = getTableCandidates(table);
+    let lastErrorMsg = '';
 
     for (const tableName of candidates) {
         if (!knownMissingColsPerTable[tableName]) {
@@ -371,12 +375,17 @@ async function safeUpsertRow(table: string, initialPayload: any): Promise<boolea
             if (!error) {
                 recordDatabaseActivity('writes', 1);
                 resolvedTableMap[table] = tableName;
-                return true;
+                return { success: true };
             }
 
             const msg = error.message || String(error);
-            const relationNotFound = msg.includes('relation') || msg.includes('Could not find') || msg.includes('schema cache');
-            if (relationNotFound && attempts === 1) {
+            lastErrorMsg = msg;
+
+            const isMissingTable = (error as any)?.code === '42P01' || 
+                                   (msg.toLowerCase().includes('relation') && msg.toLowerCase().includes('does not exist') && !msg.toLowerCase().includes('column')) || 
+                                   (msg.includes('Could not find') && msg.includes('table')) || 
+                                   (msg.includes('schema cache') && !msg.includes('column'));
+            if (isMissingTable && attempts === 1) {
                 isMissingRelation = true;
                 break;
             }
@@ -436,7 +445,7 @@ async function safeUpsertRow(table: string, initialPayload: any): Promise<boolea
             break;
         }
     }
-    return false;
+    return { success: false, error: lastErrorMsg || 'Database write operation failed' };
 }
 
 // Helper to fetch a single document from Supabase live with real-time sync (no localStorage)
@@ -866,10 +875,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (IS_LIVE_DATA && supabase) {
             const preparedPayload = prepareSupabasePayload(collectionName, payload, ranks);
-            const success = await safeUpsertRow(collectionName, preparedPayload);
-            if (!success) {
-                console.error(`[Supabase Sync Error] safeUpsertRow failed for table '${collectionName}'`);
-                throw new Error(`Failed to insert record into Supabase PostgreSQL table '${collectionName}'. Check schema or run SQL migration script.`);
+            const res = await safeUpsertRow(collectionName, preparedPayload);
+            if (!res.success) {
+                console.error(`[Supabase Sync Error] safeUpsertRow failed for table '${collectionName}':`, res.error);
+                throw new Error(res.error || `Failed to insert record into Supabase PostgreSQL table '${collectionName}'. Check schema or run SQL migration script.`);
             }
             recordDatabaseActivity('writes', 1);
             return payload.id;
@@ -899,10 +908,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (IS_LIVE_DATA && supabase) {
             const preparedPayload = prepareSupabasePayload(collectionName, mergedDoc, ranks);
-            const success = await safeUpsertRow(collectionName, preparedPayload);
-            if (!success) {
-                console.error(`[Supabase Sync Error] safeUpsertRow failed for table '${collectionName}' (id: ${id})`);
-                throw new Error(`Failed to update record in Supabase PostgreSQL table '${collectionName}'. Check schema or run SQL migration script.`);
+            const res = await safeUpsertRow(collectionName, preparedPayload);
+            if (!res.success) {
+                console.error(`[Supabase Sync Error] safeUpsertRow failed for table '${collectionName}' (id: ${id}):`, res.error);
+                throw new Error(res.error || `Failed to update record in Supabase PostgreSQL table '${collectionName}'. Check schema or run SQL migration script.`);
             }
         }
     }, [ranks]);
@@ -963,7 +972,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     }
                     lastDeleteError = error;
                     const msg = error.message || '';
-                    const isMissingRelation = msg.includes('relation') || msg.includes('Could not find') || msg.includes('schema cache');
+                    const isMissingRelation = (error as any)?.code === '42P01' || 
+                                              (msg.toLowerCase().includes('relation') && msg.toLowerCase().includes('does not exist') && !msg.toLowerCase().includes('column')) || 
+                                              (msg.includes('Could not find') && msg.includes('table')) || 
+                                              msg.includes('schema cache');
                     if (!isMissingRelation) {
                         break;
                     }

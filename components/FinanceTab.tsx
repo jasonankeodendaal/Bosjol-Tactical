@@ -355,16 +355,10 @@ export const FinanceTab: React.FC<{
 
     const handleSaveExpense = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        const trimmedName = expenseFormData.expenseName.trim();
-        if (!trimmedName) {
-            alert('Please enter an expense item description.');
-            return;
-        }
-        const numericAmount = parseFloat(String(expenseFormData.pricePaid));
-        if (isNaN(numericAmount) || numericAmount <= 0) {
-            alert('Please enter a valid cost amount (greater than 0).');
-            return;
-        }
+        const rawExpenseName = (expenseFormData.expenseName || '').trim();
+        const trimmedName = rawExpenseName || 'Operating Expense';
+        const rawPricePaid = parseFloat(String(expenseFormData.pricePaid));
+        const numericAmount = !isNaN(rawPricePaid) ? rawPricePaid : 0;
 
         setIsSaving(true);
         setSaveProgress({
@@ -382,15 +376,15 @@ export const FinanceTab: React.FC<{
             const expensePayload: any = {
                 description: trimmedName,
                 expenseName: trimmedName,
-                expenseReason: expenseFormData.expenseReason.trim(),
+                expenseReason: (expenseFormData.expenseReason || '').trim(),
                 amount: numericAmount,
                 date: expenseDate,
                 type: 'Expense',
                 category: expenseFormData.category || 'General Operating Expense',
                 paymentMethod: expenseFormData.paymentMethod || 'EFT',
-                paidTo: expenseFormData.paidTo.trim(),
-                receiptImageUrl: expenseFormData.receiptImageUrl.trim(),
-                notes: expenseFormData.notes.trim(),
+                paidTo: (expenseFormData.paidTo || '').trim(),
+                receiptImageUrl: (expenseFormData.receiptImageUrl || '').trim(),
+                notes: (expenseFormData.notes || '').trim(),
                 status: 'completed',
                 paymentStatus: 'Paid',
             };
@@ -455,16 +449,10 @@ export const FinanceTab: React.FC<{
 
     const handleSaveProfit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        const trimmedProfitName = profitFormData.profitName.trim();
-        if (!trimmedProfitName) {
-            alert('Please enter a profit or return title.');
-            return;
-        }
-        const numericProfit = parseFloat(String(profitFormData.profitMade));
-        if (isNaN(numericProfit) || numericProfit <= 0) {
-            alert('Please enter a valid profit amount (greater than 0).');
-            return;
-        }
+        const rawProfitName = (profitFormData.profitName || '').trim();
+        const trimmedProfitName = rawProfitName || 'General Profit';
+        const rawProfitMade = parseFloat(String(profitFormData.profitMade));
+        const numericProfit = !isNaN(rawProfitMade) ? rawProfitMade : 0;
 
         setIsSaving(true);
         setSaveProgress({
@@ -480,22 +468,22 @@ export const FinanceTab: React.FC<{
                 : new Date().toISOString();
 
             const parsedSourceCost = parseFloat(profitFormData.sourceCost) || 0;
-            const sourceDesc = profitFormData.sourceExpenseName.trim() || trimmedProfitName;
+            const sourceDesc = (profitFormData.sourceExpenseName || '').trim() || trimmedProfitName;
 
             const profitPayload: any = {
                 description: `Profit: ${trimmedProfitName}`,
                 expenseName: sourceDesc,
-                expenseReason: profitFormData.profitReason.trim() || `Profit realized: ${trimmedProfitName}`,
+                expenseReason: (profitFormData.profitReason || '').trim() || `Profit realized: ${trimmedProfitName}`,
                 amount: parsedSourceCost,
                 date: realizationDate,
                 type: 'Expense',
                 category: profitFormData.category || 'Resale & Equipment Profit',
                 paymentMethod: profitFormData.paymentMethod || 'EFT',
-                paidTo: profitFormData.paidTo.trim(),
-                notes: profitFormData.notes.trim(),
+                paidTo: (profitFormData.paidTo || '').trim(),
+                notes: (profitFormData.notes || '').trim(),
                 profitMade: numericProfit,
                 profitName: trimmedProfitName,
-                profitReason: profitFormData.profitReason.trim(),
+                profitReason: (profitFormData.profitReason || '').trim(),
                 profitDate: realizationDate,
                 status: 'completed',
                 paymentStatus: 'Paid',

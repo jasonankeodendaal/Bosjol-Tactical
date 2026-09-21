@@ -452,6 +452,8 @@ export interface Transaction {
     items?: SaleItem[];
     subtotal?: number;
     discount?: number;
+    amountTendered?: number;
+    changeDue?: number;
     notes?: string;
     cashierName?: string;
     customerName?: string;

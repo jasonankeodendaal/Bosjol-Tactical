@@ -60,10 +60,10 @@ const QUICK_PRESETS = [
 ];
 
 const StatCard: React.FC<{ title: string, value: string, colorClass: string, subtitle?: string }> = ({ title, value, colorClass, subtitle }) => (
-    <div className="p-2.5 sm:p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 flex flex-col justify-between shadow-sm">
-        <p className="text-[10px] text-zinc-400 uppercase font-black tracking-wider">{title}</p>
-        <p className={`text-base sm:text-xl font-mono font-black mt-1 ${colorClass}`}>{value}</p>
-        {subtitle && <p className="text-[9px] text-zinc-400 mt-0.5">{subtitle}</p>}
+    <div className="py-1 px-1.5 flex flex-col justify-between shrink-0">
+        <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider leading-none truncate">{title}</p>
+        <p className={`text-sm sm:text-base font-mono font-black mt-0.5 leading-tight ${colorClass}`}>{value}</p>
+        {subtitle && <p className="text-[9px] text-zinc-500 mt-0.5 leading-none truncate">{subtitle}</p>}
     </div>
 );
 
@@ -541,44 +541,45 @@ export const FinanceTab: React.FC<{
                 )}
             </AnimatePresence>
 
-            {/* Top Bar: Title & Actions */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800/80">
-                <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500">
-                        <CurrencyDollarIcon className="w-5 h-5" />
-                    </div>
+            {/* Top Bar: Title & Actions - Shrink to fit */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-zinc-800/60">
+                <div className="flex items-center gap-2">
+                    <CurrencyDollarIcon className="w-5 h-5 text-red-500 shrink-0" />
                     <div>
-                        <h2 className="text-base sm:text-lg font-black text-white uppercase tracking-wider flex items-center gap-2">
-                            <span>Financial Intelligence & Ledger</span>
+                        <h2 className="text-sm sm:text-base font-black text-white uppercase tracking-wider leading-tight">
+                            Financial Intelligence & Ledger
                         </h2>
-                        <p className="text-[10px] sm:text-xs text-zinc-400">
+                        <p className="text-[10px] text-zinc-400 leading-none mt-0.5">
                             Cash flow, business expense slips, POS revenue & realtime ledger reconciliation
                         </p>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     {/* Log Business Expense Button */}
                     <Button 
                         onClick={handleOpenNewExpense} 
                         variant="danger" 
                         size="sm" 
-                        className="!py-1.5 !px-3 text-xs font-bold shadow-lg shadow-red-950/40 flex items-center gap-1.5"
+                        className="!py-1 !px-2.5 text-xs font-bold flex items-center gap-1.5"
                     >
-                        <Receipt className="w-4 h-4" />
+                        <Receipt className="w-3.5 h-3.5" />
                         <span>Log Business Expense</span>
                     </Button>
 
                     {/* Print Report */}
-                    <Button onClick={handlePrint} variant="secondary" size="sm" className="!py-1.5 !px-3 text-xs">
-                        <PrinterIcon className="w-3.5 h-3.5 mr-1" />
-                        Print Report
-                    </Button>
+                    <button 
+                        onClick={handlePrint} 
+                        className="p-1 px-2 text-xs text-zinc-400 hover:text-white flex items-center gap-1 transition-colors"
+                    >
+                        <PrinterIcon className="w-3.5 h-3.5" />
+                        <span>Print</span>
+                    </button>
 
                     {/* SQL Live Sync Snippet */}
                     <button 
                         onClick={() => setIsSqlModalOpen(true)}
-                        className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors text-xs flex items-center gap-1 border border-zinc-700/60"
+                        className="p-1 px-2 text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1"
                         title="View & copy Supabase live sync SQL schema snippet"
                     >
                         <Database className="w-3.5 h-3.5" />
@@ -587,50 +588,50 @@ export const FinanceTab: React.FC<{
                 </div>
             </div>
 
-            {/* Compact Filter Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {/* Shrink-to-fit Filter Row - Free view borderless layout */}
+            <div className="flex flex-wrap items-center gap-2 py-1">
                 <select 
                     value={timeFilter} 
                     onChange={e => setTimeFilter(e.target.value as TimeFilter)} 
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                    className="bg-transparent hover:bg-zinc-900 border-b border-zinc-800 focus:border-red-500 px-2 py-1 text-white text-xs focus:outline-none transition-colors"
                 >
-                    <option value="day">Today</option>
-                    <option value="week">This Week</option>
-                    <option value="month">This Month</option>
-                    <option value="90days">Last 90 Days</option>
-                    <option value="all">All Time</option>
+                    <option value="day" className="bg-zinc-900">Today</option>
+                    <option value="week" className="bg-zinc-900">This Week</option>
+                    <option value="month" className="bg-zinc-900">This Month</option>
+                    <option value="90days" className="bg-zinc-900">Last 90 Days</option>
+                    <option value="all" className="bg-zinc-900">All Time</option>
                 </select>
 
                 <select 
                     value={playerFilter} 
                     onChange={e => setPlayerFilter(e.target.value)} 
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                    className="bg-transparent hover:bg-zinc-900 border-b border-zinc-800 focus:border-red-500 px-2 py-1 text-white text-xs focus:outline-none transition-colors"
                 >
-                    <option value="all">All Players</option>
-                    {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    <option value="all" className="bg-zinc-900">All Players</option>
+                    {players.map(p => <option key={p.id} value={p.id} className="bg-zinc-900">{p.name}</option>)}
                 </select>
 
                 <select 
                     value={eventFilter} 
                     onChange={e => setEventFilter(e.target.value)} 
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                    className="bg-transparent hover:bg-zinc-900 border-b border-zinc-800 focus:border-red-500 px-2 py-1 text-white text-xs focus:outline-none transition-colors"
                 >
-                    <option value="all">All Events</option>
-                    {events.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
+                    <option value="all" className="bg-zinc-900">All Events</option>
+                    {events.map(e => <option key={e.id} value={e.id} className="bg-zinc-900">{e.title}</option>)}
                 </select>
 
                 <select 
                     value={locationFilter} 
                     onChange={e => setLocationFilter(e.target.value)} 
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                    className="bg-transparent hover:bg-zinc-900 border-b border-zinc-800 focus:border-red-500 px-2 py-1 text-white text-xs focus:outline-none transition-colors"
                 >
-                    <option value="all">All Fields</option>
-                    {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                    <option value="all" className="bg-zinc-900">All Fields</option>
+                    {locations.map(l => <option key={l.id} value={l.id} className="bg-zinc-900">{l.name}</option>)}
                 </select>
             </div>
              
-            {/* Stat Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            {/* Shrink-to-fit KPI Bar - Free view layout with no box containers or outlines */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-2 border-y border-zinc-800/60">
                 <StatCard 
                     title="Total Gross" 
                     value={`R${metrics.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} 
@@ -661,55 +662,80 @@ export const FinanceTab: React.FC<{
                     colorClass="text-amber-400" 
                     subtitle="Pending fees"
                 />
-                <div className="col-span-2 sm:col-span-1 p-2.5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 flex flex-col justify-center space-y-1 text-[10px]">
-                    <div className="flex justify-between items-center"><span className="text-zinc-400">Events:</span> <span className="font-bold text-emerald-400 font-mono">R{(metrics['Event Revenue'] || 0).toFixed(0)}</span></div>
-                    <div className="flex justify-between items-center"><span className="text-zinc-400">Rentals:</span> <span className="font-bold text-blue-400 font-mono">R{(metrics['Rental Revenue'] || 0).toFixed(0)}</span></div>
-                    <div className="flex justify-between items-center"><span className="text-zinc-400">Retail:</span> <span className="font-bold text-amber-400 font-mono">R{(metrics['Retail Revenue'] || 0).toFixed(0)}</span></div>
+                <div className="py-1 px-1.5 flex flex-col justify-center space-y-0.5 text-[10px] shrink-0">
+                    <div className="flex items-center gap-2">
+                        <span className="text-zinc-500">Events:</span>
+                        <span className="font-bold text-emerald-400 font-mono">R{(metrics['Event Revenue'] || 0).toFixed(0)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-zinc-500">Rentals:</span>
+                        <span className="font-bold text-blue-400 font-mono">R{(metrics['Rental Revenue'] || 0).toFixed(0)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-zinc-500">Retail:</span>
+                        <span className="font-bold text-amber-400 font-mono">R{(metrics['Retail Revenue'] || 0).toFixed(0)}</span>
+                    </div>
                 </div>
             </div>
 
-            {/* View Mode Switcher: All Activity vs Revenue vs Business Expenses vs Profits */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-1.5 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                <div className="flex items-center gap-1 flex-wrap">
+            {/* View Mode Switcher: Shrink-to-fit text tabs with free-view design */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-1">
+                <div className="flex items-center gap-3 flex-wrap text-xs">
                     <button
                         onClick={() => setViewCategory('all')}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${viewCategory === 'all' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-400 hover:text-white'}`}
+                        className={`py-1 transition-colors font-bold ${
+                            viewCategory === 'all'
+                                ? 'text-white border-b-2 border-red-500'
+                                : 'text-zinc-400 hover:text-white'
+                        }`}
                     >
                         All Transactions ({transactions.length})
                     </button>
                     <button
                         onClick={() => setViewCategory('revenue')}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${viewCategory === 'revenue' ? 'bg-emerald-950/70 text-emerald-400 border border-emerald-500/30' : 'text-zinc-400 hover:text-white'}`}
+                        className={`py-1 transition-colors font-bold ${
+                            viewCategory === 'revenue'
+                                ? 'text-emerald-400 border-b-2 border-emerald-500'
+                                : 'text-zinc-400 hover:text-white'
+                        }`}
                     >
                         Revenue Streams
                     </button>
                     <button
                         onClick={() => setViewCategory('expenses')}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 ${viewCategory === 'expenses' ? 'bg-red-950/70 text-red-400 border border-red-500/30' : 'text-zinc-400 hover:text-white'}`}
+                        className={`py-1 transition-colors font-bold flex items-center gap-1.5 ${
+                            viewCategory === 'expenses'
+                                ? 'text-red-400 border-b-2 border-red-500'
+                                : 'text-zinc-400 hover:text-white'
+                        }`}
                     >
                         <Receipt className="w-3.5 h-3.5" />
                         <span>Business Expenses ({metrics.expenseCount})</span>
                     </button>
                     <button
                         onClick={() => setViewCategory('profits')}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 ${viewCategory === 'profits' ? 'bg-emerald-950/70 text-emerald-400 border border-emerald-500/30' : 'text-zinc-400 hover:text-white'}`}
+                        className={`py-1 transition-colors font-bold flex items-center gap-1.5 ${
+                            viewCategory === 'profits'
+                                ? 'text-emerald-400 border-b-2 border-emerald-500'
+                                : 'text-zinc-400 hover:text-white'
+                        }`}
                     >
                         <ArrowTrendingUpIcon className="w-3.5 h-3.5" />
                         <span>Profits & Returns ({metrics.profitsCount})</span>
                     </button>
                 </div>
 
-                {/* Sub-filters for Expenses */}
+                {/* Sub-filters for Expenses & Search */}
                 <div className="flex items-center gap-2">
                     {viewCategory === 'expenses' && (
                         <select
                             value={expenseCategoryFilter}
                             onChange={e => setExpenseCategoryFilter(e.target.value)}
-                            className="bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-300 focus:outline-none focus:ring-1 focus:ring-red-500"
+                            className="bg-transparent hover:bg-zinc-900 border-b border-zinc-800 px-2 py-1 text-xs text-zinc-300 focus:outline-none focus:border-red-500 transition-colors"
                         >
-                            <option value="all">All Expense Categories</option>
+                            <option value="all" className="bg-zinc-900">All Expense Categories</option>
                             {EXPENSE_CATEGORIES.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
+                                <option key={cat} value={cat} className="bg-zinc-900">{cat}</option>
                             ))}
                         </select>
                     )}
@@ -720,10 +746,10 @@ export const FinanceTab: React.FC<{
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                             placeholder="Search description, vendor..."
-                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-2.5 pr-6 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                            className="w-full bg-transparent hover:bg-zinc-900/50 border-b border-zinc-800 pl-1 pr-6 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 transition-colors"
                         />
                         {searchQuery && (
-                            <button onClick={() => setSearchQuery('')} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white">
+                            <button onClick={() => setSearchQuery('')} className="absolute right-1 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white">
                                 <X className="w-3 h-3" />
                             </button>
                         )}
@@ -731,31 +757,33 @@ export const FinanceTab: React.FC<{
                 </div>
             </div>
 
-            {/* Visualizer & Ledger Side-by-side on large screens */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+            {/* Visualizer & Ledger Side-by-side in shrink-to-fit free view */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 {/* Revenue Trend Visualizer */}
-                <div className="lg:col-span-6 p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
-                            <ArrowTrendingUpIcon className="w-3.5 h-3.5 text-emerald-400"/> Revenue Stream Trend
-                        </span>
-                        <div className="flex gap-2 text-[9px]">
-                            <span className="flex items-center gap-1 text-zinc-400"><span className="w-2 h-2 rounded bg-emerald-500"></span> Event</span>
-                            <span className="flex items-center gap-1 text-zinc-400"><span className="w-2 h-2 rounded bg-blue-500"></span> Rental</span>
-                            <span className="flex items-center gap-1 text-zinc-400"><span className="w-2 h-2 rounded bg-amber-500"></span> Retail</span>
+                <div className="lg:col-span-5 py-2 flex flex-col justify-between">
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                                <ArrowTrendingUpIcon className="w-3.5 h-3.5 text-emerald-400"/> Revenue Stream Trend
+                            </span>
+                            <div className="flex gap-2 text-[9px]">
+                                <span className="flex items-center gap-1 text-zinc-400"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Event</span>
+                                <span className="flex items-center gap-1 text-zinc-400"><span className="w-2 h-2 rounded-full bg-blue-500"></span> Rental</span>
+                                <span className="flex items-center gap-1 text-zinc-400"><span className="w-2 h-2 rounded-full bg-amber-500"></span> Retail</span>
+                            </div>
                         </div>
+                        <BarChart data={chartData} />
                     </div>
-                    <BarChart data={chartData} />
-                    <div className="mt-3 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-400">
+                    <div className="mt-3 pt-2 border-t border-zinc-800/60 flex items-center justify-between text-[11px] text-zinc-400">
                         <span>Period Total: <strong className="text-emerald-400 font-mono">R{metrics.totalRevenue.toFixed(0)}</strong></span>
                         <span>Deductions: <strong className="text-red-400 font-mono">-R{metrics.expenses.toFixed(0)}</strong></span>
-                        <span>Net Margin: <strong className={`font-mono ${metrics.netProfit >= 0 ? 'text-white' : 'text-red-400'}`}>R{metrics.netProfit.toFixed(0)}</strong></span>
+                        <span>Net: <strong className={`font-mono ${metrics.netProfit >= 0 ? 'text-white' : 'text-red-400'}`}>R{metrics.netProfit.toFixed(0)}</strong></span>
                     </div>
                 </div>
 
-                {/* Ledger & Transaction Feed */}
-                <div className="lg:col-span-6 p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 flex flex-col">
-                    <div className="flex items-center justify-between mb-2">
+                {/* Ledger & Transaction Feed - Free view borderless layout */}
+                <div className="lg:col-span-7 py-2 flex flex-col">
+                    <div className="flex items-center justify-between mb-2 pb-1 border-b border-zinc-800/60">
                         <span className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
                             <FileText className="w-3.5 h-3.5 text-zinc-400" />
                             {viewCategory === 'expenses' ? 'Business Expense Records' : viewCategory === 'profits' ? 'Profits & ROI Returns Records' : 'Ledger Entries'} ({filteredTransactions.length})
@@ -771,20 +799,20 @@ export const FinanceTab: React.FC<{
                         )}
                     </div>
 
-                    <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                    <div className="space-y-1.5 max-h-[460px] overflow-y-auto pr-1">
                         {filteredTransactions.length === 0 ? (
-                            <div className="text-center py-10 px-4 bg-zinc-950/40 rounded-xl border border-zinc-800/50">
-                                <Receipt className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+                            <div className="text-center py-8 px-4 text-zinc-500">
+                                <Receipt className="w-6 h-6 text-zinc-600 mx-auto mb-1.5" />
                                 <p className="text-xs text-zinc-400 font-bold">No records found for current filters</p>
-                                <p className="text-[11px] text-zinc-500 mt-1">
+                                <p className="text-[10px] text-zinc-500 mt-0.5">
                                     {viewCategory === 'profits' 
                                         ? 'No profits/returns logged yet. Add profit details when logging or editing any business expense.' 
                                         : 'Adjust the timeframe or log a new business expense above.'}
                                 </p>
                                 {viewCategory === 'expenses' && (
-                                    <Button onClick={handleOpenNewExpense} variant="danger" size="sm" className="mt-3 !py-1 text-xs">
-                                        <Plus className="w-3.5 h-3.5 mr-1" /> Add Business Expense
-                                    </Button>
+                                    <button onClick={handleOpenNewExpense} className="mt-2 text-xs font-bold text-red-400 hover:text-red-300 inline-flex items-center gap-1">
+                                        <Plus className="w-3.5 h-3.5" /> Add Business Expense
+                                    </button>
                                 )}
                             </div>
                         ) : (
@@ -798,13 +826,13 @@ export const FinanceTab: React.FC<{
                                     return (
                                         <div 
                                             key={t.id} 
-                                            className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-900/40 hover:border-emerald-600/50 transition-all space-y-2"
+                                            className="py-2 px-1 border-b border-zinc-800/50 hover:bg-zinc-900/20 transition-all"
                                         >
                                             <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0 flex-1 space-y-1">
+                                                <div className="min-w-0 flex-1 space-y-0.5">
                                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                                                            <ArrowTrendingUpIcon className="w-3 h-3" /> Profit / Return
+                                                        <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                                                            <ArrowTrendingUpIcon className="w-3 h-3" /> Profit
                                                         </span>
                                                         <span className="text-[10px] text-zinc-400 font-mono">
                                                             Source: {t.expenseName || t.description} (Cost: R{t.amount.toFixed(0)})
@@ -816,32 +844,32 @@ export const FinanceTab: React.FC<{
                                                     </p>
 
                                                     {t.profitReason && (
-                                                        <p className="text-[11px] text-zinc-300 italic">
+                                                        <p className="text-[10px] text-zinc-300 italic">
                                                             "{t.profitReason}"
                                                         </p>
                                                     )}
 
-                                                    <div className="flex items-center gap-3 text-[10px] text-zinc-400">
+                                                    <div className="flex items-center gap-2 text-[9px] text-zinc-500">
                                                         <span>Realized: {t.profitDate ? new Date(t.profitDate).toLocaleDateString() : new Date(t.date).toLocaleDateString()}</span>
-                                                        {t.paidTo && <span>&bull; Vendor: <strong className="text-zinc-300">{t.paidTo}</strong></span>}
+                                                        {t.paidTo && <span>&bull; Vendor: <strong className="text-zinc-400">{t.paidTo}</strong></span>}
                                                     </div>
                                                 </div>
 
                                                 <div className="flex flex-col items-end gap-1 shrink-0">
-                                                    <div className="font-mono font-black text-emerald-400 text-sm">
+                                                    <div className="font-mono font-black text-emerald-400 text-xs sm:text-sm">
                                                         +R{Number(t.profitMade || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}
                                                     </div>
-                                                    <div className="flex items-center gap-1 mt-1">
+                                                    <div className="flex items-center gap-1">
                                                         <button
                                                             onClick={() => setInspectingExpense(t)}
-                                                            className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors text-[10px]"
+                                                            className="p-1 hover:text-white text-zinc-400 transition-colors text-[10px]"
                                                             title="Inspect full details"
                                                         >
                                                             <Eye className="w-3 h-3" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleOpenEditExpense(t)}
-                                                            className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors text-[10px]"
+                                                            className="p-1 hover:text-white text-zinc-400 transition-colors text-[10px]"
                                                             title="Edit expense & profit"
                                                         >
                                                             <Edit3 className="w-3 h-3" />
@@ -856,48 +884,44 @@ export const FinanceTab: React.FC<{
                                 return (
                                     <div 
                                         key={t.id} 
-                                        className={`p-2.5 rounded-xl border transition-all ${
-                                            isExpense 
-                                                ? 'bg-red-950/15 border-red-900/30 hover:border-red-600/50' 
-                                                : 'bg-zinc-900/60 border-zinc-800/80 hover:border-zinc-700'
-                                        }`}
+                                        className="py-2 px-1 border-b border-zinc-800/40 hover:bg-zinc-900/20 transition-all"
                                     >
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                                                    <span className={`text-[9px] font-black uppercase tracking-wider ${
                                                         isExpense 
-                                                            ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
-                                                            : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                                            ? 'text-red-400' 
+                                                            : 'text-emerald-400'
                                                     }`}>
-                                                        {isExpense ? 'Business Expense' : (t.type || 'Revenue')}
+                                                        {isExpense ? 'Expense' : (t.type || 'Revenue')}
                                                     </span>
 
                                                     {isExpense && t.category && (
-                                                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-zinc-800 text-zinc-300 font-medium truncate max-w-[140px]">
-                                                            {t.category}
+                                                        <span className="text-[9px] text-zinc-400 font-medium truncate max-w-[150px]">
+                                                            &bull; {t.category}
                                                         </span>
                                                     )}
 
                                                     {hasSlip && (
                                                         <button 
                                                             onClick={() => setInspectingExpense(t)}
-                                                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold border border-amber-500/40 transition-colors"
+                                                            className="inline-flex items-center gap-1 px-1 py-0.2 rounded text-[9px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 transition-colors"
                                                             title="Click to inspect uploaded slip"
                                                         >
                                                             <ImageIcon className="w-2.5 h-2.5" />
-                                                            <span>Slip Attached</span>
+                                                            <span>Slip</span>
                                                         </button>
                                                     )}
 
                                                     {Boolean(t.profitMade && Number(t.profitMade) > 0) && (
-                                                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
-                                                            +R{Number(t.profitMade).toFixed(0)} Profit
+                                                        <span className="text-[9px] text-emerald-400 font-bold">
+                                                            (+R{Number(t.profitMade).toFixed(0)} profit)
                                                         </span>
                                                     )}
                                                 </div>
 
-                                                <p className="font-bold text-white text-xs mt-1 truncate">
+                                                <p className="font-bold text-white text-xs mt-0.5 truncate">
                                                     {t.expenseName || t.description}
                                                 </p>
 
@@ -908,16 +932,16 @@ export const FinanceTab: React.FC<{
                                                     </p>
                                                 )}
 
-                                                <div className="flex items-center gap-2 text-[9px] text-zinc-400 mt-1 flex-wrap">
+                                                <div className="flex items-center gap-2 text-[9px] text-zinc-500 mt-0.5 flex-wrap">
                                                     <span>{new Date(t.date).toLocaleDateString()}</span>
-                                                    {t.paidTo && <span>&bull; Paid to: <strong className="text-zinc-300">{t.paidTo}</strong></span>}
-                                                    {player && <span>&bull; Player: <strong className="text-zinc-300">{player.name}</strong></span>}
+                                                    {t.paidTo && <span>&bull; Paid to: <strong className="text-zinc-400">{t.paidTo}</strong></span>}
+                                                    {player && <span>&bull; Player: <strong className="text-zinc-400">{player.name}</strong></span>}
                                                     {t.paymentMethod && <span>&bull; {t.paymentMethod}</span>}
                                                 </div>
                                             </div>
 
                                             {/* Amount & Actions */}
-                                            <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                            <div className="flex flex-col items-end gap-1 shrink-0">
                                                 <div className={`font-mono font-black text-xs sm:text-sm ${isExpense ? 'text-red-400' : 'text-emerald-400'}`}>
                                                     {isExpense ? '-' : '+'}R{t.amount.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}
                                                 </div>
@@ -927,21 +951,21 @@ export const FinanceTab: React.FC<{
                                                         <>
                                                             <button
                                                                 onClick={() => setInspectingExpense(t)}
-                                                                className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors"
+                                                                className="p-1 text-zinc-500 hover:text-zinc-300 transition-colors"
                                                                 title="Inspect expense slip & details"
                                                             >
                                                                 <Eye className="w-3 h-3" />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleOpenEditExpense(t)}
-                                                                className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors"
+                                                                className="p-1 text-zinc-500 hover:text-zinc-300 transition-colors"
                                                                 title="Edit expense"
                                                             >
                                                                 <Edit3 className="w-3 h-3" />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDeleteExpense(t)}
-                                                                className="p-1 rounded bg-zinc-800 hover:bg-red-900/60 text-zinc-400 hover:text-red-300 transition-colors"
+                                                                className="p-1 text-zinc-500 hover:text-red-400 transition-colors"
                                                                 title="Delete expense"
                                                             >
                                                                 <Trash2 className="w-3 h-3" />

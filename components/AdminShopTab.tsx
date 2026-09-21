@@ -70,6 +70,7 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
     const [playerSearchQuery, setPlayerSearchQuery] = useState<string>('');
     const [paymentMethod, setPaymentMethod] = useState<SalePaymentMethod>('Cash');
     const [cashTendered, setCashTendered] = useState<string>('');
+    const [amountPaidManual, setAmountPaidManual] = useState<string>('');
     const [discountAmount, setDiscountAmount] = useState<number>(0);
     const [saleNotes, setSaleNotes] = useState<string>('');
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -150,10 +151,9 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
     }, [cartSubtotal, discountAmount]);
 
     const changeDue = useMemo(() => {
-        if (paymentMethod !== 'Cash') return 0;
-        const tendered = parseFloat(cashTendered) || 0;
+        const tendered = parseFloat(amountPaidManual) || 0;
         return tendered >= finalTotal ? tendered - finalTotal : 0;
-    }, [cashTendered, finalTotal, paymentMethod]);
+    }, [amountPaidManual, finalTotal]);
 
     // Add item from catalog to cart
     const handleAddToCart = (item: InventoryItem) => {
@@ -226,6 +226,7 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
             setCart([]);
             setDiscountAmount(0);
             setCashTendered('');
+            setAmountPaidManual('');
             setSaleNotes('');
             setSelectedPlayerId('');
         }
@@ -327,6 +328,8 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
                 paymentStatus: 'Paid',
                 receiptNumber: receiptCode,
                 items: saleItems,
+                amountTendered: parseFloat(amountPaidManual) > 0 ? parseFloat(amountPaidManual) : finalTotal,
+                changeDue: changeDue,
                 notes: saleNotes.trim(),
                 cashierName: 'Admin Counter',
                 playerId: selectedPlayer?.id,
@@ -359,6 +362,7 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
             setCart([]);
             setDiscountAmount(0);
             setCashTendered('');
+            setAmountPaidManual('');
             setSaleNotes('');
             setSelectedPlayerId('');
             setPlayerSearchQuery('');
@@ -889,32 +893,102 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
                                     </button>
                                 </div>
 
-                                {/* Cash Tender Calculator */}
-                                {paymentMethod === 'Cash' && (
-                                    <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-1.5 mt-2">
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="text-zinc-400">Cash Received:</span>
-                                            <div className="flex items-center gap-1 w-28">
-                                                <span className="text-zinc-500 text-xs">R</span>
-                                                <input
-                                                    type="number"
-                                                    value={cashTendered}
-                                                    onChange={e => setCashTendered(e.target.value)}
-                                                    placeholder={finalTotal.toFixed(0)}
-                                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-right text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
-                                                />
-                                            </div>
+                                {/* Tender / Total Paid & Change Calculator for Cash, Card, and EFT */}
+                                <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-2 mt-2">
+                                    <div className="flex items-center justify-between text-xs">
+                                        <div className="flex flex-col">
+                                            <span className="text-zinc-200 font-semibold flex items-center gap-1.5">
+                                                {paymentMethod === 'Cash' && <Banknote className="w-3.5 h-3.5 text-emerald-400" />}
+                                                {paymentMethod === 'Card' && <CreditCard className="w-3.5 h-3.5 text-blue-400" />}
+                                                {paymentMethod === 'EFT' && <Send className="w-3.5 h-3.5 text-purple-400" />}
+                                                <span>Total Paid ({paymentMethod}):</span>
+                                            </span>
+                                            <span className="text-[10px] text-zinc-500">
+                                                Enter amount paid to calculate change
+                                            </span>
                                         </div>
-                                        {parseFloat(cashTendered) > 0 && (
-                                            <div className="flex items-center justify-between text-xs pt-1 border-t border-zinc-800/80">
-                                                <span className="text-zinc-400 font-medium">Change Due:</span>
-                                                <span className={`font-mono font-bold ${changeDue >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                    R{changeDue.toFixed(2)}
-                                                </span>
-                                            </div>
-                                        )}
+
+                                        <div className="flex items-center gap-1 w-32">
+                                            <span className="text-zinc-500 text-xs font-mono font-bold">R</span>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={amountPaidManual}
+                                                onChange={e => {
+                                                    setAmountPaidManual(e.target.value);
+                                                    setCashTendered(e.target.value);
+                                                }}
+                                                placeholder={finalTotal > 0 ? finalTotal.toFixed(2) : '0.00'}
+                                                className="w-full bg-zinc-900 border border-zinc-700 focus:border-amber-500 rounded px-2 py-1 text-right text-xs text-white font-mono font-bold focus:outline-none"
+                                            />
+                                        </div>
                                     </div>
-                                )}
+
+                                    {/* Quick Preset Buttons for Tender */}
+                                    {finalTotal > 0 && (
+                                        <div className="flex items-center gap-1.5 pt-1 border-t border-zinc-800/60 overflow-x-auto text-[10px]">
+                                            <span className="text-zinc-500 shrink-0">Exact:</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const val = finalTotal.toFixed(2);
+                                                    setAmountPaidManual(val);
+                                                    setCashTendered(val);
+                                                }}
+                                                className="px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono"
+                                            >
+                                                R{finalTotal.toFixed(2)}
+                                            </button>
+
+                                            {/* Smart roundups if cash or EFT */}
+                                            {paymentMethod === 'Cash' && (
+                                                <>
+                                                    {[50, 100, 200, 500].filter(n => n >= finalTotal).slice(0, 3).map(roundVal => (
+                                                        <button
+                                                            key={roundVal}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const val = roundVal.toFixed(2);
+                                                                setAmountPaidManual(val);
+                                                                setCashTendered(val);
+                                                            }}
+                                                            className="px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono"
+                                                        >
+                                                            R{roundVal}
+                                                        </button>
+                                                    ))}
+                                                </>
+                                            )}
+
+                                            {amountPaidManual && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setAmountPaidManual('');
+                                                        setCashTendered('');
+                                                    }}
+                                                    className="ml-auto text-zinc-500 hover:text-zinc-300 text-[10px]"
+                                                >
+                                                    Clear
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Real-time Change Due / Balance Indicator */}
+                                    {parseFloat(amountPaidManual) > 0 && (
+                                        <div className="flex items-center justify-between text-xs pt-1.5 border-t border-zinc-800">
+                                            <span className="text-zinc-400 font-medium">
+                                                {parseFloat(amountPaidManual) >= finalTotal ? 'Change Due to Customer:' : 'Shortage / Still Due:'}
+                                            </span>
+                                            <span className={`font-mono font-black text-sm ${parseFloat(amountPaidManual) >= finalTotal ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                                {parseFloat(amountPaidManual) >= finalTotal
+                                                    ? `R${changeDue.toFixed(2)}`
+                                                    : `-R${(finalTotal - parseFloat(amountPaidManual)).toFixed(2)}`}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Discount & Notes */}
@@ -1191,6 +1265,18 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
                                     <span>GRAND TOTAL:</span>
                                     <span>R{Number(completedSale.amount || 0).toFixed(2)}</span>
                                 </div>
+                                {completedSale.amountTendered !== undefined && (
+                                    <div className="flex justify-between text-xs text-zinc-300 pt-1 border-t border-zinc-800/60">
+                                        <span>Amount Paid ({completedSale.paymentMethod}):</span>
+                                        <span className="font-mono">R{Number(completedSale.amountTendered).toFixed(2)}</span>
+                                    </div>
+                                )}
+                                {completedSale.changeDue !== undefined && Number(completedSale.changeDue) > 0 && (
+                                    <div className="flex justify-between text-xs text-emerald-400 font-bold">
+                                        <span>Change Given:</span>
+                                        <span className="font-mono">R{Number(completedSale.changeDue).toFixed(2)}</span>
+                                    </div>
+                                )}
                             </div>
 
                             <p className="text-center text-[9px] text-zinc-500 pt-2">

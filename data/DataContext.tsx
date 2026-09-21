@@ -377,17 +377,31 @@ function extractDocumentField(rawRow: Record<string, any>, key: string, fallback
     return fallback;
 }
 
+// Memory cache of known rejected column names per Supabase table
+const knownMissingColsPerTable: Record<string, Set<string>> = {};
+
 // Helper to safely upsert a row to Supabase, stripping missing columns automatically if table schema does not include them yet
 async function safeUpsertRow(table: string, initialPayload: any): Promise<boolean> {
     if (!supabase) return false;
     const candidates = getTableCandidates(table);
 
     for (const tableName of candidates) {
+        if (!knownMissingColsPerTable[tableName]) {
+            knownMissingColsPerTable[tableName] = new Set<string>();
+        }
+        const missingColsSet = knownMissingColsPerTable[tableName];
+
         let currentPayload = { ...initialPayload };
+        // Pre-strip columns that we already discovered do not exist in this Supabase table
+        for (const col of missingColsSet) {
+            delete currentPayload[col];
+        }
+
         let attempts = 0;
+        const maxAttempts = Math.max(50, Object.keys(currentPayload).length + 10);
         let isMissingRelation = false;
 
-        while (attempts < 10) {
+        while (attempts < maxAttempts) {
             attempts++;
             const { error } = await supabase.from(tableName).upsert(currentPayload);
             if (!error) {
@@ -403,31 +417,32 @@ async function safeUpsertRow(table: string, initialPayload: any): Promise<boolea
                 break;
             }
 
-            const match = msg.match(/Could not find the '([^']+)' column/i) || msg.match(/column "([^"]+)" of relation/i);
+            const match = msg.match(/Could not find the '([^']+)' column/i) || msg.match(/column "([^"]+)" of relation/i) || msg.match(/column '([^']+)' of relation/i);
             if (match && match[1]) {
                 const missingCol = match[1];
+                missingColsSet.add(missingCol);
                 let removed = false;
                 
-                // Only delete the specific rejected key so the alternative case variant (e.g. eventid vs eventId) remains intact!
+                // Delete the specific rejected key
                 if (missingCol in currentPayload) {
                     delete currentPayload[missingCol];
                     removed = true;
                 } else {
                     const matchedKey = Object.keys(currentPayload).find(k => k.toLowerCase() === missingCol.toLowerCase());
                     if (matchedKey) {
+                        missingColsSet.add(matchedKey);
                         delete currentPayload[matchedKey];
                         removed = true;
                     }
                 }
 
                 if (removed && Object.keys(currentPayload).length > 0) {
-                    console.warn(`Supabase table '${tableName}' missing column '${missingCol}'. Stripped '${missingCol}' and retrying upsert...`);
                     continue;
                 }
             }
 
             if (msg.includes('row-level security') || msg.includes('violates') || msg.includes('permission denied')) {
-                console.warn(`[Supabase RLS Error] Row Level Security blocked writing to table '${tableName}'. Run the provided SQL migration in Supabase SQL Editor to enable public write access:`, msg);
+                console.error(`[Supabase RLS Error] Row Level Security blocked writing to table '${tableName}'. Run the provided SQL migration in Supabase SQL Editor to enable public write access:`, msg);
             } else {
                 console.warn(`Supabase upsert notice for ${tableName}:`, msg);
             }

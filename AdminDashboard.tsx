@@ -648,6 +648,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         events={props.events}
                         locations={props.locations}
                         companyDetails={props.companyDetails}
+                        addDoc={props.addDoc}
+                        updateDoc={props.updateDoc}
+                        deleteDoc={props.deleteDoc}
                     />}
                     {activeTab === 'Vouchers & Raffles' && <VouchersRafflesTab 
                         vouchers={props.vouchers} setVouchers={props.setVouchers}

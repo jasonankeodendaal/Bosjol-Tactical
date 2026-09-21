@@ -417,7 +417,12 @@ async function safeUpsertRow(table: string, initialPayload: any): Promise<boolea
                 break;
             }
 
-            const match = msg.match(/Could not find the '([^']+)' column/i) || msg.match(/column "([^"]+)" of relation/i) || msg.match(/column '([^']+)' of relation/i);
+            const match = msg.match(/Could not find the '([^']+)' column/i) || 
+                          msg.match(/column "([^"]+)" of relation/i) || 
+                          msg.match(/column '([^']+)' of relation/i) ||
+                          msg.match(/column "([^"]+)" does not exist/i) ||
+                          msg.match(/column '([^']+)' does not exist/i) ||
+                          msg.match(/column "([^"]+)"/i);
             if (match && match[1]) {
                 const missingCol = match[1];
                 missingColsSet.add(missingCol);
@@ -713,7 +718,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
     }, [rawInventory]);
     const [suppliers, setSuppliers, loadingSuppliers] = useCollection<Supplier>('suppliers', MOCK_DATA_MAP.suppliers, { isProtected: true });
-    const [transactions, setTransactions, loadingTransactions] = useCollection<Transaction>('transactions', MOCK_DATA_MAP.transactions, { isProtected: true });
+    const [transactions, setTransactions, loadingTransactions] = useCollection<Transaction>('transactions', MOCK_DATA_MAP.transactions);
     const [locations, setLocations, loadingLocations] = useCollection<Location>('locations', MOCK_DATA_MAP.locations, { isProtected: true });
     const [raffles, setRaffles, loadingRaffles] = useCollection<Raffle>('raffles', MOCK_DATA_MAP.raffles, { isProtected: true });
     const [honors, setHonors, loadingHonors] = useCollection<PlayerHonor>('honors', mock.MOCK_HONORS, { isProtected: true });

@@ -1443,10 +1443,13 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
         if (typeof items === 'string') {
             try { items = JSON.parse(items); } catch { items = []; }
         }
+        const receiptImageUrl = String(item.receiptImageUrl || item.receiptimageurl || item.receipt_image_url || item.slipImageUrl || item.slipimageurl || item.slip_image_url || '');
+        const paymentStatus = String(item.paymentStatus || item.paymentstatus || item.payment_status || 'Paid');
+        const desc = String(item.description || item.expenseName || item.expensename || item.profitName || item.profitname || 'Expense');
         return {
             ...item,
             id: String(item.id),
-            description: String(item.description || 'Transaction'),
+            description: desc,
             amount: Number(item.amount || 0),
             type: String(item.type || 'Retail Revenue'),
             date: String(item.date || new Date().toISOString()),
@@ -1458,7 +1461,9 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
             eventid: String(item.eventId || item.eventid || item.relatedEventId || ''),
             relatedEventId: String(item.eventId || item.eventid || item.relatedEventId || ''),
             status: String(item.status || 'completed'),
-            paymentStatus: String(item.paymentStatus || 'Paid'),
+            paymentStatus,
+            paymentstatus: paymentStatus,
+            payment_status: paymentStatus,
             paymentMethod,
             paymentmethod: paymentMethod,
             payment_method: paymentMethod,
@@ -1483,9 +1488,12 @@ export function prepareSupabasePayload(collectionName: string, item: any, liveRa
             expenseReason: String(item.expenseReason || item.expensereason || item.expense_reason || ''),
             expensereason: String(item.expenseReason || item.expensereason || item.expense_reason || ''),
             expense_reason: String(item.expenseReason || item.expensereason || item.expense_reason || ''),
-            receiptImageUrl: String(item.receiptImageUrl || item.receiptimageurl || item.receipt_image_url || item.slipImageUrl || item.slipimageurl || item.slip_image_url || ''),
-            receiptimageurl: String(item.receiptImageUrl || item.receiptimageurl || item.receipt_image_url || item.slipImageUrl || item.slipimageurl || item.slip_image_url || ''),
-            receipt_image_url: String(item.receiptImageUrl || item.receiptimageurl || item.receipt_image_url || item.slipImageUrl || item.slipimageurl || item.slip_image_url || ''),
+            receiptImageUrl,
+            receiptimageurl: receiptImageUrl,
+            receipt_image_url: receiptImageUrl,
+            slipImageUrl: receiptImageUrl,
+            slipimageurl: receiptImageUrl,
+            slip_image_url: receiptImageUrl,
             category: String(item.category || (item.type === 'Expense' ? 'Business Expense' : '')),
             paidTo: String(item.paidTo || item.paidto || item.paid_to || item.vendor || ''),
             paidto: String(item.paidTo || item.paidto || item.paid_to || item.vendor || ''),

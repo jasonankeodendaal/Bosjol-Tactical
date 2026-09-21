@@ -12,7 +12,7 @@ import { MOCK_BADGES } from '../constants';
 import { PlayerGrowthComparisonTable } from './PlayerGrowthComparisonTable';
 
 // Player Profile / Stats Popup Modal
-const PlayerStatsModal: React.FC<{
+export const PlayerStatsModal: React.FC<{
     player: Player;
     onClose: () => void;
 }> = ({ player, onClose }) => {
@@ -69,10 +69,10 @@ const PlayerStatsModal: React.FC<{
                     exit={{ scale: 0.9, y: 20, opacity: 0 }}
                     transition={{ type: "spring", stiffness: 300, damping: 28 }}
                     onClick={e => e.stopPropagation()}
-                    className="relative w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl shadow-[0_0_60px_rgba(220,38,38,0.2)] overflow-hidden text-white my-auto flex flex-col max-h-[90vh]"
+                    className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl shadow-[0_0_50px_rgba(220,38,38,0.25)] overflow-hidden text-white my-auto flex flex-col max-h-[85vh] text-left"
                 >
                     {/* Header Banner */}
-                    <div className="relative bg-gradient-to-r from-red-950/80 via-zinc-900 to-amber-950/60 p-4 sm:p-6 border-b border-zinc-800 shrink-0">
+                    <div className="relative bg-gradient-to-r from-red-950/80 via-zinc-900 to-amber-950/60 p-3 sm:p-4 border-b border-zinc-800 shrink-0">
                         <button
                             onClick={onClose}
                             className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-black/40 hover:bg-black/80 rounded-full transition-colors z-10"

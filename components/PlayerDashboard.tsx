@@ -12,13 +12,14 @@ import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
 import { InfoTooltip } from './InfoTooltip';
-import { Leaderboard } from './Leaderboard';
+import { Leaderboard, PlayerStatsModal } from './Leaderboard';
 import { AuthContext } from '../auth/AuthContext';
 import { DataContext } from '../data/DataContext';
 import { Loader } from './Loader';
 import { UrlOrUploadField } from './UrlOrUploadField';
 import { PlayerRankShowcase } from './PlayerRankShowcase';
 import { PlayerGrowthComparisonTable } from './PlayerGrowthComparisonTable';
+import { Overview3DTacticalLeaderboard } from './Overview3DTacticalLeaderboard';
 import { PlayerRulesView } from './PlayerRulesView';
 import { PlayerGameTypesView } from './PlayerGameTypesView';
 import { PlayerShopShowcase } from './PlayerShopShowcase';
@@ -532,6 +533,7 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
 }> = ({ player, players, events, sponsors, ranks, raffles, onSelectEvent, onSelectRaffle, onNavigateToRaffles }) => {
     const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+    const [selectedPlayerForModal, setSelectedPlayerForModal] = useState<Player | null>(null);
     const nextEvent = events.filter(e => e.status === 'Upcoming').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
     const { current, next, rank } = getRankProgression(player, ranks);
     const dataContext = useContext(DataContext);
@@ -928,19 +930,23 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                 </div>
             </div>
 
-             <div className="overview-card p-0 leaderboard-card">
-                 <div className="p-4 sm:p-6"><h3 className="overview-section-title mb-0">Leaderboard - Top 3</h3></div>
-                 <div className="leaderboard-podium-bg !p-0">
-                    <motion.div className="podium-container !h-auto !max-w-full" initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.1 } } }}>
-                        {topThree.length > 1 && <PodiumPlayer player={topThree[1]} rank={2} delay={0.1} />}
-                        {topThree.length > 0 && <PodiumPlayer player={topThree[0]} rank={1} delay={0} />}
-                        {topThree.length > 2 && <PodiumPlayer player={topThree[2]} rank={3} delay={0.2} />}
-                    </motion.div>
-                </div>
-            </div>
+            {/* 3D Airsoft Tactical Leaderboard Showcase (Top 3, Top 5, Top 10 Filter) */}
+            <Overview3DTacticalLeaderboard
+                players={players}
+                currentPlayerId={player.id}
+                onSelectPlayer={setSelectedPlayerForModal}
+            />
 
             {/* 3D Free View Open Spaced Growth Leaderboard Performance Comparison Matrix */}
             <PlayerGrowthComparisonTable players={players} currentPlayerId={player.id} />
+
+            {/* Inspect Player Stats Popup Modal */}
+            {selectedPlayerForModal && (
+                <PlayerStatsModal
+                    player={selectedPlayerForModal}
+                    onClose={() => setSelectedPlayerForModal(null)}
+                />
+            )}
 
             {/* Free View 3D Floating Sponsorships & Partners Stage */}
             <div className="relative overflow-hidden py-3 px-2 sm:px-4 my-2 group pointer-events-auto">

@@ -95,20 +95,19 @@ export const PlayerGrowthComparisonTable: React.FC<PlayerGrowthComparisonTablePr
         { key: 'avgMinutes', label: 'MINUTES P/M' },
         { key: 'killsAssists', label: 'ELIMINATIONS + ASSISTS' },
         { key: 'kdRatio', label: 'K/D RATIO P/G' },
-        { key: 'headshotPct', label: 'HEADSHOT ACCURACY %' },
         { key: 'recoveries', label: 'OBJECTIVE RECOVERIES P/G' },
         { key: 'winRate', label: 'VICTORY ACCURACY %' },
     ];
 
     return (
-        <div className="w-full mx-auto my-3 pointer-events-auto select-none">
-            {/* 3D FREE VIEW CONTAINER (OPEN SPACED, NO BOX CONTAINER OUTLINES) */}
+        <div className="w-full max-w-4xl mx-auto my-2 pointer-events-auto select-none">
+            {/* 3D FREE VIEW CONTAINER (OPEN SPACED, SHRINK TO FIT) */}
             <motion.div 
-                initial={{ opacity: 0, y: 15 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-indigo-950/80 via-slate-950/90 to-black/95 backdrop-blur-xl p-3 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-indigo-500/20"
-                style={{ perspective: '1200px' }}
+                transition={{ duration: 0.4 }}
+                className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-indigo-950/80 via-slate-950/90 to-black/95 backdrop-blur-xl p-2.5 sm:p-4 shadow-[0_15px_40px_rgba(0,0,0,0.8)] border border-indigo-500/20"
+                style={{ perspective: '1000px' }}
             >
                 {/* AMBIENT PURPLE-BLUE SHIMMER LIGHT BEAM BACKDROP */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/10 via-indigo-600/10 to-amber-500/10 pointer-events-none -z-10" />
@@ -210,7 +209,7 @@ export const PlayerGrowthComparisonTable: React.FC<PlayerGrowthComparisonTablePr
                     {metricsList.map((m, rIdx) => (
                         <div 
                             key={m.key} 
-                            className={`grid grid-cols-12 items-center py-2.5 sm:py-3 px-1 transition-colors hover:bg-indigo-900/10 ${
+                            className={`grid grid-cols-12 items-center py-1.5 sm:py-2 px-1 transition-colors hover:bg-indigo-900/10 ${
                                 rIdx % 2 === 0 ? 'bg-indigo-950/20' : 'bg-transparent'
                             }`}
                         >

@@ -378,6 +378,84 @@ export const PlayerStatsModal: React.FC<{
     );
 };
 
+// RankedPlayerSquareCard Component for Side-by-Side Open-Spaced Grid
+const RankedPlayerSquareCard: React.FC<{
+    player: Player;
+    rank: number;
+    isCurrentUser?: boolean;
+    onSelectPlayer?: (player: Player) => void;
+}> = memo(({ player, rank, isCurrentUser, onSelectPlayer }) => {
+    const dataContext = useData();
+    const playerTier = useMemo(() => getTierForPlayer(player, dataContext?.ranks), [player, dataContext?.ranks]);
+    const tierIcon = resolveRankIcon(playerTier.iconUrl, playerTier.name);
+
+    return (
+        <motion.div
+            whileHover={{ y: -4, scale: 1.02 }}
+            onClick={() => onSelectPlayer && onSelectPlayer(player)}
+            className={`relative p-3 rounded-2xl flex flex-col items-center text-center justify-between transition-all cursor-pointer group select-none ${
+                isCurrentUser
+                    ? 'bg-gradient-to-b from-red-950/60 via-zinc-950/80 to-black/90 border-2 border-red-500/80 shadow-[0_10px_25px_rgba(239,68,68,0.35)]'
+                    : 'bg-gradient-to-b from-zinc-900/30 via-zinc-950/60 to-black/90 hover:bg-zinc-800/50 border border-zinc-800/40 hover:border-amber-500/50 shadow-[0_10px_20px_rgba(0,0,0,0.6)]'
+            }`}
+        >
+            {/* Top Rank Badge & Inspect */}
+            <div className="w-full flex items-center justify-between mb-2">
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-black border ${
+                    rank <= 3 ? 'bg-amber-400 text-black border-yellow-200' :
+                    isCurrentUser ? 'bg-red-600 text-white border-red-400' :
+                    'bg-zinc-900 text-zinc-400 border-zinc-700/80'
+                }`}>
+                    #{rank}
+                </span>
+                <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-widest group-hover:text-amber-400 transition-colors">
+                    STATS →
+                </span>
+            </div>
+
+            {/* Operator Avatar & Tier Badge */}
+            <div className="relative my-1">
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full p-0.5 ${
+                    isCurrentUser ? 'bg-gradient-to-b from-red-500 to-amber-500 shadow-[0_0_12px_rgba(239,68,68,0.5)]' :
+                    'bg-gradient-to-b from-zinc-700 to-zinc-900 group-hover:from-amber-400 group-hover:to-amber-600'
+                }`}>
+                    <img
+                        src={player.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`}
+                        alt={player.name}
+                        onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.callsign || player.name || 'OP')}&background=18181b&color=ef4444&bold=true`;
+                        }}
+                        className="w-full h-full rounded-full object-cover bg-zinc-950"
+                    />
+                </div>
+                <div className="absolute -bottom-1 -right-1 bg-zinc-950 p-0.5 rounded-lg border border-zinc-700 shadow">
+                    <img src={tierIcon} alt={playerTier.name} className="w-3.5 h-3.5 object-contain" />
+                </div>
+            </div>
+
+            {/* Operator Details */}
+            <div className="mt-1 w-full truncate">
+                <p className={`font-black text-xs sm:text-sm truncate uppercase font-mono ${
+                    isCurrentUser ? 'text-white' : 'text-zinc-100 group-hover:text-amber-300'
+                }`}>
+                    {player.callsign || player.name} {isCurrentUser && <span className="text-[9px] text-red-400 font-mono">(YOU)</span>}
+                </p>
+                <p className="text-[9px] font-mono text-zinc-400 truncate">
+                    {playerTier.name}
+                </p>
+            </div>
+
+            {/* Score Pill */}
+            <div className="mt-2 pt-1.5 border-t border-zinc-800/60 w-full flex items-center justify-between">
+                <span className="text-[8px] font-mono text-zinc-500 uppercase">RP SCORE</span>
+                <span className="text-xs sm:text-sm font-black font-mono text-amber-400">
+                    {(player.stats?.xp ?? 0).toLocaleString()}
+                </span>
+            </div>
+        </motion.div>
+    );
+});
+
 // RankedPlayerListItem Component
 const RankedPlayerListItem: React.FC<{
     player: Player;
@@ -758,7 +836,8 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
 
             {viewMode === 'leaderboard' ? (
                 <>
-                    <div className="leaderboard-podium-bg">
+                    {/* Top 3 Podium Stage */}
+                    <div className="leaderboard-podium-bg !bg-transparent my-2">
                         <motion.div
                             className="podium-container"
                             initial="hidden"
@@ -770,10 +849,18 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
                             {topThree.length > 2 && <PodiumPlayer player={topThree[2]} rank={3} delay={0.2} onSelectPlayer={setSelectedPlayerForModal} />}
                         </motion.div>
                     </div>
-                    <div className="flex-grow overflow-y-auto p-1.5 sm:p-4">
-                        <ul className="space-y-1 sm:space-y-2">
+
+                    {/* Side-by-Side Open Spaced Contender Squares Grid */}
+                    <div className="flex-grow overflow-y-auto p-1.5 sm:p-4 my-2">
+                        <div className="flex items-center justify-between pb-2 mb-3 border-b border-zinc-800/60">
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-400">
+                                GLOBAL CONTENDER STANDINGS (RANKS 4 - {players.length})
+                            </span>
+                            <span className="text-[9px] font-mono text-amber-400/90">Click card to inspect</span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-4">
                             {rest.map((player, index) => (
-                                <RankedPlayerListItem
+                                <RankedPlayerSquareCard
                                     key={player.id}
                                     player={player}
                                     rank={index + 4}
@@ -781,7 +868,7 @@ export const Leaderboard: React.FC<{ players: Player[], currentPlayerId?: string
                                     onSelectPlayer={setSelectedPlayerForModal}
                                 />
                             ))}
-                        </ul>
+                        </div>
                     </div>
                 </>
             ) : viewMode === 'comparison' ? (

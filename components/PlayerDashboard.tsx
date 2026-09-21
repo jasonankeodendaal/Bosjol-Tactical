@@ -215,9 +215,7 @@ const RankAndLeaderboardTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'pla
                 </div>
 
                 {showLeaderboard && (
-                    <div className="relative p-2 sm:p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 shadow-[0_12px_32px_rgba(0,0,0,0.75)] backdrop-blur-md">
-                        {/* 3D Top Accent Line */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-amber-500/40 to-transparent pointer-events-none" />
+                    <div className="relative py-2 select-none pointer-events-auto">
                         <Leaderboard players={players} currentPlayerId={player.id} />
                     </div>
                 )}

@@ -937,9 +937,6 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                 onSelectPlayer={setSelectedPlayerForModal}
             />
 
-            {/* 3D Free View Open Spaced Growth Leaderboard Performance Comparison Matrix */}
-            <PlayerGrowthComparisonTable players={players} currentPlayerId={player.id} />
-
             {/* Inspect Player Stats Popup Modal */}
             {selectedPlayerForModal && (
                 <PlayerStatsModal

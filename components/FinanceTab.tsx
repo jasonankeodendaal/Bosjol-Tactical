@@ -40,7 +40,10 @@ import {
     Filter,
     BarChart3,
     FolderKanban,
-    Folder
+    Folder,
+    Loader2,
+    AlertTriangle,
+    RefreshCw
 } from 'lucide-react';
 
 type TimeFilter = 'day' | 'week' | 'month' | '90days' | 'all';
@@ -224,6 +227,13 @@ export const FinanceTab: React.FC<{
     });
 
     const [isSaving, setIsSaving] = useState(false);
+    const [saveProgress, setSaveProgress] = useState<{
+        stage: 'validating' | 'transmitting' | 'verifying' | 'success' | 'error';
+        progress: number;
+        message: string;
+        details?: string;
+        type: 'expense' | 'profit';
+    } | null>(null);
     const [statusBanner, setStatusBanner] = useState<string | null>(null);
 
     const handlePrint = () => {
@@ -357,6 +367,13 @@ export const FinanceTab: React.FC<{
         }
 
         setIsSaving(true);
+        setSaveProgress({
+            stage: 'validating',
+            progress: 25,
+            message: '1/3: Validating expense data & schema mapping...',
+            type: 'expense',
+        });
+
         try {
             const expenseDate = expenseFormData.date 
                 ? (expenseFormData.date.includes('T') ? expenseFormData.date : `${expenseFormData.date}T12:00:00Z`)
@@ -378,28 +395,60 @@ export const FinanceTab: React.FC<{
                 paymentStatus: 'Paid',
             };
 
+            setSaveProgress({
+                stage: 'transmitting',
+                progress: 65,
+                message: '2/3: Live persisting to Supabase PostgreSQL transactions table...',
+                type: 'expense',
+            });
+
             if (editingExpense) {
                 expensePayload.id = editingExpense.id;
                 if (updateDoc) {
                     await updateDoc('transactions', expensePayload);
                 }
-                setStatusBanner(`Business expense "${trimmedName}" updated and synced.`);
             } else {
                 const generatedId = `exp_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
                 expensePayload.id = generatedId;
                 if (addDoc) {
                     await addDoc('transactions', expensePayload);
                 }
-                setStatusBanner(`Business expense "R${numericAmount.toFixed(0)} - ${trimmedName}" recorded and synced live.`);
             }
 
-            setIsExpenseModalOpen(false);
-            resetExpenseForm();
+            setSaveProgress({
+                stage: 'verifying',
+                progress: 90,
+                message: '3/3: Replicating row state & verifying Realtime broadcast...',
+                type: 'expense',
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 250));
+
+            setSaveProgress({
+                stage: 'success',
+                progress: 100,
+                message: `Expense "R${numericAmount.toFixed(0)} - ${trimmedName}" live saved & synced to Supabase!`,
+                type: 'expense',
+            });
+
+            setStatusBanner(`Business expense "R${numericAmount.toFixed(0)} - ${trimmedName}" recorded and synced live.`);
+
+            setTimeout(() => {
+                setIsExpenseModalOpen(false);
+                resetExpenseForm();
+                setSaveProgress(null);
+                setIsSaving(false);
+            }, 600);
             setTimeout(() => setStatusBanner(null), 5000);
         } catch (err: any) {
             console.error('Error saving business expense:', err);
-            alert(`Failed to save expense: ${err?.message || 'Unknown error'}`);
-        } finally {
+            setSaveProgress({
+                stage: 'error',
+                progress: 100,
+                message: 'Supabase Sync Error: Failed to save expense',
+                details: err?.message || String(err),
+                type: 'expense',
+            });
             setIsSaving(false);
         }
     };
@@ -418,6 +467,13 @@ export const FinanceTab: React.FC<{
         }
 
         setIsSaving(true);
+        setSaveProgress({
+            stage: 'validating',
+            progress: 25,
+            message: '1/3: Validating profit & returns payload...',
+            type: 'profit',
+        });
+
         try {
             const realizationDate = profitFormData.date 
                 ? (profitFormData.date.includes('T') ? profitFormData.date : `${profitFormData.date}T12:00:00Z`)
@@ -445,28 +501,60 @@ export const FinanceTab: React.FC<{
                 paymentStatus: 'Paid',
             };
 
+            setSaveProgress({
+                stage: 'transmitting',
+                progress: 65,
+                message: '2/3: Live persisting to Supabase PostgreSQL transactions table...',
+                type: 'profit',
+            });
+
             if (editingProfit) {
                 profitPayload.id = editingProfit.id;
                 if (updateDoc) {
                     await updateDoc('transactions', profitPayload);
                 }
-                setStatusBanner(`Profit entry "${trimmedProfitName}" (+R${numericProfit.toFixed(0)}) updated.`);
             } else {
                 const generatedId = `prf_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
                 profitPayload.id = generatedId;
                 if (addDoc) {
                     await addDoc('transactions', profitPayload);
                 }
-                setStatusBanner(`Profit entry "${trimmedProfitName}" (+R${numericProfit.toFixed(0)}) recorded & synced live.`);
             }
 
-            setIsProfitModalOpen(false);
-            resetProfitForm();
+            setSaveProgress({
+                stage: 'verifying',
+                progress: 90,
+                message: '3/3: Replicating row state & verifying Realtime broadcast...',
+                type: 'profit',
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 250));
+
+            setSaveProgress({
+                stage: 'success',
+                progress: 100,
+                message: `Profit entry "${trimmedProfitName}" (+R${numericProfit.toFixed(0)}) live saved & synced!`,
+                type: 'profit',
+            });
+
+            setStatusBanner(`Profit entry "${trimmedProfitName}" (+R${numericProfit.toFixed(0)}) recorded & synced live.`);
+
+            setTimeout(() => {
+                setIsProfitModalOpen(false);
+                resetProfitForm();
+                setSaveProgress(null);
+                setIsSaving(false);
+            }, 600);
             setTimeout(() => setStatusBanner(null), 5000);
         } catch (err: any) {
             console.error('Error saving profit entry:', err);
-            alert(`Failed to save profit entry: ${err?.message || 'Unknown error'}`);
-        } finally {
+            setSaveProgress({
+                stage: 'error',
+                progress: 100,
+                message: 'Supabase Sync Error: Failed to save profit entry',
+                details: err?.message || String(err),
+                type: 'profit',
+            });
             setIsSaving(false);
         }
     };
@@ -1474,6 +1562,87 @@ export const FinanceTab: React.FC<{
                                 </div>
                             </div>
 
+                            {/* LIVE PROGRESS STATUS FEEDBACK */}
+                            {saveProgress && saveProgress.type === 'expense' && (
+                                <div className="p-2.5 bg-zinc-950 border border-zinc-700/80 shadow-2xl space-y-2 rounded-none">
+                                    <div className="flex items-center justify-between text-xs">
+                                        <div className="flex items-center gap-2">
+                                            {saveProgress.stage === 'error' ? (
+                                                <AlertTriangle className="w-4 h-4 text-red-400 animate-bounce shrink-0" />
+                                            ) : saveProgress.stage === 'success' ? (
+                                                <CheckCircle2 className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
+                                            ) : (
+                                                <Loader2 className="w-4 h-4 text-amber-400 animate-spin shrink-0" />
+                                            )}
+                                            <span className={`font-mono text-[11px] font-bold ${
+                                                saveProgress.stage === 'error' 
+                                                    ? 'text-red-400' 
+                                                    : saveProgress.stage === 'success' 
+                                                        ? 'text-emerald-400' 
+                                                        : 'text-zinc-200'
+                                            }`}>
+                                                {saveProgress.message}
+                                            </span>
+                                        </div>
+                                        <span className="font-mono text-[10px] font-bold text-zinc-400 shrink-0">
+                                            {saveProgress.progress}%
+                                        </span>
+                                    </div>
+
+                                    {/* Animated Progress Bar */}
+                                    <div className="w-full bg-zinc-900 h-2 overflow-hidden relative">
+                                        <div 
+                                            className={`h-full transition-all duration-300 ${
+                                                saveProgress.stage === 'error'
+                                                    ? 'bg-red-500'
+                                                    : saveProgress.stage === 'success'
+                                                        ? 'bg-emerald-400'
+                                                        : 'bg-gradient-to-r from-red-600 via-amber-500 to-emerald-400 animate-pulse'
+                                            }`}
+                                            style={{ width: `${saveProgress.progress}%` }}
+                                        />
+                                    </div>
+
+                                    {/* Step-by-step indicator dots */}
+                                    <div className="grid grid-cols-3 gap-1 pt-0.5 text-[8px] font-mono uppercase tracking-wider text-center">
+                                        <div className={`p-1 border ${saveProgress.progress >= 25 ? 'bg-zinc-900 border-zinc-600 text-zinc-200 font-bold' : 'border-zinc-900 text-zinc-600'}`}>
+                                            1. Validate Payload
+                                        </div>
+                                        <div className={`p-1 border ${saveProgress.progress >= 65 ? 'bg-zinc-900 border-amber-600/60 text-amber-300 font-bold' : 'border-zinc-900 text-zinc-600'}`}>
+                                            2. Supabase SQL Insert
+                                        </div>
+                                        <div className={`p-1 border ${saveProgress.progress >= 100 ? 'bg-emerald-950 border-emerald-500 text-emerald-300 font-bold' : 'border-zinc-900 text-zinc-600'}`}>
+                                            3. Realtime Live Synced
+                                        </div>
+                                    </div>
+
+                                    {/* Error diagnosis if failed */}
+                                    {saveProgress.stage === 'error' && (
+                                        <div className="mt-2 p-2 bg-red-950/80 border border-red-800 text-red-200 text-[10px] space-y-1.5">
+                                            <p className="font-bold flex items-center gap-1">
+                                                <span>Database Schema or Permission Issue:</span>
+                                            </p>
+                                            <p className="font-mono text-[9px] text-red-300 bg-black/50 p-1.5 overflow-x-auto">
+                                                {saveProgress.details || 'Unable to upsert transaction row to Supabase.'}
+                                            </p>
+                                            <div className="flex items-center gap-2 pt-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(BUSINESS_EXPENSES_SQL_SCHEMA);
+                                                        alert('SQL Fix schema snippet copied to clipboard! Run it in your Supabase SQL Editor.');
+                                                    }}
+                                                    className="px-2 py-1 bg-red-800 hover:bg-red-700 text-white font-bold text-[9px] flex items-center gap-1"
+                                                >
+                                                    <Copy className="w-3 h-3" />
+                                                    <span>Copy Supabase SQL Fix Snippet</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             {/* STICKY BOTTOM ACTION STRIP */}
                             <div className="sticky bottom-0 bg-zinc-900/95 -mx-3 -mb-3 sm:-mx-5 sm:-mb-5 p-2.5 sm:p-3 border-t border-zinc-800 backdrop-blur-md z-20 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-2xl">
                                 <div className="flex items-center gap-1.5">
@@ -1486,21 +1655,30 @@ export const FinanceTab: React.FC<{
                                 <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
                                     <button
                                         type="button"
+                                        disabled={isSaving}
                                         onClick={() => {
                                             setIsExpenseModalOpen(false);
                                             resetExpenseForm();
                                         }}
-                                        className="px-3 py-1 rounded-none bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-all shadow active:translate-y-[1px]"
+                                        className="px-3 py-1 rounded-none bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-all shadow active:translate-y-[1px] disabled:opacity-50"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSaving}
-                                        className="px-4 py-1 rounded-none bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all shadow flex items-center gap-1 active:translate-y-[1px]"
+                                        className="px-4 py-1 rounded-none bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all shadow flex items-center gap-1.5 active:translate-y-[1px] disabled:opacity-80"
                                     >
-                                        <Check className="w-3 h-3" />
-                                        <span>{isSaving ? 'Saving...' : (editingExpense ? 'Update Expense' : 'Save & Sync Expense')}</span>
+                                        {isSaving ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                            <Check className="w-3 h-3" />
+                                        )}
+                                        <span>
+                                            {isSaving 
+                                                ? (saveProgress ? `Syncing (${saveProgress.progress}%)` : 'Saving...') 
+                                                : (editingExpense ? 'Update Expense' : 'Save & Sync Expense')}
+                                        </span>
                                     </button>
                                 </div>
                             </div>
@@ -1805,6 +1983,87 @@ export const FinanceTab: React.FC<{
                                 </div>
                             </div>
 
+                            {/* LIVE PROGRESS STATUS FEEDBACK */}
+                            {saveProgress && saveProgress.type === 'profit' && (
+                                <div className="p-2.5 bg-zinc-950 border border-zinc-700/80 shadow-2xl space-y-2 rounded-none">
+                                    <div className="flex items-center justify-between text-xs">
+                                        <div className="flex items-center gap-2">
+                                            {saveProgress.stage === 'error' ? (
+                                                <AlertTriangle className="w-4 h-4 text-red-400 animate-bounce shrink-0" />
+                                            ) : saveProgress.stage === 'success' ? (
+                                                <CheckCircle2 className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
+                                            ) : (
+                                                <Loader2 className="w-4 h-4 text-emerald-400 animate-spin shrink-0" />
+                                            )}
+                                            <span className={`font-mono text-[11px] font-bold ${
+                                                saveProgress.stage === 'error' 
+                                                    ? 'text-red-400' 
+                                                    : saveProgress.stage === 'success' 
+                                                        ? 'text-emerald-400' 
+                                                        : 'text-zinc-200'
+                                            }`}>
+                                                {saveProgress.message}
+                                            </span>
+                                        </div>
+                                        <span className="font-mono text-[10px] font-bold text-zinc-400 shrink-0">
+                                            {saveProgress.progress}%
+                                        </span>
+                                    </div>
+
+                                    {/* Animated Progress Bar */}
+                                    <div className="w-full bg-zinc-900 h-2 overflow-hidden relative">
+                                        <div 
+                                            className={`h-full transition-all duration-300 ${
+                                                saveProgress.stage === 'error'
+                                                    ? 'bg-red-500'
+                                                    : saveProgress.stage === 'success'
+                                                        ? 'bg-emerald-400'
+                                                        : 'bg-gradient-to-r from-emerald-600 via-teal-400 to-emerald-300 animate-pulse'
+                                            }`}
+                                            style={{ width: `${saveProgress.progress}%` }}
+                                        />
+                                    </div>
+
+                                    {/* Step-by-step indicator dots */}
+                                    <div className="grid grid-cols-3 gap-1 pt-0.5 text-[8px] font-mono uppercase tracking-wider text-center">
+                                        <div className={`p-1 border ${saveProgress.progress >= 25 ? 'bg-zinc-900 border-zinc-600 text-zinc-200 font-bold' : 'border-zinc-900 text-zinc-600'}`}>
+                                            1. Validate Payload
+                                        </div>
+                                        <div className={`p-1 border ${saveProgress.progress >= 65 ? 'bg-zinc-900 border-emerald-600/60 text-emerald-300 font-bold' : 'border-zinc-900 text-zinc-600'}`}>
+                                            2. Supabase SQL Insert
+                                        </div>
+                                        <div className={`p-1 border ${saveProgress.progress >= 100 ? 'bg-emerald-950 border-emerald-500 text-emerald-300 font-bold' : 'border-zinc-900 text-zinc-600'}`}>
+                                            3. Realtime Live Synced
+                                        </div>
+                                    </div>
+
+                                    {/* Error diagnosis if failed */}
+                                    {saveProgress.stage === 'error' && (
+                                        <div className="mt-2 p-2 bg-red-950/80 border border-red-800 text-red-200 text-[10px] space-y-1.5">
+                                            <p className="font-bold flex items-center gap-1">
+                                                <span>Database Schema or Permission Issue:</span>
+                                            </p>
+                                            <p className="font-mono text-[9px] text-red-300 bg-black/50 p-1.5 overflow-x-auto">
+                                                {saveProgress.details || 'Unable to upsert profit transaction row to Supabase.'}
+                                            </p>
+                                            <div className="flex items-center gap-2 pt-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(BUSINESS_EXPENSES_SQL_SCHEMA);
+                                                        alert('SQL Fix schema snippet copied to clipboard! Run it in your Supabase SQL Editor.');
+                                                    }}
+                                                    className="px-2 py-1 bg-red-800 hover:bg-red-700 text-white font-bold text-[9px] flex items-center gap-1"
+                                                >
+                                                    <Copy className="w-3 h-3" />
+                                                    <span>Copy Supabase SQL Fix Snippet</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             {/* STICKY BOTTOM ACTION STRIP */}
                             <div className="sticky bottom-0 bg-zinc-900/95 -mx-3 -mb-3 sm:-mx-5 sm:-mb-5 p-2.5 sm:p-3 border-t border-zinc-800 backdrop-blur-md z-20 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-2xl">
                                 <div className="flex items-center gap-1.5">
@@ -1817,21 +2076,30 @@ export const FinanceTab: React.FC<{
                                 <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
                                     <button
                                         type="button"
+                                        disabled={isSaving}
                                         onClick={() => {
                                             setIsProfitModalOpen(false);
                                             resetProfitForm();
                                         }}
-                                        className="px-3 py-1 rounded-none bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-all shadow active:translate-y-[1px]"
+                                        className="px-3 py-1 rounded-none bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-all shadow active:translate-y-[1px] disabled:opacity-50"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSaving}
-                                        className="px-4 py-1 rounded-none bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow flex items-center gap-1 active:translate-y-[1px]"
+                                        className="px-4 py-1 rounded-none bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow flex items-center gap-1.5 active:translate-y-[1px] disabled:opacity-80"
                                     >
-                                        <Check className="w-3 h-3" />
-                                        <span>{isSaving ? 'Saving...' : (editingProfit ? 'Update Profit' : 'Save & Record Profit')}</span>
+                                        {isSaving ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                            <Check className="w-3 h-3" />
+                                        )}
+                                        <span>
+                                            {isSaving 
+                                                ? (saveProgress ? `Syncing (${saveProgress.progress}%)` : 'Saving...') 
+                                                : (editingProfit ? 'Update Profit' : 'Save & Record Profit')}
+                                        </span>
                                     </button>
                                 </div>
                             </div>

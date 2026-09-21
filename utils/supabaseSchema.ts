@@ -1,4 +1,4 @@
-import type { Player, Rank, Tier, Badge, LegendaryBadge, GameEvent, GamificationRule, GameType, InventoryItem } from '../types';
+import type { Player, Rank, Tier, Badge, LegendaryBadge, GameEvent, GamificationRule, GameType, InventoryItem, Transaction } from '../types';
 import { getRankForPlayer } from './rankUtils';
 import { generatePlayerCodeFromName } from './playerCodeGenerator';
 
@@ -723,6 +723,43 @@ CREATE TABLE IF NOT EXISTS public.transactions (
 );
 
 -- Ensure all transaction columns exist safely
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "expenseName" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS expensename TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS expense_name TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "expenseReason" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS expensereason TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS expense_reason TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "receiptImageUrl" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS receiptimageurl TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS receipt_image_url TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "slipImageUrl" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS slipimageurl TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS slip_image_url TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'Business Expense';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "paidTo" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paidto TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paid_to TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "profitMade" NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profitmade NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profit_made NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "profitName" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profitname TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profit_name TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "profitReason" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profitreason TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profit_reason TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "profitDate" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profitdate TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS profit_date TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "paymentStatus" TEXT DEFAULT 'Paid';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paymentstatus TEXT DEFAULT 'Paid';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'Paid';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "amountTendered" NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS amounttendered NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS amount_tendered NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "changeDue" NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS changedue NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS change_due NUMERIC DEFAULT 0;
 ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT DEFAULT 'Cash';
 ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paymentmethod TEXT DEFAULT 'Cash';
 ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'Cash';
@@ -1271,6 +1308,109 @@ export function normalizeInventoryRow(raw: any): InventoryItem {
         serialNumber: raw.serialNumber || raw.serialnumber || raw.serial_number || '',
         imageUrl: raw.imageUrl || raw.imageurl || raw.image_url || '',
     } as InventoryItem;
+}
+
+/**
+ * Normalizes a raw transaction / expense / profit row from Supabase into a fully-typed Transaction object.
+ * Robustly maps all column aliases (camelCase, lowercased, snake_case) so expenses and profits persist 100% on reload.
+ */
+export function normalizeTransactionRow(raw: any): Transaction {
+    if (!raw) return raw;
+    const playerId = String(raw.playerId || raw.playerid || raw.player_id || raw.relatedPlayerId || raw.relatedplayerid || '');
+    const eventId = String(raw.eventId || raw.eventid || raw.event_id || raw.relatedEventId || raw.relatedeventid || '');
+    const paymentMethod = String(raw.paymentMethod || raw.paymentmethod || raw.payment_method || 'Cash');
+    const paymentStatus = String(raw.paymentStatus || raw.paymentstatus || raw.payment_status || 'Paid');
+    const receiptNumber = String(raw.receiptNumber || raw.receiptnumber || raw.receipt_number || '');
+    
+    let items = raw.items || [];
+    if (typeof items === 'string') {
+        try { items = JSON.parse(items); } catch { items = []; }
+    }
+    if (!Array.isArray(items)) items = [];
+
+    const desc = String(raw.description || raw.expenseName || raw.expensename || raw.expense_name || raw.profitName || raw.profitname || raw.profit_name || 'Transaction');
+    const expenseName = String(raw.expenseName || raw.expensename || raw.expense_name || (raw.type === 'Expense' ? desc : ''));
+    const expenseReason = String(raw.expenseReason || raw.expensereason || raw.expense_reason || '');
+    const receiptImageUrl = String(raw.receiptImageUrl || raw.receiptimageurl || raw.receipt_image_url || raw.slipImageUrl || raw.slipimageurl || raw.slip_image_url || '');
+    const paidTo = String(raw.paidTo || raw.paidto || raw.paid_to || raw.vendor || '');
+    const profitMade = Number(raw.profitMade ?? raw.profitmade ?? raw.profit_made ?? 0);
+    const profitName = String(raw.profitName || raw.profitname || raw.profit_name || '');
+    const profitReason = String(raw.profitReason || raw.profitreason || raw.profit_reason || '');
+    const profitDate = String(raw.profitDate || raw.profitdate || raw.profit_date || raw.date || raw.created_at || '');
+    const category = String(raw.category || (raw.type === 'Expense' ? 'Business Expense' : ''));
+
+    return {
+        ...raw,
+        id: String(raw.id || ''),
+        description: desc,
+        amount: Number(raw.amount || 0),
+        type: String(raw.type || (profitMade > 0 ? 'Expense' : 'Retail Revenue')),
+        date: String(raw.date || raw.created_at || new Date().toISOString()),
+        playerId,
+        playerid: playerId,
+        relatedPlayerId: playerId,
+        relatedplayerid: playerId,
+        eventId,
+        eventid: eventId,
+        relatedEventId: eventId,
+        relatedeventid: eventId,
+        status: String(raw.status || 'completed'),
+        paymentStatus,
+        paymentstatus: paymentStatus,
+        payment_status: paymentStatus,
+        paymentMethod,
+        paymentmethod: paymentMethod,
+        payment_method: paymentMethod,
+        receiptNumber,
+        receiptnumber: receiptNumber,
+        receipt_number: receiptNumber,
+        items,
+        subtotal: Number(raw.subtotal ?? raw.amount ?? 0),
+        discount: Number(raw.discount || 0),
+        notes: String(raw.notes || ''),
+        cashierName: String(raw.cashierName || raw.cashiername || 'Admin'),
+        cashiername: String(raw.cashierName || raw.cashiername || 'Admin'),
+        customerName: String(raw.customerName || raw.customername || ''),
+        customername: String(raw.customerName || raw.customername || ''),
+        customerCallsign: String(raw.customerCallsign || raw.customercallsign || ''),
+        customercallsign: String(raw.customerCallsign || raw.customercallsign || ''),
+        customerCode: String(raw.customerCode || raw.customercode || ''),
+        customercode: String(raw.customerCode || raw.customercode || ''),
+        expenseName,
+        expensename: expenseName,
+        expense_name: expenseName,
+        expenseReason,
+        expensereason: expenseReason,
+        expense_reason: expenseReason,
+        receiptImageUrl,
+        receiptimageurl: receiptImageUrl,
+        receipt_image_url: receiptImageUrl,
+        slipImageUrl: receiptImageUrl,
+        slipimageurl: receiptImageUrl,
+        slip_image_url: receiptImageUrl,
+        category,
+        paidTo,
+        paidto: paidTo,
+        paid_to: paidTo,
+        profitMade,
+        profitmade: profitMade,
+        profit_made: profitMade,
+        profitName,
+        profitname: profitName,
+        profit_name: profitName,
+        profitReason,
+        profitreason: profitReason,
+        profit_reason: profitReason,
+        profitDate,
+        profitdate: profitDate,
+        profit_date: profitDate,
+        amountTendered: Number(raw.amountTendered ?? raw.amounttendered ?? raw.amount_tendered ?? 0),
+        amounttendered: Number(raw.amountTendered ?? raw.amounttendered ?? raw.amount_tendered ?? 0),
+        amount_tendered: Number(raw.amountTendered ?? raw.amounttendered ?? raw.amount_tendered ?? 0),
+        changeDue: Number(raw.changeDue ?? raw.changedue ?? raw.change_due ?? 0),
+        changedue: Number(raw.changeDue ?? raw.changedue ?? raw.change_due ?? 0),
+        change_due: Number(raw.changeDue ?? raw.changedue ?? raw.change_due ?? 0),
+    } as unknown as Transaction;
 }
 
 /**

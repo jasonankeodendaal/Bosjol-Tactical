@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import { extractAndCleanStorageUrlsFromDoc } from '../utils/storageCleaner';
 import * as mock from '../constants';
 import { getRankForPlayer } from '../utils/rankUtils';
-import { normalizePlayerRow, normalizeRankRow, normalizeGameTypeRow, normalizeSignupRow, normalizeEventRow, normalizeInventoryRow, prepareSupabasePayload } from '../utils/supabaseSchema';
+import { normalizePlayerRow, normalizeRankRow, normalizeGameTypeRow, normalizeSignupRow, normalizeEventRow, normalizeInventoryRow, normalizeTransactionRow, prepareSupabasePayload } from '../utils/supabaseSchema';
 import type { Player, GameEvent, GamificationSettings, Badge, Sponsor, CompanyDetails, Voucher, InventoryItem, Supplier, Transaction, Location, Raffle, LegendaryBadge, GamificationRule, SocialLink, CarouselMedia, CreatorDetails, Signup, Rank, ApiGuideStep, Tier, Session, ActivityLog, FirestoreQuotaCounters, AdminNotification, PlayerHonor, TacticalRuleSet, GameType } from '../types';
 import { AuthContext } from '../auth/AuthContext';
 
@@ -70,51 +70,7 @@ function normalizeCollectionItem<T>(collectionName: string, item: any): T {
         return normalizeInventoryRow(item) as unknown as T;
     }
     if (collectionName === 'transactions') {
-        const playerId = String(item.playerId || item.playerid || item.relatedPlayerId || item.relatedplayerid || '');
-        const paymentMethod = String(item.paymentMethod || item.paymentmethod || item.payment_method || 'Cash');
-        const receiptNumber = String(item.receiptNumber || item.receiptnumber || item.receipt_number || '');
-        let items = item.items || [];
-        if (typeof items === 'string') {
-            try { items = JSON.parse(items); } catch { items = []; }
-        }
-        if (!Array.isArray(items)) items = [];
-        return {
-            ...item,
-            id: String(item.id || ''),
-            description: String(item.description || 'Transaction'),
-            amount: Number(item.amount || 0),
-            type: item.type || 'Retail Revenue',
-            date: item.date || item.created_at || new Date().toISOString(),
-            playerId,
-            playerid: playerId,
-            relatedPlayerId: playerId,
-            relatedplayerid: playerId,
-            eventId: String(item.eventId || item.eventid || item.relatedEventId || ''),
-            relatedEventId: String(item.eventId || item.eventid || item.relatedEventId || ''),
-            status: item.status || 'completed',
-            paymentStatus: item.paymentStatus || 'Paid',
-            paymentMethod,
-            receiptNumber,
-            items,
-            subtotal: Number(item.subtotal ?? item.amount ?? 0),
-            discount: Number(item.discount || 0),
-            notes: item.notes || '',
-            cashierName: item.cashierName || item.cashiername || 'Admin',
-            customerName: item.customerName || item.customername || '',
-            customerCallsign: item.customerCallsign || item.customercallsign || '',
-            customerCode: item.customerCode || item.customercode || '',
-            expenseName: String(item.expenseName || item.expensename || item.expense_name || ''),
-            expenseReason: String(item.expenseReason || item.expensereason || item.expense_reason || ''),
-            receiptImageUrl: String(item.receiptImageUrl || item.receiptimageurl || item.receipt_image_url || item.slipImageUrl || item.slipimageurl || item.slip_image_url || ''),
-            category: String(item.category || (item.type === 'Expense' ? 'Business Expense' : '')),
-            paidTo: String(item.paidTo || item.paidto || item.paid_to || item.vendor || ''),
-            profitMade: Number(item.profitMade ?? item.profitmade ?? item.profit_made ?? 0),
-            profitName: String(item.profitName || item.profitname || item.profit_name || ''),
-            profitReason: String(item.profitReason || item.profitreason || item.profit_reason || ''),
-            profitDate: String(item.profitDate || item.profitdate || item.profit_date || ''),
-            amountTendered: Number(item.amountTendered ?? item.amounttendered ?? item.amount_tendered ?? 0),
-            changeDue: Number(item.changeDue ?? item.changedue ?? item.change_due ?? 0),
-        } as unknown as T;
+        return normalizeTransactionRow(item) as unknown as T;
     }
     if (collectionName === 'raffles') {
         let tickets = item.tickets || item.soldTickets || item.soldtickets || [];

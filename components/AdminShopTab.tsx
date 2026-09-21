@@ -30,7 +30,9 @@ import {
     DollarSign,
     Check,
     AlertTriangle,
-    Eye
+    Eye,
+    Coins,
+    RotateCcw
 } from 'lucide-react';
 
 interface AdminShopTabProps {
@@ -155,6 +157,37 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
         return tendered >= finalTotal ? tendered - finalTotal : 0;
     }, [amountPaidManual, finalTotal]);
 
+    // Smart roundups and banknotes for ZAR cash, card, and EFT calculations
+    const smartRoundups = useMemo(() => {
+        if (finalTotal <= 0) return [];
+        const candidates = [20, 50, 100, 150, 200, 250, 300, 400, 500, 1000, 1500, 2000];
+        return candidates.filter(c => c > finalTotal).slice(0, 4);
+    }, [finalTotal]);
+
+    // Quick tender helpers
+    const handleSetExactAmount = () => {
+        const val = finalTotal.toFixed(2);
+        setAmountPaidManual(val);
+        setCashTendered(val);
+    };
+
+    const handleSetCustomTender = (val: number) => {
+        const str = val.toFixed(2);
+        setAmountPaidManual(str);
+        setCashTendered(str);
+    };
+
+    const handleAddPresetIncrement = (increment: number) => {
+        const current = parseFloat(amountPaidManual) || 0;
+        const nextVal = (current + increment).toFixed(2);
+        setAmountPaidManual(nextVal);
+        setCashTendered(nextVal);
+    };
+
+    const handleSelectPaymentMethod = (method: SalePaymentMethod) => {
+        setPaymentMethod(method);
+    };
+
     // Add item from catalog to cart
     const handleAddToCart = (item: InventoryItem) => {
         setCart(prev => {
@@ -278,10 +311,14 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
             return;
         }
 
-        if (paymentMethod === 'Cash' && cashTendered) {
-            const tendered = parseFloat(cashTendered);
-            if (!isNaN(tendered) && tendered < finalTotal) {
-                alert(`Cash tendered (R${tendered.toFixed(2)}) is less than total amount (R${finalTotal.toFixed(2)}).`);
+        // Validate manual amount entered across Cash, Card, and EFT
+        const enteredTendered = parseFloat(amountPaidManual || cashTendered);
+        if (!isNaN(enteredTendered) && enteredTendered > 0 && enteredTendered < finalTotal) {
+            const shortage = finalTotal - enteredTendered;
+            const proceed = window.confirm(
+                `Amount entered (R${enteredTendered.toFixed(2)}) via ${paymentMethod} is R${shortage.toFixed(2)} less than the total payable (R${finalTotal.toFixed(2)}).\n\nDo you want to proceed with this recorded shortage, or cancel to enter the full amount?`
+            );
+            if (!proceed) {
                 return;
             }
         }
@@ -295,6 +332,12 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
             const randomCode = Math.floor(1000 + Math.random() * 9000);
             const receiptCode = `BOS-POS-${dateCode}-${randomCode}`;
             const transactionId = `tx_pos_${Date.now()}`;
+
+            // Determine final tendered and change
+            const finalTendered = (!isNaN(enteredTendered) && enteredTendered > 0)
+                ? enteredTendered
+                : finalTotal;
+            const calculatedChange = finalTendered >= finalTotal ? finalTendered - finalTotal : 0;
 
             // Build sale items array
             const saleItems: SaleItem[] = cart.map(i => ({
@@ -328,8 +371,8 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
                 paymentStatus: 'Paid',
                 receiptNumber: receiptCode,
                 items: saleItems,
-                amountTendered: parseFloat(amountPaidManual) > 0 ? parseFloat(amountPaidManual) : finalTotal,
-                changeDue: changeDue,
+                amountTendered: finalTendered,
+                changeDue: calculatedChange,
                 notes: saleNotes.trim(),
                 cashierName: 'Admin Counter',
                 playerId: selectedPlayer?.id,
@@ -851,16 +894,23 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
                                 )}
                             </div>
 
-                            {/* Payment Method Selector */}
-                            <div className="pt-2 border-t border-zinc-800 space-y-1.5">
-                                <label className="text-xs font-bold text-white block">Payment Method</label>
+                            {/* Payment Method Selector & Manual Tender / Change Calculator */}
+                            <div className="pt-2 border-t border-zinc-800 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                                        <span>Payment Method</span>
+                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 font-normal">
+                                            Select method to enter total paid & calc change
+                                        </span>
+                                    </label>
+                                </div>
                                 <div className="grid grid-cols-3 gap-1.5">
                                     <button
                                         type="button"
-                                        onClick={() => setPaymentMethod('Cash')}
+                                        onClick={() => handleSelectPaymentMethod('Cash')}
                                         className={`py-2 px-2 rounded-lg text-xs font-bold flex flex-col items-center gap-1 transition-all ${
                                             paymentMethod === 'Cash'
-                                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
+                                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40 ring-1 ring-emerald-400/50'
                                                 : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
                                         }`}
                                     >
@@ -869,10 +919,10 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setPaymentMethod('Card')}
+                                        onClick={() => handleSelectPaymentMethod('Card')}
                                         className={`py-2 px-2 rounded-lg text-xs font-bold flex flex-col items-center gap-1 transition-all ${
                                             paymentMethod === 'Card'
-                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40 ring-1 ring-blue-400/50'
                                                 : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
                                         }`}
                                     >
@@ -881,10 +931,10 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setPaymentMethod('EFT')}
+                                        onClick={() => handleSelectPaymentMethod('EFT')}
                                         className={`py-2 px-2 rounded-lg text-xs font-bold flex flex-col items-center gap-1 transition-all ${
                                             paymentMethod === 'EFT'
-                                                ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/30'
+                                                ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/40 ring-1 ring-purple-400/50'
                                                 : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
                                         }`}
                                     >
@@ -893,22 +943,22 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
                                     </button>
                                 </div>
 
-                                {/* Tender / Total Paid & Change Calculator for Cash, Card, and EFT */}
-                                <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-2 mt-2">
+                                {/* Manual Total Paid & Change Calculator (Active for Cash, Card, and EFT) */}
+                                <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-2.5 mt-2">
                                     <div className="flex items-center justify-between text-xs">
                                         <div className="flex flex-col">
-                                            <span className="text-zinc-200 font-semibold flex items-center gap-1.5">
+                                            <span className="text-zinc-200 font-bold flex items-center gap-1.5">
                                                 {paymentMethod === 'Cash' && <Banknote className="w-3.5 h-3.5 text-emerald-400" />}
                                                 {paymentMethod === 'Card' && <CreditCard className="w-3.5 h-3.5 text-blue-400" />}
                                                 {paymentMethod === 'EFT' && <Send className="w-3.5 h-3.5 text-purple-400" />}
-                                                <span>Total Paid ({paymentMethod}):</span>
+                                                <span>Total Paid via {paymentMethod}:</span>
                                             </span>
                                             <span className="text-[10px] text-zinc-500">
-                                                Enter amount paid to calculate change
+                                                Manually enter amount received to calculate change
                                             </span>
                                         </div>
 
-                                        <div className="flex items-center gap-1 w-32">
+                                        <div className="flex items-center gap-1 w-36">
                                             <span className="text-zinc-500 text-xs font-mono font-bold">R</span>
                                             <input
                                                 type="number"
@@ -919,73 +969,113 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
                                                     setCashTendered(e.target.value);
                                                 }}
                                                 placeholder={finalTotal > 0 ? finalTotal.toFixed(2) : '0.00'}
-                                                className="w-full bg-zinc-900 border border-zinc-700 focus:border-amber-500 rounded px-2 py-1 text-right text-xs text-white font-mono font-bold focus:outline-none"
+                                                className="w-full bg-zinc-900 border border-zinc-700 focus:border-amber-500 rounded px-2.5 py-1 text-right text-xs text-white font-mono font-bold focus:outline-none"
                                             />
                                         </div>
                                     </div>
 
-                                    {/* Quick Preset Buttons for Tender */}
+                                    {/* Quick Preset Buttons for Exact, Round-ups & Note Increments */}
                                     {finalTotal > 0 && (
-                                        <div className="flex items-center gap-1.5 pt-1 border-t border-zinc-800/60 overflow-x-auto text-[10px]">
-                                            <span className="text-zinc-500 shrink-0">Exact:</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const val = finalTotal.toFixed(2);
-                                                    setAmountPaidManual(val);
-                                                    setCashTendered(val);
-                                                }}
-                                                className="px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono"
-                                            >
-                                                R{finalTotal.toFixed(2)}
-                                            </button>
-
-                                            {/* Smart roundups if cash or EFT */}
-                                            {paymentMethod === 'Cash' && (
-                                                <>
-                                                    {[50, 100, 200, 500].filter(n => n >= finalTotal).slice(0, 3).map(roundVal => (
-                                                        <button
-                                                            key={roundVal}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const val = roundVal.toFixed(2);
-                                                                setAmountPaidManual(val);
-                                                                setCashTendered(val);
-                                                            }}
-                                                            className="px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono"
-                                                        >
-                                                            R{roundVal}
-                                                        </button>
-                                                    ))}
-                                                </>
-                                            )}
-
-                                            {amountPaidManual && (
+                                        <div className="space-y-1.5 pt-1 border-t border-zinc-800/80 text-[10px]">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className="text-zinc-500 shrink-0 font-medium">Shortcuts:</span>
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        setAmountPaidManual('');
-                                                        setCashTendered('');
-                                                    }}
-                                                    className="ml-auto text-zinc-500 hover:text-zinc-300 text-[10px]"
+                                                    onClick={handleSetExactAmount}
+                                                    className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-emerald-300 font-mono font-bold transition-colors border border-emerald-500/20"
+                                                    title="Set to exact total"
                                                 >
-                                                    Clear
+                                                    Exact: R{finalTotal.toFixed(2)}
                                                 </button>
-                                            )}
+
+                                                {/* Smart Round-up Denominations */}
+                                                {smartRoundups.map(roundVal => (
+                                                    <button
+                                                        key={roundVal}
+                                                        type="button"
+                                                        onClick={() => handleSetCustomTender(roundVal)}
+                                                        className="px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono transition-colors"
+                                                    >
+                                                        R{roundVal}
+                                                    </button>
+                                                ))}
+
+                                                {amountPaidManual && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setAmountPaidManual('');
+                                                            setCashTendered('');
+                                                        }}
+                                                        className="ml-auto text-zinc-500 hover:text-zinc-300 text-[10px] flex items-center gap-0.5"
+                                                    >
+                                                        <RotateCcw className="w-2.5 h-2.5" />
+                                                        <span>Clear</span>
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Note / Amount Increments */}
+                                            <div className="flex items-center gap-1 text-[10px] text-zinc-400">
+                                                <span className="text-zinc-500 shrink-0">Add note:</span>
+                                                {[10, 20, 50, 100, 200].map(inc => (
+                                                    <button
+                                                        key={inc}
+                                                        type="button"
+                                                        onClick={() => handleAddPresetIncrement(inc)}
+                                                        className="px-1.5 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-mono text-[9px] transition-colors"
+                                                    >
+                                                        +R{inc}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
 
-                                    {/* Real-time Change Due / Balance Indicator */}
+                                    {/* Real-time Change Due / Balance Return Panel */}
                                     {parseFloat(amountPaidManual) > 0 && (
-                                        <div className="flex items-center justify-between text-xs pt-1.5 border-t border-zinc-800">
-                                            <span className="text-zinc-400 font-medium">
-                                                {parseFloat(amountPaidManual) >= finalTotal ? 'Change Due to Customer:' : 'Shortage / Still Due:'}
-                                            </span>
-                                            <span className={`font-mono font-black text-sm ${parseFloat(amountPaidManual) >= finalTotal ? 'text-emerald-400' : 'text-amber-400'}`}>
-                                                {parseFloat(amountPaidManual) >= finalTotal
-                                                    ? `R${changeDue.toFixed(2)}`
-                                                    : `-R${(finalTotal - parseFloat(amountPaidManual)).toFixed(2)}`}
-                                            </span>
+                                        <div className="pt-2 border-t border-zinc-800">
+                                            {parseFloat(amountPaidManual) > finalTotal ? (
+                                                <div className="p-2.5 rounded-lg bg-emerald-950/50 border border-emerald-500/50 text-emerald-300 space-y-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="font-black uppercase tracking-wider text-[10px] flex items-center gap-1 text-emerald-400">
+                                                            <Coins className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                                                            Change to Return to Client:
+                                                        </span>
+                                                        <span className="font-mono font-black text-base text-emerald-300">
+                                                            R{changeDue.toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[10px] text-emerald-400/80 leading-relaxed">
+                                                        Received R{parseFloat(amountPaidManual).toFixed(2)} via {paymentMethod} • Bill is R{finalTotal.toFixed(2)} • Hand <strong>R{changeDue.toFixed(2)}</strong> back to client.
+                                                    </p>
+                                                </div>
+                                            ) : parseFloat(amountPaidManual) < finalTotal ? (
+                                                <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-300 space-y-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="font-black uppercase tracking-wider text-[10px] flex items-center gap-1 text-amber-400">
+                                                            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                                                            Shortage / Still Outstanding:
+                                                        </span>
+                                                        <span className="font-mono font-black text-sm text-amber-400">
+                                                            -R{(finalTotal - parseFloat(amountPaidManual)).toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[10px] text-amber-400/80 leading-relaxed">
+                                                        Client provided R{parseFloat(amountPaidManual).toFixed(2)} via {paymentMethod} • Remaining balance of <strong>R{(finalTotal - parseFloat(amountPaidManual)).toFixed(2)}</strong> still required.
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="p-2 rounded-lg bg-zinc-900 border border-emerald-500/30 text-zinc-300 flex items-center justify-between text-xs">
+                                                    <span className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px]">
+                                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                                        Exact Amount Received ({paymentMethod})
+                                                    </span>
+                                                    <span className="font-mono font-black text-emerald-400 text-xs">
+                                                        R0.00 Change Due
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -1338,9 +1428,21 @@ export const AdminShopTab: React.FC<AdminShopTabProps> = ({
                             </div>
 
                             <div className="flex justify-between text-sm font-bold text-emerald-400 pt-1">
-                                <span>TOTAL PAID:</span>
+                                <span>TOTAL BILLED:</span>
                                 <span>R{Number(viewingPastReceipt.amount || 0).toFixed(2)}</span>
                             </div>
+                            {viewingPastReceipt.amountTendered !== undefined && (
+                                <div className="flex justify-between text-xs text-zinc-300 pt-1 border-t border-zinc-800/60">
+                                    <span>Total Paid ({viewingPastReceipt.paymentMethod || 'Cash'}):</span>
+                                    <span className="font-mono font-bold text-white">R{Number(viewingPastReceipt.amountTendered).toFixed(2)}</span>
+                                </div>
+                            )}
+                            {viewingPastReceipt.changeDue !== undefined && Number(viewingPastReceipt.changeDue) > 0 && (
+                                <div className="flex justify-between text-xs text-emerald-400 font-bold">
+                                    <span>Change Returned:</span>
+                                    <span className="font-mono">R{Number(viewingPastReceipt.changeDue).toFixed(2)}</span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="pt-2 flex justify-end gap-2">

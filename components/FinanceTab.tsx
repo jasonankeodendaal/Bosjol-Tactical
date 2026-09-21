@@ -59,6 +59,14 @@ const QUICK_PRESETS = [
     { name: 'Marshal Game Day Stipend', category: 'Staff & Marshal Compensation', reason: 'Official field marshalling & safety briefing duty' },
 ];
 
+const PROFIT_PRESETS = [
+    { name: 'Bulk BB Resale Surplus', sourceName: 'Bio-BB 0.25g Bulk Carton', category: 'Ammo & Consumables Resale', reason: 'Resale of bulk BBs at arena registration booth' },
+    { name: 'Rental Fleet Turnaround Return', sourceName: 'Rental Gear Spares', category: 'Rental Asset Profit', reason: 'Net rental fee profit on refurbished marker fleet' },
+    { name: 'Tournament Gate / Entry Surplus', sourceName: 'Special Skirmish Op', category: 'Event Ticket Surplus', reason: 'Event margin profit realization from tactical skirmish day' },
+    { name: 'Canteen Refreshment Net Gain', sourceName: 'Canteen Bottled Water & Ice', category: 'Canteen & Catering Margin', reason: 'Weekend energy drink and hydration sales profit' },
+    { name: 'Surplus Weapon / Gear Resale', sourceName: 'Tactical Gear Restock', category: 'Equipment Resale', reason: 'Profit margin from player second-hand armory consignment' },
+];
+
 const StatCard: React.FC<{ title: string, value: string, colorClass: string, subtitle?: string }> = ({ title, value, colorClass, subtitle }) => (
     <div className="py-1 px-1.5 flex flex-col justify-between shrink-0">
         <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider leading-none truncate">{title}</p>
@@ -151,7 +159,9 @@ export const FinanceTab: React.FC<{
     // Modal states
     const [isPrinting, setIsPrinting] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+    const [isProfitModalOpen, setIsProfitModalOpen] = useState(false);
     const [editingExpense, setEditingExpense] = useState<Transaction | null>(null);
+    const [editingProfit, setEditingProfit] = useState<Transaction | null>(null);
     const [inspectingExpense, setInspectingExpense] = useState<Transaction | null>(null);
     const [isSqlModalOpen, setIsSqlModalOpen] = useState(false);
     const [copiedSql, setCopiedSql] = useState(false);
@@ -169,7 +179,26 @@ export const FinanceTab: React.FC<{
         paidTo: '',
         receiptImageUrl: '',
         notes: '',
+        profitMade: '',
+        profitName: '',
+        profitReason: '',
+        profitDate: new Date().toISOString().slice(0, 10),
     });
+
+    // Profit Entry Form State (Independent Entity)
+    const [profitFormData, setProfitFormData] = useState({
+        profitName: '',
+        profitReason: '',
+        profitMade: '',
+        date: new Date().toISOString().slice(0, 10),
+        sourceExpenseName: '',
+        sourceCost: '',
+        category: 'Resale & Equipment Profit',
+        paymentMethod: 'EFT',
+        paidTo: '',
+        notes: '',
+    });
+
     const [isSaving, setIsSaving] = useState(false);
     const [statusBanner, setStatusBanner] = useState<string | null>(null);
 
@@ -196,7 +225,7 @@ export const FinanceTab: React.FC<{
         }
     }, [isPrinting]);
 
-    // Reset Form
+    // Reset Forms
     const resetExpenseForm = () => {
         setExpenseFormData({
             expenseName: '',
@@ -216,9 +245,30 @@ export const FinanceTab: React.FC<{
         setEditingExpense(null);
     };
 
+    const resetProfitForm = () => {
+        setProfitFormData({
+            profitName: '',
+            profitReason: '',
+            profitMade: '',
+            date: new Date().toISOString().slice(0, 10),
+            sourceExpenseName: '',
+            sourceCost: '',
+            category: 'Resale & Equipment Profit',
+            paymentMethod: 'EFT',
+            paidTo: '',
+            notes: '',
+        });
+        setEditingProfit(null);
+    };
+
     const handleOpenNewExpense = () => {
         resetExpenseForm();
         setIsExpenseModalOpen(true);
+    };
+
+    const handleOpenNewProfit = () => {
+        resetProfitForm();
+        setIsProfitModalOpen(true);
     };
 
     const handleOpenEditExpense = (expense: Transaction) => {
@@ -241,12 +291,39 @@ export const FinanceTab: React.FC<{
         setIsExpenseModalOpen(true);
     };
 
+    const handleOpenEditProfit = (item: Transaction) => {
+        setEditingProfit(item);
+        setProfitFormData({
+            profitName: item.profitName || item.description || '',
+            profitReason: item.profitReason || '',
+            profitMade: String(item.profitMade || item.amount || ''),
+            date: item.profitDate ? item.profitDate.slice(0, 10) : (item.date ? item.date.slice(0, 10) : new Date().toISOString().slice(0, 10)),
+            sourceExpenseName: item.expenseName || '',
+            sourceCost: item.amount ? String(item.amount) : '',
+            category: item.category || 'Resale & Equipment Profit',
+            paymentMethod: (item.paymentMethod as string) || 'EFT',
+            paidTo: item.paidTo || '',
+            notes: item.notes || '',
+        });
+        setIsProfitModalOpen(true);
+    };
+
     const handleSelectPreset = (preset: typeof QUICK_PRESETS[0]) => {
         setExpenseFormData(prev => ({
             ...prev,
             expenseName: preset.name,
             category: preset.category,
             expenseReason: prev.expenseReason || preset.reason,
+        }));
+    };
+
+    const handleSelectProfitPreset = (preset: typeof PROFIT_PRESETS[0]) => {
+        setProfitFormData(prev => ({
+            ...prev,
+            profitName: preset.name,
+            sourceExpenseName: prev.sourceExpenseName || preset.sourceName,
+            category: preset.category,
+            profitReason: prev.profitReason || preset.reason,
         }));
     };
 
@@ -312,6 +389,73 @@ export const FinanceTab: React.FC<{
         } catch (err: any) {
             console.error('Error saving business expense:', err);
             alert(`Failed to save expense: ${err?.message || 'Unknown error'}`);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleSaveProfit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        const trimmedProfitName = profitFormData.profitName.trim();
+        if (!trimmedProfitName) {
+            alert('Please enter a profit or income name.');
+            return;
+        }
+        const numericProfit = parseFloat(String(profitFormData.profitMade));
+        if (isNaN(numericProfit) || numericProfit <= 0) {
+            alert('Please enter a valid profit amount (greater than 0).');
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const realizationDate = profitFormData.date 
+                ? (profitFormData.date.includes('T') ? profitFormData.date : `${profitFormData.date}T12:00:00Z`)
+                : new Date().toISOString();
+
+            const parsedSourceCost = parseFloat(profitFormData.sourceCost) || 0;
+            const sourceDesc = profitFormData.sourceExpenseName.trim() || trimmedProfitName;
+
+            const profitPayload: any = {
+                description: `Profit: ${trimmedProfitName}`,
+                expenseName: sourceDesc,
+                expenseReason: profitFormData.profitReason.trim() || `Profit realized: ${trimmedProfitName}`,
+                amount: parsedSourceCost, // Optional source cost baseline
+                date: realizationDate,
+                type: 'Expense', // Kept in ledger structure so it appears seamlessly in finance records
+                category: profitFormData.category || 'Resale & Equipment Profit',
+                paymentMethod: profitFormData.paymentMethod || 'EFT',
+                paidTo: profitFormData.paidTo.trim(),
+                notes: profitFormData.notes.trim(),
+                profitMade: numericProfit,
+                profitName: trimmedProfitName,
+                profitReason: profitFormData.profitReason.trim(),
+                profitDate: realizationDate,
+                status: 'completed',
+                paymentStatus: 'Paid',
+            };
+
+            if (editingProfit) {
+                profitPayload.id = editingProfit.id;
+                if (updateDoc) {
+                    await updateDoc('transactions', profitPayload);
+                }
+                setStatusBanner(`Profit entry "${trimmedProfitName}" (+R${numericProfit.toFixed(0)}) updated.`);
+            } else {
+                const generatedId = `prf_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+                profitPayload.id = generatedId;
+                if (addDoc) {
+                    await addDoc('transactions', profitPayload);
+                }
+                setStatusBanner(`Profit entry "${trimmedProfitName}" (+R${numericProfit.toFixed(0)}) recorded & synced live.`);
+            }
+
+            setIsProfitModalOpen(false);
+            resetProfitForm();
+            setTimeout(() => setStatusBanner(null), 5000);
+        } catch (err: any) {
+            console.error('Error saving profit entry:', err);
+            alert(`Failed to save profit entry: ${err?.message || 'Unknown error'}`);
         } finally {
             setIsSaving(false);
         }
@@ -556,15 +700,27 @@ export const FinanceTab: React.FC<{
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                    {/* Log Business Expense Button */}
+                    {/* Separate Expense & Profit Entry Buttons */}
                     <Button 
                         onClick={handleOpenNewExpense} 
                         variant="danger" 
                         size="sm" 
-                        className="!py-1 !px-2.5 text-xs font-bold flex items-center gap-1.5"
+                        className="!py-1 !px-2.5 text-xs font-bold flex items-center gap-1.5 shadow-sm"
+                        title="Open dedicated business expense entry modal"
                     >
                         <Receipt className="w-3.5 h-3.5" />
-                        <span>Log Business Expense</span>
+                        <span>Log Expense</span>
+                    </Button>
+
+                    <Button 
+                        onClick={handleOpenNewProfit} 
+                        variant="secondary" 
+                        size="sm" 
+                        className="!py-1 !px-2.5 text-xs font-bold flex items-center gap-1.5 !bg-emerald-950/60 hover:!bg-emerald-900/80 !text-emerald-300 !border-emerald-500/50 shadow-sm"
+                        title="Open dedicated profit & returns entry modal"
+                    >
+                        <ArrowTrendingUpIcon className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Log Profit</span>
                     </Button>
 
                     {/* Print Report */}
@@ -797,6 +953,14 @@ export const FinanceTab: React.FC<{
                                 <Plus className="w-3 h-3" /> Log Expense
                             </button>
                         )}
+                        {viewCategory === 'profits' && (
+                            <button
+                                onClick={handleOpenNewProfit}
+                                className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1"
+                            >
+                                <Plus className="w-3 h-3" /> Log Profit
+                            </button>
+                        )}
                     </div>
 
                     <div className="space-y-1.5 max-h-[460px] overflow-y-auto pr-1">
@@ -806,12 +970,17 @@ export const FinanceTab: React.FC<{
                                 <p className="text-xs text-zinc-400 font-bold">No records found for current filters</p>
                                 <p className="text-[10px] text-zinc-500 mt-0.5">
                                     {viewCategory === 'profits' 
-                                        ? 'No profits/returns logged yet. Add profit details when logging or editing any business expense.' 
+                                        ? 'No profits/returns logged yet. Use the "Log Profit" button above to record income or returns.' 
                                         : 'Adjust the timeframe or log a new business expense above.'}
                                 </p>
                                 {viewCategory === 'expenses' && (
                                     <button onClick={handleOpenNewExpense} className="mt-2 text-xs font-bold text-red-400 hover:text-red-300 inline-flex items-center gap-1">
                                         <Plus className="w-3.5 h-3.5" /> Add Business Expense
+                                    </button>
+                                )}
+                                {viewCategory === 'profits' && (
+                                    <button onClick={handleOpenNewProfit} className="mt-2 text-xs font-bold text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1">
+                                        <Plus className="w-3.5 h-3.5" /> Log Profit Entry
                                     </button>
                                 )}
                             </div>
@@ -835,7 +1004,7 @@ export const FinanceTab: React.FC<{
                                                             <ArrowTrendingUpIcon className="w-3 h-3" /> Profit
                                                         </span>
                                                         <span className="text-[10px] text-zinc-400 font-mono">
-                                                            Source: {t.expenseName || t.description} (Cost: R{t.amount.toFixed(0)})
+                                                            Source: {t.expenseName || t.description} {Number(t.amount || 0) > 0 ? `(Cost: R${t.amount.toFixed(0)})` : ''}
                                                         </span>
                                                     </div>
 
@@ -868,11 +1037,18 @@ export const FinanceTab: React.FC<{
                                                             <Eye className="w-3 h-3" />
                                                         </button>
                                                         <button
-                                                            onClick={() => handleOpenEditExpense(t)}
+                                                            onClick={() => handleOpenEditProfit(t)}
                                                             className="p-1 hover:text-white text-zinc-400 transition-colors text-[10px]"
-                                                            title="Edit expense & profit"
+                                                            title="Edit profit entry"
                                                         >
                                                             <Edit3 className="w-3 h-3" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteExpense(t)}
+                                                            className="p-1 hover:text-red-400 text-zinc-500 transition-colors text-[10px]"
+                                                            title="Delete profit entry"
+                                                        >
+                                                            <Trash2 className="w-3 h-3" />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -1242,6 +1418,191 @@ export const FinanceTab: React.FC<{
             </Modal>
 
             {/* ========================================================= */}
+            {/* DEDICATED MODAL: LOG / EDIT PROFIT & RETURNS (SEPARATE)    */}
+            {/* ========================================================= */}
+            <Modal
+                isOpen={isProfitModalOpen}
+                onClose={() => {
+                    setIsProfitModalOpen(false);
+                    resetProfitForm();
+                }}
+                title={editingProfit ? 'Edit Profit & Returns Entry' : 'Log Profit & Revenue Return'}
+                maxWidth="xl"
+            >
+                <form onSubmit={handleSaveProfit} className="space-y-4 text-xs">
+                    {/* Quick Profit Presets */}
+                    {!editingProfit && (
+                        <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-[10px] text-zinc-400 uppercase font-black tracking-wider flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3 text-emerald-400" /> Quick Profit Presets:
+                                </span>
+                                <span className="text-[9px] text-zinc-500">Tap to autofill profit reason & category</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                                {PROFIT_PRESETS.map((preset, idx) => (
+                                    <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() => handleSelectProfitPreset(preset)}
+                                        className="px-2 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 hover:text-white text-[10px] border border-emerald-500/30 transition-colors text-left"
+                                    >
+                                        {preset.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Profit Name & Profit Amount */}
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                        <div className="sm:col-span-8">
+                            <Input
+                                label="Profit / Return Title *"
+                                value={profitFormData.profitName}
+                                onChange={e => setProfitFormData(prev => ({ ...prev, profitName: e.target.value }))}
+                                placeholder="e.g. Bulk BB Resale Profit, Gear Resale Return, Event Gate Surplus"
+                                required
+                            />
+                        </div>
+                        <div className="sm:col-span-4">
+                            <Input
+                                label="Profit Amount (R / ZAR) *"
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                value={profitFormData.profitMade}
+                                onChange={e => setProfitFormData(prev => ({ ...prev, profitMade: e.target.value }))}
+                                placeholder="e.g. 1250"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    {/* Profit Reason & Category */}
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                        <div className="sm:col-span-7">
+                            <Input
+                                label="Profit Reason / Origin Description"
+                                value={profitFormData.profitReason}
+                                onChange={e => setProfitFormData(prev => ({ ...prev, profitReason: e.target.value }))}
+                                placeholder="e.g. Realized margin from weekend 0.25g bio-BB ammo resale"
+                            />
+                        </div>
+                        <div className="sm:col-span-5">
+                            <label className="block text-[10px] text-zinc-400 uppercase font-black tracking-wider mb-1">
+                                Profit Category
+                            </label>
+                            <select
+                                value={profitFormData.category}
+                                onChange={e => setProfitFormData(prev => ({ ...prev, category: e.target.value }))}
+                                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500"
+                            >
+                                <option value="Resale & Equipment Profit">Resale & Equipment Profit</option>
+                                <option value="Ammo & Consumables Resale">Ammo & Consumables Resale</option>
+                                <option value="Rental Asset Profit">Rental Asset Profit</option>
+                                <option value="Event Ticket Surplus">Event Ticket Surplus</option>
+                                <option value="Canteen & Catering Margin">Canteen & Catering Margin</option>
+                                <option value="Sponsorship & Partner Payout">Sponsorship & Partner Payout</option>
+                                <option value="General Profit & Return">General Profit & Return</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Optional Underlying Cost / Originating Asset */}
+                    <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-zinc-400 uppercase font-black tracking-wider">
+                                Associated Asset / Source Details (Optional)
+                            </span>
+                            <span className="text-[10px] text-zinc-500">Helps track gross origin & vendor</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <Input
+                                label="Source Item / Purchase Name"
+                                value={profitFormData.sourceExpenseName}
+                                onChange={e => setProfitFormData(prev => ({ ...prev, sourceExpenseName: e.target.value }))}
+                                placeholder="e.g. Bio-BB 0.25g Bulk Carton (Supplier Restock)"
+                            />
+                            <Input
+                                label="Original Cost Price (R) (If applicable)"
+                                type="number"
+                                step="0.01"
+                                value={profitFormData.sourceCost}
+                                onChange={e => setProfitFormData(prev => ({ ...prev, sourceCost: e.target.value }))}
+                                placeholder="e.g. 800"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Realization Date & Channel Details */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <Input
+                            label="Realization Date *"
+                            type="date"
+                            value={profitFormData.date}
+                            onChange={e => setProfitFormData(prev => ({ ...prev, date: e.target.value }))}
+                            required
+                        />
+                        <div>
+                            <label className="block text-[10px] text-zinc-400 uppercase font-black tracking-wider mb-1">
+                                Inflow Method
+                            </label>
+                            <select
+                                value={profitFormData.paymentMethod}
+                                onChange={e => setProfitFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500"
+                            >
+                                <option value="EFT">EFT / Wire Transfer</option>
+                                <option value="Cash">Cash at Field</option>
+                                <option value="Card">Card Swipe / POS</option>
+                                <option value="SnapScan">SnapScan / QR Pay</option>
+                            </select>
+                        </div>
+                        <Input
+                            label="Vendor / Payer / Source"
+                            value={profitFormData.paidTo}
+                            onChange={e => setProfitFormData(prev => ({ ...prev, paidTo: e.target.value }))}
+                            placeholder="e.g. Registration Counter, Player Consignment"
+                        />
+                    </div>
+
+                    {/* Extra Notes */}
+                    <Input
+                        label="Internal Reference / Notes"
+                        value={profitFormData.notes}
+                        onChange={e => setProfitFormData(prev => ({ ...prev, notes: e.target.value }))}
+                        placeholder="e.g. Batch #42 surplus reconciliation"
+                    />
+
+                    {/* Submit Actions */}
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                                setIsProfitModalOpen(false);
+                                resetProfitForm();
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            size="sm"
+                            disabled={isSaving}
+                            className="!bg-emerald-600 hover:!bg-emerald-500 !text-white flex items-center gap-1.5"
+                        >
+                            <Check className="w-4 h-4" />
+                            <span>{isSaving ? 'Saving...' : (editingProfit ? 'Update Profit Entry' : 'Save & Record Profit')}</span>
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* ========================================================= */}
             {/* MODAL 2: EXPENSE SLIP AUDIT & DETAIL INSPECTOR            */}
             {/* ========================================================= */}
             {inspectingExpense && (
@@ -1398,7 +1759,11 @@ export const FinanceTab: React.FC<{
                                     onClick={() => {
                                         const exp = inspectingExpense;
                                         setInspectingExpense(null);
-                                        handleOpenEditExpense(exp);
+                                        if (exp.profitMade && (!exp.amount || exp.amount <= 0 || exp.category === 'Resale & Equipment Profit')) {
+                                            handleOpenEditProfit(exp);
+                                        } else {
+                                            handleOpenEditExpense(exp);
+                                        }
                                     }}
                                 >
                                     <Edit3 className="w-3.5 h-3.5 mr-1" /> Edit Details

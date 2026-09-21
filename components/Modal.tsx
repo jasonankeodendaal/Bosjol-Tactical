@@ -49,7 +49,7 @@ export const Modal: React.FC<ModalProps> = ({
             exit={{ scale: 0.95, opacity: 0, y: 8 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
-            className={`bg-zinc-900 border border-zinc-800 rounded-lg sm:rounded-xl shadow-2xl w-full ${maxWidthClass} max-h-[94vh] sm:max-h-[88vh] flex flex-col overflow-hidden my-auto text-xs sm:text-base ${className}`}
+            className={`bg-zinc-900 border border-zinc-800 rounded-lg sm:rounded-xl shadow-2xl w-full ${maxWidthClass} max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden my-auto text-xs sm:text-base ${className}`}
           >
             <div className="flex justify-between items-center px-3 py-2.5 sm:px-5 sm:py-3.5 border-b border-zinc-800 flex-shrink-0 bg-zinc-900/95 backdrop-blur-sm sticky top-0 z-10">
               <h2 className="text-sm sm:text-lg font-bold text-white tracking-wide truncate pr-2">{title}</h2>
@@ -62,12 +62,12 @@ export const Modal: React.FC<ModalProps> = ({
               </button>
             </div>
             
-            <div className="p-3 sm:p-5 overflow-y-auto overscroll-contain flex-grow min-h-0 space-y-3 sm:space-y-4">
+            <div className="p-3 sm:p-5 overflow-y-auto overscroll-contain flex-grow min-h-0 space-y-3 sm:space-y-4 pb-6">
               {children}
             </div>
 
             {footer && (
-              <div className="p-3 sm:p-4 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-md flex-shrink-0">
+              <div className="p-3 sm:p-4 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-md flex-shrink-0 sticky bottom-0 z-10">
                 {footer}
               </div>
             )}

@@ -938,26 +938,29 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                 </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-2xl border border-red-700/60 shadow-2xl bg-zinc-950/90 p-4 sm:p-5 group">
+            {/* Free View 3D Floating Sponsorships & Partners Stage */}
+            <div className="relative overflow-hidden py-3 px-2 sm:px-4 my-2 group pointer-events-auto">
                 {/* Uploaded Sponsors Background Backdrop */}
-                {sponsorsBackgroundUrl && (
+                {sponsorsBackgroundUrl ? (
                     <>
                         <div 
-                            className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-80 sm:opacity-90 transition-opacity"
+                            className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-40 blur-[1px] transition-opacity"
                             style={{ backgroundImage: `url('${sponsorsBackgroundUrl}')` }}
                         />
-                        <div className="absolute inset-0 z-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/40 to-zinc-950/50 pointer-events-none" />
+                        <div className="absolute inset-0 z-0 bg-gradient-to-r from-zinc-950 via-zinc-950/60 to-zinc-950 pointer-events-none" />
                     </>
+                ) : (
+                    <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-amber-500/5 to-transparent pointer-events-none" />
                 )}
 
                 <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-2 border-b border-red-700/40 pb-2">
-                        <h3 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                            <SparklesIcon className="w-4 h-4 text-red-500" />
+                    <div className="flex items-center justify-between mb-1.5 px-2">
+                        <h3 className="text-[11px] sm:text-xs font-black text-amber-300 uppercase tracking-widest flex items-center gap-1.5 font-mono">
+                            <SparklesIcon className="w-3.5 h-3.5 text-amber-400" />
                             Official Sponsors & Brand Partners
                         </h3>
                         {sponsors.length > 0 && (
-                            <span className="text-[10px] font-mono text-zinc-400">
+                            <span className="text-[9px] font-mono text-zinc-400">
                                 {sponsors.length} Active {sponsors.length === 1 ? 'Partner' : 'Partners'}
                             </span>
                         )}
@@ -969,19 +972,19 @@ const OverviewTab: React.FC<Pick<PlayerDashboardProps, 'player' | 'players' | 'e
                                     {sponsor.logoUrl ? (
                                         <img src={sponsor.logoUrl} alt={sponsor.name} />
                                     ) : (
-                                        <span className="text-xs font-bold text-amber-400 p-2">{sponsor.name}</span>
+                                        <span className="text-xs font-bold text-amber-400 p-1 truncate">{sponsor.name}</span>
                                     )}
                                 </div>
                             ))}
                         </div>
                         {row2Sponsors.length > 0 && (
-                            <div className="marquee-row animate-marquee-reverse mt-4">
+                            <div className="marquee-row animate-marquee-reverse mt-2">
                                 {row2Sponsors.concat(row2Sponsors).map((sponsor, index) => (
                                     <div key={`${sponsor.id}-${index}-2`} onClick={() => setSelectedSponsor(sponsor)} className="sponsor-item">
                                         {sponsor.logoUrl ? (
                                             <img src={sponsor.logoUrl} alt={sponsor.name} />
                                         ) : (
-                                            <span className="text-xs font-bold text-amber-400 p-2">{sponsor.name}</span>
+                                            <span className="text-xs font-bold text-amber-400 p-1 truncate">{sponsor.name}</span>
                                         )}
                                     </div>
                                 ))}

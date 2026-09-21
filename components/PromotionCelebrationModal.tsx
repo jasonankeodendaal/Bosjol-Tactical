@@ -287,20 +287,20 @@ export const PromotionCelebrationModal: React.FC<PromotionCelebrationModalProps>
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 onClick={(e) => e.stopPropagation()}
-                className="relative z-10 w-full max-w-4xl px-4 py-6 sm:py-10 flex flex-col items-center justify-center text-center my-auto pointer-events-auto"
+                className="relative z-10 w-full max-w-3xl px-3 py-3 sm:py-6 flex flex-col items-center justify-center text-center my-auto pointer-events-auto"
                 style={{ perspective: '1000px' }}
             >
                 {/* DUAL CURVED GOLDEN ARCS (TOP & BOTTOM BORDER BEAMS) */}
-                <div className="absolute inset-x-4 sm:inset-x-12 top-0 h-16 border-t-2 border-amber-500/80 rounded-[100%] shadow-[0_0_25px_#f59e0b] pointer-events-none opacity-90" />
-                <div className="absolute inset-x-4 sm:inset-x-12 bottom-0 h-16 border-b-2 border-amber-500/80 rounded-[100%] shadow-[0_0_25px_#f59e0b] pointer-events-none opacity-90" />
+                <div className="absolute inset-x-2 sm:inset-x-8 top-0 h-12 sm:h-16 border-t-2 border-amber-500/80 rounded-[100%] shadow-[0_0_25px_#f59e0b] pointer-events-none opacity-90" />
+                <div className="absolute inset-x-2 sm:inset-x-8 bottom-0 h-12 sm:h-16 border-b-2 border-amber-500/80 rounded-[100%] shadow-[0_0_25px_#f59e0b] pointer-events-none opacity-90" />
 
                 {/* TOP HUD TRIANGLE BRACKET */}
-                <div className="mb-2 text-amber-400 font-mono text-xl sm:text-2xl font-black tracking-widest opacity-90">
+                <div className="mb-1 text-amber-400 font-mono text-lg sm:text-2xl font-black tracking-widest opacity-90">
                     /\
                 </div>
 
                 {/* 3-BADGE CAROUSEL CONTAINER WITH HORIZONTAL LENS FLARE */}
-                <div className="relative w-full flex items-center justify-center my-4 sm:my-8 py-4">
+                <div className="relative w-full flex items-center justify-center my-2 sm:my-4 py-2">
                     
                     {/* HORIZONTAL INTENSE GOLD LENS FLARE BEAM */}
                     <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_25px_#facc15] pointer-events-none z-0 opacity-90" />

@@ -6,16 +6,12 @@ import {
     Eye, 
     Edit3, 
     Trash2, 
-    CreditCard, 
     Calendar, 
     User, 
-    Building, 
-    FileText,
-    ArrowUpRight,
-    ArrowDownRight,
-    TrendingUp
+    Layers,
+    TrendingUp,
+    ExternalLink
 } from 'lucide-react';
-import { ArrowTrendingUpIcon } from './icons/Icons';
 
 interface BusinessCardTransactionProps {
     transaction: Transaction;
@@ -40,125 +36,130 @@ export const BusinessCardTransaction: React.FC<BusinessCardTransactionProps> = (
     const player = players.find(p => p.id === t.relatedPlayerId);
     const hasSlip = Boolean(t.receiptImageUrl && t.receiptImageUrl.trim() !== '');
 
-    // Format monetary display
+    // Monetary figure calculation
     const amountVal = isDedicatedProfit 
         ? Number(t.profitMade || 0) 
         : Number(t.amount || 0);
 
-    // Business card color accents
     const isIncome = !isExpense || isDedicatedProfit;
-    const accentColor = isDedicatedProfit
-        ? 'border-emerald-500/50 from-emerald-950/20 via-zinc-900 to-zinc-950'
-        : isExpense
-            ? 'border-red-500/40 from-red-950/15 via-zinc-900 to-zinc-950'
-            : 'border-blue-500/40 from-blue-950/15 via-zinc-900 to-zinc-950';
 
-    const typeBadgeColor = isDedicatedProfit
-        ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/40'
+    // Tactical aesthetic borders & gradients
+    const cardBorder = isDedicatedProfit
+        ? 'border-emerald-500/40 from-emerald-950/30 via-zinc-900 to-zinc-950'
         : isExpense
-            ? 'bg-red-950/80 text-red-400 border-red-500/40'
-            : 'bg-blue-950/80 text-blue-400 border-blue-500/40';
+            ? 'border-red-500/35 from-red-950/25 via-zinc-900 to-zinc-950'
+            : 'border-blue-500/35 from-blue-950/20 via-zinc-900 to-zinc-950';
+
+    const typeBadge = isDedicatedProfit
+        ? 'bg-emerald-950/90 text-emerald-400 border-emerald-500/40'
+        : isExpense
+            ? 'bg-red-950/90 text-red-400 border-red-500/40'
+            : 'bg-blue-950/90 text-blue-400 border-blue-500/40';
+
+    const dateFormatted = new Date(t.date || t.profitDate || Date.now()).toLocaleDateString(undefined, { 
+        month: 'short', 
+        day: 'numeric' 
+    });
 
     return (
-        <div className={`relative group bg-gradient-to-br ${accentColor} border p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.06)] rounded-none flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.9)]`}>
-            {/* Top Row: Type Badge, Category & Date */}
-            <div className="space-y-2">
-                <div className="flex items-center justify-between gap-1.5 pb-2 border-b border-white/[0.06]">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-wider border font-mono ${typeBadgeColor}`}>
-                            {isDedicatedProfit ? 'PROFIT & ROI' : isExpense ? 'EXPENSE SLIP' : (t.type || 'REVENUE')}
-                        </span>
-                        {t.category && (
-                            <span className="text-[10px] text-zinc-400 font-bold truncate max-w-[140px]" title={t.category}>
-                                {t.category}
-                            </span>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-1 text-[9px] text-zinc-400 font-mono shrink-0">
-                        <Calendar className="w-3 h-3 text-zinc-500" />
-                        <span>{new Date(t.date || t.profitDate || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                    </div>
+        <div className={`group relative bg-gradient-to-br ${cardBorder} border p-2 sm:p-2.5 shadow-[0_4px_16px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.05)] flex flex-col justify-between transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_8px_22px_rgba(0,0,0,0.85)] rounded-none h-full min-w-0`}>
+            {/* Top Row: Type chip & Date */}
+            <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-1 pb-1.5 border-b border-white/[0.06]">
+                    <span className={`px-1.5 py-0.2 text-[8px] sm:text-[9px] font-black uppercase tracking-wider border font-mono truncate max-w-[100px] ${typeBadge}`}>
+                        {isDedicatedProfit ? 'PROFIT' : isExpense ? 'EXPENSE' : (t.type?.replace(' Revenue', '') || 'REV')}
+                    </span>
+                    <span className="text-[8px] sm:text-[9px] text-zinc-400 font-mono shrink-0 flex items-center gap-0.5">
+                        <Calendar className="w-2.5 h-2.5 text-zinc-500 inline" />
+                        {dateFormatted}
+                    </span>
                 </div>
 
-                {/* Primary Card Title & Amount */}
-                <div className="flex items-start justify-between gap-2 pt-1">
-                    <div className="min-w-0 flex-1">
-                        <h4 className="text-xs sm:text-sm font-black text-white leading-snug truncate" title={t.profitName || t.expenseName || t.description}>
-                            {t.profitName || t.expenseName || t.description || 'Untitled Transaction'}
-                        </h4>
-                        
-                        {(t.expenseReason || t.profitReason) && (
-                            <p className="text-[10px] text-zinc-400 italic line-clamp-2 mt-0.5" title={t.profitReason || t.expenseReason}>
-                                "{t.profitReason || t.expenseReason}"
-                            </p>
-                        )}
+                {/* Category line */}
+                {t.category && (
+                    <div className="text-[9px] font-bold text-zinc-400 truncate leading-tight" title={t.category}>
+                        {t.category}
                     </div>
+                )}
 
-                    {/* Monetary Figure */}
-                    <div className="text-right shrink-0">
-                        <div className={`font-mono font-black text-sm sm:text-base leading-none ${isIncome ? 'text-emerald-400' : 'text-red-400'}`}>
+                {/* Primary Card Title & Amount */}
+                <div className="space-y-1">
+                    <h4 
+                        className="text-[11px] sm:text-xs font-black text-white leading-snug line-clamp-2 break-words" 
+                        title={t.profitName || t.expenseName || t.description || 'Transaction'}
+                    >
+                        {t.profitName || t.expenseName || t.description || 'Untitled Entry'}
+                    </h4>
+
+                    {/* Monetary Figure (Embossed shrink-to-fit) */}
+                    <div className="flex items-baseline justify-between gap-1">
+                        <div className={`font-mono font-black text-xs sm:text-sm leading-none tracking-tight ${isIncome ? 'text-emerald-400' : 'text-red-400'}`}>
                             {isIncome ? '+' : '-'}R{amountVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                         </div>
                         {hasProfit && !isDedicatedProfit && (
-                            <div className="text-[9px] font-mono text-emerald-400 font-bold mt-0.5">
-                                +R{Number(t.profitMade).toFixed(0)} profit
-                            </div>
+                            <span className="text-[8px] font-mono text-emerald-400 font-bold bg-emerald-950/70 px-1 py-0.2">
+                                +R{Number(t.profitMade).toFixed(0)}
+                            </span>
                         )}
                     </div>
+
+                    {/* Operational Reason / Purpose Snippet */}
+                    {(t.expenseReason || t.profitReason) && (
+                        <p className="text-[9px] text-zinc-400 italic line-clamp-1 break-words mt-0.5" title={t.profitReason || t.expenseReason}>
+                            "{t.profitReason || t.expenseReason}"
+                        </p>
+                    )}
                 </div>
             </div>
 
-            {/* Bottom Card Attributes & Actions */}
-            <div className="pt-3 mt-2 border-t border-white/[0.06] space-y-2">
-                <div className="flex items-center justify-between text-[10px] text-zinc-400 flex-wrap gap-1.5">
-                    {/* Payment Method Badge */}
-                    <div className="flex items-center gap-1">
-                        <span className="px-1.5 py-0.2 bg-zinc-950 text-zinc-300 font-mono text-[9px] border border-zinc-800">
-                            {t.paymentMethod || 'EFT'}
-                        </span>
-                        {t.paidTo && (
-                            <span className="text-zinc-400 truncate max-w-[110px]" title={t.paidTo}>
-                                &bull; {t.paidTo}
-                            </span>
-                        )}
-                        {player && (
-                            <span className="text-zinc-400 truncate max-w-[110px]" title={player.name}>
-                                &bull; {player.name}
-                            </span>
-                        )}
-                    </div>
+            {/* Bottom Meta & Action Controls */}
+            <div className="pt-2 mt-2 border-t border-white/[0.06] space-y-1.5">
+                {/* Payment method & Vendor row */}
+                <div className="flex items-center justify-between text-[8px] sm:text-[9px] text-zinc-400 gap-1 flex-wrap">
+                    <span className="px-1 py-0.2 bg-zinc-950 text-zinc-300 font-mono border border-zinc-800 shrink-0">
+                        {t.paymentMethod || 'EFT'}
+                    </span>
 
-                    {/* Slip Attachment Pill */}
+                    {/* Vendor or Player */}
+                    <span className="text-zinc-400 truncate max-w-[90px]" title={t.paidTo || player?.name || ''}>
+                        {t.paidTo ? t.paidTo : (player?.name ? player.name : '')}
+                    </span>
+
+                    {/* Verified Slip Badge */}
                     {hasSlip && (
                         <button
-                            onClick={() => onInspect(t)}
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold font-mono bg-amber-950/70 hover:bg-amber-900/80 text-amber-300 border border-amber-500/40 transition-colors cursor-pointer"
-                            title="Click to view slip attachment"
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onInspect(t);
+                            }}
+                            className="inline-flex items-center gap-0.5 px-1 py-0.2 text-[8px] font-bold font-mono bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/40 transition-colors cursor-pointer shrink-0"
+                            title="Slip attached - click to view"
                         >
-                            <ImageIcon className="w-2.5 h-2.5" />
-                            <span>Slip Verified</span>
+                            <ImageIcon className="w-2 h-2" />
+                            <span>Slip</span>
                         </button>
                     )}
                 </div>
 
-                {/* Card Action Controls */}
-                <div className="flex items-center justify-between pt-1 border-t border-zinc-800/40 text-[10px]">
-                    <span className="text-[9px] text-zinc-500 font-mono truncate max-w-[120px]">
-                        Ref: {t.notes || t.receiptNumber || t.id.slice(0, 8)}
+                {/* Compact Action Bar */}
+                <div className="flex items-center justify-between pt-1 border-t border-zinc-800/40 text-[9px] gap-1">
+                    <span className="text-[8px] text-zinc-500 font-mono truncate max-w-[65px]" title={t.notes || t.id}>
+                        {t.notes ? t.notes : `#${t.id.slice(-4)}`}
                     </span>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5 shrink-0">
                         <button
+                            type="button"
                             onClick={() => onInspect(t)}
-                            className="p-1 px-1.5 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors flex items-center gap-1 text-[10px]"
-                            title="Inspect details & receipt"
+                            className="p-1 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors text-[9px] flex items-center"
+                            title="Inspect voucher & receipt details"
                         >
-                            <Eye className="w-3 h-3 text-zinc-400" />
-                            <span>Inspect</span>
+                            <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-zinc-400" />
                         </button>
 
                         <button
+                            type="button"
                             onClick={() => {
                                 if (isDedicatedProfit) {
                                     onEditProfit(t);
@@ -166,19 +167,19 @@ export const BusinessCardTransaction: React.FC<BusinessCardTransactionProps> = (
                                     onEditExpense(t);
                                 }
                             }}
-                            className="p-1 px-1.5 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors flex items-center gap-1 text-[10px]"
+                            className="p-1 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors text-[9px] flex items-center"
                             title="Edit transaction"
                         >
-                            <Edit3 className="w-3 h-3 text-zinc-400" />
-                            <span>Edit</span>
+                            <Edit3 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-zinc-400" />
                         </button>
 
                         <button
+                            type="button"
                             onClick={() => onDelete(t)}
-                            className="p-1 px-1.5 bg-zinc-950 hover:bg-red-950/70 text-zinc-400 hover:text-red-300 transition-colors flex items-center gap-1 text-[10px]"
+                            className="p-1 bg-zinc-950 hover:bg-red-950 text-zinc-500 hover:text-red-400 transition-colors text-[9px] flex items-center"
                             title="Delete transaction"
                         >
-                            <Trash2 className="w-3 h-3 text-zinc-500 hover:text-red-400" />
+                            <Trash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                         </button>
                     </div>
                 </div>

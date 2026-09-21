@@ -112,6 +112,8 @@ function normalizeCollectionItem<T>(collectionName: string, item: any): T {
             profitName: String(item.profitName || item.profitname || item.profit_name || ''),
             profitReason: String(item.profitReason || item.profitreason || item.profit_reason || ''),
             profitDate: String(item.profitDate || item.profitdate || item.profit_date || ''),
+            amountTendered: Number(item.amountTendered ?? item.amounttendered ?? item.amount_tendered ?? 0),
+            changeDue: Number(item.changeDue ?? item.changedue ?? item.change_due ?? 0),
         } as unknown as T;
     }
     if (collectionName === 'raffles') {

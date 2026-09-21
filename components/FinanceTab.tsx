@@ -28,7 +28,11 @@ import {
     Building2,
     FileText,
     CreditCard,
-    CheckCircle2
+    CheckCircle2,
+    TrendingUp,
+    Scale,
+    Layers,
+    ArrowRight
 } from 'lucide-react';
 
 type TimeFilter = 'day' | 'week' | 'month' | '90days' | 'all';
@@ -1169,252 +1173,364 @@ export const FinanceTab: React.FC<{
                     resetExpenseForm();
                 }}
                 title={editingExpense ? 'Edit Business Expense' : 'Log Business Expense & Upload Slip'}
-                maxWidth="xl"
+                maxWidth="5xl"
+                className="!max-w-5xl"
             >
-                <form onSubmit={handleSaveExpense} className="space-y-4 text-xs">
-                    {/* Tactical Presets (Only shown when adding new expense) */}
-                    {!editingExpense && (
-                        <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-[10px] text-zinc-400 uppercase font-black tracking-wider flex items-center gap-1">
-                                    <Sparkles className="w-3 h-3 text-amber-400" /> Quick Tactical Presets:
-                                </span>
-                                <span className="text-[9px] text-zinc-500">Tap to autofill</span>
-                            </div>
-                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
-                                {QUICK_PRESETS.map((preset, idx) => (
-                                    <button
-                                        key={idx}
-                                        type="button"
-                                        onClick={() => handleSelectPreset(preset)}
-                                        className="px-2 py-1 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white text-[10px] border border-zinc-700/60 transition-colors text-left"
-                                    >
-                                        {preset.name}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                {(() => {
+                    const pricePaidNum = parseFloat(expenseFormData.pricePaid) || 0;
+                    const profitMadeNum = parseFloat(expenseFormData.profitMade) || 0;
+                    const netYield = profitMadeNum > 0 ? (profitMadeNum - pricePaidNum) : 0;
+                    const roiPct = pricePaidNum > 0 && profitMadeNum > 0 
+                        ? (((profitMadeNum - pricePaidNum) / pricePaidNum) * 100).toFixed(1) 
+                        : null;
 
-                    {/* Expense Name & Price Paid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                        <div className="sm:col-span-8">
-                            <Input
-                                label="Expense Name / Description *"
-                                value={expenseFormData.expenseName}
-                                onChange={e => setExpenseFormData(prev => ({ ...prev, expenseName: e.target.value }))}
-                                placeholder="e.g. 50L Diesel Generator Refill, Chrono Batteries, Bio-BBs"
-                                required
-                            />
-                        </div>
-                        <div className="sm:col-span-4">
-                            <Input
-                                label="Price Paid (ZAR / R) *"
-                                type="number"
-                                step="0.01"
-                                min="0.01"
-                                value={expenseFormData.pricePaid}
-                                onChange={e => setExpenseFormData(prev => ({ ...prev, pricePaid: e.target.value }))}
-                                placeholder="0.00"
-                                required
-                            />
-                        </div>
-                    </div>
+                    return (
+                        <form onSubmit={handleSaveExpense} className="space-y-3 text-xs">
+                            {/* SIDE-BY-SIDE 3D SQUARE CONTAINERS (NO OUTLINE) */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-stretch">
+                                {/* CONTAINER 1: EXPENSE PARAMETERS & VALUATION */}
+                                <div className="bg-gradient-to-b from-zinc-800/95 via-zinc-850 to-zinc-900 shadow-[0_16px_36px_-6px_rgba(0,0,0,0.85),0_6px_16px_-4px_rgba(0,0,0,0.6)] rounded-none border-0 p-3.5 flex flex-col justify-between space-y-3">
+                                    <div className="space-y-3">
+                                        {/* Container 3D Header */}
+                                        <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-2 h-2 bg-red-500 rounded-none shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                                                <span className="font-mono text-[11px] font-black uppercase tracking-wider text-zinc-200">
+                                                    01. Parameters & Valuation
+                                                </span>
+                                            </div>
+                                            <span className="text-[10px] text-zinc-400 font-mono">Cost Ledger</span>
+                                        </div>
 
-                    {/* Business Justification / Reason */}
-                    <div>
-                        <label className="block text-zinc-300 font-bold mb-1">
-                            Business Justification / Reason *
-                        </label>
-                        <textarea
-                            rows={2}
-                            value={expenseFormData.expenseReason}
-                            onChange={e => setExpenseFormData(prev => ({ ...prev, expenseReason: e.target.value }))}
-                            placeholder="Why was this business expense incurred? (e.g. Fuel replenishment for Saturday night combat ops spotlights on Field Alpha)"
-                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-white placeholder-zinc-500 text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
-                            required
-                        />
-                    </div>
+                                        {/* Quick Tactical Presets */}
+                                        {!editingExpense && (
+                                            <div className="space-y-1">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                                                        <Sparkles className="w-2.5 h-2.5 text-amber-400" /> Presets:
+                                                    </span>
+                                                    <span className="text-[9px] text-zinc-500 font-mono">1-tap autofill</span>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto pr-1">
+                                                    {QUICK_PRESETS.slice(0, 6).map((preset, idx) => (
+                                                        <button
+                                                            key={idx}
+                                                            type="button"
+                                                            onClick={() => handleSelectPreset(preset)}
+                                                            className="px-2 py-0.5 rounded-none border-0 bg-zinc-950/80 hover:bg-zinc-900 text-zinc-300 hover:text-white text-[9px] font-medium shadow-[inset_0_1px_2px_rgba(255,255,255,0.05),0_2px_4px_rgba(0,0,0,0.5)] transition-all active:translate-y-[1px]"
+                                                        >
+                                                            {preset.name}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
 
-                    {/* Category, Payment Method & Vendor */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div>
-                            <label className="block text-zinc-300 font-bold mb-1">Expense Category</label>
-                            <select
-                                value={expenseFormData.category}
-                                onChange={e => setExpenseFormData(prev => ({ ...prev, category: e.target.value }))}
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
-                            >
-                                {EXPENSE_CATEGORIES.map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
-                        </div>
+                                        {/* Expense Name & Price Paid */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                                            <div className="sm:col-span-8 space-y-1">
+                                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-300">
+                                                    Expense Item / Description *
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={expenseFormData.expenseName}
+                                                    onChange={e => setExpenseFormData(prev => ({ ...prev, expenseName: e.target.value }))}
+                                                    placeholder="e.g. 50L Diesel Generator Refill, Chrono Batteries"
+                                                    className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-xs px-2.5 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-red-500/70 transition-all"
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="sm:col-span-4 space-y-1">
+                                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-300">
+                                                    Cost (ZAR) *
+                                                </label>
+                                                <div className="relative">
+                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-red-400">R</span>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0.01"
+                                                        value={expenseFormData.pricePaid}
+                                                        onChange={e => setExpenseFormData(prev => ({ ...prev, pricePaid: e.target.value }))}
+                                                        placeholder="0.00"
+                                                        className="w-full pl-6 pr-2 py-1.5 bg-zinc-950 text-white text-xs font-mono font-bold rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-red-500/70 text-right transition-all"
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
 
-                        <div>
-                            <label className="block text-zinc-300 font-bold mb-1">Payment Method</label>
-                            <select
-                                value={expenseFormData.paymentMethod}
-                                onChange={e => setExpenseFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
-                            >
-                                <option value="EFT">EFT / Bank Transfer</option>
-                                <option value="Card">Card / POS</option>
-                                <option value="Cash">Cash</option>
-                                <option value="Petty Cash">Petty Cash</option>
-                                <option value="Company Account">Company Account</option>
-                            </select>
-                        </div>
+                                        {/* Business Justification */}
+                                        <div className="space-y-1">
+                                            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-300">
+                                                Operational Reason / Purpose *
+                                            </label>
+                                            <textarea
+                                                rows={2}
+                                                value={expenseFormData.expenseReason}
+                                                onChange={e => setExpenseFormData(prev => ({ ...prev, expenseReason: e.target.value }))}
+                                                placeholder="Why was this business expense incurred? (e.g. Fuel replenishment for Saturday night combat ops spotlights)"
+                                                className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-xs p-2 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-red-500/70 transition-all resize-none"
+                                                required
+                                            />
+                                        </div>
 
-                        <div>
-                            <Input
-                                label="Paid To / Vendor"
-                                value={expenseFormData.paidTo}
-                                onChange={e => setExpenseFormData(prev => ({ ...prev, paidTo: e.target.value }))}
-                                placeholder="e.g. BP Garage, Makro, Builders"
-                            />
-                        </div>
-                    </div>
+                                        {/* Category, Payment Method & Vendor */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                            <div className="space-y-1">
+                                                <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                                                    Category
+                                                </label>
+                                                <select
+                                                    value={expenseFormData.category}
+                                                    onChange={e => setExpenseFormData(prev => ({ ...prev, category: e.target.value }))}
+                                                    className="w-full bg-zinc-950 text-white text-xs px-2 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-red-500/70"
+                                                >
+                                                    {EXPENSE_CATEGORIES.map(cat => (
+                                                        <option key={cat} value={cat}>{cat}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
 
-                    {/* Date & Additional Notes */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <Input
-                                label="Date of Expense"
-                                type="date"
-                                value={expenseFormData.date}
-                                onChange={e => setExpenseFormData(prev => ({ ...prev, date: e.target.value }))}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <Input
-                                label="Receipt / Invoice Number / Slip Ref"
-                                value={expenseFormData.notes}
-                                onChange={e => setExpenseFormData(prev => ({ ...prev, notes: e.target.value }))}
-                                placeholder="e.g. INV-98124 or Slip #4012"
-                            />
-                        </div>
-                    </div>
+                                            <div className="space-y-1">
+                                                <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                                                    Payment Method
+                                                </label>
+                                                <select
+                                                    value={expenseFormData.paymentMethod}
+                                                    onChange={e => setExpenseFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                                                    className="w-full bg-zinc-950 text-white text-xs px-2 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-red-500/70"
+                                                >
+                                                    <option value="EFT">EFT / Wire</option>
+                                                    <option value="Card">Card / POS</option>
+                                                    <option value="Cash">Cash at Field</option>
+                                                    <option value="Petty Cash">Petty Cash</option>
+                                                    <option value="Company Account">Company Card</option>
+                                                </select>
+                                            </div>
 
-                    {/* SLIP UPLOAD (OPTIONAL IMAGE OF SLIP) */}
-                    <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-2">
-                        <div className="flex items-center justify-between">
-                            <span className="font-bold text-zinc-200 flex items-center gap-1.5">
-                                <ImageIcon className="w-4 h-4 text-red-400" />
-                                <span>Receipt / Slip Photo (Optional)</span>
-                            </span>
-                            <span className="text-[10px] text-zinc-400">Photo, scanned slip, or image URL</span>
-                        </div>
+                                            <div className="space-y-1">
+                                                <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                                                    Paid To / Vendor
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={expenseFormData.paidTo}
+                                                    onChange={e => setExpenseFormData(prev => ({ ...prev, paidTo: e.target.value }))}
+                                                    placeholder="e.g. BP Garage, Makro"
+                                                    className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-xs px-2 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-red-500/70"
+                                                />
+                                            </div>
+                                        </div>
 
-                        <UrlOrUploadField
-                            label=""
-                            value={expenseFormData.receiptImageUrl}
-                            onChange={(url) => setExpenseFormData(prev => ({ ...prev, receiptImageUrl: url }))}
-                            onRemove={() => setExpenseFormData(prev => ({ ...prev, receiptImageUrl: '' }))}
-                            placeholder="Paste slip URL or click Upload Slip to pick a photo..."
-                        />
-
-                        {expenseFormData.receiptImageUrl && (
-                            <div className="mt-2 p-2 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <img 
-                                        src={expenseFormData.receiptImageUrl} 
-                                        alt="Uploaded slip thumbnail" 
-                                        className="w-10 h-10 object-cover rounded border border-zinc-700" 
-                                    />
-                                    <div>
-                                        <p className="font-semibold text-white text-[11px]">Slip attached successfully</p>
-                                        <p className="text-[9px] text-emerald-400">Ready to save & sync to live database</p>
+                                        {/* Date & Slip Reference */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <div className="space-y-1">
+                                                <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                                                    Expense Date *
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={expenseFormData.date}
+                                                    onChange={e => setExpenseFormData(prev => ({ ...prev, date: e.target.value }))}
+                                                    className="w-full bg-zinc-950 text-white text-xs px-2 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-red-500/70"
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                                                    Receipt / Slip Number
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={expenseFormData.notes}
+                                                    onChange={e => setExpenseFormData(prev => ({ ...prev, notes: e.target.value }))}
+                                                    placeholder="e.g. INV-98124 or Slip #4012"
+                                                    className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-xs px-2 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-red-500/70"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setExpenseFormData(prev => ({ ...prev, receiptImageUrl: '' }))}
-                                    className="text-red-400 hover:text-red-300 text-[10px] font-bold"
-                                >
-                                    Remove
-                                </button>
-                            </div>
-                        )}
-                    </div>
 
-                    {/* PROFIT MADE SECTION (OPTIONAL) */}
-                    <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-900/40 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <span className="font-bold text-emerald-300 flex items-center gap-1.5 text-xs">
-                                <ArrowTrendingUpIcon className="w-4 h-4 text-emerald-400" />
-                                <span>Profits Made / Revenue Generated from this Expense (Optional)</span>
-                            </span>
-                            <span className="text-[10px] text-zinc-400">Track ROI, resale gain or return</span>
-                        </div>
+                                {/* CONTAINER 2: SLIP AUDIT & PROFIT REALIZATION */}
+                                <div className="bg-gradient-to-b from-zinc-800/95 via-zinc-850 to-zinc-900 shadow-[0_16px_36px_-6px_rgba(0,0,0,0.85),0_6px_16px_-4px_rgba(0,0,0,0.6)] rounded-none border-0 p-3.5 flex flex-col justify-between space-y-3">
+                                    <div className="space-y-3">
+                                        {/* Container 3D Header */}
+                                        <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-2 h-2 bg-emerald-400 rounded-none shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                                                <span className="font-mono text-[11px] font-black uppercase tracking-wider text-zinc-200">
+                                                    02. Slip Audit & ROI Linkage
+                                                </span>
+                                            </div>
+                                            <span className="text-[10px] text-zinc-400 font-mono">Proof & Return</span>
+                                        </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <Input
-                                    label="Profit Made Amount (R / ZAR)"
-                                    type="number"
-                                    step="0.01"
-                                    value={expenseFormData.profitMade}
-                                    onChange={e => setExpenseFormData(prev => ({ ...prev, profitMade: e.target.value }))}
-                                    placeholder="e.g. 1500"
-                                />
-                            </div>
-                            <div>
-                                <Input
-                                    label="Profit / Income Name"
-                                    value={expenseFormData.profitName}
-                                    onChange={e => setExpenseFormData(prev => ({ ...prev, profitName: e.target.value }))}
-                                    placeholder="e.g. BB Resale Return / Event Ticket Profit"
-                                />
-                            </div>
-                        </div>
+                                        {/* 3D SQUARE SUB-PANEL: RECEIPT / SLIP PHOTO */}
+                                        <div className="bg-zinc-950/90 shadow-[inset_0_2px_6px_rgba(0,0,0,0.9)] rounded-none border-0 p-2.5 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-zinc-200 flex items-center gap-1.5">
+                                                    <ImageIcon className="w-3.5 h-3.5 text-red-400" />
+                                                    <span>Slip / Invoice Attachment</span>
+                                                </span>
+                                                <span className="text-[9px] text-zinc-500 font-mono">Image or URL</span>
+                                            </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <Input
-                                    label="Profit Reason / Description"
-                                    value={expenseFormData.profitReason}
-                                    onChange={e => setExpenseFormData(prev => ({ ...prev, profitReason: e.target.value }))}
-                                    placeholder="e.g. Sold 30 cartons at skirmish entrance"
-                                />
-                            </div>
-                            <div>
-                                <Input
-                                    label="Profit Realization Date"
-                                    type="date"
-                                    value={expenseFormData.profitDate}
-                                    onChange={e => setExpenseFormData(prev => ({ ...prev, profitDate: e.target.value }))}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                                            <UrlOrUploadField
+                                                label=""
+                                                value={expenseFormData.receiptImageUrl}
+                                                onChange={(url) => setExpenseFormData(prev => ({ ...prev, receiptImageUrl: url }))}
+                                                onRemove={() => setExpenseFormData(prev => ({ ...prev, receiptImageUrl: '' }))}
+                                                placeholder="Paste slip image URL or click to upload..."
+                                            />
 
-                    {/* Submit Actions */}
-                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800">
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => {
-                                setIsExpenseModalOpen(false);
-                                resetExpenseForm();
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            variant="danger"
-                            size="sm"
-                            disabled={isSaving}
-                            className="flex items-center gap-1.5"
-                        >
-                            <Check className="w-4 h-4" />
-                            <span>{isSaving ? 'Saving...' : (editingExpense ? 'Update Expense' : 'Save & Sync Expense')}</span>
-                        </Button>
-                    </div>
-                </form>
+                                            {expenseFormData.receiptImageUrl && (
+                                                <div className="p-2 bg-zinc-900 rounded-none border-0 shadow-[0_4px_10px_rgba(0,0,0,0.6)] flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <img 
+                                                            src={expenseFormData.receiptImageUrl} 
+                                                            alt="Uploaded slip thumbnail" 
+                                                            className="w-9 h-9 object-cover rounded-none shadow-md" 
+                                                        />
+                                                        <div>
+                                                            <p className="font-bold text-white text-[11px]">Slip attached successfully</p>
+                                                            <p className="text-[9px] text-emerald-400 font-mono">Verified for financial audit</p>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setExpenseFormData(prev => ({ ...prev, receiptImageUrl: '' }))}
+                                                        className="text-red-400 hover:text-red-300 text-[10px] font-bold px-2 py-1 rounded-none bg-red-950/40 hover:bg-red-950/70 transition-colors"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* 3D SQUARE SUB-PANEL: PROFIT & REVENUE GENERATED */}
+                                        <div className="bg-gradient-to-b from-emerald-950/30 via-zinc-950/80 to-zinc-950 shadow-[inset_0_2px_6px_rgba(0,0,0,0.9)] rounded-none border-0 p-2.5 space-y-2.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
+                                                    <ArrowTrendingUpIcon className="w-3.5 h-3.5 text-emerald-400" />
+                                                    <span>Profits / Resale Return (Optional)</span>
+                                                </span>
+                                                <span className="text-[9px] text-zinc-400 font-mono">ROI Linkage</span>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                                                <div className="sm:col-span-5 space-y-1">
+                                                    <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-300">
+                                                        Profit Amount (ZAR)
+                                                    </label>
+                                                    <div className="relative">
+                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-emerald-400">R</span>
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            value={expenseFormData.profitMade}
+                                                            onChange={e => setExpenseFormData(prev => ({ ...prev, profitMade: e.target.value }))}
+                                                            placeholder="0.00"
+                                                            className="w-full pl-6 pr-2 py-1.5 bg-zinc-950 text-white text-xs font-mono font-bold rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-emerald-500/70 text-right"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="sm:col-span-7 space-y-1">
+                                                    <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-300">
+                                                        Profit / Income Title
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={expenseFormData.profitName}
+                                                        onChange={e => setExpenseFormData(prev => ({ ...prev, profitName: e.target.value }))}
+                                                        placeholder="e.g. Bio-BB Resale Markup"
+                                                        className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-xs px-2 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-emerald-500/70"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                                                <div className="sm:col-span-7 space-y-1">
+                                                    <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                                                        Profit Origin / Reason
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={expenseFormData.profitReason}
+                                                        onChange={e => setExpenseFormData(prev => ({ ...prev, profitReason: e.target.value }))}
+                                                        placeholder="e.g. Sold 30 cartons at entrance"
+                                                        className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-xs px-2 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-emerald-500/70"
+                                                    />
+                                                </div>
+                                                <div className="sm:col-span-5 space-y-1">
+                                                    <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                                                        Realized Date
+                                                    </label>
+                                                    <input
+                                                        type="date"
+                                                        value={expenseFormData.profitDate}
+                                                        onChange={e => setExpenseFormData(prev => ({ ...prev, profitDate: e.target.value }))}
+                                                        className="w-full bg-zinc-950 text-white text-xs px-2 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-emerald-500/70"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Live 3D ROI Preview Pill */}
+                                            {profitMadeNum > 0 && (
+                                                <div className="p-2 bg-zinc-900/90 rounded-none border-0 shadow-[0_4px_12px_rgba(0,0,0,0.8)] flex items-center justify-between text-[11px] font-mono">
+                                                    <span className="text-zinc-400">Net Return:</span>
+                                                    <span className={`font-bold ${netYield >= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                                        {netYield >= 0 ? `+R${netYield.toFixed(2)}` : `-R${Math.abs(netYield).toFixed(2)}`}
+                                                        {roiPct && ` (${roiPct}% ROI)`}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* SUBMIT ACTIONS & LIVE METRIC STRIP */}
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-2 border-t border-white/[0.06]">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-zinc-400 font-mono">Recorded Outflow:</span>
+                                    <span className="px-2 py-0.5 rounded-none bg-red-950/60 text-red-300 font-mono font-bold text-xs shadow-inner">
+                                        R{pricePaidNum.toFixed(2)}
+                                    </span>
+                                    {profitMadeNum > 0 && (
+                                        <span className="px-2 py-0.5 rounded-none bg-emerald-950/60 text-emerald-300 font-mono font-bold text-xs shadow-inner">
+                                            Return: +R{profitMadeNum.toFixed(2)}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsExpenseModalOpen(false);
+                                            resetExpenseForm();
+                                        }}
+                                        className="px-3 py-1.5 rounded-none border-0 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-all shadow-md active:translate-y-[1px]"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isSaving}
+                                        className="px-4 py-1.5 rounded-none border-0 bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all shadow-[0_4px_14px_rgba(239,68,68,0.4)] flex items-center gap-1.5 active:translate-y-[1px]"
+                                    >
+                                        <Check className="w-3.5 h-3.5" />
+                                        <span>{isSaving ? 'Saving...' : (editingExpense ? 'Update Expense' : 'Save & Sync Expense')}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    );
+                })()}
             </Modal>
 
             {/* ========================================================= */}
@@ -1427,179 +1543,343 @@ export const FinanceTab: React.FC<{
                     resetProfitForm();
                 }}
                 title={editingProfit ? 'Edit Profit & Returns Entry' : 'Log Profit & Revenue Return'}
-                maxWidth="xl"
+                maxWidth="5xl"
+                className="!max-w-5xl"
             >
-                <form onSubmit={handleSaveProfit} className="space-y-4 text-xs">
-                    {/* Quick Profit Presets */}
-                    {!editingProfit && (
-                        <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-[10px] text-zinc-400 uppercase font-black tracking-wider flex items-center gap-1">
-                                    <Sparkles className="w-3 h-3 text-emerald-400" /> Quick Profit Presets:
-                                </span>
-                                <span className="text-[9px] text-zinc-500">Tap to autofill profit reason & category</span>
+                {(() => {
+                    const grossInflow = parseFloat(profitFormData.profitMade) || 0;
+                    const sourceCost = parseFloat(profitFormData.sourceCost) || 0;
+                    const netMargin = grossInflow - sourceCost;
+                    const marginPercent = sourceCost > 0
+                        ? ((netMargin / sourceCost) * 100).toFixed(1)
+                        : (grossInflow > 0 ? '100.0' : '0.0');
+
+                    return (
+                        <form onSubmit={handleSaveProfit} className="space-y-3 text-xs">
+                            {/* SIDE-BY-SIDE 3D SQUARE CONTAINERS (NO OUTLINE) */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-stretch">
+                                {/* CONTAINER 1: REVENUE INFLOW & SOURCE */}
+                                <div className="bg-gradient-to-b from-zinc-800/95 via-zinc-850 to-zinc-900 shadow-[0_16px_36px_-6px_rgba(0,0,0,0.85),0_6px_16px_-4px_rgba(0,0,0,0.6)] rounded-none border-0 p-3.5 flex flex-col justify-between space-y-3">
+                                    <div className="space-y-3">
+                                        {/* Container 3D Header */}
+                                        <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-2 h-2 bg-emerald-400 rounded-none shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                                                <span className="font-mono text-[11px] font-black uppercase tracking-wider text-zinc-200">
+                                                    01. Revenue Inflow & Source
+                                                </span>
+                                            </div>
+                                            <span className="text-[10px] text-zinc-400 font-mono">Realized Return</span>
+                                        </div>
+
+                                        {/* Quick Profit Presets */}
+                                        {!editingProfit && (
+                                            <div className="space-y-1">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                                                        <Sparkles className="w-2.5 h-2.5 text-emerald-400" /> Presets:
+                                                    </span>
+                                                    <span className="text-[9px] text-zinc-500 font-mono">1-tap autofill</span>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto pr-1">
+                                                    {PROFIT_PRESETS.slice(0, 6).map((preset, idx) => (
+                                                        <button
+                                                            key={idx}
+                                                            type="button"
+                                                            onClick={() => handleSelectProfitPreset(preset)}
+                                                            className="px-2 py-0.5 rounded-none border-0 bg-emerald-950/50 hover:bg-emerald-900/70 text-emerald-300 hover:text-white text-[9px] font-medium shadow-[inset_0_1px_2px_rgba(255,255,255,0.05),0_2px_4px_rgba(0,0,0,0.5)] transition-all active:translate-y-[1px]"
+                                                        >
+                                                            {preset.name}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Profit Name & Profit Amount */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                                            <div className="sm:col-span-8 space-y-1">
+                                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-300">
+                                                    Profit / Return Title *
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={profitFormData.profitName}
+                                                    onChange={e => setProfitFormData(prev => ({ ...prev, profitName: e.target.value }))}
+                                                    placeholder="e.g. Bulk BB Resale Profit, Gear Resale Return"
+                                                    className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-xs px-2.5 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-emerald-500/70 transition-all"
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="sm:col-span-4 space-y-1">
+                                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-300">
+                                                    Profit (ZAR) *
+                                                </label>
+                                                <div className="relative">
+                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-emerald-400">R</span>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0.01"
+                                                        value={profitFormData.profitMade}
+                                                        onChange={e => setProfitFormData(prev => ({ ...prev, profitMade: e.target.value }))}
+                                                        placeholder="0.00"
+                                                        className="w-full pl-6 pr-2 py-1.5 bg-zinc-950 text-white text-xs font-mono font-bold rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-emerald-500/70 text-right transition-all"
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Profit Reason & Category */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                                            <div className="sm:col-span-7 space-y-1">
+                                                <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-300">
+                                                    Reason / Origin Description
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={profitFormData.profitReason}
+                                                    onChange={e => setProfitFormData(prev => ({ ...prev, profitReason: e.target.value }))}
+                                                    placeholder="e.g. Realized margin from weekend 0.25g bio-BB ammo"
+                                                    className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-xs px-2 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-emerald-500/70"
+                                                />
+                                            </div>
+
+                                            <div className="sm:col-span-5 space-y-1">
+                                                <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-300">
+                                                    Category
+                                                </label>
+                                                <select
+                                                    value={profitFormData.category}
+                                                    onChange={e => setProfitFormData(prev => ({ ...prev, category: e.target.value }))}
+                                                    className="w-full bg-zinc-950 text-white text-xs px-2 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-emerald-500/70"
+                                                >
+                                                    <option value="Resale & Equipment Profit">Resale & Equipment</option>
+                                                    <option value="Ammo & Consumables Resale">Ammo Resale</option>
+                                                    <option value="Rental Asset Profit">Rental Asset Return</option>
+                                                    <option value="Event Ticket Surplus">Event Gate Surplus</option>
+                                                    <option value="Canteen & Catering Margin">Canteen & Snacks</option>
+                                                    <option value="Sponsorship & Partner Payout">Sponsorship Payout</option>
+                                                    <option value="General Profit & Return">General Profit</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {/* Inflow Method, Vendor/Payer & Date */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                            <div className="space-y-1">
+                                                <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                                                    Inflow Method
+                                                </label>
+                                                <select
+                                                    value={profitFormData.paymentMethod}
+                                                    onChange={e => setProfitFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                                                    className="w-full bg-zinc-950 text-white text-xs px-2 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-emerald-500/70"
+                                                >
+                                                    <option value="EFT">EFT / Wire</option>
+                                                    <option value="Cash">Cash at Field</option>
+                                                    <option value="Card">Card / POS</option>
+                                                    <option value="SnapScan">SnapScan / QR</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                                                    Vendor / Payer
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={profitFormData.paidTo}
+                                                    onChange={e => setProfitFormData(prev => ({ ...prev, paidTo: e.target.value }))}
+                                                    placeholder="e.g. Counter, Player"
+                                                    className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-xs px-2 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-emerald-500/70"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                                                    Realization Date *
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={profitFormData.date}
+                                                    onChange={e => setProfitFormData(prev => ({ ...prev, date: e.target.value }))}
+                                                    className="w-full bg-zinc-950 text-white text-xs px-2 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-emerald-500/70"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Internal Reference / Notes */}
+                                        <div className="space-y-1">
+                                            <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                                                Internal Reference / Batch Notes
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={profitFormData.notes}
+                                                onChange={e => setProfitFormData(prev => ({ ...prev, notes: e.target.value }))}
+                                                placeholder="e.g. Batch #42 surplus reconciliation"
+                                                className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-xs px-2.5 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-emerald-500/70"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* CONTAINER 2: ASSET RECONCILIATION & 3D MARGIN AUDIT */}
+                                <div className="bg-gradient-to-b from-zinc-800/95 via-zinc-850 to-zinc-900 shadow-[0_16px_36px_-6px_rgba(0,0,0,0.85),0_6px_16px_-4px_rgba(0,0,0,0.6)] rounded-none border-0 p-3.5 flex flex-col justify-between space-y-3">
+                                    <div className="space-y-3">
+                                        {/* Container 3D Header */}
+                                        <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-2 h-2 bg-cyan-400 rounded-none shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+                                                <span className="font-mono text-[11px] font-black uppercase tracking-wider text-zinc-200">
+                                                    02. Asset Cost & 3D Margin Audit
+                                                </span>
+                                            </div>
+                                            <span className="text-[10px] text-zinc-400 font-mono">COGS & Margin</span>
+                                        </div>
+
+                                        {/* 3D SQUARE SUB-PANEL: ORIGINATING ASSET / UNDERLYING COST */}
+                                        <div className="bg-zinc-950/90 shadow-[inset_0_2px_6px_rgba(0,0,0,0.9)] rounded-none border-0 p-2.5 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                                                    <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                                                    <span>Originating Asset / COGS (Optional)</span>
+                                                </span>
+                                                <span className="text-[9px] text-zinc-500 font-mono">Cost Basis</span>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                                                <div className="sm:col-span-7 space-y-1">
+                                                    <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                                                        Source Item / Purchase Name
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={profitFormData.sourceExpenseName}
+                                                        onChange={e => setProfitFormData(prev => ({ ...prev, sourceExpenseName: e.target.value }))}
+                                                        placeholder="e.g. Bio-BB 0.25g Bulk Restock"
+                                                        className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-xs px-2 py-1.5 rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-cyan-500/70"
+                                                    />
+                                                </div>
+
+                                                <div className="sm:col-span-5 space-y-1">
+                                                    <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                                                        Cost Price (ZAR)
+                                                    </label>
+                                                    <div className="relative">
+                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-zinc-500">R</span>
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            value={profitFormData.sourceCost}
+                                                            onChange={e => setProfitFormData(prev => ({ ...prev, sourceCost: e.target.value }))}
+                                                            placeholder="0.00"
+                                                            className="w-full pl-6 pr-2 py-1.5 bg-zinc-950 text-white text-xs font-mono font-bold rounded-none border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85)] focus:outline-none focus:ring-1 focus:ring-cyan-500/70 text-right"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 3D SQUARE SUB-PANEL: LIVE 3D METRIC CUBE */}
+                                        <div className="bg-gradient-to-br from-zinc-900 via-zinc-950 to-black shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.06)] rounded-none border-0 p-3 space-y-2.5">
+                                            <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.06]">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                                                    <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                                                    <span>Live 3D Financial Return Metric</span>
+                                                </span>
+                                                <span className="text-[9px] text-zinc-400 font-mono">Real-time P&L</span>
+                                            </div>
+
+                                            {/* 4-Block Metric Matrix */}
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-center">
+                                                <div className="p-2 bg-zinc-950/80 rounded-none shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)]">
+                                                    <span className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">Gross Return</span>
+                                                    <span className="font-mono font-black text-xs text-white">R{grossInflow.toFixed(2)}</span>
+                                                </div>
+                                                <div className="p-2 bg-zinc-950/80 rounded-none shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)]">
+                                                    <span className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">COGS Cost</span>
+                                                    <span className="font-mono font-bold text-xs text-red-400">R{sourceCost.toFixed(2)}</span>
+                                                </div>
+                                                <div className="p-2 bg-zinc-950/80 rounded-none shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)]">
+                                                    <span className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">Net Profit</span>
+                                                    <span className={`font-mono font-black text-xs ${netMargin >= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                                        R{netMargin.toFixed(2)}
+                                                    </span>
+                                                </div>
+                                                <div className="p-2 bg-zinc-950/80 rounded-none shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)]">
+                                                    <span className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">Markup / ROI</span>
+                                                    <span className="font-mono font-black text-xs text-cyan-300">
+                                                        {sourceCost > 0 ? `+${marginPercent}%` : (grossInflow > 0 ? '100% Inflow' : '0%')}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Performance Tier Pill */}
+                                            <div className="p-2 bg-zinc-950/90 rounded-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.9)] flex items-center justify-between text-[10px]">
+                                                <span className="text-zinc-400 font-mono">Performance Tier:</span>
+                                                <span className="font-bold text-emerald-400 font-mono">
+                                                    {grossInflow === 0 
+                                                        ? 'Awaiting amount...' 
+                                                        : sourceCost === 0 
+                                                            ? '⚡ 100% Direct Cash Return (No Cost Basis)' 
+                                                            : netMargin > 0 
+                                                                ? `💎 High-Yield Resale Return (+${marginPercent}%)` 
+                                                                : netMargin === 0 
+                                                                    ? '⚖️ Break-Even Return' 
+                                                                    : '⚠️ Negative Margin Incurred'}
+                                                </span>
+                                            </div>
+
+                                            <p className="text-[9px] text-zinc-500 font-mono leading-relaxed">
+                                                Saving directly synchronizes this entry to the live database, updating your company revenue ledger and P&L financial reports.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
-                                {PROFIT_PRESETS.map((preset, idx) => (
+
+                            {/* SUBMIT ACTIONS & NET MARGIN BADGE */}
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-2 border-t border-white/[0.06]">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-zinc-400 font-mono">Net Profit Addition:</span>
+                                    <span className="px-2 py-0.5 rounded-none bg-emerald-950/60 text-emerald-300 font-mono font-bold text-xs shadow-inner">
+                                        +R{netMargin.toFixed(2)}
+                                    </span>
+                                    {sourceCost > 0 && (
+                                        <span className="text-[9px] text-zinc-400 font-mono">
+                                            (After R{sourceCost.toFixed(2)} cost basis)
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                                     <button
-                                        key={idx}
                                         type="button"
-                                        onClick={() => handleSelectProfitPreset(preset)}
-                                        className="px-2 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 hover:text-white text-[10px] border border-emerald-500/30 transition-colors text-left"
+                                        onClick={() => {
+                                            setIsProfitModalOpen(false);
+                                            resetProfitForm();
+                                        }}
+                                        className="px-3 py-1.5 rounded-none border-0 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-all shadow-md active:translate-y-[1px]"
                                     >
-                                        {preset.name}
+                                        Cancel
                                     </button>
-                                ))}
+                                    <button
+                                        type="submit"
+                                        disabled={isSaving}
+                                        className="px-4 py-1.5 rounded-none border-0 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-[0_4px_14px_rgba(16,185,129,0.4)] flex items-center gap-1.5 active:translate-y-[1px]"
+                                    >
+                                        <Check className="w-3.5 h-3.5" />
+                                        <span>{isSaving ? 'Saving...' : (editingProfit ? 'Update Profit Entry' : 'Save & Record Profit')}</span>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    )}
-
-                    {/* Profit Name & Profit Amount */}
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                        <div className="sm:col-span-8">
-                            <Input
-                                label="Profit / Return Title *"
-                                value={profitFormData.profitName}
-                                onChange={e => setProfitFormData(prev => ({ ...prev, profitName: e.target.value }))}
-                                placeholder="e.g. Bulk BB Resale Profit, Gear Resale Return, Event Gate Surplus"
-                                required
-                            />
-                        </div>
-                        <div className="sm:col-span-4">
-                            <Input
-                                label="Profit Amount (R / ZAR) *"
-                                type="number"
-                                step="0.01"
-                                min="0.01"
-                                value={profitFormData.profitMade}
-                                onChange={e => setProfitFormData(prev => ({ ...prev, profitMade: e.target.value }))}
-                                placeholder="e.g. 1250"
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    {/* Profit Reason & Category */}
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                        <div className="sm:col-span-7">
-                            <Input
-                                label="Profit Reason / Origin Description"
-                                value={profitFormData.profitReason}
-                                onChange={e => setProfitFormData(prev => ({ ...prev, profitReason: e.target.value }))}
-                                placeholder="e.g. Realized margin from weekend 0.25g bio-BB ammo resale"
-                            />
-                        </div>
-                        <div className="sm:col-span-5">
-                            <label className="block text-[10px] text-zinc-400 uppercase font-black tracking-wider mb-1">
-                                Profit Category
-                            </label>
-                            <select
-                                value={profitFormData.category}
-                                onChange={e => setProfitFormData(prev => ({ ...prev, category: e.target.value }))}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500"
-                            >
-                                <option value="Resale & Equipment Profit">Resale & Equipment Profit</option>
-                                <option value="Ammo & Consumables Resale">Ammo & Consumables Resale</option>
-                                <option value="Rental Asset Profit">Rental Asset Profit</option>
-                                <option value="Event Ticket Surplus">Event Ticket Surplus</option>
-                                <option value="Canteen & Catering Margin">Canteen & Catering Margin</option>
-                                <option value="Sponsorship & Partner Payout">Sponsorship & Partner Payout</option>
-                                <option value="General Profit & Return">General Profit & Return</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Optional Underlying Cost / Originating Asset */}
-                    <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 space-y-2.5">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-zinc-400 uppercase font-black tracking-wider">
-                                Associated Asset / Source Details (Optional)
-                            </span>
-                            <span className="text-[10px] text-zinc-500">Helps track gross origin & vendor</span>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <Input
-                                label="Source Item / Purchase Name"
-                                value={profitFormData.sourceExpenseName}
-                                onChange={e => setProfitFormData(prev => ({ ...prev, sourceExpenseName: e.target.value }))}
-                                placeholder="e.g. Bio-BB 0.25g Bulk Carton (Supplier Restock)"
-                            />
-                            <Input
-                                label="Original Cost Price (R) (If applicable)"
-                                type="number"
-                                step="0.01"
-                                value={profitFormData.sourceCost}
-                                onChange={e => setProfitFormData(prev => ({ ...prev, sourceCost: e.target.value }))}
-                                placeholder="e.g. 800"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Realization Date & Channel Details */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <Input
-                            label="Realization Date *"
-                            type="date"
-                            value={profitFormData.date}
-                            onChange={e => setProfitFormData(prev => ({ ...prev, date: e.target.value }))}
-                            required
-                        />
-                        <div>
-                            <label className="block text-[10px] text-zinc-400 uppercase font-black tracking-wider mb-1">
-                                Inflow Method
-                            </label>
-                            <select
-                                value={profitFormData.paymentMethod}
-                                onChange={e => setProfitFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500"
-                            >
-                                <option value="EFT">EFT / Wire Transfer</option>
-                                <option value="Cash">Cash at Field</option>
-                                <option value="Card">Card Swipe / POS</option>
-                                <option value="SnapScan">SnapScan / QR Pay</option>
-                            </select>
-                        </div>
-                        <Input
-                            label="Vendor / Payer / Source"
-                            value={profitFormData.paidTo}
-                            onChange={e => setProfitFormData(prev => ({ ...prev, paidTo: e.target.value }))}
-                            placeholder="e.g. Registration Counter, Player Consignment"
-                        />
-                    </div>
-
-                    {/* Extra Notes */}
-                    <Input
-                        label="Internal Reference / Notes"
-                        value={profitFormData.notes}
-                        onChange={e => setProfitFormData(prev => ({ ...prev, notes: e.target.value }))}
-                        placeholder="e.g. Batch #42 surplus reconciliation"
-                    />
-
-                    {/* Submit Actions */}
-                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800">
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => {
-                                setIsProfitModalOpen(false);
-                                resetProfitForm();
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            variant="primary"
-                            size="sm"
-                            disabled={isSaving}
-                            className="!bg-emerald-600 hover:!bg-emerald-500 !text-white flex items-center gap-1.5"
-                        >
-                            <Check className="w-4 h-4" />
-                            <span>{isSaving ? 'Saving...' : (editingProfit ? 'Update Profit Entry' : 'Save & Record Profit')}</span>
-                        </Button>
-                    </div>
-                </form>
+                        </form>
+                    );
+                })()}
             </Modal>
 
             {/* ========================================================= */}

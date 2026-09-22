@@ -173,6 +173,22 @@ const InventoryEditorModal: React.FC<{
                     />
                     <label htmlFor="isRental" className="ml-2 text-xs text-gray-300">Available for Rental Gear Hires</label>
                 </div>
+
+                {(formData.isRental || isRentalName(formData.name)) && (
+                    <div className="p-3 rounded-xl bg-blue-950/20 border border-blue-500/30 space-y-2">
+                        <label className="block text-xs font-bold text-blue-300 flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                            + Add What Is Included with Rental (e.g. AEG Rifle, Mag, Battery, Mask)
+                        </label>
+                        <textarea
+                            value={formData.rentalIncludes || ''}
+                            onChange={e => setFormData(f => ({ ...f, rentalIncludes: e.target.value }))}
+                            placeholder="List included items for Rental 1, 2, 3 etc. (e.g., 1x M4 Rifle, 1x High-Cap Magazine, 1x 9.6V Battery, 1x Full Face Mask)"
+                            rows={2}
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                    </div>
+                )}
             </div>
             <div className="mt-4">
                 <Button className="w-full !py-2 text-xs" onClick={handleSaveClick}>Save Item</Button>
@@ -226,6 +242,11 @@ const InventoryItemCard: React.FC<{
                 <p className="text-[10px] text-zinc-400 mb-1 truncate">{item.category}</p>
                 {item.description && (
                     <p className="text-[10px] text-zinc-500 line-clamp-1 mb-2">{item.description}</p>
+                )}
+                {item.rentalIncludes && (
+                    <div className="mb-2 p-1.5 rounded-lg bg-blue-950/30 border border-blue-900/50 text-[10px] text-blue-200">
+                        <span className="font-bold text-blue-300">Includes:</span> {item.rentalIncludes}
+                    </div>
                 )}
             </div>
 

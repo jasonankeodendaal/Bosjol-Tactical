@@ -658,6 +658,9 @@ ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS available_in_shop BOOLEAN 
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "inShop" BOOLEAN DEFAULT false;
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS inshop BOOLEAN DEFAULT false;
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS in_shop BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "rentalIncludes" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS rentalincludes TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS rental_includes TEXT DEFAULT '';
 
 -- Row Level Security & Full Access for inventory
 ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
@@ -2464,6 +2467,9 @@ ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS available_in_shop BOOLEAN 
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "inShop" BOOLEAN DEFAULT false;
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS inshop BOOLEAN DEFAULT false;
 ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS in_shop BOOLEAN DEFAULT false;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "rentalIncludes" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS rentalincludes TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS rental_includes TEXT DEFAULT '';
 
 -- 3. Row Level Security & Permissions (Fixes silent write rejections)
 ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;

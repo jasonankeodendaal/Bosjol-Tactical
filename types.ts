@@ -179,6 +179,7 @@ export interface InventoryItem {
   purchasePrice?: number;
   reorderLevel?: number;
   warrantyInfo?: string;
+  rentalIncludes?: string; // What is included with rental 1, 2, 3 etc.
 }
 
 export interface Signup {

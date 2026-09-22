@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { GameEvent, Player, InventoryItem, Signup } from '../types';
 import { X, UserPlus, Phone, Shield, Crosshair, Check, AlertCircle, DollarSign, FileText } from 'lucide-react';
 

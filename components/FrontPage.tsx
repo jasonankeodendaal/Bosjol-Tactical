@@ -205,7 +205,7 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
     // Handle live audio changes & audio removal
     useEffect(() => {
         if (audioRef.current) {
-            if (loginAudioUrl && loginAudioUrl.trim() !== '') {
+            if (loginAudioUrl && loginAudioUrl.trim() !== '' && !document.hidden && document.visibilityState === 'visible') {
                 audioRef.current.volume = 0.5;
                 audioRef.current.muted = isMuted;
                 audioRef.current.play().catch(() => {
@@ -216,6 +216,51 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
                 audioRef.current.currentTime = 0;
             }
         }
+    }, [loginAudioUrl, isMuted]);
+
+    // Background App Exit / Visibility listener for Welcome Page Audio
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!audioRef.current) return;
+            if (document.hidden || document.visibilityState === 'hidden') {
+                audioRef.current.pause();
+            } else if (document.visibilityState === 'visible') {
+                const currentMuted = localStorage.getItem('app_audio_muted') === 'true';
+                if (!currentMuted && loginAudioUrl && loginAudioUrl.trim() !== '') {
+                    audioRef.current.volume = 0.5;
+                    audioRef.current.muted = false;
+                    audioRef.current.play().catch(() => {});
+                }
+            }
+        };
+
+        const handleBlur = () => {
+            if (audioRef.current && !audioRef.current.paused) {
+                audioRef.current.pause();
+            }
+        };
+
+        const handleFocus = () => {
+            if (!audioRef.current) return;
+            const currentMuted = localStorage.getItem('app_audio_muted') === 'true';
+            if (!currentMuted && loginAudioUrl && loginAudioUrl.trim() !== '' && document.visibilityState === 'visible') {
+                audioRef.current.volume = 0.5;
+                audioRef.current.muted = false;
+                audioRef.current.play().catch(() => {});
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('blur', handleBlur);
+        window.addEventListener('focus', handleFocus);
+        window.addEventListener('pagehide', handleBlur);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('blur', handleBlur);
+            window.removeEventListener('focus', handleFocus);
+            window.removeEventListener('pagehide', handleBlur);
+        };
     }, [loginAudioUrl]);
 
     useEffect(() => {

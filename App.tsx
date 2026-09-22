@@ -301,12 +301,16 @@ const AppContent: React.FC = () => {
     const hasPerformedReset = useRef(false); // Prevent multiple runs in one session
     const sessionRef = useRef<{ id: string | null }>({ id: null });
 
-    // FIX: Define playAudio function
+    // Define playAudio function with visibility check
     const playAudio = useCallback(() => {
+        if (document.hidden || document.visibilityState === 'hidden') {
+            return;
+        }
+        const isMuted = localStorage.getItem('app_audio_muted') === 'true';
+        if (isMuted) return;
+
         if (audioRef.current) {
             audioRef.current.play().catch(e => {
-                // Autoplay was prevented. This is expected behavior in some browsers.
-                // We'll let the user interact to enable audio.
                 console.warn("Audio autoplay prevented:", e);
             });
         }
@@ -649,6 +653,47 @@ const AppContent: React.FC = () => {
         companyDetails.adminDashboardAudioUrl, 
         playAudio
     ]);
+
+    // Immediately stop background music when exiting app or running in background
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!audioRef.current) return;
+            if (document.hidden || document.visibilityState === 'hidden') {
+                audioRef.current.pause();
+            } else if (document.visibilityState === 'visible') {
+                const isMuted = localStorage.getItem('app_audio_muted') === 'true';
+                if (!isMuted && audioRef.current.src && audioRef.current.paused && isAuthenticated && !showFrontPage) {
+                    playAudio();
+                }
+            }
+        };
+
+        const handleBlur = () => {
+            if (audioRef.current && !audioRef.current.paused) {
+                audioRef.current.pause();
+            }
+        };
+
+        const handleFocus = () => {
+            if (!audioRef.current) return;
+            const isMuted = localStorage.getItem('app_audio_muted') === 'true';
+            if (!isMuted && audioRef.current.src && audioRef.current.paused && document.visibilityState === 'visible' && isAuthenticated && !showFrontPage) {
+                playAudio();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('blur', handleBlur);
+        window.addEventListener('focus', handleFocus);
+        window.addEventListener('pagehide', handleBlur);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('blur', handleBlur);
+            window.removeEventListener('focus', handleFocus);
+            window.removeEventListener('pagehide', handleBlur);
+        };
+    }, [playAudio, isAuthenticated, showFrontPage]);
 
     const onPlayerUpdate = async (player: Player) => {
         await updateDoc('players', player);

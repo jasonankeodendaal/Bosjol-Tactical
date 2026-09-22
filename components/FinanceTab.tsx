@@ -63,6 +63,13 @@ export const EXPENSE_CATEGORIES = [
     'Armory Hardware & Tech Parts',
     'Marketing, Media & Player Patches',
     'Vehicle & Logistics Fuel',
+    'Insurance & Legal Compliance',
+    'Software, Web & IT Infrastructure',
+    'Trophies, Medals & Player Awards',
+    'Pyrotechnics & Smoke Supplies',
+    'Target Systems & Electronic Props',
+    'Cleaning & Field Sanitation',
+    'Utility Bills (Water/Electricity)',
     'General Operating Expense'
 ];
 
@@ -74,6 +81,11 @@ export const PROFIT_CATEGORIES = [
     'Canteen & Catering Margin',
     'Sponsorship & Partner Payout',
     'Custom Armory & Tech Services',
+    'Private Field Booking / Corporate Event',
+    'Merchandise & Branded Patch Sales',
+    'Chrono Tuning & Gun Repairs',
+    'Storage & Locker Rental Fees',
+    'Raffle & Prize Drawing Margin',
     'General Profit & Return'
 ];
 
@@ -187,6 +199,55 @@ export const FinanceTab: React.FC<{
     const [locationFilter, setLocationFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState<string>('');
+
+    // Custom Categories State
+    const [customExpenseCategories, setCustomExpenseCategories] = useState<string[]>([]);
+    const [customProfitCategories, setCustomProfitCategories] = useState<string[]>([]);
+    const [isCreatingExpenseCategory, setIsCreatingExpenseCategory] = useState<boolean>(false);
+    const [newExpenseCategoryName, setNewExpenseCategoryName] = useState<string>('');
+    const [isCreatingProfitCategory, setIsCreatingProfitCategory] = useState<boolean>(false);
+    const [newProfitCategoryName, setNewProfitCategoryName] = useState<string>('');
+
+    // Active Category Lists (incorporating default + custom + existing database transactions)
+    const allExpenseCategoriesList = useMemo(() => {
+        const set = new Set([...EXPENSE_CATEGORIES, ...customExpenseCategories]);
+        transactions.forEach(t => {
+            if (t.category && (t.type === 'Expense' || (t.amount && t.amount > 0))) {
+                set.add(t.category);
+            }
+        });
+        return Array.from(set);
+    }, [customExpenseCategories, transactions]);
+
+    const allProfitCategoriesList = useMemo(() => {
+        const set = new Set([...PROFIT_CATEGORIES, ...customProfitCategories]);
+        transactions.forEach(t => {
+            if (t.category && (t.profitMade && Number(t.profitMade) > 0)) {
+                set.add(t.category);
+            }
+        });
+        return Array.from(set);
+    }, [customProfitCategories, transactions]);
+
+    const handleAddCustomExpenseCategory = () => {
+        const trimmed = newExpenseCategoryName.trim();
+        if (trimmed) {
+            setCustomExpenseCategories(prev => Array.from(new Set([...prev, trimmed])));
+            setExpenseFormData(prev => ({ ...prev, category: trimmed }));
+            setNewExpenseCategoryName('');
+            setIsCreatingExpenseCategory(false);
+        }
+    };
+
+    const handleAddCustomProfitCategory = () => {
+        const trimmed = newProfitCategoryName.trim();
+        if (trimmed) {
+            setCustomProfitCategories(prev => Array.from(new Set([...prev, trimmed])));
+            setProfitFormData(prev => ({ ...prev, category: trimmed }));
+            setNewProfitCategoryName('');
+            setIsCreatingProfitCategory(false);
+        }
+    };
 
     // Modal states
     const [isPrinting, setIsPrinting] = useState(false);
@@ -742,12 +803,12 @@ export const FinanceTab: React.FC<{
     // All active categories for dropdown selection
     const allDropdownCategories = useMemo(() => {
         if (viewCategory === 'expenses') {
-            return EXPENSE_CATEGORIES;
+            return allExpenseCategoriesList;
         } else if (viewCategory === 'profits') {
-            return PROFIT_CATEGORIES;
+            return allProfitCategoriesList;
         }
-        return Array.from(new Set([...EXPENSE_CATEGORIES, ...PROFIT_CATEGORIES]));
-    }, [viewCategory]);
+        return Array.from(new Set([...allExpenseCategoriesList, ...allProfitCategoriesList]));
+    }, [viewCategory, allExpenseCategoriesList, allProfitCategoriesList]);
 
     // Category Breakdown Counts & Sums for quick interactive filter pills
     const categoryStats = useMemo(() => {
@@ -1403,18 +1464,63 @@ export const FinanceTab: React.FC<{
                                         {/* Category, Payment Method & Vendor */}
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
                                             <div className="space-y-0.5">
-                                                <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">
-                                                    Category
-                                                </label>
+                                                <div className="flex items-center justify-between">
+                                                    <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">
+                                                        Category
+                                                    </label>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsCreatingExpenseCategory(prev => !prev)}
+                                                        className="text-[8px] font-mono text-amber-400 hover:text-amber-300 font-bold flex items-center gap-0.5"
+                                                    >
+                                                        {isCreatingExpenseCategory ? 'Cancel' : '+ New Category'}
+                                                    </button>
+                                                </div>
                                                 <select
                                                     value={expenseFormData.category}
-                                                    onChange={e => setExpenseFormData(prev => ({ ...prev, category: e.target.value }))}
+                                                    onChange={e => {
+                                                        if (e.target.value === '__CREATE_NEW_EXPENSE_CAT__') {
+                                                            setIsCreatingExpenseCategory(true);
+                                                        } else {
+                                                            setExpenseFormData(prev => ({ ...prev, category: e.target.value }));
+                                                            setIsCreatingExpenseCategory(false);
+                                                        }
+                                                    }}
                                                     className="w-full bg-zinc-950 text-white text-[11px] px-1.5 py-1 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-red-500"
                                                 >
-                                                    {EXPENSE_CATEGORIES.map(cat => (
+                                                    {allExpenseCategoriesList.map(cat => (
                                                         <option key={cat} value={cat}>{cat}</option>
                                                     ))}
+                                                    <option value="__CREATE_NEW_EXPENSE_CAT__" className="text-amber-400 font-bold bg-zinc-900">
+                                                        + Create & Add Custom Category...
+                                                    </option>
                                                 </select>
+
+                                                {isCreatingExpenseCategory && (
+                                                    <div className="mt-1 flex items-center gap-1 bg-zinc-900 p-1 border border-amber-500/60 shadow-lg">
+                                                        <input
+                                                            type="text"
+                                                            value={newExpenseCategoryName}
+                                                            onChange={e => setNewExpenseCategoryName(e.target.value)}
+                                                            onKeyDown={e => {
+                                                                if (e.key === 'Enter') {
+                                                                    e.preventDefault();
+                                                                    handleAddCustomExpenseCategory();
+                                                                }
+                                                            }}
+                                                            placeholder="Type new category..."
+                                                            className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-[10px] px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                                            autoFocus
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleAddCustomExpenseCategory}
+                                                            className="px-2 py-1 bg-amber-500 hover:bg-amber-400 text-black text-[9px] font-mono font-black uppercase transition-colors shrink-0"
+                                                        >
+                                                            Add
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="space-y-0.5">
@@ -1787,18 +1893,63 @@ export const FinanceTab: React.FC<{
                                             </div>
 
                                             <div className="sm:col-span-5 space-y-0.5">
-                                                <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-300">
-                                                    Category
-                                                </label>
+                                                <div className="flex items-center justify-between">
+                                                    <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-300">
+                                                        Category
+                                                    </label>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsCreatingProfitCategory(prev => !prev)}
+                                                        className="text-[8px] font-mono text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-0.5"
+                                                    >
+                                                        {isCreatingProfitCategory ? 'Cancel' : '+ New Category'}
+                                                    </button>
+                                                </div>
                                                 <select
                                                     value={profitFormData.category}
-                                                    onChange={e => setProfitFormData(prev => ({ ...prev, category: e.target.value }))}
+                                                    onChange={e => {
+                                                        if (e.target.value === '__CREATE_NEW_PROFIT_CAT__') {
+                                                            setIsCreatingProfitCategory(true);
+                                                        } else {
+                                                            setProfitFormData(prev => ({ ...prev, category: e.target.value }));
+                                                            setIsCreatingProfitCategory(false);
+                                                        }
+                                                    }}
                                                     className="w-full bg-zinc-950 text-white text-[11px] px-1.5 py-1 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                                 >
-                                                    {PROFIT_CATEGORIES.map(cat => (
+                                                    {allProfitCategoriesList.map(cat => (
                                                         <option key={cat} value={cat}>{cat}</option>
                                                     ))}
+                                                    <option value="__CREATE_NEW_PROFIT_CAT__" className="text-emerald-400 font-bold bg-zinc-900">
+                                                        + Create & Add Custom Category...
+                                                    </option>
                                                 </select>
+
+                                                {isCreatingProfitCategory && (
+                                                    <div className="mt-1 flex items-center gap-1 bg-zinc-900 p-1 border border-emerald-500/60 shadow-lg">
+                                                        <input
+                                                            type="text"
+                                                            value={newProfitCategoryName}
+                                                            onChange={e => setNewProfitCategoryName(e.target.value)}
+                                                            onKeyDown={e => {
+                                                                if (e.key === 'Enter') {
+                                                                    e.preventDefault();
+                                                                    handleAddCustomProfitCategory();
+                                                                }
+                                                            }}
+                                                            placeholder="Type new category..."
+                                                            className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-[10px] px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                            autoFocus
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleAddCustomProfitCategory}
+                                                            className="px-2 py-1 bg-emerald-500 hover:bg-emerald-400 text-black text-[9px] font-mono font-black uppercase transition-colors shrink-0"
+                                                        >
+                                                            Add
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 

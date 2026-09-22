@@ -25,7 +25,13 @@ import {
     ClipboardList,
     Receipt,
     Eye,
-    Lock
+    Lock,
+    UserPlus,
+    Database,
+    Trash2,
+    Edit3,
+    Phone,
+    User
 } from 'lucide-react';
 import { isUnjoinLocked } from '../utils/eventUtils';
 import type { GameEvent, Player, Signup, Location, InventoryItem } from '../types';
@@ -34,6 +40,8 @@ import { Button } from './Button';
 import { DataContext } from '../data/DataContext';
 import { AuthContext } from '../auth/AuthContext';
 import { EquipmentRentalsSummaryModal } from './EquipmentRentalsSummaryModal';
+import { PlayerGuestSignupModal } from './PlayerGuestSignupModal';
+import { SupabaseSyncSqlModal } from './SupabaseSyncSqlModal';
 
 interface PlayerEventFullViewProps {
     event: GameEvent;
@@ -42,6 +50,8 @@ interface PlayerEventFullViewProps {
     signups: Signup[];
     onClose: () => void;
     onSignUp: (id: string, requestedGearIds: string[], note: string, voteGameTypeId?: string) => void;
+    onSaveGuestSignup?: (signup: Signup) => Promise<void>;
+    onDeleteGuestSignup?: (signupId: string) => Promise<void>;
 }
 
 export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
@@ -59,6 +69,34 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
 
     const [showRentalsSummaryModal, setShowRentalsSummaryModal] = useState(false);
     const [summaryModalInitialTab, setSummaryModalInitialTab] = useState<'my-gear' | 'admin-manifest'>('my-gear');
+    const [showGuestModal, setShowGuestModal] = useState(false);
+    const [editingGuestSignup, setEditingGuestSignup] = useState<Signup | undefined>(undefined);
+    const [showSqlModal, setShowSqlModal] = useState(false);
+
+    // Filter guest signups created by current player for this event
+    const myGuestSignups = useMemo(() => {
+        return signups.filter(s => 
+            s.eventId === event.id && 
+            s.isGuest && 
+            (s.hostPlayerId === player.id || s.playerId.startsWith(`guest_${event.id}_${player.id}`))
+        );
+    }, [signups, event.id, player.id]);
+
+    const handleSaveGuestSignup = async (guestSignup: Signup) => {
+        if (onSaveGuestSignup) {
+            await onSaveGuestSignup(guestSignup);
+        } else if (dataContext?.setDoc) {
+            await dataContext.setDoc('signups', guestSignup.id, guestSignup);
+        }
+    };
+
+    const handleDeleteGuestSignup = async (signupId: string) => {
+        if (onDeleteGuestSignup) {
+            await onDeleteGuestSignup(signupId);
+        } else if (dataContext?.deleteDoc) {
+            await dataContext.deleteDoc('signups', signupId);
+        }
+    };
 
     // Total rentals count for this event across attendees and signups
     const totalEventRentalsCount = useMemo(() => {
@@ -980,6 +1018,145 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
                             </div>
                         )}
 
+                        {/* Guest Player Registration Block (+ Bring a Friend) */}
+                        <div className="p-4 rounded-xl bg-amber-950/15 border border-amber-500/30 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                        <UserPlus className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-xs font-black text-white uppercase tracking-wider">
+                                            Bring a Friend / Guest Players
+                                        </h4>
+                                        <p className="text-[10px] text-zinc-400">
+                                            Register guest operators & configure rentals for event day
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setEditingGuestSignup(undefined);
+                                        setShowGuestModal(true);
+                                    }}
+                                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider flex items-center gap-1 transition-all shadow"
+                                >
+                                    <UserPlus className="w-3.5 h-3.5" />
+                                    <span>+ Add Guest</span>
+                                </button>
+                            </div>
+
+                            {/* Registered Guests List */}
+                            {myGuestSignups.length > 0 ? (
+                                <div className="space-y-2 pt-1 border-t border-amber-500/20">
+                                    <div className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center justify-between">
+                                        <span>Registered Guests ({myGuestSignups.length}):</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowSqlModal(true)}
+                                            className="text-[10px] font-mono text-emerald-400 hover:text-emerald-300 underline flex items-center gap-1"
+                                        >
+                                            <Database className="w-3 h-3" />
+                                            <span>Supabase SQL Sync Snippet</span>
+                                        </button>
+                                    </div>
+
+                                    {myGuestSignups.map(guest => {
+                                        const guestFee = event.gameFee || 0;
+                                        const guestRentalsCost = (guest.requestedGearIds || []).reduce((sum, gId) => {
+                                            const item = (dataContext?.inventory || []).find(i => i.id === gId);
+                                            return sum + (item?.salePrice || 0);
+                                        }, 0);
+                                        const totalGuestFee = guestFee + guestRentalsCost;
+
+                                        return (
+                                            <div key={guest.id} className="p-3 bg-black/60 border border-amber-500/30 rounded-xl space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <div className="text-xs font-black text-white flex items-center gap-1.5">
+                                                            <span>{guest.guestName || guest.playerName}</span>
+                                                            <span className="text-[10px] font-mono text-amber-400 bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-500/30">
+                                                                {guest.guestCallsign || 'GUEST'}
+                                                            </span>
+                                                        </div>
+                                                        {guest.guestPhone && (
+                                                            <div className="text-[10px] text-zinc-400 flex items-center gap-1 mt-0.5">
+                                                                <Phone className="w-3 h-3 text-amber-400" />
+                                                                <span>{guest.guestPhone}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setEditingGuestSignup(guest);
+                                                                setShowGuestModal(true);
+                                                            }}
+                                                            className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
+                                                            title="Edit Guest"
+                                                        >
+                                                            <Edit3 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteGuestSignup(guest.id)}
+                                                            className="p-1 rounded bg-red-950/60 hover:bg-red-900 text-red-400 border border-red-500/30 transition-colors"
+                                                            title="Remove Guest"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Guest Rentals */}
+                                                {guest.requestedGearIds && guest.requestedGearIds.length > 0 ? (
+                                                    <div className="text-[11px] text-zinc-300 bg-zinc-900/80 p-2 rounded-lg border border-zinc-800 space-y-1">
+                                                        <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                                            Rented Requisitions ({guest.requestedGearIds.length}):
+                                                        </div>
+                                                        {guest.requestedGearIds.map(gId => {
+                                                            const item = (dataContext?.inventory || []).find(i => i.id === gId);
+                                                            return item ? (
+                                                                <div key={gId} className="flex justify-between items-center font-mono">
+                                                                    <span className="text-zinc-200">• {item.name}</span>
+                                                                    <span className="text-amber-400 font-bold">R{item.salePrice.toFixed(2)}</span>
+                                                                </div>
+                                                            ) : null;
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-[10px] text-zinc-500 italic">
+                                                        No gear rented (Bringing personal gear)
+                                                    </div>
+                                                )}
+
+                                                <div className="flex justify-between items-center text-xs pt-1 border-t border-zinc-800">
+                                                    <span className="text-zinc-400">Guest Due On Event Day:</span>
+                                                    <span className="font-mono font-black text-amber-400 text-sm">
+                                                        R{totalGuestFee.toFixed(2)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="p-3 bg-black/40 border border-zinc-800/80 rounded-xl text-xs text-zinc-400 flex items-center justify-between">
+                                    <span>No guest players registered yet for this match.</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowSqlModal(true)}
+                                        className="text-[10px] text-emerald-400 font-mono underline hover:text-emerald-300"
+                                    >
+                                        Supabase SQL Snippet
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                         {/* Admin Manifest Quick Link */}
                         {isAdmin && (
                             <div className="p-3 rounded-xl bg-zinc-900/80 border border-white/10 flex items-center justify-between gap-2 text-xs">
@@ -1059,6 +1236,31 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
                     />
                 )}
             </AnimatePresence>
+
+            {/* Player Guest Registration Modal */}
+            <AnimatePresence>
+                {showGuestModal && (
+                    <PlayerGuestSignupModal
+                        event={event}
+                        player={player}
+                        inventory={dataContext?.inventory || []}
+                        onClose={() => {
+                            setShowGuestModal(false);
+                            setEditingGuestSignup(undefined);
+                        }}
+                        onSaveGuestSignup={handleSaveGuestSignup}
+                        existingGuestSignup={editingGuestSignup}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Supabase SQL Sync Modal */}
+            <SupabaseSyncSqlModal
+                isOpen={showSqlModal}
+                onClose={() => setShowSqlModal(false)}
+                eventId={event.id}
+                eventTitle={event.title}
+            />
         </motion.div>
     );
 };

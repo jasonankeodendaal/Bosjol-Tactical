@@ -187,17 +187,23 @@ export interface Signup {
     playerId: string;
     requestedGearIds: string[];
     note?: string;
+    operatorNote?: string;
     // Guest & Check-In extensions
     isGuest?: boolean;
     guestName?: string;
     guestCallsign?: string;
     guestPhone?: string;
+    guestEmail?: string;
+    emergencyContact?: string;
+    hostPlayerId?: string;
+    hostPlayerName?: string;
     checkInStatus?: CheckInStatus;
     paymentStatus?: PaymentStatus;
     playerName?: string;
     playerCallsign?: string;
     playerCode?: string;
     signedUpAt?: string;
+    votedGameTypeId?: string;
 }
 
 // Core data stored in the `events` collection document

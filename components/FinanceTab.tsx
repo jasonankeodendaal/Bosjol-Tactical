@@ -9,7 +9,6 @@ import { CurrencyDollarIcon, PrinterIcon, ArrowTrendingUpIcon } from './icons/Ic
 import { motion, AnimatePresence } from 'framer-motion';
 import { PrintableReport } from './PrintableReport';
 import { useData } from '../data/DataContext';
-import { BUSINESS_EXPENSES_SQL_SCHEMA } from '../utils/supabaseSchema';
 import { BusinessCardTransaction } from './BusinessCardTransaction';
 import { FinanceGrowthComparison } from './FinanceGrowthComparison';
 import { 
@@ -256,8 +255,6 @@ export const FinanceTab: React.FC<{
     const [editingExpense, setEditingExpense] = useState<Transaction | null>(null);
     const [editingProfit, setEditingProfit] = useState<Transaction | null>(null);
     const [inspectingExpense, setInspectingExpense] = useState<Transaction | null>(null);
-    const [isSqlModalOpen, setIsSqlModalOpen] = useState(false);
-    const [copiedSql, setCopiedSql] = useState(false);
     const [zoomSlip, setZoomSlip] = useState(false);
 
     // Form state: DEDICATED EXPENSE ONLY FORM
@@ -628,12 +625,6 @@ export const FinanceTab: React.FC<{
         }
     };
 
-    const handleCopySql = () => {
-        navigator.clipboard.writeText(BUSINESS_EXPENSES_SQL_SCHEMA);
-        setCopiedSql(true);
-        setTimeout(() => setCopiedSql(false), 2500);
-    };
-
     // Filter transactions
     const filteredTransactions = useMemo(() => {
         const now = new Date();
@@ -932,16 +923,6 @@ export const FinanceTab: React.FC<{
                     >
                         <PrinterIcon className="w-3 h-3" />
                         <span className="hidden sm:inline">Print</span>
-                    </button>
-
-                    {/* SQL Live Sync Snippet */}
-                    <button 
-                        onClick={() => setIsSqlModalOpen(true)}
-                        className="p-1 px-1.5 text-[11px] text-zinc-400 hover:text-white transition-colors flex items-center gap-1"
-                        title="View SQL schema"
-                    >
-                        <Database className="w-3 h-3" />
-                        <span className="text-[10px] font-mono hidden md:inline">SQL</span>
                     </button>
                 </div>
             </div>
@@ -1719,19 +1700,6 @@ export const FinanceTab: React.FC<{
                                             <p className="font-mono text-[9px] text-red-300 bg-black/50 p-1.5 overflow-x-auto">
                                                 {saveProgress.details || 'Unable to upsert transaction row to Supabase.'}
                                             </p>
-                                            <div className="flex items-center gap-2 pt-1">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(BUSINESS_EXPENSES_SQL_SCHEMA);
-                                                        alert('SQL Fix schema snippet copied to clipboard! Run it in your Supabase SQL Editor.');
-                                                    }}
-                                                    className="px-2 py-1 bg-red-800 hover:bg-red-700 text-white font-bold text-[9px] flex items-center gap-1"
-                                                >
-                                                    <Copy className="w-3 h-3" />
-                                                    <span>Copy Supabase SQL Fix Snippet</span>
-                                                </button>
-                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -2185,19 +2153,6 @@ export const FinanceTab: React.FC<{
                                             <p className="font-mono text-[9px] text-red-300 bg-black/50 p-1.5 overflow-x-auto">
                                                 {saveProgress.details || 'Unable to upsert profit transaction row to Supabase.'}
                                             </p>
-                                            <div className="flex items-center gap-2 pt-1">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(BUSINESS_EXPENSES_SQL_SCHEMA);
-                                                        alert('SQL Fix schema snippet copied to clipboard! Run it in your Supabase SQL Editor.');
-                                                    }}
-                                                    className="px-2 py-1 bg-red-800 hover:bg-red-700 text-white font-bold text-[9px] flex items-center gap-1"
-                                                >
-                                                    <Copy className="w-3 h-3" />
-                                                    <span>Copy Supabase SQL Fix Snippet</span>
-                                                </button>
-                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -2401,45 +2356,6 @@ export const FinanceTab: React.FC<{
                 </Modal>
             )}
 
-            {/* ========================================================= */}
-            {/* MODAL 4: SUPABASE LIVE SYNC SQL MIGRATION SNIPPET         */}
-            {/* ========================================================= */}
-            <Modal
-                isOpen={isSqlModalOpen}
-                onClose={() => setIsSqlModalOpen(false)}
-                title="Supabase Database Live Sync Migration"
-                maxWidth="xl"
-            >
-                <div className="space-y-2.5 text-xs">
-                    <p className="text-zinc-300 text-[11px]">
-                        Run this idempotent SQL script in your <strong>Supabase SQL Editor</strong> to ensure all table columns,
-                        slip image fields, RLS security policies, and <strong>Supabase Realtime Live Sync</strong> are fully synchronized:
-                    </p>
-
-                    <div className="relative">
-                        <pre className="p-2.5 bg-black border border-zinc-800 text-[10px] font-mono text-zinc-300 max-h-64 overflow-y-auto whitespace-pre-wrap">
-                            {BUSINESS_EXPENSES_SQL_SCHEMA}
-                        </pre>
-                        <button
-                            onClick={handleCopySql}
-                            className="absolute top-2 right-2 px-2 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-[10px] flex items-center gap-1 border border-zinc-700 transition-colors shadow"
-                        >
-                            {copiedSql ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-zinc-400" />}
-                            <span>{copiedSql ? 'Copied' : 'Copy SQL'}</span>
-                        </button>
-                    </div>
-
-                    <div className="p-2 bg-zinc-900 border border-zinc-800 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
-                            <Database className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                            <span>Script enables <code>expenseName</code>, <code>expenseReason</code>, <code>receiptImageUrl</code> & Realtime publication.</span>
-                        </div>
-                        <Button variant="secondary" size="sm" onClick={() => setIsSqlModalOpen(false)} className="text-xs">
-                            Close
-                        </Button>
-                    </div>
-                </div>
-            </Modal>
         </div>
     );
 };

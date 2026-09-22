@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { GameEvent, Player, InventoryItem, Signup } from '../types';
-import { X, UserPlus, Phone, Shield, Crosshair, Check, Database, AlertCircle, DollarSign, FileText } from 'lucide-react';
-import { SupabaseSyncSqlModal } from './SupabaseSyncSqlModal';
+import { X, UserPlus, Phone, Shield, Crosshair, Check, AlertCircle, DollarSign, FileText } from 'lucide-react';
 
 interface PlayerGuestSignupModalProps {
     event: GameEvent;
@@ -26,17 +25,31 @@ export const PlayerGuestSignupModal: React.FC<PlayerGuestSignupModalProps> = ({
     const [guestEmail, setGuestEmail] = useState(existingGuestSignup?.guestEmail || '');
     const [emergencyContact, setEmergencyContact] = useState(existingGuestSignup?.emergencyContact || '');
     const [selectedGearIds, setSelectedGearIds] = useState<string[]>(existingGuestSignup?.requestedGearIds || []);
+    const [needsRental, setNeedsRental] = useState(existingGuestSignup ? (existingGuestSignup.requestedGearIds && existingGuestSignup.requestedGearIds.length > 0) : false);
     const [note, setNote] = useState(existingGuestSignup?.note || '');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showSqlModal, setShowSqlModal] = useState(false);
 
     // Available rental equipment for this event
     const rentalItems = inventory.filter(i => i.isRental);
 
+    const handleRentalToggle = (checked: boolean) => {
+        setNeedsRental(checked);
+        if (checked) {
+            if (selectedGearIds.length === 0 && rentalItems.length > 0) {
+                // Automatically assign next available rental
+                setSelectedGearIds([rentalItems[0].id]);
+            }
+        } else {
+            setSelectedGearIds([]);
+        }
+    };
+
     const toggleGearSelection = (gearId: string) => {
-        setSelectedGearIds(prev =>
-            prev.includes(gearId) ? prev.filter(id => id !== gearId) : [...prev, gearId]
-        );
+        setSelectedGearIds(prev => {
+            const next = prev.includes(gearId) ? prev.filter(id => id !== gearId) : [...prev, gearId];
+            setNeedsRental(next.length > 0);
+            return next;
+        });
     };
 
     // Calculate total costs for guest player
@@ -110,24 +123,13 @@ export const PlayerGuestSignupModal: React.FC<PlayerGuestSignupModalProps> = ({
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setShowSqlModal(true)}
-                            className="px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-400 border border-emerald-500/40 text-[10px] font-mono font-bold flex items-center gap-1 transition-all"
-                            title="View Supabase SQL Snippet"
-                        >
-                            <Database className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Supabase SQL</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
 
                 {/* Form Body */}
@@ -201,52 +203,74 @@ export const PlayerGuestSignupModal: React.FC<PlayerGuestSignupModalProps> = ({
                         </div>
                     </div>
 
-                    {/* Guest Rental Equipment Configuration */}
-                    <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                            <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
-                                <Crosshair className="w-3.5 h-3.5 text-amber-400" />
-                                Configure Guest Rental Package ({selectedGearIds.length} item{selectedGearIds.length === 1 ? '' : 's'})
+                    {/* Guest Rental Equipment Toggle & Configuration */}
+                    <div className="space-y-3 p-4 rounded-xl bg-zinc-900/60 border border-zinc-800">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Crosshair className="w-4 h-4 text-amber-400" />
+                                <div>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider">
+                                        Rental Gear Needed for Guest
+                                    </h4>
+                                    <p className="text-[10px] text-zinc-400">
+                                        Automatically assigns next available armory rental when enabled
+                                    </p>
+                                </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={needsRental}
+                                    onChange={e => handleRentalToggle(e.target.checked)}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
                             </label>
-                            <span className="text-[10px] text-zinc-500 font-mono">
-                                Armory Stock Available
-                            </span>
                         </div>
 
-                        {rentalItems.length === 0 ? (
-                            <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs text-zinc-400">
-                                No specific rental packages set up for this match. Guest can use personal gear or request on-site.
-                            </div>
-                        ) : (
-                            <div className="space-y-1.5 max-h-40 overflow-y-auto p-2 bg-black/60 border border-zinc-800 rounded-xl">
-                                {rentalItems.map(item => {
-                                    const isSelected = selectedGearIds.includes(item.id);
-                                    return (
-                                        <button
-                                            key={item.id}
-                                            type="button"
-                                            onClick={() => toggleGearSelection(item.id)}
-                                            className={`w-full text-left p-2 rounded-lg flex items-center justify-between text-xs border transition-all ${
-                                                isSelected
-                                                    ? 'bg-amber-950/40 border-amber-500/50 text-white font-bold'
-                                                    : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-zinc-700'
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <div className={`w-4 h-4 rounded border flex items-center justify-center ${
-                                                    isSelected ? 'bg-amber-500 border-amber-400' : 'border-zinc-700 bg-zinc-900'
-                                                }`}>
-                                                    {isSelected && <Check className="w-3 h-3 text-black font-bold" />}
-                                                </div>
-                                                <div>
-                                                    <div className="text-white font-medium">{item.name}</div>
-                                                    {item.category && <div className="text-[10px] text-zinc-500 font-mono">{item.category}</div>}
-                                                </div>
-                                            </div>
-                                            <span className="font-mono text-amber-400 font-bold">R{item.salePrice.toFixed(2)}</span>
-                                        </button>
-                                    );
-                                })}
+                        {needsRental && (
+                            <div className="space-y-2 pt-2 border-t border-zinc-800 animate-fade-in">
+                                <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                                    <span>Select / Verify Requisitions ({selectedGearIds.length} selected):</span>
+                                    <span className="font-mono text-amber-400 font-bold">Auto-assigned next available</span>
+                                </div>
+
+                                {rentalItems.length === 0 ? (
+                                    <div className="p-3 rounded-xl bg-black/60 border border-zinc-800 text-xs text-zinc-400">
+                                        No specific rental packages set up for this match. Guest can use personal gear or request on-site.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1.5 max-h-40 overflow-y-auto p-2 bg-black/60 border border-zinc-800 rounded-xl">
+                                        {rentalItems.map(item => {
+                                            const isSelected = selectedGearIds.includes(item.id);
+                                            return (
+                                                <button
+                                                    key={item.id}
+                                                    type="button"
+                                                    onClick={() => toggleGearSelection(item.id)}
+                                                    className={`w-full text-left p-2 rounded-lg flex items-center justify-between text-xs border transition-all ${
+                                                        isSelected
+                                                            ? 'bg-amber-950/40 border-amber-500/50 text-white font-bold'
+                                                            : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                                                            isSelected ? 'bg-amber-500 border-amber-400' : 'border-zinc-700 bg-zinc-900'
+                                                        }`}>
+                                                            {isSelected && <Check className="w-3 h-3 text-black font-bold" />}
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-white font-medium">{item.name}</div>
+                                                            {item.category && <div className="text-[10px] text-zinc-500 font-mono">{item.category}</div>}
+                                                        </div>
+                                                    </div>
+                                                    <span className="font-mono text-amber-400 font-bold">R{item.salePrice.toFixed(2)}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -292,59 +316,25 @@ export const PlayerGuestSignupModal: React.FC<PlayerGuestSignupModalProps> = ({
                 </form>
 
                 {/* Footer Actions */}
-                <div className="p-4 bg-zinc-900/90 border-t border-zinc-800 flex items-center justify-between shrink-0">
+                <div className="p-4 bg-zinc-900/90 border-t border-zinc-800 flex items-center justify-end gap-2 shrink-0">
                     <button
                         type="button"
-                        onClick={() => setShowSqlModal(true)}
-                        className="text-xs font-bold text-emerald-400 hover:text-emerald-300 underline underline-offset-2 flex items-center gap-1"
+                        onClick={onClose}
+                        className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-xs uppercase tracking-wider transition-colors"
                     >
-                        <Database className="w-3.5 h-3.5" />
-                        <span>Supabase SQL Snippet</span>
+                        Cancel
                     </button>
-
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-xs uppercase tracking-wider transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
-                            className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-950/40 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50"
-                        >
-                            <UserPlus className="w-4 h-4" />
-                            <span>{existingGuestSignup ? 'Update Guest' : 'Register Guest Player'}</span>
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={isSubmitting}
+                        className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-950/40 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                        <UserPlus className="w-4 h-4" />
+                        <span>{existingGuestSignup ? 'Update Guest' : 'Register Guest Player'}</span>
+                    </button>
                 </div>
             </div>
-
-            {/* Supabase SQL Snippet Modal */}
-            <SupabaseSyncSqlModal
-                isOpen={showSqlModal}
-                onClose={() => setShowSqlModal(false)}
-                eventId={event.id}
-                eventTitle={event.title}
-                sampleGuestData={{
-                    id: `guest_${event.id}_${player.id}_${Date.now()}`,
-                    eventId: event.id,
-                    hostPlayerId: player.id,
-                    hostPlayerName: player.name || player.callsign,
-                    isGuest: true,
-                    guestName: guestName || 'Michael Scott',
-                    guestCallsign: guestCallsign || 'GUEST-Ranger',
-                    guestPhone: guestPhone || '+27 82 123 4567',
-                    requestedGearIds: selectedGearIds,
-                    note: note || 'Guest bringing friend for skirmish',
-                    paymentStatus: 'Unpaid',
-                    checkInStatus: 'pending',
-                    signedUpAt: new Date().toISOString()
-                }}
-            />
         </div>
     );
 };

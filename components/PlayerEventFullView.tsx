@@ -41,7 +41,6 @@ import { DataContext } from '../data/DataContext';
 import { AuthContext } from '../auth/AuthContext';
 import { EquipmentRentalsSummaryModal } from './EquipmentRentalsSummaryModal';
 import { PlayerGuestSignupModal } from './PlayerGuestSignupModal';
-import { SupabaseSyncSqlModal } from './SupabaseSyncSqlModal';
 
 interface PlayerEventFullViewProps {
     event: GameEvent;
@@ -71,7 +70,6 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
     const [summaryModalInitialTab, setSummaryModalInitialTab] = useState<'my-gear' | 'admin-manifest'>('my-gear');
     const [showGuestModal, setShowGuestModal] = useState(false);
     const [editingGuestSignup, setEditingGuestSignup] = useState<Signup | undefined>(undefined);
-    const [showSqlModal, setShowSqlModal] = useState(false);
 
     // Filter guest signups created by current player for this event
     const myGuestSignups = useMemo(() => {
@@ -1050,16 +1048,8 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
                             {/* Registered Guests List */}
                             {myGuestSignups.length > 0 ? (
                                 <div className="space-y-2 pt-1 border-t border-amber-500/20">
-                                    <div className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center justify-between">
+                                    <div className="text-[11px] font-bold text-amber-300 uppercase tracking-wider">
                                         <span>Registered Guests ({myGuestSignups.length}):</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowSqlModal(true)}
-                                            className="text-[10px] font-mono text-emerald-400 hover:text-emerald-300 underline flex items-center gap-1"
-                                        >
-                                            <Database className="w-3 h-3" />
-                                            <span>Supabase SQL Sync Snippet</span>
-                                        </button>
                                     </div>
 
                                     {myGuestSignups.map(guest => {
@@ -1144,15 +1134,8 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
                                     })}
                                 </div>
                             ) : (
-                                <div className="p-3 bg-black/40 border border-zinc-800/80 rounded-xl text-xs text-zinc-400 flex items-center justify-between">
-                                    <span>No guest players registered yet for this match.</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowSqlModal(true)}
-                                        className="text-[10px] text-emerald-400 font-mono underline hover:text-emerald-300"
-                                    >
-                                        Supabase SQL Snippet
-                                    </button>
+                                <div className="p-3 bg-black/40 border border-zinc-800/80 rounded-xl text-xs text-zinc-400">
+                                    No guest players registered yet for this match.
                                 </div>
                             )}
                         </div>
@@ -1253,14 +1236,6 @@ export const PlayerEventFullView: React.FC<PlayerEventFullViewProps> = ({
                     />
                 )}
             </AnimatePresence>
-
-            {/* Supabase SQL Sync Modal */}
-            <SupabaseSyncSqlModal
-                isOpen={showSqlModal}
-                onClose={() => setShowSqlModal(false)}
-                eventId={event.id}
-                eventTitle={event.title}
-            />
         </motion.div>
     );
 };

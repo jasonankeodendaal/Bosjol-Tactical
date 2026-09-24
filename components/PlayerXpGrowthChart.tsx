@@ -2,7 +2,14 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as d3 from 'd3';
 import type { Player, GameEvent, Rank } from '../types';
 import { 
-    TrendingUp 
+    TrendingUp, 
+    Zap, 
+    Award, 
+    Clock, 
+    Sparkles, 
+    Crosshair,
+    Shield,
+    Activity
 } from 'lucide-react';
 
 interface PlayerXpGrowthChartProps {
@@ -30,14 +37,13 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
-    const [containerWidth, setContainerWidth] = useState<number>(600);
+    const [containerWidth, setContainerWidth] = useState<number>(360);
     const [timeRange, setTimeRange] = useState<'all' | '30d' | 'recent5'>('all');
-    const [hoveredPoint, setHoveredPoint] = useState<XpDataPoint | null>(null);
-    const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+    const [hoveredPointId, setHoveredPointId] = useState<string | null>(null);
 
     const totalXp = player.stats?.xp || 0;
 
-    // Flatten rank tiers in ascending order for milestone lines and tooltip rank detection
+    // Flatten rank tiers in ascending order for milestone tracking
     const allTiers = useMemo(() => {
         return (ranks || [])
             .flatMap(rank => (rank.tiers || []).map(tier => ({
@@ -75,7 +81,6 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
             } else if (matchedEvent?.date && !isNaN(new Date(matchedEvent.date).getTime())) {
                 matchDate = new Date(matchedEvent.date);
             } else {
-                // Approximate sequential date if missing
                 const d = new Date();
                 d.setDate(d.getDate() - ((history.length - idx) * 7));
                 matchDate = d;
@@ -84,7 +89,7 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
             const xpEarned = match.xpGained || 50;
             rawTimeline.push({
                 date: matchDate,
-                label: match.eventName || matchedEvent?.name || `Operation #${idx + 1}`,
+                label: match.eventName || matchedEvent?.title || `Operation #${idx + 1}`,
                 type: 'match',
                 xpDelta: xpEarned,
                 details: match.result ? `Outcome: ${match.result}` : undefined
@@ -105,17 +110,15 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
 
             rawTimeline.push({
                 date: adjDate,
-                label: adj.reason || 'Tactical Commendation',
+                label: adj.reason || 'Commendation',
                 type: 'adjustment',
                 xpDelta: adj.amount || 0,
                 details: adj.amount >= 0 ? `Commendation: +${adj.amount} RP` : `Adjustment: ${adj.amount} RP`
             });
         });
 
-        // Sort chronologically ascending
         rawTimeline.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-        // Calculate running cumulative XP
         const result: XpDataPoint[] = [];
 
         if (rawTimeline.length === 0) {
@@ -146,7 +149,6 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
                 details: 'Live Verified RP'
             });
         } else {
-            // Anchor start of season
             const firstDate = new Date(rawTimeline[0].date.getTime() - (2 * 24 * 60 * 60 * 1000));
             result.push({
                 id: 'season_init',
@@ -176,7 +178,6 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
                 });
             });
 
-            // If actual player total XP is higher than logged matches sum, add final current point
             if (totalXp > runningXp || result.length === 2) {
                 const now = new Date();
                 result.push({
@@ -185,7 +186,7 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
                     dateLabel: now.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
                     label: 'Current Season Standing',
                     type: 'current',
-                    xpDelta: totalXp - runningXp,
+                    xpDelta: Math.max(0, totalXp - runningXp),
                     cumulativeXp: totalXp,
                     rankName: getRankForXp(totalXp),
                     details: 'Real-time verified total'
@@ -198,376 +199,243 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
 
     // Filter by selected time range
     const filteredPoints = useMemo(() => {
-        if (allDataPoints.length <= 2) return allDataPoints;
-        
+        if (timeRange === 'all' || allDataPoints.length <= 2) return allDataPoints;
+
         if (timeRange === 'recent5') {
-            const sliceStart = Math.max(0, allDataPoints.length - 6);
-            return allDataPoints.slice(sliceStart);
+            const lastPoints = allDataPoints.slice(-5);
+            return lastPoints[0]?.type === 'season_start' ? lastPoints : [allDataPoints[0], ...lastPoints];
         }
 
         if (timeRange === '30d') {
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            const filtered = allDataPoints.filter(p => p.date >= thirtyDaysAgo);
-            return filtered.length >= 2 ? filtered : allDataPoints.slice(-5);
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - 30);
+            const inRange = allDataPoints.filter(p => p.date >= cutoff || p.type === 'current');
+            return inRange.length > 0 ? [allDataPoints[0], ...inRange] : allDataPoints.slice(-3);
         }
 
         return allDataPoints;
     }, [allDataPoints, timeRange]);
 
-    // Calculate chart metrics & summary stats
-    const statsSummary = useMemo(() => {
-        const deltas = allDataPoints.filter(p => p.type === 'match' || p.type === 'adjustment').map(p => p.xpDelta);
-        const matchPoints = allDataPoints.filter(p => p.type === 'match');
-        
-        const highestGain = deltas.length > 0 ? Math.max(...deltas) : totalXp;
-        const avgGain = matchPoints.length > 0 
-            ? Math.round(matchPoints.reduce((acc, curr) => acc + curr.xpDelta, 0) / matchPoints.length) 
-            : totalXp;
+    // Active displayed node in Center Holo-HUD
+    const activePoint = useMemo(() => {
+        if (hoveredPointId) {
+            return filteredPoints.find(p => p.id === hoveredPointId) || null;
+        }
+        return filteredPoints[filteredPoints.length - 1] || null;
+    }, [hoveredPointId, filteredPoints]);
 
-        const totalRecordedEvents = matchPoints.length;
+    // Summary statistics
+    const statsSummary = useMemo(() => {
+        const gains = filteredPoints.map(p => p.xpDelta).filter(d => d > 0);
+        const highest = gains.length > 0 ? Math.max(...gains) : 0;
+        const avg = gains.length > 0 ? Math.round(gains.reduce((a, b) => a + b, 0) / gains.length) : 0;
+        const totalMatches = (player.matchHistory || []).length;
+        
+        // Progress toward next rank
+        const currentRankTier = allTiers.find(t => totalXp >= t.minXp && (!t.maxXp || totalXp < t.maxXp)) || allTiers[0];
+        const nextRankTier = allTiers.find(t => t.minXp > totalXp);
+        const nextMin = nextRankTier?.minXp || (currentRankTier?.maxXp || totalXp + 500);
+        const curMin = currentRankTier?.minXp || 0;
+        const rankProgressPct = Math.min(100, Math.max(0, Math.round(((totalXp - curMin) / Math.max(1, nextMin - curMin)) * 100)));
 
         return {
-            highestGain,
-            avgGain,
-            totalRecordedEvents,
-            currentTotal: totalXp
+            highestGain: highest,
+            avgGain: avg,
+            totalRecordedEvents: totalMatches,
+            rankProgressPct,
+            currentTierName: player.rank?.name || getRankForXp(totalXp),
+            nextTierName: nextRankTier?.name || 'Max Rank'
         };
-    }, [allDataPoints, totalXp]);
+    }, [filteredPoints, player.matchHistory, totalXp, allTiers, player.rank]);
 
-    // ResizeObserver for dynamic, fluid width
+    // Resize observer
     useEffect(() => {
         if (!containerRef.current) return;
-
-        const resizeObserver = new ResizeObserver(entries => {
+        const ro = new ResizeObserver(entries => {
             for (const entry of entries) {
-                if (entry.contentRect.width > 0) {
-                    setContainerWidth(entry.contentRect.width);
+                if (entry.contentRect.width > 50) {
+                    setContainerWidth(Math.floor(entry.contentRect.width));
                 }
             }
         });
-
-        resizeObserver.observe(containerRef.current);
-        return () => resizeObserver.disconnect();
+        ro.observe(containerRef.current);
+        return () => ro.disconnect();
     }, []);
 
-    // Draw D3 line chart with animated transitions and hover effects
+    // Draw D3 3D Holographic Circle Timeloop
     useEffect(() => {
-        if (!svgRef.current || filteredPoints.length === 0 || containerWidth <= 0) return;
+        if (!svgRef.current || filteredPoints.length === 0) return;
+
+        const size = Math.min(Math.max(containerWidth, 180), 230);
+        const center = size / 2;
+        const radius = (size / 2) - 18;
 
         const svg = d3.select(svgRef.current);
         svg.selectAll('*').remove();
 
-        const height = containerWidth < 500 ? 100 : 115;
-        const margin = {
-            top: 8,
-            right: 12,
-            bottom: 18,
-            left: containerWidth < 500 ? 30 : 36
-        };
+        svg.attr('width', size)
+           .attr('height', size)
+           .attr('viewBox', `0 0 ${size} ${size}`);
 
-        const innerWidth = containerWidth - margin.left - margin.right;
-        const innerHeight = height - margin.top - margin.bottom;
-
-        svg
-            .attr('width', containerWidth)
-            .attr('height', height)
-            .attr('viewBox', `0 0 ${containerWidth} ${height}`);
-
-        const g = svg
-            .append('g')
-            .attr('transform', `translate(${margin.left},${margin.top})`);
-
-        // Scales
-        const xExtent = d3.extent(filteredPoints, d => d.date) as [Date, Date];
-        const xScale = d3.scaleTime()
-            .domain(xExtent[0] && xExtent[1] && xExtent[0].getTime() !== xExtent[1].getTime() 
-                ? xExtent 
-                : [new Date(Date.now() - 7 * 24 * 3600 * 1000), new Date()])
-            .range([0, innerWidth]);
-
-        const maxYValue = Math.max(
-            d3.max(filteredPoints, d => d.cumulativeXp) || 100,
-            100
-        );
-
-        const yScale = d3.scaleLinear()
-            .domain([0, maxYValue * 1.15])
-            .range([innerHeight, 0])
-            .nice();
-
-        // Definitions: Gradients & Glow Filters
         const defs = svg.append('defs');
 
-        // Area Gradient (Amber gold glow fading to deep black)
-        const areaGradient = defs.append('linearGradient')
-            .attr('id', 'xp-chart-area-grad')
-            .attr('x1', '0%')
-            .attr('y1', '0%')
-            .attr('x2', '0%')
-            .attr('y2', '100%');
-
-        areaGradient.append('stop')
-            .attr('offset', '0%')
-            .attr('stop-color', '#f59e0b')
-            .attr('stop-opacity', 0.3);
-
-        areaGradient.append('stop')
-            .attr('offset', '70%')
-            .attr('stop-color', '#d97706')
-            .attr('stop-opacity', 0.05);
-
-        areaGradient.append('stop')
-            .attr('offset', '100%')
-            .attr('stop-color', '#000000')
-            .attr('stop-opacity', 0.0);
-
-        // Line Stroke Gradient (Bright Gold to Red-Amber accent)
-        const lineGradient = defs.append('linearGradient')
-            .attr('id', 'xp-chart-line-grad')
-            .attr('x1', '0%')
-            .attr('y1', '0%')
-            .attr('x2', '100%')
-            .attr('y2', '0%');
-
-        lineGradient.append('stop')
-            .attr('offset', '0%')
-            .attr('stop-color', '#fbbf24');
-
-        lineGradient.append('stop')
-            .attr('offset', '100%')
-            .attr('stop-color', '#f59e0b');
-
-        // Subtle Glow Filter
-        const filter = defs.append('filter')
-            .attr('id', 'd3-chart-glow')
-            .attr('x', '-20%')
-            .attr('y', '-20%')
-            .attr('width', '140%')
-            .attr('height', '140%');
-
-        filter.append('feGaussianBlur')
-            .attr('stdDeviation', '2')
+        // Radial Glow Filter for 3D Depth
+        const glowFilter = defs.append('filter')
+            .attr('id', 'timeloop-glow')
+            .attr('x', '-30%').attr('y', '-30%')
+            .attr('width', '160%').attr('height', '160%');
+        glowFilter.append('feGaussianBlur')
+            .attr('stdDeviation', '4')
             .attr('result', 'coloredBlur');
-
-        const feMerge = filter.append('feMerge');
+        const feMerge = glowFilter.append('feMerge');
         feMerge.append('feMergeNode').attr('in', 'coloredBlur');
         feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
 
-        // Horizontal Grid Lines (clean and minimal)
-        const yTicks = yScale.ticks(3);
-        g.append('g')
-            .attr('class', 'grid')
-            .selectAll('line')
-            .data(yTicks)
-            .enter()
-            .append('line')
-            .attr('x1', 0)
-            .attr('x2', innerWidth)
-            .attr('y1', d => yScale(d))
-            .attr('y2', d => yScale(d))
-            .attr('stroke', '#27272a')
-            .attr('stroke-width', 1)
-            .attr('stroke-dasharray', '2,2');
+        // Radial Gradient for Holographic Timeloop Core
+        const coreGradient = defs.append('radialGradient')
+            .attr('id', 'timeloop-core-grad')
+            .attr('cx', '50%').attr('cy', '50%')
+            .attr('r', '50%');
+        coreGradient.append('stop').attr('offset', '0%').attr('stop-color', '#f59e0b').attr('stop-opacity', '0.18');
+        coreGradient.append('stop').attr('offset', '70%').attr('stop-color', '#ef4444').attr('stop-opacity', '0.05');
+        coreGradient.append('stop').attr('offset', '100%').attr('stop-color', '#000000').attr('stop-opacity', '0.8');
 
-        // Area Generator
-        const area = d3.area<XpDataPoint>()
-            .x(d => xScale(d.date))
-            .y0(innerHeight)
-            .y1(d => yScale(d.cumulativeXp))
-            .curve(d3.curveMonotoneX);
+        // Timeloop Arc Linear/Conical Gradient Simulation
+        const arcGradient = defs.append('linearGradient')
+            .attr('id', 'timeloop-arc-grad')
+            .attr('x1', '0%').attr('y1', '0%')
+            .attr('x2', '100%').attr('y2', '100%');
+        arcGradient.append('stop').attr('offset', '0%').attr('stop-color', '#3b82f6').attr('stop-opacity', '0.8');
+        arcGradient.append('stop').attr('offset', '50%').attr('stop-color', '#f59e0b').attr('stop-opacity', '0.95');
+        arcGradient.append('stop').attr('offset', '100%').attr('stop-color', '#10b981').attr('stop-opacity', '1');
 
-        // Animated Area
-        const areaPath = g.append('path')
-            .datum(filteredPoints)
-            .attr('class', 'area')
-            .attr('d', area)
-            .attr('fill', 'url(#xp-chart-area-grad)')
-            .attr('opacity', 0);
+        const g = svg.append('g').attr('transform', `translate(${center}, ${center})`);
 
-        areaPath.transition()
-            .duration(600)
-            .attr('opacity', 1);
+        // 1. Inner Holo Core (Zero Outline, Pure 3D Depth)
+        g.append('circle')
+            .attr('r', radius - 14)
+            .attr('fill', 'url(#timeloop-core-grad)');
 
-        // Line Generator
-        const line = d3.line<XpDataPoint>()
-            .x(d => xScale(d.date))
-            .y(d => yScale(d.cumulativeXp))
-            .curve(d3.curveMonotoneX);
-
-        // Animated Main Path
-        const path = g.append('path')
-            .datum(filteredPoints)
-            .attr('class', 'line')
-            .attr('d', line)
+        // 2. Background Track Groove (Concentric Depth Rings)
+        g.append('circle')
+            .attr('r', radius)
             .attr('fill', 'none')
-            .attr('stroke', 'url(#xp-chart-line-grad)')
-            .attr('stroke-width', 2)
-            .style('filter', 'url(#d3-chart-glow)');
+            .attr('stroke', '#27272a')
+            .attr('stroke-width', 4.5)
+            .attr('stroke-opacity', 0.45);
 
-        const totalLength = (path.node() as SVGPathElement)?.getTotalLength() || 0;
-        path
-            .attr('stroke-dasharray', `${totalLength} ${totalLength}`)
-            .attr('stroke-dashoffset', totalLength)
-            .transition()
-            .duration(800)
-            .ease(d3.easeCubicOut)
-            .attr('stroke-dashoffset', 0);
+        // 3. Polar coordinate conversion for timeline points
+        // Sweeps around the circle: start at -90deg (top, 12 o'clock) to +230deg
+        const startAngle = -Math.PI / 2; // Top
+        const sweepAngle = Math.PI * 1.75; // 315 degrees sweep
 
-        // Data Nodes / Markers
-        const pointsGroup = g.append('g').attr('class', 'data-points');
+        const maxCumulative = Math.max(
+            d3.max(filteredPoints, d => d.cumulativeXp) || totalXp || 100,
+            100
+        );
 
-        pointsGroup.selectAll('.point-halo')
-            .data(filteredPoints)
-            .enter()
-            .append('circle')
-            .attr('class', 'point-halo')
-            .attr('cx', d => xScale(d.date))
-            .attr('cy', d => yScale(d.cumulativeXp))
-            .attr('r', 0)
-            .attr('fill', '#f59e0b')
-            .attr('fill-opacity', 0.2)
-            .transition()
-            .delay((_, i) => (i * 60) + 300)
-            .duration(400)
-            .attr('r', 4);
+        // Compute polar coordinate for each point
+        const pointAngles = filteredPoints.map((d, i) => {
+            const pct = filteredPoints.length > 1 
+                ? (i / (filteredPoints.length - 1))
+                : (d.cumulativeXp / maxCumulative);
+            const angle = startAngle + (pct * sweepAngle);
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            return { ...d, angle, x, y };
+        });
 
-        pointsGroup.selectAll('.point-core')
-            .data(filteredPoints)
-            .enter()
-            .append('circle')
-            .attr('class', 'point-core')
-            .attr('cx', d => xScale(d.date))
-            .attr('cy', d => yScale(d.cumulativeXp))
-            .attr('r', 0)
-            .attr('fill', '#ffffff')
-            .attr('stroke', '#f59e0b')
-            .attr('stroke-width', 1.5)
-            .transition()
-            .delay((_, i) => (i * 60) + 300)
-            .duration(400)
-            .attr('r', 2.5);
+        // 4. Draw continuous Timeloop Trajectory Curve
+        const arcGenerator = d3.arc()
+            .innerRadius(radius - 2.5)
+            .outerRadius(radius + 2.5)
+            .startAngle(startAngle + Math.PI / 2)
+            .endAngle(startAngle + sweepAngle + Math.PI / 2)
+            .cornerRadius(3);
 
-        // X-Axis (Dates)
-        const xAxis = d3.axisBottom(xScale)
-            .ticks(containerWidth < 500 ? 3 : 5)
-            .tickFormat(d => d3.timeFormat('%b %d')(d as Date))
-            .tickSizeOuter(0);
+        g.append('path')
+            .attr('d', arcGenerator as any)
+            .attr('fill', 'url(#timeloop-arc-grad)')
+            .attr('filter', 'url(#timeloop-glow)')
+            .attr('opacity', 0.95);
 
-        const gx = g.append('g')
-            .attr('transform', `translate(0,${innerHeight})`)
-            .call(xAxis);
+        // 5. Radar Compass Dial Ticks
+        const tickCount = 24;
+        for (let i = 0; i < tickCount; i++) {
+            const tickAngle = (i / tickCount) * Math.PI * 2;
+            const isMajor = i % 6 === 0;
+            const r1 = radius + 6;
+            const r2 = radius + (isMajor ? 11 : 8);
+            g.append('line')
+                .attr('x1', Math.cos(tickAngle) * r1)
+                .attr('y1', Math.sin(tickAngle) * r1)
+                .attr('x2', Math.cos(tickAngle) * r2)
+                .attr('y2', Math.sin(tickAngle) * r2)
+                .attr('stroke', isMajor ? '#f59e0b' : '#52525b')
+                .attr('stroke-width', isMajor ? 1.5 : 0.8)
+                .attr('opacity', isMajor ? 0.7 : 0.3);
+        }
 
-        gx.select('.domain').attr('stroke', '#3f3f46');
-        gx.selectAll('.tick line').attr('stroke', '#3f3f46');
-        gx.selectAll('.tick text')
-            .attr('fill', '#71717a')
-            .attr('font-size', '8.5px')
-            .attr('font-family', 'monospace')
-            .attr('dy', '6px');
+        // 6. Interactive Timeloop Timeline Node Orbs
+        pointAngles.forEach((pt) => {
+            const isHovered = hoveredPointId === pt.id;
+            const isLatest = pt.type === 'current' || pt.id === pointAngles[pointAngles.length - 1].id;
 
-        // Y-Axis (RP Values)
-        const yAxis = d3.axisLeft(yScale)
-            .ticks(3)
-            .tickFormat(d => `${d}`)
-            .tickSizeOuter(0);
+            const nodeGroup = g.append('g')
+                .attr('class', 'timeloop-node cursor-pointer')
+                .on('mouseenter', () => setHoveredPointId(pt.id))
+                .on('mouseleave', () => setHoveredPointId(null))
+                .on('click', () => setHoveredPointId(pt.id));
 
-        const gy = g.append('g').call(yAxis);
-        gy.select('.domain').attr('stroke', '#3f3f46');
-        gy.selectAll('.tick line').attr('stroke', '#27272a');
-        gy.selectAll('.tick text')
-            .attr('fill', '#71717a')
-            .attr('font-size', '8.5px')
-            .attr('font-family', 'monospace');
+            // Outer Pulse Ring on Hover or Current Standing
+            if (isHovered || isLatest) {
+                nodeGroup.append('circle')
+                    .attr('cx', pt.x)
+                    .attr('cy', pt.y)
+                    .attr('r', isHovered ? 8 : 6)
+                    .attr('fill', 'none')
+                    .attr('stroke', isHovered ? '#f59e0b' : '#10b981')
+                    .attr('stroke-width', 1.5)
+                    .attr('stroke-opacity', 0.7)
+                    .attr('filter', 'url(#timeloop-glow)');
+            }
 
-        // Interactive Crosshair & Live Hover Overlay
-        const bisectDate = d3.bisector<XpDataPoint, Date>(d => d.date).left;
+            // Core Node Dot
+            nodeGroup.append('circle')
+                .attr('cx', pt.x)
+                .attr('cy', pt.y)
+                .attr('r', isHovered ? 4.5 : isLatest ? 3.5 : 2.5)
+                .attr('fill', isLatest ? '#10b981' : pt.type === 'adjustment' ? '#3b82f6' : '#f59e0b')
+                .attr('stroke', '#ffffff')
+                .attr('stroke-width', isHovered ? 1.5 : 0.8)
+                .attr('shadow-md', 'true');
+        });
 
-        const crosshairGroup = g.append('g')
-            .attr('class', 'crosshair')
-            .style('display', 'none');
-
-        const verticalLine = crosshairGroup.append('line')
-            .attr('y1', 0)
-            .attr('y2', innerHeight)
-            .attr('stroke', '#fbbf24')
-            .attr('stroke-width', 1.5)
-            .attr('stroke-dasharray', '3,3');
-
-        const activeCircleHalo = crosshairGroup.append('circle')
-            .attr('r', 10)
-            .attr('fill', '#f59e0b')
-            .attr('fill-opacity', 0.3)
-            .attr('stroke', '#fbbf24')
-            .attr('stroke-width', 1.5);
-
-        const activeCircle = crosshairGroup.append('circle')
-            .attr('r', 4.5)
-            .attr('fill', '#ffffff')
-            .attr('stroke', '#f59e0b')
-            .attr('stroke-width', 2);
-
-        // Full transparent overlay for smooth mouse interactions
-        g.append('rect')
-            .attr('class', 'overlay')
-            .attr('width', innerWidth)
-            .attr('height', innerHeight)
-            .attr('fill', 'transparent')
-            .attr('cursor', 'crosshair')
-            .on('mouseenter', () => crosshairGroup.style('display', null))
-            .on('mouseleave', () => {
-                crosshairGroup.style('display', 'none');
-                setHoveredPoint(null);
-                setTooltipPos(null);
-            })
-            .on('mousemove', (event: MouseEvent) => {
-                const [pointerX] = d3.pointer(event);
-                const x0 = xScale.invert(pointerX);
-                const idx = bisectDate(filteredPoints, x0, 1);
-                const d0 = filteredPoints[idx - 1];
-                const d1 = filteredPoints[idx];
-
-                let closest = d0;
-                if (d0 && d1) {
-                    closest = x0.getTime() - d0.date.getTime() > d1.date.getTime() - x0.getTime() ? d1 : d0;
-                } else if (d1) {
-                    closest = d1;
-                }
-
-                if (closest) {
-                    const cx = xScale(closest.date);
-                    const cy = yScale(closest.cumulativeXp);
-
-                    verticalLine.attr('x1', cx).attr('x2', cx);
-                    activeCircleHalo.attr('cx', cx).attr('cy', cy);
-                    activeCircle.attr('cx', cx).attr('cy', cy);
-                    
-                    setHoveredPoint(closest);
-                    
-                    // Compute absolute pixel coordinates within container for floating tooltip
-                    setTooltipPos({
-                        x: cx + margin.left,
-                        y: cy + margin.top
-                    });
-                }
-            });
-
-    }, [filteredPoints, containerWidth, allTiers]);
+    }, [filteredPoints, containerWidth, hoveredPointId, totalXp]);
 
     return (
-        <div className="p-2.5 sm:p-3 rounded-xl bg-zinc-950/90 border border-zinc-800/80 shadow-md relative overflow-hidden backdrop-blur-md">
-            
-            {/* Compact Header: Title & Time Range Toggles */}
-            <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-zinc-800/70">
-                <div className="flex items-center gap-1.5">
-                    <TrendingUp className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <h3 className="text-xs sm:text-sm font-black font-mono text-white uppercase tracking-wider truncate">
-                        Season RP Growth & Trajectory
-                    </h3>
+        <div 
+            ref={containerRef}
+            className="w-full rounded-3xl bg-gradient-to-br from-zinc-950/95 via-zinc-900/90 to-black p-3 sm:p-4 shadow-[0_20px_50px_rgba(0,0,0,0.95),inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-2xl font-mono text-xs space-y-3 shrink-0 overflow-hidden"
+        >
+            {/* Header Control Strip (Free View, Zero Outlines) */}
+            <div className="flex items-center justify-between gap-2 flex-wrap pb-1 border-b border-white/5">
+                <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shadow-inner">
+                        <TrendingUp className="w-3 h-3 text-amber-400" />
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-black text-white uppercase tracking-wider text-[11px]">
+                            TIMELOOP RP TRAJECTORY
+                        </span>
+                        <span className="px-1.5 py-0.2 rounded text-[8px] font-bold bg-amber-500/15 text-amber-300">
+                            3D CIRCULAR RADAR
+                        </span>
+                    </div>
                 </div>
 
-                {/* Range Filter Pills */}
-                <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-900/90 border border-zinc-800 shrink-0">
+                {/* Range Filter Buttons */}
+                <div className="flex items-center gap-0.5 p-0.5 rounded-xl bg-zinc-900/90 shadow-inner">
                     {[
                         { id: 'all', label: 'All' },
                         { id: '30d', label: '30D' },
@@ -576,10 +444,10 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
                         <button
                             key={tab.id}
                             onClick={() => setTimeRange(tab.id as any)}
-                            className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase transition-all ${
+                            className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase transition-all ${
                                 timeRange === tab.id
-                                    ? 'bg-amber-500 text-black shadow-sm'
-                                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                                    ? 'bg-amber-500 text-black shadow-md font-extrabold'
+                                    : 'text-zinc-400 hover:text-white'
                             }`}
                         >
                             {tab.label}
@@ -588,78 +456,89 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
                 </div>
             </div>
 
-            {/* Streamlined Metrics Micro-Strip */}
-            <div className="grid grid-cols-3 gap-1.5 mb-1.5">
-                <div className="px-2 py-1 rounded-md bg-zinc-900/40 border border-zinc-800/60 flex items-center justify-between">
-                    <span className="text-[9px] font-mono uppercase text-zinc-400">Peak Gain</span>
-                    <span className="text-xs font-mono font-bold text-emerald-400">+{statsSummary.highestGain.toLocaleString()}</span>
+            {/* Side-by-Side Free-View Radar & Live Tactical HUD */}
+            <div className="flex flex-col sm:flex-row items-center justify-around gap-4 pt-1">
+                {/* 1. Holographic Circle Timeloop SVG Chart */}
+                <div className="relative flex items-center justify-center shrink-0">
+                    <svg ref={svgRef} className="block overflow-visible" />
+
+                    {/* Centered Holo HUD (Inside Timeloop Core) */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none p-4">
+                        <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">
+                            {activePoint?.id === 'current_standing' || !hoveredPointId ? 'SEASON RP' : 'COMBAT GAIN'}
+                        </span>
+                        <span className="text-sm sm:text-base font-black text-white font-mono tracking-tight drop-shadow-md">
+                            {(activePoint?.cumulativeXp || totalXp).toLocaleString()}
+                        </span>
+                        <span className="text-[8.5px] font-bold text-emerald-400 flex items-center gap-0.5">
+                            <Sparkles className="w-2.5 h-2.5 text-emerald-400" />
+                            <span>{activePoint?.rankName || statsSummary.currentTierName}</span>
+                        </span>
+                    </div>
                 </div>
 
-                <div className="px-2 py-1 rounded-md bg-zinc-900/40 border border-zinc-800/60 flex items-center justify-between">
-                    <span className="text-[9px] font-mono uppercase text-zinc-400">Avg / Op</span>
-                    <span className="text-xs font-mono font-bold text-zinc-200">~{statsSummary.avgGain.toLocaleString()}</span>
-                </div>
+                {/* 2. Compact Live Metrics & Focused Node Info Panel */}
+                <div className="flex-1 w-full space-y-2 font-mono text-[10px]">
+                    {/* Live Inspection Card */}
+                    <div className="p-2.5 rounded-2xl bg-zinc-900/80 shadow-[0_8px_20px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.04)] space-y-1.5">
+                        <div className="flex items-center justify-between gap-1 text-[9px] text-zinc-400">
+                            <span className="flex items-center gap-1 text-amber-400 font-bold uppercase truncate">
+                                <Crosshair className="w-3 h-3 text-amber-400" />
+                                {activePoint?.label || 'Current Record'}
+                            </span>
+                            <span className="text-[8.5px] text-zinc-400 whitespace-nowrap">
+                                {activePoint?.dateLabel || 'Today'}
+                            </span>
+                        </div>
 
-                <div className="px-2 py-1 rounded-md bg-zinc-900/40 border border-zinc-800/60 flex items-center justify-between">
-                    <span className="text-[9px] font-mono uppercase text-zinc-400">Recorded Ops</span>
-                    <span className="text-xs font-mono font-bold text-amber-400">{statsSummary.totalRecordedEvents}</span>
-                </div>
-            </div>
+                        <div className="flex items-center justify-between text-[11px] pt-0.5">
+                            <span className="text-zinc-400">Total Accumulation:</span>
+                            <span className="font-bold text-white font-mono">
+                                {(activePoint?.cumulativeXp || totalXp).toLocaleString()} RP
+                            </span>
+                        </div>
 
-            {/* D3 SVG Line Chart Canvas & Floating Hover Tooltip */}
-            <div ref={containerRef} className="w-full relative min-h-[100px] sm:min-h-[115px] bg-zinc-950/80 rounded-lg border border-zinc-900/80 p-0.5 flex items-center justify-center">
-                <svg ref={svgRef} className="w-full block overflow-visible" />
-
-                {/* Floating Interactive Tooltip */}
-                {hoveredPoint && tooltipPos && (
-                    <div 
-                        className="absolute pointer-events-none z-30 transition-all duration-75 ease-out -translate-y-full"
-                        style={{
-                            left: `${Math.min(Math.max(tooltipPos.x, 70), containerWidth - 70)}px`,
-                            top: `${Math.max(tooltipPos.y - 6, 6)}px`,
-                            transform: 'translate(-50%, -100%)'
-                        }}
-                    >
-                        <div className="bg-zinc-900/95 border border-amber-500/50 shadow-lg rounded-lg p-1.5 px-2 min-w-[125px] max-w-[190px] text-xs font-mono backdrop-blur-md">
-                            <div className="flex items-center justify-between gap-1.5 border-b border-zinc-800 pb-0.5 mb-0.5">
-                                <span className="font-bold text-amber-400 uppercase truncate text-[9px]">
-                                    {hoveredPoint.label}
-                                </span>
-                                <span className="text-[8px] text-zinc-400 whitespace-nowrap">
-                                    {hoveredPoint.dateLabel}
+                        {activePoint && activePoint.xpDelta > 0 && (
+                            <div className="flex items-center justify-between text-[10px]">
+                                <span className="text-zinc-400">Node Delta:</span>
+                                <span className="font-bold text-emerald-400">
+                                    +{activePoint.xpDelta} RP
                                 </span>
                             </div>
+                        )}
+                    </div>
 
-                            <div className="flex items-center justify-between gap-2 text-[9px] mb-0.5">
-                                <span className="text-zinc-400">Total:</span>
-                                <span className="font-bold font-mono text-white">
-                                    {hoveredPoint.cumulativeXp.toLocaleString()} RP
-                                </span>
-                            </div>
-
-                            {hoveredPoint.xpDelta !== 0 && (
-                                <div className="flex items-center justify-between gap-2 text-[8.5px]">
-                                    <span className="text-zinc-400">Delta:</span>
-                                    <span className={`font-bold font-mono ${hoveredPoint.xpDelta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                        {hoveredPoint.xpDelta >= 0 ? `+${hoveredPoint.xpDelta}` : hoveredPoint.xpDelta} RP
-                                    </span>
-                                </div>
-                            )}
-
-                            {hoveredPoint.rankName && (
-                                <div className="flex items-center justify-between gap-2 text-[8px] text-zinc-400 pt-0.5 mt-0.5 border-t border-zinc-800/70">
-                                    <span>Milestone:</span>
-                                    <span className="text-amber-300 font-bold uppercase">{hoveredPoint.rankName}</span>
-                                </div>
-                            )}
-
-                            {/* Pointer Arrow */}
-                            <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-zinc-900 border-r border-b border-amber-500/50 rotate-45" />
+                    {/* Season Performance Micro Gauges */}
+                    <div className="grid grid-cols-2 gap-1.5 text-[9px]">
+                        <div className="p-2 rounded-xl bg-zinc-950/70 shadow-inner flex flex-col justify-between">
+                            <span className="text-zinc-400 uppercase">Peak Operation</span>
+                            <span className="text-xs font-bold text-emerald-400 font-mono">
+                                +{statsSummary.highestGain.toLocaleString()} RP
+                            </span>
+                        </div>
+                        <div className="p-2 rounded-xl bg-zinc-950/70 shadow-inner flex flex-col justify-between">
+                            <span className="text-zinc-400 uppercase">Avg Gain / Op</span>
+                            <span className="text-xs font-bold text-amber-400 font-mono">
+                                ~{statsSummary.avgGain.toLocaleString()} RP
+                            </span>
                         </div>
                     </div>
-                )}
-            </div>
 
+                    {/* Progress to Next Tier */}
+                    <div className="p-2 rounded-xl bg-zinc-950/70 shadow-inner space-y-1">
+                        <div className="flex items-center justify-between text-[8.5px]">
+                            <span className="text-zinc-400">Next Milestone: <strong className="text-white">{statsSummary.nextTierName}</strong></span>
+                            <span className="text-amber-400 font-bold">{statsSummary.rankProgressPct}%</span>
+                        </div>
+                        <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden flex shadow-inner">
+                            <div 
+                                className="bg-gradient-to-r from-amber-500 to-emerald-400 h-full transition-all duration-500 rounded-full"
+                                style={{ width: `${statsSummary.rankProgressPct}%` }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

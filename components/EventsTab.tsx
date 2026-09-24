@@ -9,6 +9,7 @@ import { EventCalendarView } from './EventCalendarView';
 import { LayoutGrid, CalendarDays } from 'lucide-react';
 import { DataContext } from '../data/DataContext';
 import { EquipmentRentalsSummaryModal } from './EquipmentRentalsSummaryModal';
+import { AdminEventTrendsD3Chart } from './AdminEventTrendsD3Chart';
 
 interface EventsTabProps {
     events: GameEvent[];
@@ -36,8 +37,15 @@ export const EventsTab: React.FC<EventsTabProps> = ({ events, signups = [], onMa
 
     return (
         <DashboardCard title="Event Management" icon={<CalendarIcon className="w-6 h-6"/>}>
-            <div className="p-2 sm:p-4 space-y-3">
-                 <div className="flex flex-wrap items-center justify-between mb-3 sm:mb-4 gap-2">
+            <div className="p-2 sm:p-4 space-y-4">
+                 {/* D3.js Event Sign-up & Gear Rental Trends Chart */}
+                 <AdminEventTrendsD3Chart 
+                     events={events} 
+                     signups={effectiveSignups} 
+                     inventory={dataContext?.inventory || []} 
+                 />
+
+                 <div className="flex flex-wrap items-center justify-between mb-3 sm:mb-4 gap-2 pt-2">
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="flex space-x-1 p-0.5 sm:p-1 bg-zinc-900 rounded-lg border border-zinc-700">
                             <Button size="sm" className="!px-2 !py-1 !text-[10px] sm:!text-xs" variant={filter === 'upcoming' ? 'primary' : 'secondary'} onClick={() => setFilter('upcoming')}>Upcoming ({upcomingEvents.length})</Button>

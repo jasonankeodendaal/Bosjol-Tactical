@@ -161,7 +161,7 @@ export const PlayerShopShowcase: React.FC<PlayerShopShowcaseProps> = ({ inventor
                                 </span>
                             </div>
                             <p className="text-xs text-zinc-400 leading-relaxed mt-0.5">
-                                Browse available rental packages, primary munitions, tactical gear & BB consumables. Purchases and assignments finalize on-site at the counter.
+                                Browse items available in the shop catalogue. Only items toggled for shop in the inventory are showcased here.
                             </p>
                         </div>
                     </div>
@@ -368,17 +368,6 @@ export const PlayerShopShowcase: React.FC<PlayerShopShowcaseProps> = ({ inventor
                             </div>
                         </div>
                     )}
-
-                    {/* Marshal Note / Counter Instructions */}
-                    <div className="p-3.5 rounded-3xl bg-zinc-950/60 shadow-[0_12px_28px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.04)] text-zinc-400 text-xs space-y-1">
-                        <div className="flex items-center gap-1.5 text-white font-bold text-[11px] font-mono uppercase">
-                            <Info className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Game Day Field Pickup</span>
-                        </div>
-                        <p className="text-[10px] leading-relaxed text-zinc-400">
-                            Pre-game rentals, ammunition, and gear requests can be reserved at registration or counter checkout on event morning.
-                        </p>
-                    </div>
                 </div>
 
                 {/* Right Side Main Area: Categorized Open-Spaced Grid (Shrink to Fit, No Box Outlines) */}

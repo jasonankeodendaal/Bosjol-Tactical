@@ -2153,7 +2153,11 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                             )}
                             {activeTab === 'Game Types' && <PlayerGameTypesView />}
                             {activeTab === 'Shop' && (
-                                <PlayerShopShowcase inventory={inventory || data?.inventory || []} player={player} />
+                                <PlayerShopShowcase 
+                                    inventory={inventory || data?.inventory || []} 
+                                    player={player} 
+                                    onUpdatePlayer={onPlayerUpdate}
+                                />
                             )}
                             {activeTab === 'Expenses' && (
                                 <PlayerExpenseHistoryTab 

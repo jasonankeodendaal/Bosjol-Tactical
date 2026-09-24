@@ -1087,6 +1087,10 @@ export function normalizePlayerRow(raw: any, ranks?: Rank[]): Player {
         bio: raw.bio || '',
         preferredRole: raw.preferredRole || raw.preferredrole || raw.preferred_role || 'Assault',
         activeAuthUID: raw.activeAuthUID || raw.activeauthuid || raw.active_auth_uid || '',
+        wishlist: Array.isArray(raw.wishlist) ? raw.wishlist : safeJsonParse<string[]>(raw.wishlist, []),
+        lastSeenXp: raw.lastSeenXp ?? raw.lastseenxp ?? raw.last_seen_xp,
+        lastSeenTierId: raw.lastSeenTierId || raw.lastseentierid || raw.last_seen_tier_id || '',
+        lastSeenBadges: Array.isArray(raw.lastSeenBadges) ? raw.lastSeenBadges : safeJsonParse<string[]>(raw.lastSeenBadges ?? raw.lastseenbadges ?? raw.last_seen_badges, []),
     };
 
     // Auto-calculate exact rank tier if ranks array provided

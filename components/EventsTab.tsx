@@ -83,8 +83,12 @@ export const EventsTab: React.FC<EventsTabProps> = ({ events, signups = [], onMa
                     </div>
                 </div>
 
-                {/* Tiny & Simple Event Sign-up & Gear Rental Trends (D3.js) */}
-                <EventSignupsGearRentalTrendsChart events={events} signups={effectiveSignups} />
+                {/* Tactical Time Board: Event Sign-up & Gear Rental Trends (D3.js) */}
+                <EventSignupsGearRentalTrendsChart 
+                    events={events} 
+                    signups={effectiveSignups} 
+                    onSelectEventId={(id) => onManageEvent(id)}
+                />
 
                 {viewMode === 'calendar' ? (
                     <EventCalendarView

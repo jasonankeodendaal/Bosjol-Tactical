@@ -423,19 +423,21 @@ export const EventCountdownNotification: React.FC<EventCountdownNotificationProp
         return ms > 0 && ms <= 24 * 60 * 60 * 1000;
     }, [activeEvent, timeRemaining]);
 
+    // In-memory record of sent notification IDs (zero localStorage)
+    const sentNotifKeysRef = useRef<Set<string>>(new Set());
+
     // Dispatch background mobile device notification once when inside 24h window
     useEffect(() => {
         if (isWithin24Hours && activeEvent) {
             const notifKey = `notif_24h_sent_${activeEvent.id}`;
-            const alreadySent = localStorage.getItem(notifKey);
-            if (!alreadySent) {
+            if (!sentNotifKeysRef.current.has(notifKey)) {
+                sentNotifKeysRef.current.add(notifKey);
                 notifyEventReminder(
                     activeEvent.title, 
                     activeEvent.date, 
                     activeEvent.startTime || '09:00 AM', 
                     activeEvent.id
                 ).catch(() => {});
-                localStorage.setItem(notifKey, new Date().toISOString());
             }
         }
     }, [isWithin24Hours, activeEvent]);

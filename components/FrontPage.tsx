@@ -185,9 +185,7 @@ interface FrontPageProps {
 export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLinks, carouselMedia, onEnter }) => {
     const [showSignUpModal, setShowSignUpModal] = useState(false);
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
-    const [isMuted, setIsMuted] = useState(() => {
-        return localStorage.getItem('app_audio_muted') === 'true';
-    });
+    const [isMuted, setIsMuted] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     const loginBackgroundUrl = companyDetails.loginBackgroundUrl;
@@ -225,8 +223,7 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
             if (document.hidden || document.visibilityState === 'hidden') {
                 audioRef.current.pause();
             } else if (document.visibilityState === 'visible') {
-                const currentMuted = localStorage.getItem('app_audio_muted') === 'true';
-                if (!currentMuted && loginAudioUrl && loginAudioUrl.trim() !== '') {
+                if (!isMuted && loginAudioUrl && loginAudioUrl.trim() !== '') {
                     audioRef.current.volume = 0.5;
                     audioRef.current.muted = false;
                     audioRef.current.play().catch(() => {});
@@ -242,8 +239,7 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
 
         const handleFocus = () => {
             if (!audioRef.current) return;
-            const currentMuted = localStorage.getItem('app_audio_muted') === 'true';
-            if (!currentMuted && loginAudioUrl && loginAudioUrl.trim() !== '' && document.visibilityState === 'visible') {
+            if (!isMuted && loginAudioUrl && loginAudioUrl.trim() !== '' && document.visibilityState === 'visible') {
                 audioRef.current.volume = 0.5;
                 audioRef.current.muted = false;
                 audioRef.current.play().catch(() => {});
@@ -261,13 +257,12 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
             window.removeEventListener('focus', handleFocus);
             window.removeEventListener('pagehide', handleBlur);
         };
-    }, [loginAudioUrl]);
+    }, [loginAudioUrl, isMuted]);
 
     useEffect(() => {
         if (audioRef.current) {
             audioRef.current.muted = isMuted;
         }
-        localStorage.setItem('app_audio_muted', String(isMuted));
     }, [isMuted]);
 
     const toggleMute = () => {
@@ -276,7 +271,6 @@ export const FrontPage: React.FC<FrontPageProps> = ({ companyDetails, socialLink
             audioRef.current.muted = nextMuted;
         }
         setIsMuted(nextMuted);
-        localStorage.setItem('app_audio_muted', String(nextMuted));
     };
 
     const handleEnter = () => {

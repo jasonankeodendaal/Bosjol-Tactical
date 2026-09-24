@@ -87,35 +87,22 @@ export const requestNotificationPermission = async (): Promise<NotificationPermi
     }
 };
 
+// In-memory runtime cache for notification preferences (zero localStorage)
+let inMemoryPreferences: NotificationPreferences = { ...DEFAULT_PREFERENCES };
+
 /**
- * Load user notification preferences from local storage
+ * Load user notification preferences (in-memory, no localStorage)
  */
 export const getNotificationPreferences = (): NotificationPreferences => {
-    if (typeof window === 'undefined') return DEFAULT_PREFERENCES;
-    try {
-        const saved = localStorage.getItem(PREFS_STORAGE_KEY);
-        if (saved) {
-            return { ...DEFAULT_PREFERENCES, ...JSON.parse(saved) };
-        }
-    } catch {
-        // Ignore fallback
-    }
-    return DEFAULT_PREFERENCES;
+    return inMemoryPreferences;
 };
 
 /**
- * Save user notification preferences to local storage
+ * Save user notification preferences (in-memory, no localStorage)
  */
 export const saveNotificationPreferences = (prefs: Partial<NotificationPreferences>): NotificationPreferences => {
-    const updated = { ...getNotificationPreferences(), ...prefs };
-    if (typeof window !== 'undefined') {
-        try {
-            localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(updated));
-        } catch {
-            // Ignore fallback
-        }
-    }
-    return updated;
+    inMemoryPreferences = { ...inMemoryPreferences, ...prefs };
+    return inMemoryPreferences;
 };
 
 /**

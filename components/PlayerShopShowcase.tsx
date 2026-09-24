@@ -38,26 +38,13 @@ export const PlayerShopShowcase: React.FC<PlayerShopShowcaseProps> = ({ inventor
     const [wishlistOnly, setWishlistOnly] = useState<boolean>(false);
     const [sortBy, setSortBy] = useState<'featured' | 'priceLow' | 'priceHigh' | 'stock'>('featured');
 
-    // Wishlist bookmark persistence in localStorage
-    const [wishlistIds, setWishlistIds] = useState<string[]>(() => {
-        try {
-            const saved = localStorage.getItem('bosjol_player_wishlist');
-            return saved ? JSON.parse(saved) : [];
-        } catch {
-            return [];
-        }
-    });
+    // Wishlist bookmark state (in-memory, zero localStorage)
+    const [wishlistIds, setWishlistIds] = useState<string[]>([]);
 
     const toggleWishlist = (itemId: string, e: React.MouseEvent) => {
         e.stopPropagation();
         setWishlistIds(prev => {
-            const next = prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId];
-            try {
-                localStorage.setItem('bosjol_player_wishlist', JSON.stringify(next));
-            } catch {
-                // Ignore storage error
-            }
-            return next;
+            return prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId];
         });
     };
 

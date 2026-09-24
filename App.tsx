@@ -300,14 +300,13 @@ const AppContent: React.FC = () => {
     const currentPlayer = players.find(p => p.id === user?.id);
     const hasPerformedReset = useRef(false); // Prevent multiple runs in one session
     const sessionRef = useRef<{ id: string | null }>({ id: null });
+    const lastSeenPlayerStateRef = useRef<Map<string, { xp: number; tierId?: string; badgeIds: string[] }>>(new Map());
 
     // Define playAudio function with visibility check
     const playAudio = useCallback(() => {
         if (document.hidden || document.visibilityState === 'hidden') {
             return;
         }
-        const isMuted = localStorage.getItem('app_audio_muted') === 'true';
-        if (isMuted) return;
 
         if (audioRef.current) {
             audioRef.current.play().catch(e => {
@@ -437,16 +436,18 @@ const AppContent: React.FC = () => {
     const checkForPromotions = useCallback((player: Player) => {
         if (promotion || !ranks || ranks.length === 0) return;
     
-        const lastSeenXpStr = localStorage.getItem(`lastSeenXp_${player.id}`);
-        if (lastSeenXpStr === null) {
-            localStorage.setItem(`lastSeenXp_${player.id}`, String(player.stats.xp));
-            localStorage.setItem(`lastSeenTierId_${player.id}`, player.rank?.id || '');
-            localStorage.setItem(`lastSeenBadges_${player.id}`, JSON.stringify((player.badges || []).map(b => b.id)));
+        const seenState = lastSeenPlayerStateRef.current.get(player.id);
+        if (!seenState) {
+            lastSeenPlayerStateRef.current.set(player.id, {
+                xp: player.stats.xp,
+                tierId: player.rank?.id || '',
+                badgeIds: (player.badges || []).map(b => b.id),
+            });
             return;
         }
-        const lastSeenXp = parseInt(lastSeenXpStr, 10);
-        const lastSeenTierId = localStorage.getItem(`lastSeenTierId_${player.id}`);
-        const lastSeenBadges: string[] = JSON.parse(localStorage.getItem(`lastSeenBadges_${player.id}`) || '[]');
+        const lastSeenXp = seenState.xp;
+        const lastSeenTierId = seenState.tierId;
+        const lastSeenBadges = seenState.badgeIds;
     
         if (player.stats.xp > lastSeenXp) {
             const oldTier = lastSeenTierId ? (ranks.flatMap(r => r.tiers || []).find(t => t?.id === lastSeenTierId) || getTierForXp(lastSeenXp, ranks)) : getTierForXp(lastSeenXp, ranks);
@@ -507,11 +508,11 @@ const AppContent: React.FC = () => {
                 
                 updateDoc('players', updatedPlayer);
                 
-                localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(finalXp));
-                localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify((updatedPlayer.badges || []).map(b => b.id)));
-                if (finalTier) {
-                    localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
-                }
+                lastSeenPlayerStateRef.current.set(currentPlayer.id, {
+                    xp: finalXp,
+                    tierId: finalTier?.id,
+                    badgeIds: (updatedPlayer.badges || []).map(b => b.id),
+                });
             } else {
                 const finalTier = newTier || getTierForXp(currentPlayer.stats.xp, ranks) || currentPlayer.rank;
                 if (finalTier && (!currentPlayer.rank || currentPlayer.rank.id !== finalTier.id)) {
@@ -520,11 +521,11 @@ const AppContent: React.FC = () => {
                         rank: finalTier,
                     });
                 }
-                localStorage.setItem(`lastSeenXp_${currentPlayer.id}`, String(currentPlayer.stats.xp));
-                localStorage.setItem(`lastSeenBadges_${currentPlayer.id}`, JSON.stringify((currentPlayer.badges || []).map(b => b.id)));
-                if (finalTier) {
-                    localStorage.setItem(`lastSeenTierId_${currentPlayer.id}`, finalTier.id);
-                }
+                lastSeenPlayerStateRef.current.set(currentPlayer.id, {
+                    xp: currentPlayer.stats.xp,
+                    tierId: finalTier?.id,
+                    badgeIds: (currentPlayer.badges || []).map(b => b.id),
+                });
             }
         }
         setPromotion(null);
@@ -661,8 +662,7 @@ const AppContent: React.FC = () => {
             if (document.hidden || document.visibilityState === 'hidden') {
                 audioRef.current.pause();
             } else if (document.visibilityState === 'visible') {
-                const isMuted = localStorage.getItem('app_audio_muted') === 'true';
-                if (!isMuted && audioRef.current.src && audioRef.current.paused && isAuthenticated && !showFrontPage) {
+                if (audioRef.current.src && audioRef.current.paused && isAuthenticated && !showFrontPage) {
                     playAudio();
                 }
             }
@@ -676,8 +676,7 @@ const AppContent: React.FC = () => {
 
         const handleFocus = () => {
             if (!audioRef.current) return;
-            const isMuted = localStorage.getItem('app_audio_muted') === 'true';
-            if (!isMuted && audioRef.current.src && audioRef.current.paused && document.visibilityState === 'visible' && isAuthenticated && !showFrontPage) {
+            if (audioRef.current.src && audioRef.current.paused && document.visibilityState === 'visible' && isAuthenticated && !showFrontPage) {
                 playAudio();
             }
         };

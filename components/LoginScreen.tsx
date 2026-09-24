@@ -24,9 +24,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isMuted, setIsMuted] = useState(() => {
-    return localStorage.getItem('app_audio_muted') === 'true';
-  });
+  const [isMuted, setIsMuted] = useState(false);
   const [showRecruitForm, setShowRecruitForm] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -56,8 +54,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
       if (document.hidden || document.visibilityState === 'hidden') {
         audioRef.current.pause();
       } else if (document.visibilityState === 'visible') {
-        const currentMuted = localStorage.getItem('app_audio_muted') === 'true';
-        if (!currentMuted && audioUrl && audioUrl.trim() !== '') {
+        if (!isMuted && audioUrl && audioUrl.trim() !== '') {
           audioRef.current.volume = 0.5;
           audioRef.current.muted = false;
           audioRef.current.play().catch(() => {});
@@ -73,8 +70,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
 
     const handleFocus = () => {
       if (!audioRef.current) return;
-      const currentMuted = localStorage.getItem('app_audio_muted') === 'true';
-      if (!currentMuted && audioUrl && audioUrl.trim() !== '' && document.visibilityState === 'visible') {
+      if (!isMuted && audioUrl && audioUrl.trim() !== '' && document.visibilityState === 'visible') {
         audioRef.current.volume = 0.5;
         audioRef.current.muted = false;
         audioRef.current.play().catch(() => {});
@@ -92,13 +88,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('pagehide', handleBlur);
     };
-  }, [audioUrl]);
+  }, [audioUrl, isMuted]);
 
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.muted = isMuted;
     }
-    localStorage.setItem('app_audio_muted', String(isMuted));
   }, [isMuted]);
 
   const toggleMute = () => {
@@ -107,7 +102,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ companyDetails, social
       audioRef.current.muted = nextMuted;
     }
     setIsMuted(nextMuted);
-    localStorage.setItem('app_audio_muted', String(nextMuted));
   };
   
   const performLogin = async () => {

@@ -100,6 +100,10 @@ export interface PlayerCore extends User {
   bio?: string;
   preferredRole?: PlayerRole;
   activeAuthUID?: string;
+  wishlist?: string[];
+  lastSeenXp?: number;
+  lastSeenTierId?: string;
+  lastSeenBadges?: string[];
 }
 
 // This is the composed type used by components, with sub-collection data merged in.

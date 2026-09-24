@@ -1105,7 +1105,6 @@ const EventsTab: React.FC<Pick<PlayerDashboardProps, 'events' | 'player' | 'onEv
                     <EventCalendarView
                         events={events}
                         onSelectEvent={(ev) => handleSelectEvent(ev)}
-                        activeFilter={filter}
                     />
                 ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-2.5 max-h-[72vh] overflow-y-auto pr-1 sm:pr-1.5 perspective-[1000px]">
@@ -2153,11 +2152,7 @@ export const PlayerDashboard: React.FC<PlayerDashboardProps> = (props) => {
                             )}
                             {activeTab === 'Game Types' && <PlayerGameTypesView />}
                             {activeTab === 'Shop' && (
-                                <PlayerShopShowcase 
-                                    inventory={inventory || data?.inventory || []} 
-                                    player={player} 
-                                    onUpdatePlayer={onPlayerUpdate}
-                                />
+                                <PlayerShopShowcase inventory={inventory || data?.inventory || []} player={player} />
                             )}
                             {activeTab === 'Expenses' && (
                                 <PlayerExpenseHistoryTab 

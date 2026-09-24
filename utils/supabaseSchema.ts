@@ -2790,6 +2790,162 @@ BEGIN
 END $$;
 `;
 
+export const SHOP_POS_SQL_SNIPPET = `-- =========================================================================
+-- BOSJOL TACTICAL AIRSOFT: SHOP POINT OF SALE (POS) & LIVE SYNC MIGRATION
+-- Run this idempotent script in the Supabase SQL Editor (Dashboard -> SQL Editor -> New Query -> Run)
+-- to ensure full POS sales persistence, real-time inventory stock sync, and receipt ledger auditing.
+-- =========================================================================
+
+-- 1. EXTENSIONS
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- 2. INVENTORY TABLE SETUP & POS COLUMNS
+CREATE TABLE IF NOT EXISTS public.inventory (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    category TEXT DEFAULT 'Gear',
+    quantity NUMERIC DEFAULT 0,
+    stock NUMERIC DEFAULT 0,
+    "salePrice" NUMERIC DEFAULT 0,
+    saleprice NUMERIC DEFAULT 0,
+    sale_price NUMERIC DEFAULT 0,
+    price NUMERIC DEFAULT 0,
+    "availableInShop" BOOLEAN DEFAULT true,
+    availableinshop BOOLEAN DEFAULT true,
+    available_in_shop BOOLEAN DEFAULT true,
+    "imageUrl" TEXT DEFAULT '',
+    imageurl TEXT DEFAULT '',
+    image_url TEXT DEFAULT '',
+    "rentalIncludes" TEXT DEFAULT '',
+    rentalincludes TEXT DEFAULT '',
+    rental_includes TEXT DEFAULT '',
+    sku TEXT DEFAULT '',
+    condition TEXT DEFAULT 'New',
+    description TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Ensure all expected inventory columns exist safely
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "salePrice" NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS saleprice NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS sale_price NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "availableInShop" BOOLEAN DEFAULT true;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS availableinshop BOOLEAN DEFAULT true;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS available_in_shop BOOLEAN DEFAULT true;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "rentalIncludes" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS rentalincludes TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS rental_includes TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS "imageUrl" TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS imageurl TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS sku TEXT DEFAULT '';
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS stock NUMERIC DEFAULT 0;
+ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS quantity NUMERIC DEFAULT 0;
+
+-- 3. TRANSACTIONS TABLE SETUP (POS SALES, RECEIPTS & AUDIT LEDGER)
+CREATE TABLE IF NOT EXISTS public.transactions (
+    id TEXT PRIMARY KEY,
+    description TEXT NOT NULL DEFAULT '',
+    amount NUMERIC DEFAULT 0,
+    type TEXT DEFAULT 'Retail Revenue',
+    date TEXT DEFAULT '',
+    "playerId" TEXT DEFAULT '',
+    playerid TEXT DEFAULT '',
+    "relatedPlayerId" TEXT DEFAULT '',
+    relatedplayerid TEXT DEFAULT '',
+    "eventId" TEXT DEFAULT '',
+    eventid TEXT DEFAULT '',
+    status TEXT DEFAULT 'completed',
+    "paymentMethod" TEXT DEFAULT 'Cash',
+    paymentmethod TEXT DEFAULT 'Cash',
+    payment_method TEXT DEFAULT 'Cash',
+    "paymentStatus" TEXT DEFAULT 'Paid',
+    paymentstatus TEXT DEFAULT 'Paid',
+    payment_status TEXT DEFAULT 'Paid',
+    "receiptNumber" TEXT DEFAULT '',
+    receiptnumber TEXT DEFAULT '',
+    receipt_number TEXT DEFAULT '',
+    items JSONB DEFAULT '[]'::jsonb,
+    subtotal NUMERIC DEFAULT 0,
+    discount NUMERIC DEFAULT 0,
+    "amountTendered" NUMERIC DEFAULT 0,
+    amounttendered NUMERIC DEFAULT 0,
+    amount_tendered NUMERIC DEFAULT 0,
+    "changeDue" NUMERIC DEFAULT 0,
+    changedue NUMERIC DEFAULT 0,
+    change_due NUMERIC DEFAULT 0,
+    notes TEXT DEFAULT '',
+    "cashierName" TEXT DEFAULT 'Admin Counter',
+    cashiername TEXT DEFAULT 'Admin Counter',
+    "customerName" TEXT DEFAULT 'Walk-in Operator',
+    customername TEXT DEFAULT 'Walk-in Operator',
+    "customerCallsign" TEXT DEFAULT '',
+    customercallsign TEXT DEFAULT '',
+    "customerCode" TEXT DEFAULT '',
+    customercode TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Ensure all expected transaction columns exist safely (both camelCase quoted and lowercase unquoted)
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT DEFAULT 'Cash';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paymentmethod TEXT DEFAULT 'Cash';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'Cash';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "receiptNumber" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS receiptnumber TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS receipt_number TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS items JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS subtotal NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS discount NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "amountTendered" NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS amounttendered NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS amount_tendered NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "changeDue" NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS changedue NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS change_due NUMERIC DEFAULT 0;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "cashierName" TEXT DEFAULT 'Admin Counter';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS cashiername TEXT DEFAULT 'Admin Counter';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "customerName" TEXT DEFAULT 'Walk-in Operator';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS customername TEXT DEFAULT 'Walk-in Operator';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "customerCallsign" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS customercallsign TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "customerCode" TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS customercode TEXT DEFAULT '';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS "paymentStatus" TEXT DEFAULT 'Paid';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS paymentstatus TEXT DEFAULT 'Paid';
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT '';
+
+-- 4. ROW LEVEL SECURITY & OPEN ACCESS POLICIES
+ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public full access on inventory" ON public.inventory;
+CREATE POLICY "Allow public full access on inventory" ON public.inventory FOR ALL USING (true) WITH CHECK (true);
+GRANT ALL ON TABLE public.inventory TO anon, authenticated, service_role;
+
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public full access on transactions" ON public.transactions;
+CREATE POLICY "Allow public full access on transactions" ON public.transactions FOR ALL USING (true) WITH CHECK (true);
+GRANT ALL ON TABLE public.transactions TO anon, authenticated, service_role;
+
+-- 5. ENABLE FULL REPLICA IDENTITY FOR REALTIME BROADCASTING
+ALTER TABLE public.inventory REPLICA IDENTITY FULL;
+ALTER TABLE public.transactions REPLICA IDENTITY FULL;
+
+-- 6. SUBSCRIBE TABLES TO SUPABASE REALTIME PUBLICATION
+DO $$
+BEGIN
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.inventory;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN OTHERS THEN NULL;
+    END;
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN OTHERS THEN NULL;
+    END;
+END $$;
+`;
+
 
 
 

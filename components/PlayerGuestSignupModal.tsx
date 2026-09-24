@@ -40,24 +40,30 @@ export const PlayerGuestSignupModal: React.FC<PlayerGuestSignupModalProps> = ({
         return inventory.filter(i => i.isRental && !/Rental\s*\d+/i.test(i.name));
     }, [inventory]);
 
-    // Initial state from existingGuestSignup
+    // Initial state from existingGuestSignup or automatic defaults
     const initialPrimaryRentalId = useMemo(() => {
-        if (!existingGuestSignup?.requestedGearIds) return primaryRentals[0]?.id || '';
-        return existingGuestSignup.requestedGearIds.find(id => {
-            const item = inventory.find(i => i.id === id);
-            return item && /Rental\s*\d+/i.test(item.name);
-        }) || primaryRentals[0]?.id || '';
+        if (existingGuestSignup?.requestedGearIds) {
+            const found = existingGuestSignup.requestedGearIds.find(id => {
+                const item = inventory.find(i => i.id === id);
+                return item && /Rental\s*\d+/i.test(item.name);
+            });
+            if (found) return found;
+        }
+        return primaryRentals[0]?.id || '';
     }, [existingGuestSignup, inventory, primaryRentals]);
 
     const initialExtraIds = useMemo(() => {
-        if (!existingGuestSignup?.requestedGearIds) return [];
-        return existingGuestSignup.requestedGearIds.filter(id => {
-            const item = inventory.find(i => i.id === id);
-            return item && !/Rental\s*\d+/i.test(item.name);
-        });
-    }, [existingGuestSignup, inventory]);
+        if (existingGuestSignup?.requestedGearIds) {
+            return existingGuestSignup.requestedGearIds.filter(id => {
+                const item = inventory.find(i => i.id === id);
+                return item && !/Rental\s*\d+/i.test(item.name);
+            });
+        }
+        // Automatically assign all extra gear marked for rental by default
+        return extraRentals.map(i => i.id);
+    }, [existingGuestSignup, inventory, extraRentals]);
 
-    const [needsRental, setNeedsRental] = useState(Boolean(existingGuestSignup ? (existingGuestSignup.requestedGearIds && existingGuestSignup.requestedGearIds.length > 0) : false));
+    const [needsRental, setNeedsRental] = useState(Boolean(existingGuestSignup ? (existingGuestSignup.requestedGearIds && existingGuestSignup.requestedGearIds.length > 0) : true));
     const [selectedPrimaryRentalId, setSelectedPrimaryRentalId] = useState<string>(initialPrimaryRentalId);
     const [selectedExtraIds, setSelectedExtraIds] = useState<string[]>(initialExtraIds);
 
@@ -66,6 +72,9 @@ export const PlayerGuestSignupModal: React.FC<PlayerGuestSignupModalProps> = ({
         if (checked) {
             if (!selectedPrimaryRentalId && primaryRentals.length > 0) {
                 setSelectedPrimaryRentalId(primaryRentals[0].id);
+            }
+            if (selectedExtraIds.length === 0 && extraRentals.length > 0) {
+                setSelectedExtraIds(extraRentals.map(i => i.id));
             }
         } else {
             setSelectedPrimaryRentalId('');

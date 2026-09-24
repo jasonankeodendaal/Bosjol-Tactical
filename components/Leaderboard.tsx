@@ -48,9 +48,7 @@ export const PlayerStatsModal: React.FC<{
     const kills = player.stats?.kills ?? 0;
     const deaths = player.stats?.deaths ?? 0;
     const gamesPlayed = player.stats?.gamesPlayed ?? 0;
-    const headshots = player.stats?.headshots ?? 0;
     const kdRatio = (kills / Math.max(deaths, 1)).toFixed(2);
-    const headshotPct = kills > 0 ? ((headshots / kills) * 100).toFixed(0) : '0';
 
     return (
         <AnimatePresence>
@@ -220,7 +218,7 @@ export const PlayerStatsModal: React.FC<{
                                 </div>
 
                                 {/* Performance Grid */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                                     <div className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 text-center">
                                         <p className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider">Matches Played</p>
                                         <p className="text-xl font-black text-white font-mono mt-0.5">{gamesPlayed}</p>
@@ -235,16 +233,6 @@ export const PlayerStatsModal: React.FC<{
                                         <p className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider">K/D Ratio</p>
                                         <p className="text-xl font-black text-amber-400 font-mono mt-0.5">{kdRatio}</p>
                                         <p className="text-[9px] text-zinc-500 mt-0.5">{deaths} Deaths</p>
-                                    </div>
-                                    <div className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 text-center">
-                                        <p className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider">Headshots</p>
-                                        <p className="text-xl font-black text-purple-300 font-mono mt-0.5">{headshots}</p>
-                                        <p className="text-[9px] text-zinc-500 mt-0.5">Critical Hits</p>
-                                    </div>
-                                    <div className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 text-center">
-                                        <p className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider">Headshot %</p>
-                                        <p className="text-xl font-black text-emerald-400 font-mono mt-0.5">{headshotPct}%</p>
-                                        <p className="text-[9px] text-zinc-500 mt-0.5">Accuracy Precision</p>
                                     </div>
                                     <div className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 text-center">
                                         <p className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider">Honors Won</p>

@@ -3,13 +3,9 @@ import * as d3 from 'd3';
 import type { Player, GameEvent, Rank } from '../types';
 import { 
     TrendingUp, 
-    Zap, 
-    Award, 
-    Clock, 
     Sparkles, 
     Crosshair,
-    Shield,
-    Activity
+    ChevronRight
 } from 'lucide-react';
 
 interface PlayerXpGrowthChartProps {
@@ -35,9 +31,7 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
     events = [],
     ranks = []
 }) => {
-    const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
-    const [containerWidth, setContainerWidth] = useState<number>(360);
     const [timeRange, setTimeRange] = useState<'all' | '30d' | 'recent5'>('all');
     const [hoveredPointId, setHoveredPointId] = useState<string | null>(null);
 
@@ -113,7 +107,7 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
                 label: adj.reason || 'Commendation',
                 type: 'adjustment',
                 xpDelta: adj.amount || 0,
-                details: adj.amount >= 0 ? `Commendation: +${adj.amount} RP` : `Adjustment: ${adj.amount} RP`
+                details: adj.amount >= 0 ? `+${adj.amount} RP` : `${adj.amount} RP`
             });
         });
 
@@ -141,7 +135,7 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
                 id: 'current',
                 date: now,
                 dateLabel: now.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-                label: 'Current Combat Record',
+                label: 'Current Record',
                 type: 'current',
                 xpDelta: totalXp,
                 cumulativeXp: totalXp,
@@ -248,27 +242,13 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
         };
     }, [filteredPoints, player.matchHistory, totalXp, allTiers, player.rank]);
 
-    // Resize observer
-    useEffect(() => {
-        if (!containerRef.current) return;
-        const ro = new ResizeObserver(entries => {
-            for (const entry of entries) {
-                if (entry.contentRect.width > 50) {
-                    setContainerWidth(Math.floor(entry.contentRect.width));
-                }
-            }
-        });
-        ro.observe(containerRef.current);
-        return () => ro.disconnect();
-    }, []);
-
-    // Draw D3 3D Holographic Circle Timeloop
+    // Draw Tiny D3 3D Holographic Circle Timeloop (Ultra Compact: 104x104px)
     useEffect(() => {
         if (!svgRef.current || filteredPoints.length === 0) return;
 
-        const size = Math.min(Math.max(containerWidth, 180), 230);
+        const size = 104;
         const center = size / 2;
-        const radius = (size / 2) - 18;
+        const radius = 38; // Compact radius for tiny side-by-side radar
 
         const svg = d3.select(svgRef.current);
         svg.selectAll('*').remove();
@@ -281,11 +261,11 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
 
         // Radial Glow Filter for 3D Depth
         const glowFilter = defs.append('filter')
-            .attr('id', 'timeloop-glow')
-            .attr('x', '-30%').attr('y', '-30%')
-            .attr('width', '160%').attr('height', '160%');
+            .attr('id', 'timeloop-tiny-glow')
+            .attr('x', '-20%').attr('y', '-20%')
+            .attr('width', '140%').attr('height', '140%');
         glowFilter.append('feGaussianBlur')
-            .attr('stdDeviation', '4')
+            .attr('stdDeviation', '2.5')
             .attr('result', 'coloredBlur');
         const feMerge = glowFilter.append('feMerge');
         feMerge.append('feMergeNode').attr('in', 'coloredBlur');
@@ -293,16 +273,16 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
 
         // Radial Gradient for Holographic Timeloop Core
         const coreGradient = defs.append('radialGradient')
-            .attr('id', 'timeloop-core-grad')
+            .attr('id', 'timeloop-tiny-core')
             .attr('cx', '50%').attr('cy', '50%')
             .attr('r', '50%');
-        coreGradient.append('stop').attr('offset', '0%').attr('stop-color', '#f59e0b').attr('stop-opacity', '0.18');
-        coreGradient.append('stop').attr('offset', '70%').attr('stop-color', '#ef4444').attr('stop-opacity', '0.05');
-        coreGradient.append('stop').attr('offset', '100%').attr('stop-color', '#000000').attr('stop-opacity', '0.8');
+        coreGradient.append('stop').attr('offset', '0%').attr('stop-color', '#f59e0b').attr('stop-opacity', '0.22');
+        coreGradient.append('stop').attr('offset', '70%').attr('stop-color', '#ef4444').attr('stop-opacity', '0.06');
+        coreGradient.append('stop').attr('offset', '100%').attr('stop-color', '#000000').attr('stop-opacity', '0.85');
 
-        // Timeloop Arc Linear/Conical Gradient Simulation
+        // Timeloop Arc Linear Gradient
         const arcGradient = defs.append('linearGradient')
-            .attr('id', 'timeloop-arc-grad')
+            .attr('id', 'timeloop-tiny-arc')
             .attr('x1', '0%').attr('y1', '0%')
             .attr('x2', '100%').attr('y2', '100%');
         arcGradient.append('stop').attr('offset', '0%').attr('stop-color', '#3b82f6').attr('stop-opacity', '0.8');
@@ -311,30 +291,28 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
 
         const g = svg.append('g').attr('transform', `translate(${center}, ${center})`);
 
-        // 1. Inner Holo Core (Zero Outline, Pure 3D Depth)
+        // 1. Inner Holo Core
         g.append('circle')
-            .attr('r', radius - 14)
-            .attr('fill', 'url(#timeloop-core-grad)');
+            .attr('r', radius - 8)
+            .attr('fill', 'url(#timeloop-tiny-core)');
 
-        // 2. Background Track Groove (Concentric Depth Rings)
+        // 2. Background Track Groove
         g.append('circle')
             .attr('r', radius)
             .attr('fill', 'none')
             .attr('stroke', '#27272a')
-            .attr('stroke-width', 4.5)
-            .attr('stroke-opacity', 0.45);
+            .attr('stroke-width', 3)
+            .attr('stroke-opacity', 0.5);
 
         // 3. Polar coordinate conversion for timeline points
-        // Sweeps around the circle: start at -90deg (top, 12 o'clock) to +230deg
-        const startAngle = -Math.PI / 2; // Top
-        const sweepAngle = Math.PI * 1.75; // 315 degrees sweep
+        const startAngle = -Math.PI / 2; // Top 12 o'clock
+        const sweepAngle = Math.PI * 1.75; // 315 deg sweep
 
         const maxCumulative = Math.max(
             d3.max(filteredPoints, d => d.cumulativeXp) || totalXp || 100,
             100
         );
 
-        // Compute polar coordinate for each point
         const pointAngles = filteredPoints.map((d, i) => {
             const pct = filteredPoints.length > 1 
                 ? (i / (filteredPoints.length - 1))
@@ -347,36 +325,36 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
 
         // 4. Draw continuous Timeloop Trajectory Curve
         const arcGenerator = d3.arc()
-            .innerRadius(radius - 2.5)
-            .outerRadius(radius + 2.5)
+            .innerRadius(radius - 1.8)
+            .outerRadius(radius + 1.8)
             .startAngle(startAngle + Math.PI / 2)
             .endAngle(startAngle + sweepAngle + Math.PI / 2)
-            .cornerRadius(3);
+            .cornerRadius(2);
 
         g.append('path')
             .attr('d', arcGenerator as any)
-            .attr('fill', 'url(#timeloop-arc-grad)')
-            .attr('filter', 'url(#timeloop-glow)')
+            .attr('fill', 'url(#timeloop-tiny-arc)')
+            .attr('filter', 'url(#timeloop-tiny-glow)')
             .attr('opacity', 0.95);
 
-        // 5. Radar Compass Dial Ticks
-        const tickCount = 24;
+        // 5. Radar Dial Ticks (Compact)
+        const tickCount = 16;
         for (let i = 0; i < tickCount; i++) {
             const tickAngle = (i / tickCount) * Math.PI * 2;
-            const isMajor = i % 6 === 0;
-            const r1 = radius + 6;
-            const r2 = radius + (isMajor ? 11 : 8);
+            const isMajor = i % 4 === 0;
+            const r1 = radius + 4;
+            const r2 = radius + (isMajor ? 7 : 5);
             g.append('line')
                 .attr('x1', Math.cos(tickAngle) * r1)
                 .attr('y1', Math.sin(tickAngle) * r1)
                 .attr('x2', Math.cos(tickAngle) * r2)
                 .attr('y2', Math.sin(tickAngle) * r2)
                 .attr('stroke', isMajor ? '#f59e0b' : '#52525b')
-                .attr('stroke-width', isMajor ? 1.5 : 0.8)
-                .attr('opacity', isMajor ? 0.7 : 0.3);
+                .attr('stroke-width', isMajor ? 1.2 : 0.6)
+                .attr('opacity', isMajor ? 0.8 : 0.3);
         }
 
-        // 6. Interactive Timeloop Timeline Node Orbs
+        // 6. Interactive Node Orbs
         pointAngles.forEach((pt) => {
             const isHovered = hoveredPointId === pt.id;
             const isLatest = pt.type === 'current' || pt.id === pointAngles[pointAngles.length - 1].id;
@@ -387,55 +365,47 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
                 .on('mouseleave', () => setHoveredPointId(null))
                 .on('click', () => setHoveredPointId(pt.id));
 
-            // Outer Pulse Ring on Hover or Current Standing
             if (isHovered || isLatest) {
                 nodeGroup.append('circle')
                     .attr('cx', pt.x)
                     .attr('cy', pt.y)
-                    .attr('r', isHovered ? 8 : 6)
+                    .attr('r', isHovered ? 5.5 : 4)
                     .attr('fill', 'none')
                     .attr('stroke', isHovered ? '#f59e0b' : '#10b981')
-                    .attr('stroke-width', 1.5)
-                    .attr('stroke-opacity', 0.7)
-                    .attr('filter', 'url(#timeloop-glow)');
+                    .attr('stroke-width', 1.2)
+                    .attr('stroke-opacity', 0.8)
+                    .attr('filter', 'url(#timeloop-tiny-glow)');
             }
 
-            // Core Node Dot
             nodeGroup.append('circle')
                 .attr('cx', pt.x)
                 .attr('cy', pt.y)
-                .attr('r', isHovered ? 4.5 : isLatest ? 3.5 : 2.5)
+                .attr('r', isHovered ? 3.5 : isLatest ? 2.8 : 1.8)
                 .attr('fill', isLatest ? '#10b981' : pt.type === 'adjustment' ? '#3b82f6' : '#f59e0b')
                 .attr('stroke', '#ffffff')
-                .attr('stroke-width', isHovered ? 1.5 : 0.8)
-                .attr('shadow-md', 'true');
+                .attr('stroke-width', 0.8);
         });
 
-    }, [filteredPoints, containerWidth, hoveredPointId, totalXp]);
+    }, [filteredPoints, hoveredPointId, totalXp]);
 
     return (
-        <div 
-            ref={containerRef}
-            className="w-full rounded-3xl bg-gradient-to-br from-zinc-950/95 via-zinc-900/90 to-black p-3 sm:p-4 shadow-[0_20px_50px_rgba(0,0,0,0.95),inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-2xl font-mono text-xs space-y-3 shrink-0 overflow-hidden"
-        >
-            {/* Header Control Strip (Free View, Zero Outlines) */}
+        <div className="w-full rounded-2xl bg-gradient-to-br from-zinc-950 via-zinc-900/90 to-black p-2.5 sm:p-3 shadow-[0_12px_28px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl font-mono text-xs space-y-2 shrink-0 overflow-hidden">
+            {/* Header Control Strip (Shrink-To-Fit, Zero Outlines) */}
             <div className="flex items-center justify-between gap-2 flex-wrap pb-1 border-b border-white/5">
-                <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shadow-inner">
-                        <TrendingUp className="w-3 h-3 text-amber-400" />
+                <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                        <TrendingUp className="w-2.5 h-2.5 text-amber-400" />
                     </div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-black text-white uppercase tracking-wider text-[11px]">
-                            TIMELOOP RP TRAJECTORY
-                        </span>
-                        <span className="px-1.5 py-0.2 rounded text-[8px] font-bold bg-amber-500/15 text-amber-300">
-                            3D CIRCULAR RADAR
-                        </span>
-                    </div>
+                    <span className="font-black text-white uppercase tracking-wider text-[10px]">
+                        TIMELOOP RP TRAJECTORY
+                    </span>
+                    <span className="px-1 py-0.2 rounded text-[7.5px] font-bold bg-amber-500/15 text-amber-300">
+                        3D RADAR
+                    </span>
                 </div>
 
                 {/* Range Filter Buttons */}
-                <div className="flex items-center gap-0.5 p-0.5 rounded-xl bg-zinc-900/90 shadow-inner">
+                <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-900/90 shadow-inner">
                     {[
                         { id: 'all', label: 'All' },
                         { id: '30d', label: '30D' },
@@ -444,9 +414,9 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
                         <button
                             key={tab.id}
                             onClick={() => setTimeRange(tab.id as any)}
-                            className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase transition-all ${
+                            className={`px-1.5 py-0.2 rounded text-[8.5px] font-bold uppercase transition-all ${
                                 timeRange === tab.id
-                                    ? 'bg-amber-500 text-black shadow-md font-extrabold'
+                                    ? 'bg-amber-500 text-black shadow-sm font-extrabold'
                                     : 'text-zinc-400 hover:text-white'
                             }`}
                         >
@@ -456,83 +426,71 @@ export const PlayerXpGrowthChart: React.FC<PlayerXpGrowthChartProps> = ({
                 </div>
             </div>
 
-            {/* Side-by-Side Free-View Radar & Live Tactical HUD */}
-            <div className="flex flex-col sm:flex-row items-center justify-around gap-4 pt-1">
-                {/* 1. Holographic Circle Timeloop SVG Chart */}
-                <div className="relative flex items-center justify-center shrink-0">
+            {/* Side-by-Side Shrink-To-Fit Layout: Micro Radar on Left, Live Stats HUD on Right */}
+            <div className="flex flex-row items-center gap-2.5 sm:gap-4">
+                {/* 1. Micro Circle Timeloop Radar (Left Column) */}
+                <div className="relative w-[104px] h-[104px] flex items-center justify-center shrink-0">
                     <svg ref={svgRef} className="block overflow-visible" />
 
-                    {/* Centered Holo HUD (Inside Timeloop Core) */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none p-4">
-                        <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">
-                            {activePoint?.id === 'current_standing' || !hoveredPointId ? 'SEASON RP' : 'COMBAT GAIN'}
+                    {/* Centered Holo HUD */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none p-1">
+                        <span className="text-[6.5px] uppercase tracking-wider text-zinc-400 font-bold">
+                            {activePoint?.id === 'current_standing' || !hoveredPointId ? 'SEASON' : 'DELTA'}
                         </span>
-                        <span className="text-sm sm:text-base font-black text-white font-mono tracking-tight drop-shadow-md">
+                        <span className="text-xs font-black text-white font-mono tracking-tight leading-none my-0.5">
                             {(activePoint?.cumulativeXp || totalXp).toLocaleString()}
                         </span>
-                        <span className="text-[8.5px] font-bold text-emerald-400 flex items-center gap-0.5">
-                            <Sparkles className="w-2.5 h-2.5 text-emerald-400" />
-                            <span>{activePoint?.rankName || statsSummary.currentTierName}</span>
+                        <span className="text-[7px] font-bold text-emerald-400 truncate max-w-[50px] leading-tight">
+                            {activePoint?.rankName || statsSummary.currentTierName}
                         </span>
                     </div>
                 </div>
 
-                {/* 2. Compact Live Metrics & Focused Node Info Panel */}
-                <div className="flex-1 w-full space-y-2 font-mono text-[10px]">
-                    {/* Live Inspection Card */}
-                    <div className="p-2.5 rounded-2xl bg-zinc-900/80 shadow-[0_8px_20px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.04)] space-y-1.5">
-                        <div className="flex items-center justify-between gap-1 text-[9px] text-zinc-400">
-                            <span className="flex items-center gap-1 text-amber-400 font-bold uppercase truncate">
-                                <Crosshair className="w-3 h-3 text-amber-400" />
-                                {activePoint?.label || 'Current Record'}
+                {/* 2. Compact Live Metrics Panel (Right Column, Shrink to Fit) */}
+                <div className="flex-1 min-w-0 space-y-1.5 font-mono text-[9.5px]">
+                    {/* Active Node Info Strip */}
+                    <div className="p-1.5 rounded-xl bg-zinc-900/80 shadow-sm flex items-center justify-between gap-1.5">
+                        <div className="truncate min-w-0">
+                            <span className="text-amber-400 font-bold uppercase truncate block text-[9px]">
+                                {activePoint?.label || 'Current Standing'}
                             </span>
-                            <span className="text-[8.5px] text-zinc-400 whitespace-nowrap">
+                            <span className="text-zinc-500 text-[8px]">
                                 {activePoint?.dateLabel || 'Today'}
                             </span>
                         </div>
-
-                        <div className="flex items-center justify-between text-[11px] pt-0.5">
-                            <span className="text-zinc-400">Total Accumulation:</span>
-                            <span className="font-bold text-white font-mono">
+                        <div className="text-right shrink-0">
+                            <span className="font-bold text-white block text-[10px]">
                                 {(activePoint?.cumulativeXp || totalXp).toLocaleString()} RP
                             </span>
-                        </div>
-
-                        {activePoint && activePoint.xpDelta > 0 && (
-                            <div className="flex items-center justify-between text-[10px]">
-                                <span className="text-zinc-400">Node Delta:</span>
-                                <span className="font-bold text-emerald-400">
+                            {activePoint && activePoint.xpDelta > 0 && (
+                                <span className="text-emerald-400 font-bold text-[8px] block">
                                     +{activePoint.xpDelta} RP
                                 </span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Season Performance Micro Gauges */}
-                    <div className="grid grid-cols-2 gap-1.5 text-[9px]">
-                        <div className="p-2 rounded-xl bg-zinc-950/70 shadow-inner flex flex-col justify-between">
-                            <span className="text-zinc-400 uppercase">Peak Operation</span>
-                            <span className="text-xs font-bold text-emerald-400 font-mono">
-                                +{statsSummary.highestGain.toLocaleString()} RP
-                            </span>
-                        </div>
-                        <div className="p-2 rounded-xl bg-zinc-950/70 shadow-inner flex flex-col justify-between">
-                            <span className="text-zinc-400 uppercase">Avg Gain / Op</span>
-                            <span className="text-xs font-bold text-amber-400 font-mono">
-                                ~{statsSummary.avgGain.toLocaleString()} RP
-                            </span>
+                            )}
                         </div>
                     </div>
 
-                    {/* Progress to Next Tier */}
-                    <div className="p-2 rounded-xl bg-zinc-950/70 shadow-inner space-y-1">
-                        <div className="flex items-center justify-between text-[8.5px]">
-                            <span className="text-zinc-400">Next Milestone: <strong className="text-white">{statsSummary.nextTierName}</strong></span>
+                    {/* Peak & Avg Micro Strip */}
+                    <div className="grid grid-cols-2 gap-1 text-[8.5px]">
+                        <div className="px-1.5 py-1 rounded-lg bg-zinc-950/70 shadow-inner flex items-center justify-between">
+                            <span className="text-zinc-500 uppercase">Peak:</span>
+                            <span className="font-bold text-emerald-400">+{statsSummary.highestGain.toLocaleString()}</span>
+                        </div>
+                        <div className="px-1.5 py-1 rounded-lg bg-zinc-950/70 shadow-inner flex items-center justify-between">
+                            <span className="text-zinc-500 uppercase">Avg/Op:</span>
+                            <span className="font-bold text-amber-400">~{statsSummary.avgGain.toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    {/* Next Rank Progress Bar */}
+                    <div className="px-1.5 py-1 rounded-lg bg-zinc-950/70 shadow-inner space-y-0.5">
+                        <div className="flex items-center justify-between text-[8px]">
+                            <span className="text-zinc-400 truncate">Milestone: <strong className="text-white">{statsSummary.nextTierName}</strong></span>
                             <span className="text-amber-400 font-bold">{statsSummary.rankProgressPct}%</span>
                         </div>
-                        <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden flex shadow-inner">
+                        <div className="w-full bg-zinc-900 h-1 rounded-full overflow-hidden flex shadow-inner">
                             <div 
-                                className="bg-gradient-to-r from-amber-500 to-emerald-400 h-full transition-all duration-500 rounded-full"
+                                className="bg-gradient-to-r from-amber-500 to-emerald-400 h-full transition-all duration-300 rounded-full"
                                 style={{ width: `${statsSummary.rankProgressPct}%` }}
                             />
                         </div>

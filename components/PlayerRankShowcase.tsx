@@ -79,7 +79,6 @@ export const PlayerRankShowcase: React.FC<PlayerRankShowcaseProps> = ({
     const kills = stats.kills ?? 0;
     const deaths = stats.deaths ?? 0;
     const kdr = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? kills.toFixed(2) : '1.00';
-    const headshots = stats.headshots ?? Math.floor(kills * 0.28);
     const avgScore = matches > 0 ? Math.round(playerXp / matches) : playerXp || 1250;
     const winStreak = player.matchHistory && player.matchHistory.length > 0
         ? player.matchHistory.reduce((acc, m) => (m.result === 'win' ? acc + 1 : 0), 0)

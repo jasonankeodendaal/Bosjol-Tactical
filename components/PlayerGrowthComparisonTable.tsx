@@ -74,7 +74,6 @@ export const PlayerGrowthComparisonTable: React.FC<PlayerGrowthComparisonTablePr
                 avgMinutes: `${Math.round(45 + (matches % 35))}'`,
                 killsAssists: `${kills} + ${assists}`,
                 kdRatio: kdRatio.toFixed(2),
-                headshotPct: `${hsPct.toFixed(1)}%`,
                 recoveries: (mvps * 1.8 + (matches % 5) + 3.2).toFixed(1),
                 winRate: `${winRate.toFixed(1)}%`
             };

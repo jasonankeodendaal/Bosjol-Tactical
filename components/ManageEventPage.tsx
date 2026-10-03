@@ -495,7 +495,56 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
         );
     
         const newTransactions: Transaction[] = [];
-    
+
+        // Generate atomic ledger records for all confirmed attendees (registered players and guests)
+        if (event?.id) {
+            formData.attendees.forEach(attendee => {
+                if (attendee.checkInStatus === 'no_show') return;
+
+                const paymentStatus = attendee.paymentStatus || 'Paid (Cash)';
+                const effectivePlayerId = attendee.playerId;
+                const attendeeName = attendee.guestName || players.find(p => p.id === attendee.playerId)?.name || 'Operator';
+
+                // 1. Admission Ticket / Game Fee
+                if (formData.gameFee > 0) {
+                    newTransactions.push({
+                        id: `txn-${event.id}-${effectivePlayerId}-fee`,
+                        date: formData.date,
+                        type: 'Event Revenue',
+                        category: 'Event Ticket Admissions',
+                        description: `Event Fee: ${formData.title} (${attendeeName})`,
+                        amount: Number(formData.gameFee || 0),
+                        relatedEventId: event.id,
+                        relatedPlayerId: effectivePlayerId,
+                        paymentStatus: paymentStatus
+                    });
+                }
+
+                // 2. Individual Gear Rentals (Atomic double-entry per rented item)
+                (attendee.rentedGearIds || []).forEach((gearId, idx) => {
+                    const gear = inventory.find(i => i.id === gearId);
+                    const gearName = gear?.name || `Turnkey Rental Item (${gearId})`;
+                    const defaultRentalFee = Number((event as any).rentalFee || 150);
+                    const rentalPrice = formData.rentalPriceOverrides?.[gearId] !== undefined
+                        ? Number(formData.rentalPriceOverrides[gearId])
+                        : (gear?.salePrice && gear.salePrice > 0 ? Number(gear.salePrice) : defaultRentalFee);
+
+                    newTransactions.push({
+                        id: `txn-${event.id}-${effectivePlayerId}-rental-${idx}_${gearId}`,
+                        date: formData.date,
+                        type: 'Rental Revenue',
+                        category: 'Armory Rental Income',
+                        description: `Gear Rental: ${gearName} (${attendeeName})`,
+                        amount: rentalPrice,
+                        relatedEventId: event.id,
+                        relatedPlayerId: effectivePlayerId,
+                        relatedInventoryId: gearId,
+                        paymentStatus: paymentStatus
+                    });
+                });
+            });
+        }
+
         const updatedPlayers = players.map(player => {
             let mutablePlayer = { ...player };
     
@@ -520,27 +569,6 @@ export const ManageEventPage: React.FC<ManageEventPageProps> = ({
                             matchResult = "loss";
                         }
                     }
-                }
-    
-                if (attendeeInfo.paymentStatus?.startsWith('Paid') && event?.id) {
-                    newTransactions.push({
-                        id: `txn-${event.id}-${player.id}-fee`,
-                        date: formData.date, type: 'Event Revenue', description: `Event Fee: ${formData.title}`,
-                        amount: formData.gameFee, relatedEventId: event.id, relatedPlayerId: player.id,
-                        paymentStatus: attendeeInfo.paymentStatus
-                    });
-                    (attendeeInfo.rentedGearIds || []).forEach(gearId => {
-                        const gear = inventory.find(i => i.id === gearId);
-                        if (gear) {
-                            const rentalPrice = formData.rentalPriceOverrides?.[gearId] ?? gear.salePrice;
-                            newTransactions.push({
-                                id: `txn-${event.id}-${player.id}-${gearId}`, date: formData.date,
-                                type: 'Rental Revenue', description: `Rental: ${gear.name}`, amount: rentalPrice,
-                                relatedEventId: event.id, relatedPlayerId: player.id, relatedInventoryId: gearId,
-                                paymentStatus: attendeeInfo.paymentStatus
-                            });
-                        }
-                    });
                 }
     
                 const playerLiveStats = liveStats[player.id] || {};

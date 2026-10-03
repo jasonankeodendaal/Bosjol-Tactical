@@ -49,16 +49,16 @@ export const BusinessCardTransaction: React.FC<BusinessCardTransactionProps> = (
 
     const isIncome = !isExpense || isDedicatedProfit;
 
-    // 3D Depth Tactile Styling (No Harsh Outlines, Elevated Holographic Depth)
+    // 3D Depth Tactile Styling (Ultra-compact, Professional Shrink-to-Fit)
     const cardGradient = isDedicatedProfit
-        ? 'from-emerald-950/70 via-zinc-900/90 to-zinc-950 text-emerald-300 shadow-[0_8px_24px_rgba(16,185,129,0.12),inset_0_1px_0_0_rgba(52,211,153,0.2)]'
+        ? 'from-emerald-950/70 via-zinc-900/90 to-zinc-950 text-emerald-300 shadow-[0_6px_16px_rgba(16,185,129,0.12),inset_0_1px_0_0_rgba(52,211,153,0.18)]'
         : isExpense
-            ? 'from-red-950/60 via-zinc-900/90 to-zinc-950 text-red-300 shadow-[0_8px_24px_rgba(239,68,68,0.12),inset_0_1px_0_0_rgba(248,113,113,0.18)]'
+            ? 'from-red-950/60 via-zinc-900/90 to-zinc-950 text-red-300 shadow-[0_6px_16px_rgba(239,68,68,0.12),inset_0_1px_0_0_rgba(248,113,113,0.15)]'
             : isGameFee
-                ? 'from-amber-950/60 via-zinc-900/90 to-zinc-950 text-amber-300 shadow-[0_8px_24px_rgba(245,158,11,0.12),inset_0_1px_0_0_rgba(251,191,36,0.18)]'
+                ? 'from-amber-950/60 via-zinc-900/90 to-zinc-950 text-amber-300 shadow-[0_6px_16px_rgba(245,158,11,0.12),inset_0_1px_0_0_rgba(251,191,36,0.15)]'
                 : isRental
-                    ? 'from-blue-950/60 via-zinc-900/90 to-zinc-950 text-blue-300 shadow-[0_8px_24px_rgba(59,130,246,0.12),inset_0_1px_0_0_rgba(96,165,250,0.18)]'
-                    : 'from-purple-950/60 via-zinc-900/90 to-zinc-950 text-purple-300 shadow-[0_8px_24px_rgba(168,85,247,0.12),inset_0_1px_0_0_rgba(192,132,252,0.18)]';
+                    ? 'from-blue-950/60 via-zinc-900/90 to-zinc-950 text-blue-300 shadow-[0_6px_16px_rgba(59,130,246,0.12),inset_0_1px_0_0_rgba(96,165,250,0.15)]'
+                    : 'from-purple-950/60 via-zinc-900/90 to-zinc-950 text-purple-300 shadow-[0_6px_16px_rgba(168,85,247,0.12),inset_0_1px_0_0_rgba(192,132,252,0.15)]';
 
     const typeBadge = isDedicatedProfit
         ? 'bg-emerald-900/70 text-emerald-200'
@@ -88,30 +88,30 @@ export const BusinessCardTransaction: React.FC<BusinessCardTransactionProps> = (
     });
 
     return (
-        <div className={`group relative bg-gradient-to-br ${cardGradient} p-2.5 rounded-2xl flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_16px_32px_rgba(0,0,0,0.9)] h-full min-w-0 font-sans select-none backdrop-blur-md`}>
+        <div className={`group relative bg-gradient-to-br ${cardGradient} p-2 sm:p-2.5 rounded-xl flex flex-col justify-between transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(0,0,0,0.9)] h-full min-w-0 select-none backdrop-blur-md font-sans`}>
             {/* Top Row: Type pill & Date */}
-            <div className="space-y-1.5">
-                <div className="flex items-center justify-between gap-1 pb-1.5 border-b border-white/[0.08]">
-                    <span className={`px-2 py-0.5 rounded-full text-[8px] sm:text-[8.5px] font-black uppercase tracking-wider font-mono truncate max-w-[95px] shadow-sm ${typeBadge}`}>
+            <div className="space-y-1">
+                <div className="flex items-center justify-between gap-1 pb-1 border-b border-white/[0.08]">
+                    <span className={`px-1.5 py-0.2 rounded-md text-[7.5px] sm:text-[8px] font-black uppercase tracking-wider font-mono truncate max-w-[85px] shadow-sm ${typeBadge}`}>
                         {typeLabel}
                     </span>
-                    <span className="text-[8px] sm:text-[8.5px] text-zinc-400 font-mono shrink-0 flex items-center gap-1">
-                        <Calendar className="w-2.5 h-2.5 text-zinc-500" />
+                    <span className="text-[7.5px] sm:text-[8px] text-zinc-400 font-mono shrink-0 flex items-center gap-0.5">
+                        <Calendar className="w-2 h-2 text-zinc-500" />
                         {dateFormatted}
                     </span>
                 </div>
 
                 {/* Category line */}
                 {t.category && (
-                    <div className="text-[8.5px] sm:text-[9px] font-bold text-zinc-400 truncate leading-tight font-mono" title={t.category}>
+                    <div className="text-[8px] font-bold text-zinc-400 truncate leading-tight font-mono" title={t.category}>
                         {t.category}
                     </div>
                 )}
 
                 {/* Primary Card Title & Amount */}
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                     <h4 
-                        className="text-[11px] sm:text-xs font-black text-white leading-snug line-clamp-2 break-words" 
+                        className="text-[10px] sm:text-[11px] font-black text-white leading-tight line-clamp-2 break-words" 
                         title={t.profitName || t.expenseName || t.description || 'Transaction'}
                     >
                         {t.profitName || t.expenseName || t.description || 'Untitled Entry'}
@@ -119,11 +119,11 @@ export const BusinessCardTransaction: React.FC<BusinessCardTransactionProps> = (
 
                     {/* Monetary Figure (Embossed 3D shrink-to-fit) */}
                     <div className="flex items-baseline justify-between gap-1 pt-0.5">
-                        <div className={`font-mono font-black text-xs sm:text-sm leading-none tracking-tight ${isIncome ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]' : 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]'}`}>
+                        <div className={`font-mono font-black text-[11px] sm:text-xs leading-none tracking-tight ${isIncome ? 'text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)]' : 'text-red-400 drop-shadow-[0_0_6px_rgba(239,68,68,0.3)]'}`}>
                             {isIncome ? '+' : '-'}R{amountVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                         </div>
                         {hasProfit && !isDedicatedProfit && (
-                            <span className="text-[8px] font-mono text-emerald-300 font-bold bg-emerald-950/90 px-1.5 py-0.2 rounded-md shadow-inner">
+                            <span className="text-[7.5px] font-mono text-emerald-300 font-bold bg-emerald-950/90 px-1 py-0.2 rounded shadow-inner">
                                 +R{Number(t.profitMade).toFixed(0)}
                             </span>
                         )}
@@ -131,7 +131,7 @@ export const BusinessCardTransaction: React.FC<BusinessCardTransactionProps> = (
 
                     {/* Operational Reason / Purpose Snippet */}
                     {(t.expenseReason || t.profitReason) && (
-                        <p className="text-[8.5px] text-zinc-400 italic line-clamp-1 break-words mt-0.5" title={t.profitReason || t.expenseReason}>
+                        <p className="text-[7.5px] text-zinc-400 italic line-clamp-1 break-words leading-tight" title={t.profitReason || t.expenseReason}>
                             "{t.profitReason || t.expenseReason}"
                         </p>
                     )}
@@ -139,15 +139,15 @@ export const BusinessCardTransaction: React.FC<BusinessCardTransactionProps> = (
             </div>
 
             {/* Bottom Meta & Action Controls */}
-            <div className="pt-2 mt-2 border-t border-white/[0.08] space-y-1.5">
+            <div className="pt-1.5 mt-1.5 border-t border-white/[0.08] space-y-1">
                 {/* Payment method & Vendor / Operator row */}
-                <div className="flex items-center justify-between text-[8px] sm:text-[8.5px] text-zinc-400 gap-1 flex-wrap">
-                    <span className="px-1.5 py-0.2 bg-zinc-950/80 rounded-md text-zinc-300 font-mono shadow-inner shrink-0">
+                <div className="flex items-center justify-between text-[7.5px] sm:text-[8px] text-zinc-400 gap-1 flex-wrap">
+                    <span className="px-1 py-0.2 bg-zinc-950/80 rounded text-zinc-300 font-mono shadow-inner shrink-0">
                         {t.paymentMethod || 'EFT'}
                     </span>
 
                     {/* Vendor or Player */}
-                    <span className="text-zinc-300 truncate max-w-[85px] font-medium" title={t.paidTo || player?.name || ''}>
+                    <span className="text-zinc-300 truncate max-w-[75px] font-medium" title={t.paidTo || player?.name || ''}>
                         {t.paidTo ? t.paidTo : (player?.name ? player.name : '')}
                     </span>
 
@@ -159,7 +159,7 @@ export const BusinessCardTransaction: React.FC<BusinessCardTransactionProps> = (
                                 e.stopPropagation();
                                 onInspect(t);
                             }}
-                            className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md text-[8px] font-bold font-mono bg-amber-950/90 hover:bg-amber-900 text-amber-300 transition-colors cursor-pointer shrink-0 shadow-sm"
+                            className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[7.5px] font-bold font-mono bg-amber-950/90 hover:bg-amber-900 text-amber-300 transition-colors cursor-pointer shrink-0 shadow-sm"
                             title="Slip attached - click to view"
                         >
                             <ImageIcon className="w-2 h-2" />
@@ -169,19 +169,19 @@ export const BusinessCardTransaction: React.FC<BusinessCardTransactionProps> = (
                 </div>
 
                 {/* Compact Action Bar */}
-                <div className="flex items-center justify-between pt-1 border-t border-white/[0.05] text-[9px] gap-1">
-                    <span className="text-[7.5px] text-zinc-500 font-mono truncate max-w-[60px]" title={t.notes || t.id}>
+                <div className="flex items-center justify-between pt-0.5 border-t border-white/[0.05] text-[8px] gap-1">
+                    <span className="text-[7px] text-zinc-500 font-mono truncate max-w-[55px]" title={t.notes || t.id}>
                         {t.notes ? t.notes : `#${t.id.slice(-4)}`}
                     </span>
 
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-0.5 shrink-0">
                         <button
                             type="button"
                             onClick={() => onInspect(t)}
-                            className="p-1 rounded-lg bg-zinc-950/90 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all text-[9px] flex items-center shadow-inner"
-                            title="Inspect voucher & receipt details"
+                            className="p-0.5 rounded bg-zinc-950/90 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all text-[8px] flex items-center shadow-inner"
+                            title="Inspect details"
                         >
-                            <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-zinc-400" />
+                            <Eye className="w-2.5 h-2.5 text-zinc-400" />
                         </button>
 
                         <button
@@ -193,19 +193,19 @@ export const BusinessCardTransaction: React.FC<BusinessCardTransactionProps> = (
                                     onEditExpense(t);
                                 }
                             }}
-                            className="p-1 rounded-lg bg-zinc-950/90 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all text-[9px] flex items-center shadow-inner"
-                            title="Edit transaction"
+                            className="p-0.5 rounded bg-zinc-950/90 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all text-[8px] flex items-center shadow-inner"
+                            title="Edit"
                         >
-                            <Edit3 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-zinc-400" />
+                            <Edit3 className="w-2.5 h-2.5 text-zinc-400" />
                         </button>
 
                         <button
                             type="button"
                             onClick={() => onDelete(t)}
-                            className="p-1 rounded-lg bg-zinc-950/90 hover:bg-red-950/90 text-zinc-500 hover:text-red-400 transition-all text-[9px] flex items-center shadow-inner"
-                            title="Delete transaction"
+                            className="p-0.5 rounded bg-zinc-950/90 hover:bg-red-950/90 text-zinc-500 hover:text-red-400 transition-all text-[8px] flex items-center shadow-inner"
+                            title="Delete"
                         >
-                            <Trash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                            <Trash2 className="w-2.5 h-2.5" />
                         </button>
                     </div>
                 </div>

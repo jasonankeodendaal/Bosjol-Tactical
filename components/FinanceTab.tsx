@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import * as d3 from 'd3';
 import type { Transaction, Player, GameEvent, Location, CompanyDetails } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -19,34 +20,34 @@ import {
     Image as ImageIcon, 
     Eye, 
     ZoomIn, 
-    Database, 
-    Copy, 
-    Check, 
+    Calendar, 
+    Coins, 
+    Building2, 
+    FileText, 
+    CheckCircle2, 
+    TrendingUp, 
+    Scale, 
+    Layers, 
+    LayoutGrid, 
+    List, 
+    Filter, 
+    BarChart3, 
+    FolderKanban, 
+    Folder, 
+    Loader2, 
     X,
     Sparkles,
-    Calendar,
-    Coins,
-    Building2,
-    FileText,
-    CreditCard,
-    CheckCircle2,
-    TrendingUp,
-    Scale,
-    Layers,
-    ArrowRight,
-    LayoutGrid,
-    List,
-    Filter,
-    BarChart3,
-    FolderKanban,
-    Folder,
-    Loader2,
-    AlertTriangle,
-    RefreshCw
+    Flag,
+    Shield,
+    ShoppingBag,
+    DollarSign,
+    Activity,
+    PieChart,
+    ChevronRight
 } from 'lucide-react';
 
 type TimeFilter = 'day' | 'week' | 'month' | '90days' | 'all';
-type ViewCategory = 'all' | 'revenue' | 'expenses' | 'profits' | 'growth';
+type ViewCategory = 'all' | 'game_fees' | 'rentals' | 'retail' | 'expenses' | 'profits' | 'growth';
 type LayoutMode = 'cards' | 'table';
 
 export const EXPENSE_CATEGORIES = [
@@ -108,57 +109,310 @@ const PROFIT_PRESETS = [
     { name: 'Armory Upgrades & Tech Tuning', sourceName: 'Armory Hardware Parts', category: 'Custom Armory & Tech Services', reason: 'Labor and parts margin on AEG gearbox upgrades' },
 ];
 
-const StatCard: React.FC<{ title: string, value: string, colorClass: string, subtitle?: string }> = ({ title, value, colorClass, subtitle }) => (
-    <div className="py-0.5 px-1.5 flex flex-col justify-between shrink-0">
-        <p className="text-[9px] sm:text-[10px] text-zinc-400 uppercase font-bold tracking-wider leading-none truncate">{title}</p>
-        <p className={`text-xs sm:text-sm font-mono font-black mt-0.5 leading-tight ${colorClass}`}>{value}</p>
-        {subtitle && <p className="text-[8px] sm:text-[9px] text-zinc-500 mt-0.5 leading-none truncate">{subtitle}</p>}
+// Shrink-to-Fit Tactile 3D KPI Card (No Box Container Outlines)
+const TacticalKpiPill: React.FC<{ 
+    title: string; 
+    value: string; 
+    colorClass: string; 
+    subtitle?: string; 
+    icon?: React.ReactNode;
+    badge?: string;
+    onClick?: () => void;
+    active?: boolean;
+}> = ({ title, value, colorClass, subtitle, icon, badge, onClick, active }) => (
+    <div 
+        onClick={onClick}
+        className={`p-2 sm:p-2.5 rounded-2xl transition-all select-none flex-1 min-w-[130px] sm:min-w-[150px] flex flex-col justify-between cursor-pointer ${
+            active 
+                ? 'bg-gradient-to-br from-zinc-800/90 via-zinc-900 to-black shadow-[0_10px_25px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.15)] ring-1 ring-amber-400/80 scale-[1.02]' 
+                : 'bg-gradient-to-br from-zinc-950/90 via-zinc-900/70 to-black/90 shadow-[0_8px_20px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.05)] hover:bg-zinc-900/80'
+        }`}
+    >
+        <div className="flex items-center justify-between gap-1 text-[8.5px] sm:text-[9px] uppercase font-mono text-zinc-400 font-bold">
+            <span className="flex items-center gap-1 truncate">
+                {icon}
+                <span className="truncate">{title}</span>
+            </span>
+            {badge && (
+                <span className="px-1.5 py-0.2 rounded-full text-[7.5px] font-bold bg-white/[0.08] text-zinc-300">
+                    {badge}
+                </span>
+            )}
+        </div>
+        <div className={`text-xs sm:text-base font-mono font-black mt-1 leading-tight tracking-tight ${colorClass}`}>
+            {value}
+        </div>
+        {subtitle && (
+            <p className="text-[8px] sm:text-[8.5px] font-mono text-zinc-500 mt-0.5 truncate">
+                {subtitle}
+            </p>
+        )}
     </div>
 );
 
-const BarChart: React.FC<{ data: { label: string, event: number, rental: number, retail: number }[] }> = ({ data }) => {
-    const maxVal = Math.max(...data.map(d => d.event + d.rental + d.retail), 1);
+// Dynamic D3 Multi-Stream Financial Pulse Canvas (Area Wave + Flow Breakdown)
+interface MultiStreamPoint {
+    key: string;
+    label: string;
+    gameFees: number;
+    rentals: number;
+    retail: number;
+    expenses: number;
+    profits: number;
+    net: number;
+}
+
+const DynamicMultiStreamPulseChart: React.FC<{
+    data: MultiStreamPoint[];
+    activeStream: 'all' | 'game_fees' | 'rentals' | 'retail' | 'expenses' | 'net';
+    onStreamChange: (stream: 'all' | 'game_fees' | 'rentals' | 'retail' | 'expenses' | 'net') => void;
+}> = ({ data, activeStream, onStreamChange }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const svgRef = useRef<SVGSVGElement>(null);
+    const [containerWidth, setContainerWidth] = useState<number>(600);
+    const [hoveredPoint, setHoveredPoint] = useState<MultiStreamPoint | null>(null);
+
+    useEffect(() => {
+        if (!containerRef.current) return;
+        const ro = new ResizeObserver(entries => {
+            for (const entry of entries) {
+                if (entry.contentRect.width > 50) {
+                    setContainerWidth(Math.floor(entry.contentRect.width));
+                }
+            }
+        });
+        ro.observe(containerRef.current);
+        return () => ro.disconnect();
+    }, []);
+
+    useEffect(() => {
+        if (!svgRef.current || data.length === 0) return;
+
+        const width = containerWidth;
+        const height = 110;
+        const margin = { top: 10, right: 12, bottom: 20, left: 28 };
+        const innerWidth = Math.max(width - margin.left - margin.right, 50);
+        const innerHeight = Math.max(height - margin.top - margin.bottom, 40);
+
+        const svg = d3.select(svgRef.current);
+        svg.selectAll('*').remove();
+
+        svg.attr('width', width)
+           .attr('height', height)
+           .attr('viewBox', `0 0 ${width} ${height}`);
+
+        const defs = svg.append('defs');
+
+        // 3D Glow filter
+        const glowFilter = defs.append('filter')
+            .attr('id', 'finance-glow')
+            .attr('x', '-20%').attr('y', '-20%')
+            .attr('width', '140%').attr('height', '140%');
+        glowFilter.append('feGaussianBlur').attr('stdDeviation', '2.5').attr('result', 'coloredBlur');
+        const feMerge = glowFilter.append('feMerge');
+        feMerge.append('feMergeNode').attr('in', 'coloredBlur');
+        feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+
+        // Gradients
+        const addGrad = (id: string, color: string) => {
+            const grad = defs.append('linearGradient')
+                .attr('id', id)
+                .attr('x1', '0%').attr('y1', '0%')
+                .attr('x2', '0%').attr('y2', '100%');
+            grad.append('stop').attr('offset', '0%').attr('stop-color', color).attr('stop-opacity', 0.4);
+            grad.append('stop').attr('offset', '100%').attr('stop-color', color).attr('stop-opacity', 0.0);
+        };
+
+        addGrad('game-fees-grad', '#f59e0b');
+        addGrad('rentals-grad', '#3b82f6');
+        addGrad('retail-grad', '#a855f7');
+        addGrad('expenses-grad', '#ef4444');
+        addGrad('net-grad', '#10b981');
+
+        const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+        // Scales
+        const xScale = d3.scalePoint<string>()
+            .domain(data.map(d => d.key))
+            .range([0, innerWidth])
+            .padding(0.1);
+
+        const maxInflow = d3.max(data, d => Math.max(d.gameFees + d.rentals + d.retail, d.expenses, d.net, 100)) || 1000;
+        const minVal = Math.min(d3.min(data, d => Math.min(0, d.net)) || 0, 0);
+
+        const yScale = d3.scaleLinear()
+            .domain([minVal, maxInflow * 1.15])
+            .range([innerHeight, 0]);
+
+        // Background gridlines
+        const yTicks = yScale.ticks(3);
+        yTicks.forEach(tick => {
+            const y = yScale(tick);
+            g.append('line')
+                .attr('x1', 0)
+                .attr('y1', y)
+                .attr('x2', innerWidth)
+                .attr('y2', y)
+                .attr('stroke', '#27272a')
+                .attr('stroke-width', 0.6)
+                .attr('stroke-dasharray', '2,2');
+
+            g.append('text')
+                .attr('x', -4)
+                .attr('y', y + 3)
+                .attr('fill', '#71717a')
+                .attr('font-size', '8px')
+                .attr('font-family', 'monospace')
+                .attr('text-anchor', 'end')
+                .text(tick >= 1000 ? `R${(tick / 1000).toFixed(0)}k` : `R${tick}`);
+        });
+
+        // Area Generators
+        const drawAreaAndLine = (
+            accessor: (d: MultiStreamPoint) => number, 
+            color: string, 
+            gradId: string, 
+            dashed = false
+        ) => {
+            const area = d3.area<MultiStreamPoint>()
+                .x(d => xScale(d.key) || 0)
+                .y0(yScale(0))
+                .y1(d => yScale(accessor(d)))
+                .curve(d3.curveMonotoneX);
+
+            const line = d3.line<MultiStreamPoint>()
+                .x(d => xScale(d.key) || 0)
+                .y(d => yScale(accessor(d)))
+                .curve(d3.curveMonotoneX);
+
+            g.append('path')
+                .datum(data)
+                .attr('fill', `url(#${gradId})`)
+                .attr('d', area);
+
+            const path = g.append('path')
+                .datum(data)
+                .attr('fill', 'none')
+                .attr('stroke', color)
+                .attr('stroke-width', 1.6)
+                .attr('d', line)
+                .attr('filter', 'url(#finance-glow)');
+
+            if (dashed) {
+                path.attr('stroke-dasharray', '3,2');
+            }
+        };
+
+        if (activeStream === 'all' || activeStream === 'game_fees') {
+            drawAreaAndLine(d => d.gameFees, '#f59e0b', 'game-fees-grad');
+        }
+        if (activeStream === 'all' || activeStream === 'rentals') {
+            drawAreaAndLine(d => d.rentals, '#3b82f6', 'rentals-grad');
+        }
+        if (activeStream === 'all' || activeStream === 'retail') {
+            drawAreaAndLine(d => d.retail, '#a855f7', 'retail-grad');
+        }
+        if (activeStream === 'all' || activeStream === 'expenses') {
+            drawAreaAndLine(d => d.expenses, '#ef4444', 'expenses-grad', true);
+        }
+        if (activeStream === 'all' || activeStream === 'net') {
+            drawAreaAndLine(d => d.net, '#10b981', 'net-grad');
+        }
+
+        // Timeline Node Checkpoints
+        data.forEach(d => {
+            const x = xScale(d.key) || 0;
+            const isHovered = hoveredPoint?.key === d.key;
+
+            const col = g.append('g')
+                .attr('class', 'stream-col cursor-pointer')
+                .on('mouseenter', () => setHoveredPoint(d))
+                .on('mouseleave', () => setHoveredPoint(null));
+
+            // Invisible wide hover target
+            col.append('rect')
+                .attr('x', x - 12)
+                .attr('y', 0)
+                .attr('width', 24)
+                .attr('height', innerHeight)
+                .attr('fill', 'transparent');
+
+            if (isHovered) {
+                col.append('line')
+                    .attr('x1', x)
+                    .attr('y1', 0)
+                    .attr('x2', x)
+                    .attr('y2', innerHeight)
+                    .attr('stroke', '#ffffff')
+                    .attr('stroke-width', 1)
+                    .attr('stroke-dasharray', '2,2');
+            }
+
+            // X-axis label
+            col.append('text')
+                .attr('x', x)
+                .attr('y', innerHeight + 14)
+                .attr('fill', isHovered ? '#ffffff' : '#71717a')
+                .attr('font-size', '8px')
+                .attr('font-family', 'monospace')
+                .attr('text-anchor', 'middle')
+                .text(d.label);
+        });
+
+    }, [data, containerWidth, activeStream, hoveredPoint]);
 
     if (data.length === 0) {
         return (
-            <div className="h-36 flex items-center justify-center text-xs text-zinc-500 italic">
-                No revenue entries recorded for this period
+            <div className="h-28 flex items-center justify-center text-xs text-zinc-500 italic font-mono">
+                No financial records recorded for this timeframe
             </div>
         );
     }
 
     return (
-        <div className="h-36 flex items-end justify-around space-x-1 px-1 border-b border-l border-zinc-800 pb-2 pl-2 relative">
-            <span className="absolute left-0 top-0 -translate-x-full text-[8px] text-zinc-400 pr-1">R{maxVal >= 1000 ? `${(maxVal/1000).toFixed(0)}k` : maxVal.toFixed(0)}</span>
-            <span className="absolute left-0 bottom-0 -translate-x-full text-[8px] text-zinc-400 pr-1">R0</span>
-            {data.map((d, index) => {
-                const total = d.event + d.rental + d.retail;
-                const totalHeight = maxVal > 0 ? (total / maxVal) * 100 : 0;
-                
-                const eventPercent = total > 0 ? (d.event / total) * 100 : 0;
-                const rentalPercent = total > 0 ? (d.rental / total) * 100 : 0;
-                
-                return (
-                    <div key={index} className="flex-1 group relative flex flex-col items-center justify-end h-full">
-                         <motion.div
-                            initial={{height: 0}}
-                            animate={{height: `${totalHeight}%`}}
-                            transition={{duration: 0.3, ease: 'easeOut'}}
-                            className="w-full flex flex-col justify-end rounded-t-none"
+        <div ref={containerRef} className="w-full space-y-1.5 select-none font-mono">
+            {/* Stream Selector Controls */}
+            <div className="flex items-center justify-between gap-1 flex-wrap text-[8.5px]">
+                <div className="flex items-center gap-1 p-0.5 rounded-xl bg-zinc-900/80 shadow-inner flex-wrap">
+                    {[
+                        { id: 'all', label: 'All Streams' },
+                        { id: 'game_fees', label: 'Game Fees', color: 'text-amber-400' },
+                        { id: 'rentals', label: 'Rentals', color: 'text-blue-400' },
+                        { id: 'retail', label: 'Retail', color: 'text-purple-400' },
+                        { id: 'expenses', label: 'Expenses', color: 'text-red-400' },
+                        { id: 'net', label: 'Net Margin', color: 'text-emerald-400' },
+                    ].map(st => (
+                        <button
+                            key={st.id}
+                            onClick={() => onStreamChange(st.id as any)}
+                            className={`px-2 py-0.5 rounded-lg font-bold uppercase transition-all ${
+                                activeStream === st.id
+                                    ? 'bg-zinc-800 text-white shadow-sm font-extrabold'
+                                    : 'text-zinc-400 hover:text-white'
+                            }`}
                         >
-                            <div style={{height: `${eventPercent}%`}} className="bg-emerald-500/80 group-hover:bg-emerald-400 w-full" />
-                            <div style={{height: `${rentalPercent}%`}} className="bg-blue-500/80 group-hover:bg-blue-400 w-full" />
-                            <div className="bg-amber-500/80 group-hover:bg-amber-400 w-full flex-grow" />
-                        </motion.div>
-                        <div className="absolute -bottom-3.5 text-[8px] text-zinc-500 truncate max-w-[36px] text-center font-mono">{d.label}</div>
-                         <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-950 px-2 py-1 text-[9px] text-white border border-zinc-700 whitespace-nowrap z-20 pointer-events-none shadow-lg font-mono">
-                            <p className="text-emerald-400">Events: R{(d.event || 0).toFixed(0)}</p>
-                            <p className="text-blue-400">Rentals: R{(d.rental || 0).toFixed(0)}</p>
-                            <p className="text-amber-400">Retail: R{(d.retail || 0).toFixed(0)}</p>
-                        </div>
+                            {st.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Hover inspection pill */}
+                {hoveredPoint && (
+                    <div className="px-2 py-0.5 rounded-lg bg-zinc-900 text-zinc-300 font-bold flex items-center gap-2 shadow-sm text-[8.5px]">
+                        <span className="text-amber-400">{hoveredPoint.label}:</span>
+                        <span>Game: <strong className="text-white">R{hoveredPoint.gameFees}</strong></span>
+                        <span>Gear: <strong className="text-blue-400">R{hoveredPoint.rentals}</strong></span>
+                        <span>Shop: <strong className="text-purple-400">R{hoveredPoint.retail}</strong></span>
+                        <span>Exp: <strong className="text-red-400">R{hoveredPoint.expenses}</strong></span>
+                        <span>Net: <strong className="text-emerald-400">R{hoveredPoint.net}</strong></span>
                     </div>
-                );
-            })}
+                )}
+            </div>
+
+            {/* Canvas */}
+            <div className="w-full relative h-[110px] overflow-hidden">
+                <svg ref={svgRef} className="w-full block overflow-visible" />
+            </div>
         </div>
     );
 };
@@ -182,7 +436,6 @@ export const FinanceTab: React.FC<{
     updateDoc: propUpdateDoc,
     deleteDoc: propDeleteDoc,
 }) => {
-    // Fallback to DataContext if prop not explicitly provided
     const contextData = useData();
     const addDoc = propAddDoc || contextData?.addDoc;
     const updateDoc = propUpdateDoc || contextData?.updateDoc;
@@ -198,6 +451,7 @@ export const FinanceTab: React.FC<{
     const [locationFilter, setLocationFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState<string>('');
+    const [activeStreamFilter, setActiveStreamFilter] = useState<'all' | 'game_fees' | 'rentals' | 'retail' | 'expenses' | 'net'>('all');
 
     // Custom Categories State
     const [customExpenseCategories, setCustomExpenseCategories] = useState<string[]>([]);
@@ -207,7 +461,7 @@ export const FinanceTab: React.FC<{
     const [isCreatingProfitCategory, setIsCreatingProfitCategory] = useState<boolean>(false);
     const [newProfitCategoryName, setNewProfitCategoryName] = useState<string>('');
 
-    // Active Category Lists (incorporating default + custom + existing database transactions)
+    // Active Category Lists
     const allExpenseCategoriesList = useMemo(() => {
         const set = new Set([...EXPENSE_CATEGORIES, ...customExpenseCategories]);
         transactions.forEach(t => {
@@ -422,7 +676,7 @@ export const FinanceTab: React.FC<{
         setSaveProgress({
             stage: 'validating',
             progress: 25,
-            message: '1/3: Validating expense data & schema mapping...',
+            message: 'Validating expense details...',
             type: 'expense',
         });
 
@@ -450,7 +704,7 @@ export const FinanceTab: React.FC<{
             setSaveProgress({
                 stage: 'transmitting',
                 progress: 65,
-                message: '2/3: Live persisting to Supabase PostgreSQL transactions table...',
+                message: 'Live persisting to transactions ledger...',
                 type: 'expense',
             });
 
@@ -470,34 +724,34 @@ export const FinanceTab: React.FC<{
             setSaveProgress({
                 stage: 'verifying',
                 progress: 90,
-                message: '3/3: Replicating row state & verifying Realtime broadcast...',
+                message: 'Verifying real-time broadcast...',
                 type: 'expense',
             });
 
-            await new Promise(resolve => setTimeout(resolve, 250));
+            await new Promise(resolve => setTimeout(resolve, 200));
 
             setSaveProgress({
                 stage: 'success',
                 progress: 100,
-                message: `Expense "R${numericAmount.toFixed(0)} - ${trimmedName}" live saved & synced to Supabase!`,
+                message: `Expense "${trimmedName}" recorded and synced!`,
                 type: 'expense',
             });
 
-            setStatusBanner(`Business expense "R${numericAmount.toFixed(0)} - ${trimmedName}" recorded and synced live.`);
+            setStatusBanner(`Expense "${trimmedName}" (-R${numericAmount.toFixed(0)}) recorded.`);
 
             setTimeout(() => {
                 setIsExpenseModalOpen(false);
                 resetExpenseForm();
                 setSaveProgress(null);
                 setIsSaving(false);
-            }, 600);
-            setTimeout(() => setStatusBanner(null), 5000);
+            }, 500);
+            setTimeout(() => setStatusBanner(null), 4000);
         } catch (err: any) {
-            console.error('Error saving business expense:', err);
+            console.error('Error saving expense:', err);
             setSaveProgress({
                 stage: 'error',
                 progress: 100,
-                message: 'Supabase Sync Error: Failed to save expense',
+                message: 'Failed to save expense',
                 details: err?.message || String(err),
                 type: 'expense',
             });
@@ -508,41 +762,39 @@ export const FinanceTab: React.FC<{
     const handleSaveProfit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         const rawProfitName = (profitFormData.profitName || '').trim();
-        const trimmedProfitName = rawProfitName || 'General Profit';
+        const trimmedProfitName = rawProfitName || 'Realized Profit';
         const rawProfitMade = parseFloat(String(profitFormData.profitMade));
         const numericProfit = !isNaN(rawProfitMade) ? rawProfitMade : 0;
+        const rawSourceCost = parseFloat(String(profitFormData.sourceCost));
+        const numericSourceCost = !isNaN(rawSourceCost) ? rawSourceCost : 0;
 
         setIsSaving(true);
         setSaveProgress({
             stage: 'validating',
             progress: 25,
-            message: '1/3: Validating profit & returns payload...',
+            message: 'Validating profit details...',
             type: 'profit',
         });
 
         try {
-            const realizationDate = profitFormData.date 
+            const profitDate = profitFormData.date 
                 ? (profitFormData.date.includes('T') ? profitFormData.date : `${profitFormData.date}T12:00:00Z`)
                 : new Date().toISOString();
 
-            const parsedSourceCost = parseFloat(profitFormData.sourceCost) || 0;
-            const sourceDesc = (profitFormData.sourceExpenseName || '').trim() || trimmedProfitName;
-
             const profitPayload: any = {
-                description: `Profit: ${trimmedProfitName}`,
-                expenseName: sourceDesc,
-                expenseReason: (profitFormData.profitReason || '').trim() || `Profit realized: ${trimmedProfitName}`,
-                amount: parsedSourceCost,
-                date: realizationDate,
+                description: trimmedProfitName,
+                profitName: trimmedProfitName,
+                expenseName: (profitFormData.sourceExpenseName || '').trim(),
+                profitReason: (profitFormData.profitReason || '').trim(),
+                amount: numericSourceCost,
+                profitMade: numericProfit,
+                date: profitDate,
+                profitDate: profitDate,
                 type: 'Expense',
                 category: profitFormData.category || 'Resale & Equipment Profit',
                 paymentMethod: profitFormData.paymentMethod || 'EFT',
                 paidTo: (profitFormData.paidTo || '').trim(),
                 notes: (profitFormData.notes || '').trim(),
-                profitMade: numericProfit,
-                profitName: trimmedProfitName,
-                profitReason: (profitFormData.profitReason || '').trim(),
-                profitDate: realizationDate,
                 status: 'completed',
                 paymentStatus: 'Paid',
             };
@@ -550,7 +802,7 @@ export const FinanceTab: React.FC<{
             setSaveProgress({
                 stage: 'transmitting',
                 progress: 65,
-                message: '2/3: Live persisting to Supabase PostgreSQL transactions table...',
+                message: 'Live persisting profit entry...',
                 type: 'profit',
             });
 
@@ -570,34 +822,34 @@ export const FinanceTab: React.FC<{
             setSaveProgress({
                 stage: 'verifying',
                 progress: 90,
-                message: '3/3: Replicating row state & verifying Realtime broadcast...',
+                message: 'Verifying real-time broadcast...',
                 type: 'profit',
             });
 
-            await new Promise(resolve => setTimeout(resolve, 250));
+            await new Promise(resolve => setTimeout(resolve, 200));
 
             setSaveProgress({
                 stage: 'success',
                 progress: 100,
-                message: `Profit entry "${trimmedProfitName}" (+R${numericProfit.toFixed(0)}) live saved & synced!`,
+                message: `Profit "${trimmedProfitName}" (+R${numericProfit.toFixed(0)}) synced!`,
                 type: 'profit',
             });
 
-            setStatusBanner(`Profit entry "${trimmedProfitName}" (+R${numericProfit.toFixed(0)}) recorded & synced live.`);
+            setStatusBanner(`Profit "${trimmedProfitName}" (+R${numericProfit.toFixed(0)}) recorded.`);
 
             setTimeout(() => {
                 setIsProfitModalOpen(false);
                 resetProfitForm();
                 setSaveProgress(null);
                 setIsSaving(false);
-            }, 600);
-            setTimeout(() => setStatusBanner(null), 5000);
+            }, 500);
+            setTimeout(() => setStatusBanner(null), 4000);
         } catch (err: any) {
-            console.error('Error saving profit entry:', err);
+            console.error('Error saving profit:', err);
             setSaveProgress({
                 stage: 'error',
                 progress: 100,
-                message: 'Supabase Sync Error: Failed to save profit entry',
+                message: 'Failed to save profit entry',
                 details: err?.message || String(err),
                 type: 'profit',
             });
@@ -651,7 +903,9 @@ export const FinanceTab: React.FC<{
             if (tDate < startDate) return false;
 
             // View Category Filter
-            if (viewCategory === 'revenue' && t.type === 'Expense') return false;
+            if (viewCategory === 'game_fees' && t.type !== 'Event Revenue' && !(/event|game/i.test(t.type || ''))) return false;
+            if (viewCategory === 'rentals' && t.type !== 'Rental Revenue' && !(/rental/i.test(t.type || ''))) return false;
+            if (viewCategory === 'retail' && t.type !== 'Retail Revenue' && !(/retail|shop|ammo|sales/i.test(t.type || ''))) return false;
             if (viewCategory === 'expenses' && (t.type !== 'Expense' || Boolean(t.profitMade && Number(t.profitMade) > 0 && (!t.amount || t.amount <= 0)))) return false;
             if (viewCategory === 'profits' && (!t.profitMade || Number(t.profitMade) <= 0)) return false;
 
@@ -688,13 +942,14 @@ export const FinanceTab: React.FC<{
         });
     }, [timeFilter, viewCategory, playerFilter, eventFilter, locationFilter, categoryFilter, searchQuery, transactions, events, locations]);
 
-    // Financial Metrics Calculation
+    // Financial Metrics Calculation (Detailed Itemized Breakdown)
     const metrics = useMemo(() => {
-        const revenueByType = {
-            'Event Revenue': 0,
-            'Rental Revenue': 0,
-            'Retail Revenue': 0,
-        };
+        let gameFeesTotal = 0;
+        let gameFeesCount = 0;
+        let rentalsTotal = 0;
+        let rentalsCount = 0;
+        let retailTotal = 0;
+        let retailCount = 0;
         let expenses = 0;
         let expenseCount = 0;
         let verifiedSlipsCount = 0;
@@ -715,9 +970,11 @@ export const FinanceTab: React.FC<{
             }
             if (tDate < startDate) continue;
 
+            const amt = Number(t.amount || 0);
+
             if (t.type === 'Expense') {
-                if (Number(t.amount || 0) > 0) {
-                    expenses += Number(t.amount || 0);
+                if (amt > 0) {
+                    expenses += amt;
                     expenseCount += 1;
                 }
                 if (t.receiptImageUrl && t.receiptImageUrl.trim() !== '') {
@@ -727,32 +984,47 @@ export const FinanceTab: React.FC<{
                     totalProfitsMade += Number(t.profitMade);
                     profitsCount += 1;
                 }
-            } else if (t.type in revenueByType) {
-                revenueByType[t.type as keyof typeof revenueByType] += Number(t.amount || 0);
-                if (t.paymentStatus === 'Unpaid') {
-                    outstanding += Number(t.amount || 0);
-                }
+            } else if (t.type === 'Event Revenue' || (t.type && /event|game/i.test(t.type))) {
+                gameFeesTotal += amt;
+                gameFeesCount += 1;
+                if (t.paymentStatus === 'Unpaid') outstanding += amt;
+            } else if (t.type === 'Rental Revenue' || (t.type && /rental/i.test(t.type))) {
+                rentalsTotal += amt;
+                rentalsCount += 1;
+                if (t.paymentStatus === 'Unpaid') outstanding += amt;
+            } else if (t.type === 'Retail Revenue' || (t.type && /retail|shop|ammo|sales/i.test(t.type))) {
+                retailTotal += amt;
+                retailCount += 1;
+                if (t.paymentStatus === 'Unpaid') outstanding += amt;
             }
         }
         
-        const totalRevenue = Object.values(revenueByType).reduce((sum, val) => sum + val, 0);
+        const totalGrossRevenue = gameFeesTotal + rentalsTotal + retailTotal;
+        const netProfit = totalGrossRevenue - expenses + totalProfitsMade;
+        const profitMargin = totalGrossRevenue > 0 ? Math.round((netProfit / totalGrossRevenue) * 100) : 0;
 
         return {
-            ...revenueByType,
-            totalRevenue,
+            gameFeesTotal,
+            gameFeesCount,
+            rentalsTotal,
+            rentalsCount,
+            retailTotal,
+            retailCount,
+            totalGrossRevenue,
             expenses,
             expenseCount,
             verifiedSlipsCount,
-            netProfit: totalRevenue - expenses,
-            outstanding,
             totalProfitsMade,
             profitsCount,
+            netProfit,
+            profitMargin,
+            outstanding,
         };
     }, [transactions, timeFilter]);
     
-    // Revenue trend chart data
-    const chartData = useMemo(() => {
-        const dataMap = new Map<string, { event: number, rental: number, retail: number }>();
+    // Dynamic Multi-Stream Pulse Chart Data Points
+    const multiStreamData = useMemo(() => {
+        const dataMap = new Map<string, MultiStreamPoint>();
         const formatLabel = (date: Date) => {
             switch(timeFilter) {
                 case 'day': return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'});
@@ -764,9 +1036,7 @@ export const FinanceTab: React.FC<{
         };
 
         filteredTransactions.forEach(t => {
-            if (t.type === 'Expense') return;
-
-            const date = new Date(t.date);
+            const date = new Date(t.date || t.profitDate || Date.now());
             let key: string;
             switch(timeFilter) {
                 case 'day': key = date.toISOString().split(':')[0]; break;
@@ -774,20 +1044,40 @@ export const FinanceTab: React.FC<{
                 case 'all': key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; break;
             }
 
-            if (!dataMap.has(key)) dataMap.set(key, { event: 0, rental: 0, retail: 0 });
+            if (!dataMap.has(key)) {
+                dataMap.set(key, {
+                    key,
+                    label: formatLabel(date),
+                    gameFees: 0,
+                    rentals: 0,
+                    retail: 0,
+                    expenses: 0,
+                    profits: 0,
+                    net: 0
+                });
+            }
             
             const entry = dataMap.get(key)!;
-            if (t.type === 'Event Revenue') entry.event += t.amount;
-            else if (t.type === 'Rental Revenue') entry.rental += t.amount;
-            else if (t.type === 'Retail Revenue') entry.retail += t.amount;
+            const amt = Number(t.amount || 0);
+
+            if (t.type === 'Expense') {
+                entry.expenses += amt;
+                if (t.profitMade && Number(t.profitMade) > 0) {
+                    entry.profits += Number(t.profitMade);
+                }
+            } else if (t.type === 'Event Revenue' || (t.type && /event|game/i.test(t.type))) {
+                entry.gameFees += amt;
+            } else if (t.type === 'Rental Revenue' || (t.type && /rental/i.test(t.type))) {
+                entry.rentals += amt;
+            } else if (t.type === 'Retail Revenue' || (t.type && /retail|shop|ammo|sales/i.test(t.type))) {
+                entry.retail += amt;
+            }
+
+            entry.net = (entry.gameFees + entry.rentals + entry.retail) - entry.expenses + entry.profits;
         });
         
-        return Array.from(dataMap.entries())
-            .sort(([keyA], [keyB]) => new Date(keyA).getTime() - new Date(keyB).getTime())
-            .map(([key, value]) => ({
-                label: formatLabel(new Date(key)),
-                ...value,
-            }));
+        return Array.from(dataMap.values())
+            .sort((a, b) => new Date(a.key).getTime() - new Date(b.key).getTime());
 
     }, [filteredTransactions, timeFilter]);
 
@@ -801,7 +1091,7 @@ export const FinanceTab: React.FC<{
         return Array.from(new Set([...allExpenseCategoriesList, ...allProfitCategoriesList]));
     }, [viewCategory, allExpenseCategoriesList, allProfitCategoriesList]);
 
-    // Category Breakdown Counts & Sums for quick interactive filter pills
+    // Category Breakdown Counts & Sums
     const categoryStats = useMemo(() => {
         const statsMap = new Map<string, { count: number, total: number }>();
 
@@ -846,11 +1136,17 @@ export const FinanceTab: React.FC<{
     };
 
     return (
-        <div className="w-full space-y-2.5 sm:space-y-3">
+        <div className="w-full space-y-2.5 sm:space-y-3 font-sans">
             {isPrinting && createPortal(
                 <PrintableReport
                     transactions={filteredTransactions}
-                    metrics={metrics}
+                    metrics={{
+                        ...metrics,
+                        totalRevenue: metrics.totalGrossRevenue,
+                        'Event Revenue': metrics.gameFeesTotal,
+                        'Rental Revenue': metrics.rentalsTotal,
+                        'Retail Revenue': metrics.retailTotal,
+                    }}
                     filters={reportFilters}
                     companyDetails={companyDetails}
                     players={players}
@@ -866,11 +1162,11 @@ export const FinanceTab: React.FC<{
                         initial={{ opacity: 0, y: -6 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -6 }}
-                        className="p-2 sm:p-2.5 rounded-none bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 text-[11px] flex items-center justify-between shadow-lg"
+                        className="p-2 sm:p-2.5 rounded-2xl bg-emerald-950/90 text-emerald-300 text-[11px] flex items-center justify-between shadow-[0_8px_20px_rgba(16,185,129,0.2)] backdrop-blur-md"
                     >
                         <div className="flex items-center gap-2">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                            <span>{statusBanner}</span>
+                            <span className="font-mono">{statusBanner}</span>
                         </div>
                         <button onClick={() => setStatusBanner(null)} className="text-zinc-400 hover:text-white">
                             <X className="w-3 h-3" />
@@ -879,178 +1175,298 @@ export const FinanceTab: React.FC<{
                 )}
             </AnimatePresence>
 
-            {/* Top Bar: Title & Actions (Shrink-to-fit) */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-1.5 border-b border-zinc-800/60">
-                <div className="flex items-center gap-1.5">
-                    <CurrencyDollarIcon className="w-4 h-4 text-red-500 shrink-0" />
+            {/* 1. TOP HEADER & ACTION CONTROLS (3D Depth, No Box Outlines) */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-2xl bg-zinc-950/90 shadow-[0_12px_28px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-md">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-red-600/20 text-red-400 flex items-center justify-center shadow-inner">
+                        <Coins className="w-4 h-4" />
+                    </div>
                     <div>
-                        <h2 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider leading-tight">
-                            Financial Ledger & Vouchers
+                        <h2 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                            <span>TACTICAL FINANCIAL LEDGER</span>
+                            <span className="px-2 py-0.2 rounded-full text-[8.5px] font-mono bg-zinc-800 text-zinc-300">
+                                {filteredTransactions.length} Records
+                            </span>
                         </h2>
-                        <p className="text-[9px] text-zinc-400 leading-none mt-0.5">
-                            Side-by-side categorized ledger, instant slips, multi-period growth & ROI analytics
+                        <p className="text-[9.5px] text-zinc-400">
+                            Game fees, gear rentals, shop sales, operating expenses & realized ROI
                         </p>
                     </div>
                 </div>
 
+                {/* Primary Action Buttons */}
                 <div className="flex items-center gap-1.5 flex-wrap">
-                    {/* Log Expense Button */}
                     <Button 
                         onClick={handleOpenNewExpense} 
                         variant="danger" 
                         size="sm" 
-                        className="!py-0.5 !px-2 text-[11px] font-bold flex items-center gap-1 shadow-xs"
+                        className="!py-1 !px-2.5 text-[11px] font-bold flex items-center gap-1.5 shadow-md rounded-xl"
                     >
-                        <Receipt className="w-3 h-3" />
+                        <Receipt className="w-3.5 h-3.5" />
                         <span>Log Expense</span>
                     </Button>
 
-                    {/* Log Profit Button */}
                     <Button 
                         onClick={handleOpenNewProfit} 
                         variant="secondary" 
                         size="sm" 
-                        className="!py-0.5 !px-2 text-[11px] font-bold flex items-center gap-1 !bg-emerald-950/70 hover:!bg-emerald-900 !text-emerald-300 !border-emerald-500/40 shadow-xs"
+                        className="!py-1 !px-2.5 text-[11px] font-bold flex items-center gap-1.5 !bg-emerald-950/80 hover:!bg-emerald-900 !text-emerald-300 !border-emerald-500/40 shadow-md rounded-xl"
                     >
-                        <ArrowTrendingUpIcon className="w-3 h-3 text-emerald-400" />
+                        <ArrowTrendingUpIcon className="w-3.5 h-3.5 text-emerald-400" />
                         <span>Log Profit</span>
                     </Button>
 
-                    {/* Print Report */}
                     <button 
                         onClick={handlePrint} 
-                        className="p-1 px-1.5 text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 transition-colors"
+                        className="p-1.5 px-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-[11px] font-mono font-bold flex items-center gap-1 transition shadow-sm"
                     >
-                        <PrinterIcon className="w-3 h-3" />
+                        <PrinterIcon className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">Print</span>
                     </button>
                 </div>
             </div>
 
-            {/* Filter Bar (Shrink-to-fit) */}
-            <div className="flex flex-wrap items-center gap-1.5 py-1 bg-zinc-950/60 p-1.5 border border-zinc-800/60">
-                {/* Timeframe selector */}
-                <div className="flex items-center gap-1 text-[11px] text-zinc-400">
-                    <Calendar className="w-3 h-3 text-zinc-400" />
-                    <select 
-                        value={timeFilter} 
-                        onChange={e => setTimeFilter(e.target.value as TimeFilter)} 
-                        className="bg-zinc-900 border border-zinc-700/80 px-1.5 py-0.5 text-white text-[11px] focus:outline-none focus:border-red-500"
-                    >
-                        <option value="day">Today</option>
-                        <option value="week">This Week</option>
-                        <option value="month">This Month</option>
-                        <option value="90days">Last 90 Days</option>
-                        <option value="all">All Time</option>
-                    </select>
-                </div>
-
-                {/* Dropdown Categories Selector */}
-                <div className="flex items-center gap-1 text-[11px] text-zinc-400">
-                    <Filter className="w-3 h-3 text-zinc-400" />
-                    <select 
-                        value={categoryFilter} 
-                        onChange={e => setCategoryFilter(e.target.value)} 
-                        className="bg-zinc-900 border border-zinc-700/80 px-1.5 py-0.5 text-white text-[11px] focus:outline-none focus:border-red-500 max-w-[150px] truncate"
-                    >
-                        <option value="all">All Categories</option>
-                        {allDropdownCategories.map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Event selector */}
-                <select 
-                    value={eventFilter} 
-                    onChange={e => setEventFilter(e.target.value)} 
-                    className="bg-zinc-900 border border-zinc-700/80 px-1.5 py-0.5 text-white text-[11px] focus:outline-none focus:border-red-500 hidden sm:inline-block max-w-[130px] truncate"
-                >
-                    <option value="all">All Events</option>
-                    {events.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
-                </select>
-
-                {/* Group by Category Switcher */}
-                <button
-                    onClick={() => setGroupByCategory(!groupByCategory)}
-                    className={`px-2 py-0.5 flex items-center gap-1 text-[10px] font-bold transition-all border ${
-                        groupByCategory 
-                            ? 'bg-amber-950/80 text-amber-300 border-amber-500/50' 
-                            : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 border-zinc-800'
-                    }`}
-                    title="Toggle categorized grouping for ledger entries"
-                >
-                    <FolderKanban className="w-3 h-3" />
-                    <span>{groupByCategory ? 'Categorized Grouping: ON' : 'Group by Category'}</span>
-                </button>
-
-                {/* Layout Mode Toggle */}
-                <div className="ml-auto flex items-center gap-1 bg-zinc-900 p-0.5 border border-zinc-800">
-                    <button
-                        onClick={() => setLayoutMode('cards')}
-                        className={`p-1 flex items-center gap-1 text-[10px] font-bold transition-all ${
-                            layoutMode === 'cards' ? 'bg-zinc-800 text-white shadow-xs' : 'text-zinc-400 hover:text-zinc-200'
-                        }`}
-                        title="Side-by-side Shrink-to-fit Cards"
-                    >
-                        <LayoutGrid className="w-3 h-3" />
-                        <span className="hidden sm:inline">Side-by-Side</span>
-                    </button>
-                    <button
-                        onClick={() => setLayoutMode('table')}
-                        className={`p-1 flex items-center gap-1 text-[10px] font-bold transition-all ${
-                            layoutMode === 'table' ? 'bg-zinc-800 text-white shadow-xs' : 'text-zinc-400 hover:text-zinc-200'
-                        }`}
-                        title="Compact Linear Table Rows"
-                    >
-                        <List className="w-3 h-3" />
-                        <span className="hidden sm:inline">Rows</span>
-                    </button>
-                </div>
-            </div>
-             
-            {/* KPI Bar (Ultra-Compact Shrink-to-Fit) */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 py-1.5 px-2 bg-zinc-950/70 border border-zinc-800/60">
-                <StatCard 
-                    title="Gross Inflow" 
-                    value={`R${metrics.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} 
-                    colorClass="text-emerald-400" 
-                    subtitle="Events, Rentals & Shop"
-                />
-                <StatCard 
-                    title="Expenses" 
-                    value={`R${metrics.expenses.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} 
-                    colorClass="text-red-400" 
-                    subtitle={`${metrics.expenseCount} entries (${metrics.verifiedSlipsCount} slips)`}
-                />
-                <StatCard 
-                    title="Profits & Returns" 
-                    value={`R${metrics.totalProfitsMade.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} 
-                    colorClass="text-emerald-400" 
-                    subtitle={`${metrics.profitsCount} profit items`}
-                />
-                <StatCard 
-                    title="Net Profit" 
-                    value={`R${metrics.netProfit.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} 
-                    colorClass={metrics.netProfit >= 0 ? 'text-white' : 'text-red-400'} 
-                    subtitle="Bottom Line"
-                />
-                <StatCard 
-                    title="Unpaid Dues" 
-                    value={`R${metrics.outstanding.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`} 
+            {/* 2. ITEMIZED FINANCIAL KPI STRIP (Shrink to Fit, 3D Depth Elevation) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                <TacticalKpiPill 
+                    title="Game Fees" 
+                    value={`R${metrics.gameFeesTotal.toLocaleString()}`} 
                     colorClass="text-amber-400" 
-                    subtitle="Pending fees"
+                    subtitle={`${metrics.gameFeesCount} Match Tickets`}
+                    icon={<Flag className="w-3 h-3 text-amber-400" />}
+                    onClick={() => setViewCategory(viewCategory === 'game_fees' ? 'all' : 'game_fees')}
+                    active={viewCategory === 'game_fees'}
+                />
+                <TacticalKpiPill 
+                    title="Gear Rentals" 
+                    value={`R${metrics.rentalsTotal.toLocaleString()}`} 
+                    colorClass="text-blue-400" 
+                    subtitle={`${metrics.rentalsCount} Fleet Hires`}
+                    icon={<Shield className="w-3 h-3 text-blue-400" />}
+                    onClick={() => setViewCategory(viewCategory === 'rentals' ? 'all' : 'rentals')}
+                    active={viewCategory === 'rentals'}
+                />
+                <TacticalKpiPill 
+                    title="Shop Sales" 
+                    value={`R${metrics.retailTotal.toLocaleString()}`} 
+                    colorClass="text-purple-400" 
+                    subtitle={`${metrics.retailCount} Retail Items`}
+                    icon={<ShoppingBag className="w-3 h-3 text-purple-400" />}
+                    onClick={() => setViewCategory(viewCategory === 'retail' ? 'all' : 'retail')}
+                    active={viewCategory === 'retail'}
+                />
+                <TacticalKpiPill 
+                    title="Expenses" 
+                    value={`R${metrics.expenses.toLocaleString()}`} 
+                    colorClass="text-red-400" 
+                    subtitle={`${metrics.expenseCount} Outflows (${metrics.verifiedSlipsCount} Slips)`}
+                    icon={<Receipt className="w-3 h-3 text-red-400" />}
+                    onClick={() => setViewCategory(viewCategory === 'expenses' ? 'all' : 'expenses')}
+                    active={viewCategory === 'expenses'}
+                />
+                <TacticalKpiPill 
+                    title="Realized ROI" 
+                    value={`R${metrics.totalProfitsMade.toLocaleString()}`} 
+                    colorClass="text-emerald-400" 
+                    subtitle={`${metrics.profitsCount} Surplus Marks`}
+                    icon={<Sparkles className="w-3 h-3 text-emerald-400" />}
+                    onClick={() => setViewCategory(viewCategory === 'profits' ? 'all' : 'profits')}
+                    active={viewCategory === 'profits'}
+                />
+                <TacticalKpiPill 
+                    title="Net Bottom Line" 
+                    value={`R${metrics.netProfit.toLocaleString()}`} 
+                    colorClass={metrics.netProfit >= 0 ? 'text-emerald-400 font-extrabold' : 'text-red-400 font-extrabold'} 
+                    subtitle={`Margin: ${metrics.profitMargin}% (${metrics.outstanding > 0 ? `R${metrics.outstanding} Due` : 'Zero Dues'})`}
+                    icon={<Scale className="w-3 h-3 text-emerald-400" />}
                 />
             </div>
 
-            {/* Interactive Category Filter Pills (Shrink-to-fit Horizontal Scroll) */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin text-[10px]">
+            {/* 3. DYNAMIC MULTI-STREAM FINANCIAL PULSE & FLOW CANVAS (Shrink-to-Fit) */}
+            <div className="p-3 rounded-2xl bg-zinc-950/90 shadow-[0_16px_36px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-md space-y-2">
+                <div className="flex items-center justify-between pb-1 border-b border-white/5">
+                    <div className="flex items-center gap-1.5">
+                        <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-xs font-black font-mono text-white uppercase tracking-wider">
+                            Multi-Stream Financial Flow & Velocity
+                        </span>
+                    </div>
+
+                    {/* Timeframe selector in chart header */}
+                    <div className="flex items-center gap-1 p-0.5 rounded-xl bg-zinc-900 shadow-inner font-mono text-[9px]">
+                        {[
+                            { id: 'day', label: 'Day' },
+                            { id: 'week', label: 'Week' },
+                            { id: 'month', label: 'Month' },
+                            { id: '90days', label: '90D' },
+                            { id: 'all', label: 'All Time' },
+                        ].map(tf => (
+                            <button
+                                key={tf.id}
+                                onClick={() => setTimeFilter(tf.id as TimeFilter)}
+                                className={`px-2 py-0.5 rounded-lg font-bold transition-all ${
+                                    timeFilter === tf.id
+                                        ? 'bg-amber-600 text-white shadow-sm'
+                                        : 'text-zinc-400 hover:text-white'
+                                }`}
+                            >
+                                {tf.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <DynamicMultiStreamPulseChart 
+                    data={multiStreamData}
+                    activeStream={activeStreamFilter}
+                    onStreamChange={setActiveStreamFilter}
+                />
+            </div>
+
+            {/* 4. FILTER & VIEW MODE CONTROLS STRIP */}
+            <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-zinc-950/80 shadow-[0_8px_20px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.05)] text-xs">
+                {/* View Category Pills */}
+                <div className="flex items-center gap-1 flex-wrap font-mono text-[10px]">
+                    <button
+                        onClick={() => setViewCategory('all')}
+                        className={`px-2.5 py-1 rounded-xl font-bold transition-all ${
+                            viewCategory === 'all'
+                                ? 'bg-amber-600 text-white shadow-sm'
+                                : 'text-zinc-400 hover:text-white bg-zinc-900/60'
+                        }`}
+                    >
+                        All ({transactions.length})
+                    </button>
+                    <button
+                        onClick={() => setViewCategory('game_fees')}
+                        className={`px-2.5 py-1 rounded-xl font-bold transition-all flex items-center gap-1 ${
+                            viewCategory === 'game_fees'
+                                ? 'bg-amber-600 text-white shadow-sm'
+                                : 'text-amber-400/80 hover:text-amber-300 bg-zinc-900/60'
+                        }`}
+                    >
+                        <Flag className="w-2.5 h-2.5" />
+                        <span>Game Fees ({metrics.gameFeesCount})</span>
+                    </button>
+                    <button
+                        onClick={() => setViewCategory('rentals')}
+                        className={`px-2.5 py-1 rounded-xl font-bold transition-all flex items-center gap-1 ${
+                            viewCategory === 'rentals'
+                                ? 'bg-blue-600 text-white shadow-sm'
+                                : 'text-blue-400/80 hover:text-blue-300 bg-zinc-900/60'
+                        }`}
+                    >
+                        <Shield className="w-2.5 h-2.5" />
+                        <span>Rentals ({metrics.rentalsCount})</span>
+                    </button>
+                    <button
+                        onClick={() => setViewCategory('retail')}
+                        className={`px-2.5 py-1 rounded-xl font-bold transition-all flex items-center gap-1 ${
+                            viewCategory === 'retail'
+                                ? 'bg-purple-600 text-white shadow-sm'
+                                : 'text-purple-400/80 hover:text-purple-300 bg-zinc-900/60'
+                        }`}
+                    >
+                        <ShoppingBag className="w-2.5 h-2.5" />
+                        <span>Sales ({metrics.retailCount})</span>
+                    </button>
+                    <button
+                        onClick={() => setViewCategory('expenses')}
+                        className={`px-2.5 py-1 rounded-xl font-bold transition-all flex items-center gap-1 ${
+                            viewCategory === 'expenses'
+                                ? 'bg-red-600 text-white shadow-sm'
+                                : 'text-red-400/80 hover:text-red-300 bg-zinc-900/60'
+                        }`}
+                    >
+                        <Receipt className="w-2.5 h-2.5" />
+                        <span>Expenses ({metrics.expenseCount})</span>
+                    </button>
+                    <button
+                        onClick={() => setViewCategory('profits')}
+                        className={`px-2.5 py-1 rounded-xl font-bold transition-all flex items-center gap-1 ${
+                            viewCategory === 'profits'
+                                ? 'bg-emerald-600 text-white shadow-sm'
+                                : 'text-emerald-400/80 hover:text-emerald-300 bg-zinc-900/60'
+                        }`}
+                    >
+                        <Sparkles className="w-2.5 h-2.5" />
+                        <span>Profits ({metrics.profitsCount})</span>
+                    </button>
+                    <button
+                        onClick={() => setViewCategory('growth')}
+                        className={`px-2.5 py-1 rounded-xl font-bold transition-all flex items-center gap-1 ${
+                            viewCategory === 'growth'
+                                ? 'bg-cyan-600 text-white shadow-sm'
+                                : 'text-cyan-400/80 hover:text-cyan-300 bg-zinc-900/60'
+                        }`}
+                    >
+                        <BarChart3 className="w-2.5 h-2.5" />
+                        <span>Growth Matrix</span>
+                    </button>
+                </div>
+
+                {/* Search & Layout Toggles */}
+                <div className="flex items-center gap-2 flex-wrap">
+                    {/* Search Field */}
+                    <div className="relative w-44">
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            placeholder="Search entry or vendor..."
+                            className="w-full bg-zinc-900/90 rounded-xl px-2.5 py-1 text-[10px] text-white font-mono placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500 shadow-inner"
+                        />
+                        {searchQuery && (
+                            <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white">
+                                <X className="w-3 h-3" />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Group by category */}
+                    <button
+                        onClick={() => setGroupByCategory(!groupByCategory)}
+                        className={`px-2.5 py-1 rounded-xl text-[10px] font-mono font-bold transition-all flex items-center gap-1 shadow-sm ${
+                            groupByCategory 
+                                ? 'bg-amber-950 text-amber-300 shadow-inner' 
+                                : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
+                        }`}
+                        title="Group records by operational category"
+                    >
+                        <FolderKanban className="w-3 h-3" />
+                        <span className="hidden sm:inline">{groupByCategory ? 'Grouped: ON' : 'Group'}</span>
+                    </button>
+
+                    {/* Layout switcher */}
+                    <div className="flex items-center p-0.5 rounded-xl bg-zinc-900 shadow-inner">
+                        <button
+                            onClick={() => setLayoutMode('cards')}
+                            className={`p-1 px-2 rounded-lg text-[10px] font-mono font-bold transition-all ${
+                                layoutMode === 'cards' ? 'bg-zinc-800 text-white shadow-xs' : 'text-zinc-400 hover:text-white'
+                            }`}
+                        >
+                            <LayoutGrid className="w-3 h-3" />
+                        </button>
+                        <button
+                            onClick={() => setLayoutMode('table')}
+                            className={`p-1 px-2 rounded-lg text-[10px] font-mono font-bold transition-all ${
+                                layoutMode === 'table' ? 'bg-zinc-800 text-white shadow-xs' : 'text-zinc-400 hover:text-white'
+                            }`}
+                        >
+                            <List className="w-3 h-3" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* 5. INTERACTIVE CATEGORY PILLS (1-Tap Fast Filter) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin text-[9.5px] font-mono">
                 <button
                     onClick={() => setCategoryFilter('all')}
-                    className={`px-2 py-0.5 whitespace-nowrap font-bold transition-all border ${
+                    className={`px-2.5 py-1 rounded-xl whitespace-nowrap font-bold transition-all shadow-sm ${
                         categoryFilter === 'all'
-                            ? 'bg-zinc-800 text-white border-zinc-600'
-                            : 'bg-zinc-950 text-zinc-400 hover:text-white border-zinc-800/80'
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-zinc-950/80 text-zinc-400 hover:text-white'
                     }`}
                 >
                     All Categories ({filteredTransactions.length})
@@ -1063,14 +1479,14 @@ export const FinanceTab: React.FC<{
                         <button
                             key={cat}
                             onClick={() => setCategoryFilter(categoryFilter === cat ? 'all' : cat)}
-                            className={`px-2 py-0.5 whitespace-nowrap font-mono transition-all border flex items-center gap-1 ${
+                            className={`px-2.5 py-1 rounded-xl whitespace-nowrap transition-all flex items-center gap-1 shadow-sm ${
                                 categoryFilter === cat
-                                    ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/60 font-bold'
-                                    : 'bg-zinc-950 text-zinc-400 hover:text-zinc-200 border-zinc-800/80'
+                                    ? 'bg-emerald-950 text-emerald-300 font-bold'
+                                    : 'bg-zinc-950/80 text-zinc-400 hover:text-zinc-200'
                             }`}
                         >
                             <span>{cat}</span>
-                            <span className="text-[9px] opacity-70 bg-black/40 px-1">
+                            <span className="text-[8px] opacity-70 bg-black/40 px-1 py-0.2 rounded">
                                 {count}
                             </span>
                         </button>
@@ -1078,148 +1494,26 @@ export const FinanceTab: React.FC<{
                 })}
             </div>
 
-            {/* View Mode Tabs & Search Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 py-0.5">
-                <div className="flex items-center gap-2.5 flex-wrap text-xs">
-                    <button
-                        onClick={() => setViewCategory('all')}
-                        className={`py-0.5 transition-colors font-bold text-[11px] ${
-                            viewCategory === 'all'
-                                ? 'text-white border-b-2 border-red-500'
-                                : 'text-zinc-400 hover:text-white'
-                        }`}
-                    >
-                        All ({transactions.length})
-                    </button>
-                    <button
-                        onClick={() => setViewCategory('expenses')}
-                        className={`py-0.5 transition-colors font-bold text-[11px] flex items-center gap-1 ${
-                            viewCategory === 'expenses'
-                                ? 'text-red-400 border-b-2 border-red-500'
-                                : 'text-zinc-400 hover:text-white'
-                        }`}
-                    >
-                        <Receipt className="w-3 h-3" />
-                        <span>Expenses ({metrics.expenseCount})</span>
-                    </button>
-                    <button
-                        onClick={() => setViewCategory('profits')}
-                        className={`py-0.5 transition-colors font-bold text-[11px] flex items-center gap-1 ${
-                            viewCategory === 'profits'
-                                ? 'text-emerald-400 border-b-2 border-emerald-500'
-                                : 'text-zinc-400 hover:text-white'
-                        }`}
-                    >
-                        <ArrowTrendingUpIcon className="w-3 h-3" />
-                        <span>Profits & Returns ({metrics.profitsCount})</span>
-                    </button>
-                    <button
-                        onClick={() => setViewCategory('revenue')}
-                        className={`py-0.5 transition-colors font-bold text-[11px] ${
-                            viewCategory === 'revenue'
-                                ? 'text-blue-400 border-b-2 border-blue-500'
-                                : 'text-zinc-400 hover:text-white'
-                        }`}
-                    >
-                        Revenue Streams
-                    </button>
-                    <button
-                        onClick={() => setViewCategory('growth')}
-                        className={`py-0.5 transition-colors font-bold text-[11px] flex items-center gap-1 ${
-                            viewCategory === 'growth'
-                                ? 'text-cyan-400 border-b-2 border-cyan-400'
-                                : 'text-zinc-400 hover:text-white'
-                        }`}
-                    >
-                        <BarChart3 className="w-3 h-3 text-cyan-400" />
-                        <span>Growth & Comparison</span>
-                    </button>
-                </div>
-
-                {/* Search Field */}
-                <div className="relative w-full sm:w-48">
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                        placeholder="Search item, vendor..."
-                        className="w-full bg-zinc-900 border border-zinc-800 pl-2 pr-6 py-0.5 text-[11px] text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 transition-colors"
-                    />
-                    {searchQuery && (
-                        <button onClick={() => setSearchQuery('')} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white">
-                            <X className="w-2.5 h-2.5" />
-                        </button>
-                    )}
-                </div>
-            </div>
-
             {/* DEDICATED VIEW: GROWTH & MULTI-PERIOD COMPARISON ENGINE */}
             {viewCategory === 'growth' && (
                 <FinanceGrowthComparison transactions={transactions} />
             )}
 
-            {/* STANDARD VIEWS: CHARTS + SIDE-BY-SIDE BUSINESS CARDS */}
+            {/* STANDARD VIEWS: SIDE-BY-SIDE 3D CARDS / TABLE */}
             {viewCategory !== 'growth' && (
-                <div className="space-y-3">
-                    {/* Revenue Trend Visualizer Header Bar (when in Revenue or All) */}
-                    {(viewCategory === 'all' || viewCategory === 'revenue') && (
-                        <div className="p-2.5 bg-zinc-950 border border-zinc-800/80 space-y-1.5">
-                            <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1">
-                                    <ArrowTrendingUpIcon className="w-3 h-3 text-emerald-400"/> Revenue Velocity Trend
-                                </span>
-                                <div className="flex gap-2 text-[8px]">
-                                    <span className="flex items-center gap-1 text-zinc-400"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Event</span>
-                                    <span className="flex items-center gap-1 text-zinc-400"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Rental</span>
-                                    <span className="flex items-center gap-1 text-zinc-400"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Retail</span>
-                                </div>
-                            </div>
-                            <BarChart data={chartData} />
-                        </div>
-                    )}
-
-                    {/* Records Section Header */}
-                    <div className="flex items-center justify-between pb-1 border-b border-zinc-800/60">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-200 flex items-center gap-1">
-                            <FileText className="w-3 h-3 text-zinc-400" />
-                            {viewCategory === 'expenses' ? 'Business Expense Vouchers' : viewCategory === 'profits' ? 'Profits & ROI Returns Records' : 'Ledger Entries'} ({filteredTransactions.length})
-                        </span>
-
-                        <div className="flex items-center gap-2">
-                            {viewCategory === 'expenses' && (
-                                <button
-                                    onClick={handleOpenNewExpense}
-                                    className="text-[10px] text-red-400 hover:text-red-300 font-bold flex items-center gap-0.5"
-                                >
-                                    <Plus className="w-3 h-3" /> Log Expense
-                                </button>
-                            )}
-                            {viewCategory === 'profits' && (
-                                <button
-                                    onClick={handleOpenNewProfit}
-                                    className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-0.5"
-                                >
-                                    <Plus className="w-3 h-3" /> Log Profit
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
+                <div className="space-y-2.5">
                     {/* Empty State */}
                     {filteredTransactions.length === 0 ? (
-                        <div className="text-center py-8 px-3 bg-zinc-950/60 border border-zinc-800/80 text-zinc-500 space-y-1.5">
-                            <Receipt className="w-6 h-6 text-zinc-600 mx-auto" />
-                            <p className="text-[11px] text-zinc-300 font-bold">No records found matching current category or filters</p>
-                            <p className="text-[9px] text-zinc-500 max-w-xs mx-auto">
-                                {viewCategory === 'profits' 
-                                    ? 'No profits/returns recorded for this selection. Click "Log Profit" to record asset markup or return.' 
-                                    : 'Adjust the timeframe/category or log a new business expense above.'}
+                        <div className="text-center py-10 px-4 rounded-2xl bg-zinc-950/90 shadow-[0_16px_36px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.06)] text-zinc-500 space-y-2">
+                            <Receipt className="w-8 h-8 text-zinc-600 mx-auto" />
+                            <p className="text-xs text-zinc-200 font-bold">No records found matching current category or filters</p>
+                            <p className="text-[10px] text-zinc-500 max-w-sm mx-auto">
+                                Adjust the timeframe/category or use "Log Expense" or "Log Profit" above to add new vouchers.
                             </p>
                         </div>
                     ) : layoutMode === 'cards' ? (
-                        /* SIDE-BY-SIDE MOBILE-OPTIMIZED BUSINESS CARD CONCEPT GRID (grid-cols-2 on mobile!) */
+                        /* SIDE-BY-SIDE 3D BUSINESS CARDS GRID (2-Cols on mobile, 4-Cols on Desktop) */
                         groupByCategory ? (
-                            /* CATEGORIZED GROUPING ACCORDION / SECTIONS */
                             <div className="space-y-3">
                                 {categorizedGroups.map(([categoryName, groupItems]) => {
                                     const groupSum = groupItems.reduce((acc, curr) => {
@@ -1230,11 +1524,10 @@ export const FinanceTab: React.FC<{
                                     }, 0);
 
                                     return (
-                                        <div key={categoryName} className="space-y-1.5 bg-zinc-950/80 p-2 border border-zinc-800/70">
-                                            {/* Category Section Subheader */}
-                                            <div className="flex items-center justify-between pb-1 border-b border-zinc-800/60 text-[10px]">
-                                                <span className="font-black uppercase tracking-wider text-zinc-200 flex items-center gap-1">
-                                                    <Folder className="w-3 h-3 text-amber-400" />
+                                        <div key={categoryName} className="space-y-2 rounded-2xl bg-zinc-950/80 p-3 shadow-[0_12px_28px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+                                            <div className="flex items-center justify-between pb-1.5 border-b border-white/5 text-[10.5px]">
+                                                <span className="font-black uppercase tracking-wider text-zinc-200 flex items-center gap-1.5 font-mono">
+                                                    <Folder className="w-3.5 h-3.5 text-amber-400" />
                                                     <span>{categoryName}</span>
                                                     <span className="text-[9px] text-zinc-500 font-mono">({groupItems.length})</span>
                                                 </span>
@@ -1243,17 +1536,16 @@ export const FinanceTab: React.FC<{
                                                 </span>
                                             </div>
 
-                                            {/* Side-by-Side Cards inside Category */}
-                                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1.5 sm:gap-2.5 items-stretch">
+                                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-2.5 items-stretch">
                                                 {groupItems.map(t => (
                                                     <BusinessCardTransaction
                                                         key={t.id}
                                                         transaction={t}
                                                         players={players}
-                                                        onInspect={item => setInspectingExpense(item)}
-                                                        onEditExpense={item => handleOpenEditExpense(item)}
-                                                        onEditProfit={item => handleOpenEditProfit(item)}
-                                                        onDelete={item => handleDeleteExpense(item)}
+                                                        onInspect={setInspectingExpense}
+                                                        onEditExpense={handleOpenEditExpense}
+                                                        onEditProfit={handleOpenEditProfit}
+                                                        onDelete={handleDeleteExpense}
                                                     />
                                                 ))}
                                             </div>
@@ -1262,944 +1554,314 @@ export const FinanceTab: React.FC<{
                                 })}
                             </div>
                         ) : (
-                            /* FLAT CHRONOLOGICAL SIDE-BY-SIDE MOBILE GRID */
-                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1.5 sm:gap-2.5 items-stretch">
-                                {[...filteredTransactions].reverse().map(t => (
+                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-2.5 items-stretch">
+                                {filteredTransactions.map(t => (
                                     <BusinessCardTransaction
                                         key={t.id}
                                         transaction={t}
                                         players={players}
-                                        onInspect={item => setInspectingExpense(item)}
-                                        onEditExpense={item => handleOpenEditExpense(item)}
-                                        onEditProfit={item => handleOpenEditProfit(item)}
-                                        onDelete={item => handleDeleteExpense(item)}
+                                        onInspect={setInspectingExpense}
+                                        onEditExpense={handleOpenEditExpense}
+                                        onEditProfit={handleOpenEditProfit}
+                                        onDelete={handleDeleteExpense}
                                     />
                                 ))}
                             </div>
                         )
                     ) : (
-                        /* COMPACT LINEAR TABLE ROW VIEW */
-                        <div className="bg-zinc-950 border border-zinc-800 divide-y divide-zinc-800/60 text-[11px]">
-                            {[...filteredTransactions].reverse().map(t => {
-                                const isExp = t.type === 'Expense';
-                                const isProf = Boolean(t.profitMade && Number(t.profitMade) > 0);
-                                const hasSlip = Boolean(t.receiptImageUrl && t.receiptImageUrl.trim() !== '');
+                        /* COMPACT LINEAR TABLE VIEW (3D Depth) */
+                        <div className="rounded-2xl bg-zinc-950/90 shadow-[0_16px_36px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.06)] overflow-hidden">
+                            <table className="w-full text-left text-[11px] font-mono">
+                                <thead className="bg-zinc-900/90 text-zinc-400 uppercase text-[9px] tracking-wider border-b border-white/5">
+                                    <tr>
+                                        <th className="p-2.5">Date</th>
+                                        <th className="p-2.5">Type / Category</th>
+                                        <th className="p-2.5">Description</th>
+                                        <th className="p-2.5">Paid To</th>
+                                        <th className="p-2.5 text-right">Amount</th>
+                                        <th className="p-2.5 text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {filteredTransactions.map(t => {
+                                        const isExp = t.type === 'Expense';
+                                        const hasProf = Boolean(t.profitMade && Number(t.profitMade) > 0);
+                                        const isInc = !isExp || hasProf;
+                                        const amt = hasProf ? Number(t.profitMade) : Number(t.amount || 0);
 
-                                return (
-                                    <div key={t.id} className="p-1.5 sm:p-2 flex items-center justify-between hover:bg-zinc-900/40 transition-colors gap-2">
-                                        <div className="min-w-0 flex-1 space-y-0.5">
-                                            <div className="flex items-center gap-1 flex-wrap">
-                                                <span className={`px-1 py-0.2 text-[8px] font-mono font-bold uppercase ${
-                                                    isProf ? 'bg-emerald-950 text-emerald-400' : isExp ? 'bg-red-950 text-red-400' : 'bg-blue-950 text-blue-400'
-                                                }`}>
-                                                    {isProf ? 'PROFIT' : isExp ? 'EXPENSE' : (t.type?.replace(' Revenue', '') || 'REV')}
-                                                </span>
-                                                <span className="text-[9px] text-zinc-400 font-bold truncate max-w-[120px]">{t.category}</span>
-                                                {hasSlip && (
-                                                    <span className="text-[8px] text-amber-300 bg-amber-950/70 px-1 py-0.2 font-mono">Slip</span>
-                                                )}
-                                            </div>
-                                            <p className="text-[11px] font-bold text-white truncate">{t.profitName || t.expenseName || t.description}</p>
-                                            <p className="text-[9px] text-zinc-500 font-mono truncate">
-                                                {new Date(t.date || t.profitDate || Date.now()).toLocaleDateString()} &bull; {t.paidTo || 'Arena'} &bull; {t.paymentMethod || 'EFT'}
-                                            </p>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <div className={`font-mono font-black text-xs ${!isExp || isProf ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                {!isExp || isProf ? '+' : '-'}R{(isProf ? Number(t.profitMade) : Number(t.amount || 0)).toLocaleString(undefined, {minimumFractionDigits: 2})}
-                                            </div>
-                                            <div className="flex items-center gap-0.5">
-                                                <button onClick={() => setInspectingExpense(t)} className="p-1 text-zinc-400 hover:text-white" title="Inspect">
-                                                    <Eye className="w-3 h-3" />
-                                                </button>
-                                                <button 
-                                                    onClick={() => {
-                                                        if (isProf) handleOpenEditProfit(t);
-                                                        else handleOpenEditExpense(t);
-                                                    }} 
-                                                    className="p-1 text-zinc-400 hover:text-white" 
-                                                    title="Edit"
-                                                >
-                                                    <Edit3 className="w-3 h-3" />
-                                                </button>
-                                                <button onClick={() => handleDeleteExpense(t)} className="p-1 text-zinc-500 hover:text-red-400" title="Delete">
-                                                    <Trash2 className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                        return (
+                                            <tr key={t.id} className="hover:bg-zinc-900/60 transition-colors">
+                                                <td className="p-2.5 text-zinc-400 text-[10px]">
+                                                    {new Date(t.date || t.profitDate || Date.now()).toLocaleDateString()}
+                                                </td>
+                                                <td className="p-2.5">
+                                                    <span className={`px-1.5 py-0.2 rounded-md text-[8.5px] font-bold ${
+                                                        hasProf ? 'bg-emerald-950 text-emerald-300' : isExp ? 'bg-red-950 text-red-300' : 'bg-blue-950 text-blue-300'
+                                                    }`}>
+                                                        {t.category || t.type}
+                                                    </span>
+                                                </td>
+                                                <td className="p-2.5 font-bold text-white max-w-[200px] truncate">
+                                                    {t.profitName || t.expenseName || t.description}
+                                                </td>
+                                                <td className="p-2.5 text-zinc-400 text-[10px]">
+                                                    {t.paidTo || '—'}
+                                                </td>
+                                                <td className={`p-2.5 text-right font-black ${isInc ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                    {isInc ? '+' : '-'}R{amt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                                </td>
+                                                <td className="p-2.5 text-center">
+                                                    <div className="flex items-center justify-center gap-1">
+                                                        <button 
+                                                            onClick={() => setInspectingExpense(t)} 
+                                                            className="p-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                                                            title="Inspect"
+                                                        >
+                                                            <Eye className="w-3 h-3" />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDeleteExpense(t)} 
+                                                            className="p-1 rounded-lg bg-zinc-900 hover:bg-red-950 text-zinc-400 hover:text-red-400"
+                                                            title="Delete"
+                                                        >
+                                                            <Trash2 className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
                     )}
                 </div>
             )}
 
             {/* ========================================================= */}
-            {/* MODAL 1: STRICTLY DEDICATED BUSINESS EXPENSE POPUP        */}
+            {/* MODAL 1: LOG / EDIT OPERATING EXPENSE                     */}
             {/* ========================================================= */}
             <Modal
                 isOpen={isExpenseModalOpen}
                 onClose={() => {
                     setIsExpenseModalOpen(false);
                     resetExpenseForm();
+                    setSaveProgress(null);
                 }}
-                title={editingExpense ? 'Edit Business Expense' : 'Log Business Expense & Upload Slip'}
-                maxWidth="4xl"
+                title={editingExpense ? 'Edit Operating Expense' : 'Log Business & Field Expense'}
+                maxWidth="md"
             >
-                {(() => {
-                    const pricePaidNum = parseFloat(expenseFormData.pricePaid) || 0;
-
-                    return (
-                        <form onSubmit={handleSaveExpense} className="space-y-3 text-xs">
-                            {/* SIDE-BY-SIDE 3D SQUARE CONTAINERS */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-stretch">
-                                {/* CONTAINER 1: EXPENSE PARAMETERS & VALUATION */}
-                                <div className="bg-gradient-to-b from-zinc-800/95 via-zinc-850 to-zinc-900 shadow-[0_12px_28px_-6px_rgba(0,0,0,0.85)] rounded-none border-0 p-3 flex flex-col justify-between space-y-2.5">
-                                    <div className="space-y-2.5">
-                                        <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.06]">
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="w-2 h-2 bg-red-500 rounded-none shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                                                <span className="font-mono text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-zinc-200">
-                                                    01. Expense Parameters & Valuation
-                                                </span>
-                                            </div>
-                                            <span className="text-[9px] text-zinc-400 font-mono">Outflow Voucher</span>
-                                        </div>
-
-                                        {/* Quick Tactical Presets */}
-                                        {!editingExpense && (
-                                            <div className="space-y-1">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                                                        <Sparkles className="w-2.5 h-2.5 text-amber-400" /> Presets:
-                                                    </span>
-                                                    <span className="text-[8px] text-zinc-500 font-mono">1-tap fill</span>
-                                                </div>
-                                                <div className="flex flex-wrap gap-1 max-h-14 overflow-y-auto pr-1">
-                                                    {QUICK_PRESETS.slice(0, 6).map((preset, idx) => (
-                                                        <button
-                                                            key={idx}
-                                                            type="button"
-                                                            onClick={() => handleSelectPreset(preset)}
-                                                            className="px-1.5 py-0.5 rounded-none border-0 bg-zinc-950/80 hover:bg-zinc-900 text-zinc-300 hover:text-white text-[8px] sm:text-[9px] font-medium shadow-xs transition-all active:translate-y-[1px]"
-                                                        >
-                                                            {preset.name}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Expense Name & Price Paid */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                                            <div className="sm:col-span-8 space-y-0.5">
-                                                <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-300">
-                                                    Expense Item / Description *
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={expenseFormData.expenseName}
-                                                    onChange={e => setExpenseFormData(prev => ({ ...prev, expenseName: e.target.value }))}
-                                                    placeholder="e.g. 50L Diesel Generator Refill"
-                                                    className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-xs px-2 py-1.5 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-red-500"
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="sm:col-span-4 space-y-0.5">
-                                                <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-300">
-                                                    Cost (ZAR) *
-                                                </label>
-                                                <div className="relative">
-                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-red-400">R</span>
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        min="0.01"
-                                                        value={expenseFormData.pricePaid}
-                                                        onChange={e => setExpenseFormData(prev => ({ ...prev, pricePaid: e.target.value }))}
-                                                        placeholder="0.00"
-                                                        className="w-full pl-6 pr-2 py-1.5 bg-zinc-950 text-white text-xs font-mono font-bold rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-red-500 text-right"
-                                                        required
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Operational Reason */}
-                                        <div className="space-y-0.5">
-                                            <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-300">
-                                                Operational Reason / Purpose *
-                                            </label>
-                                            <textarea
-                                                rows={2}
-                                                value={expenseFormData.expenseReason}
-                                                onChange={e => setExpenseFormData(prev => ({ ...prev, expenseReason: e.target.value }))}
-                                                placeholder="Why was this business expense incurred?"
-                                                className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-xs p-1.5 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-red-500 resize-none"
-                                                required
-                                            />
-                                        </div>
-
-                                        {/* Category, Payment Method & Vendor */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                                            <div className="space-y-0.5">
-                                                <div className="flex items-center justify-between">
-                                                    <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">
-                                                        Category
-                                                    </label>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsCreatingExpenseCategory(prev => !prev)}
-                                                        className="text-[8px] font-mono text-amber-400 hover:text-amber-300 font-bold flex items-center gap-0.5"
-                                                    >
-                                                        {isCreatingExpenseCategory ? 'Cancel' : '+ New Category'}
-                                                    </button>
-                                                </div>
-                                                <select
-                                                    value={expenseFormData.category}
-                                                    onChange={e => {
-                                                        if (e.target.value === '__CREATE_NEW_EXPENSE_CAT__') {
-                                                            setIsCreatingExpenseCategory(true);
-                                                        } else {
-                                                            setExpenseFormData(prev => ({ ...prev, category: e.target.value }));
-                                                            setIsCreatingExpenseCategory(false);
-                                                        }
-                                                    }}
-                                                    className="w-full bg-zinc-950 text-white text-[11px] px-1.5 py-1 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-red-500"
-                                                >
-                                                    {allExpenseCategoriesList.map(cat => (
-                                                        <option key={cat} value={cat}>{cat}</option>
-                                                    ))}
-                                                    <option value="__CREATE_NEW_EXPENSE_CAT__" className="text-amber-400 font-bold bg-zinc-900">
-                                                        + Create & Add Custom Category...
-                                                    </option>
-                                                </select>
-
-                                                {isCreatingExpenseCategory && (
-                                                    <div className="mt-1 flex items-center gap-1 bg-zinc-900 p-1 border border-amber-500/60 shadow-lg">
-                                                        <input
-                                                            type="text"
-                                                            value={newExpenseCategoryName}
-                                                            onChange={e => setNewExpenseCategoryName(e.target.value)}
-                                                            onKeyDown={e => {
-                                                                if (e.key === 'Enter') {
-                                                                    e.preventDefault();
-                                                                    handleAddCustomExpenseCategory();
-                                                                }
-                                                            }}
-                                                            placeholder="Type new category..."
-                                                            className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-[10px] px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                                                            autoFocus
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleAddCustomExpenseCategory}
-                                                            className="px-2 py-1 bg-amber-500 hover:bg-amber-400 text-black text-[9px] font-mono font-black uppercase transition-colors shrink-0"
-                                                        >
-                                                            Add
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="space-y-0.5">
-                                                <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">
-                                                    Payment Method
-                                                </label>
-                                                <select
-                                                    value={expenseFormData.paymentMethod}
-                                                    onChange={e => setExpenseFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                                                    className="w-full bg-zinc-950 text-white text-[11px] px-1.5 py-1 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-red-500"
-                                                >
-                                                    <option value="EFT">EFT / Wire</option>
-                                                    <option value="Card">Card / POS</option>
-                                                    <option value="Cash">Cash at Field</option>
-                                                    <option value="Petty Cash">Petty Cash</option>
-                                                    <option value="Company Account">Company Card</option>
-                                                </select>
-                                            </div>
-
-                                            <div className="space-y-0.5">
-                                                <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">
-                                                    Paid To / Vendor
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={expenseFormData.paidTo}
-                                                    onChange={e => setExpenseFormData(prev => ({ ...prev, paidTo: e.target.value }))}
-                                                    placeholder="e.g. BP Garage"
-                                                    className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-[11px] px-1.5 py-1 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-red-500"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Date & Slip Reference */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                                            <div className="space-y-0.5">
-                                                <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">
-                                                    Expense Date *
-                                                </label>
-                                                <input
-                                                    type="date"
-                                                    value={expenseFormData.date}
-                                                    onChange={e => setExpenseFormData(prev => ({ ...prev, date: e.target.value }))}
-                                                    className="w-full bg-zinc-950 text-white text-[11px] px-1.5 py-1 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-red-500"
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="space-y-0.5">
-                                                <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">
-                                                    Receipt / Slip Number
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={expenseFormData.notes}
-                                                    onChange={e => setExpenseFormData(prev => ({ ...prev, notes: e.target.value }))}
-                                                    placeholder="e.g. INV-98124 or Slip #4012"
-                                                    className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-[11px] px-1.5 py-1 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-red-500"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* CONTAINER 2: SLIP AUDIT & PROOF OF PAYMENT UPLOAD */}
-                                <div className="bg-gradient-to-b from-zinc-800/95 via-zinc-850 to-zinc-900 shadow-[0_12px_28px_-6px_rgba(0,0,0,0.85)] rounded-none border-0 p-3 flex flex-col justify-between space-y-2.5">
-                                    <div className="space-y-2.5">
-                                        <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.06]">
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="w-2 h-2 bg-amber-400 rounded-none shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
-                                                <span className="font-mono text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-zinc-200">
-                                                    02. Slip Audit & Verification Document
-                                                </span>
-                                            </div>
-                                            <span className="text-[9px] text-zinc-400 font-mono">Proof of Payment</span>
-                                        </div>
-
-                                        {/* 3D SUB-PANEL: RECEIPT / SLIP PHOTO */}
-                                        <div className="bg-zinc-950/90 shadow-inner rounded-none border-0 p-2 space-y-1.5">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[9px] font-black uppercase tracking-wider text-zinc-200 flex items-center gap-1">
-                                                    <ImageIcon className="w-3 h-3 text-amber-400" />
-                                                    <span>Slip / Invoice Attachment</span>
-                                                </span>
-                                                <span className="text-[8px] text-zinc-500 font-mono">Image / URL</span>
-                                            </div>
-
-                                            <UrlOrUploadField
-                                                label=""
-                                                value={expenseFormData.receiptImageUrl}
-                                                onChange={(url) => setExpenseFormData(prev => ({ ...prev, receiptImageUrl: url }))}
-                                                onRemove={() => setExpenseFormData(prev => ({ ...prev, receiptImageUrl: '' }))}
-                                                placeholder="Paste slip image URL or click to upload..."
-                                            />
-
-                                            {expenseFormData.receiptImageUrl ? (
-                                                <div className="p-1.5 bg-zinc-900 rounded-none border-0 shadow flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <img 
-                                                            src={expenseFormData.receiptImageUrl} 
-                                                            alt="Uploaded slip thumbnail" 
-                                                            className="w-8 h-8 object-cover rounded-none shadow" 
-                                                        />
-                                                        <div>
-                                                            <p className="font-bold text-white text-[10px]">Slip attached</p>
-                                                            <p className="text-[8px] text-emerald-400 font-mono">Verified for ledger audit</p>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setExpenseFormData(prev => ({ ...prev, receiptImageUrl: '' }))}
-                                                        className="text-red-400 hover:text-red-300 text-[9px] font-bold px-1.5 py-0.5 bg-red-950/40 transition-colors"
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="p-2 border border-dashed border-zinc-800 text-center text-zinc-500 text-[9px]">
-                                                    Optional: Uploading slip stores digital proof of purchase on the permanent transaction record.
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="p-2 bg-zinc-950/70 border border-zinc-800/80 text-[9px] text-zinc-400 space-y-0.5">
-                                            <p className="font-bold text-zinc-200 flex items-center gap-1">
-                                                <Scale className="w-3 h-3 text-zinc-400" />
-                                                Independent Expense Outflow
-                                            </p>
-                                            <p className="text-[8px] text-zinc-500 leading-relaxed">
-                                                This expense is recorded directly against company operational costs.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* LIVE PROGRESS STATUS FEEDBACK */}
-                            {saveProgress && saveProgress.type === 'expense' && (
-                                <div className="p-2.5 bg-zinc-950 border border-zinc-700/80 shadow-2xl space-y-2 rounded-none">
-                                    <div className="flex items-center justify-between text-xs">
-                                        <div className="flex items-center gap-2">
-                                            {saveProgress.stage === 'error' ? (
-                                                <AlertTriangle className="w-4 h-4 text-red-400 animate-bounce shrink-0" />
-                                            ) : saveProgress.stage === 'success' ? (
-                                                <CheckCircle2 className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
-                                            ) : (
-                                                <Loader2 className="w-4 h-4 text-amber-400 animate-spin shrink-0" />
-                                            )}
-                                            <span className={`font-mono text-[11px] font-bold ${
-                                                saveProgress.stage === 'error' 
-                                                    ? 'text-red-400' 
-                                                    : saveProgress.stage === 'success' 
-                                                        ? 'text-emerald-400' 
-                                                        : 'text-zinc-200'
-                                            }`}>
-                                                {saveProgress.message}
-                                            </span>
-                                        </div>
-                                        <span className="font-mono text-[10px] font-bold text-zinc-400 shrink-0">
-                                            {saveProgress.progress}%
-                                        </span>
-                                    </div>
-
-                                    {/* Animated Progress Bar */}
-                                    <div className="w-full bg-zinc-900 h-2 overflow-hidden relative">
-                                        <div 
-                                            className={`h-full transition-all duration-300 ${
-                                                saveProgress.stage === 'error'
-                                                    ? 'bg-red-500'
-                                                    : saveProgress.stage === 'success'
-                                                        ? 'bg-emerald-400'
-                                                        : 'bg-gradient-to-r from-red-600 via-amber-500 to-emerald-400 animate-pulse'
-                                            }`}
-                                            style={{ width: `${saveProgress.progress}%` }}
-                                        />
-                                    </div>
-
-                                    {/* Step-by-step indicator dots */}
-                                    <div className="grid grid-cols-3 gap-1 pt-0.5 text-[8px] font-mono uppercase tracking-wider text-center">
-                                        <div className={`p-1 border ${saveProgress.progress >= 25 ? 'bg-zinc-900 border-zinc-600 text-zinc-200 font-bold' : 'border-zinc-900 text-zinc-600'}`}>
-                                            1. Validate Payload
-                                        </div>
-                                        <div className={`p-1 border ${saveProgress.progress >= 65 ? 'bg-zinc-900 border-amber-600/60 text-amber-300 font-bold' : 'border-zinc-900 text-zinc-600'}`}>
-                                            2. Supabase SQL Insert
-                                        </div>
-                                        <div className={`p-1 border ${saveProgress.progress >= 100 ? 'bg-emerald-950 border-emerald-500 text-emerald-300 font-bold' : 'border-zinc-900 text-zinc-600'}`}>
-                                            3. Realtime Live Synced
-                                        </div>
-                                    </div>
-
-                                    {/* Error diagnosis if failed */}
-                                    {saveProgress.stage === 'error' && (
-                                        <div className="mt-2 p-2 bg-red-950/80 border border-red-800 text-red-200 text-[10px] space-y-1.5">
-                                            <p className="font-bold flex items-center gap-1">
-                                                <span>Database Schema or Permission Issue:</span>
-                                            </p>
-                                            <p className="font-mono text-[9px] text-red-300 bg-black/50 p-1.5 overflow-x-auto">
-                                                {saveProgress.details || 'Unable to upsert transaction row to Supabase.'}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* STICKY BOTTOM ACTION STRIP */}
-                            <div className="sticky bottom-0 bg-zinc-900/95 -mx-3 -mb-3 sm:-mx-5 sm:-mb-5 p-2.5 sm:p-3 border-t border-zinc-800 backdrop-blur-md z-20 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-2xl">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-[9px] text-zinc-400 font-mono">Recorded Outflow:</span>
-                                    <span className="px-1.5 py-0.2 bg-red-950/60 text-red-300 font-mono font-bold text-xs shadow-inner">
-                                        -R{pricePaidNum.toFixed(2)}
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+                <form onSubmit={handleSaveExpense} className="space-y-3 text-xs font-sans">
+                    {/* Quick Presets Strip */}
+                    {!editingExpense && (
+                        <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-zinc-400 font-mono uppercase">Quick Presets:</span>
+                            <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-thin">
+                                {QUICK_PRESETS.map((p, idx) => (
                                     <button
+                                        key={idx}
                                         type="button"
-                                        disabled={isSaving}
-                                        onClick={() => {
-                                            setIsExpenseModalOpen(false);
-                                            resetExpenseForm();
-                                        }}
-                                        className="px-3 py-1 rounded-none bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-all shadow active:translate-y-[1px] disabled:opacity-50"
+                                        onClick={() => handleSelectPreset(p)}
+                                        className="px-2 py-0.5 rounded-lg text-[9px] bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white whitespace-nowrap transition font-mono shadow-sm"
                                     >
-                                        Cancel
+                                        + {p.name}
                                     </button>
-                                    <button
-                                        type="submit"
-                                        disabled={isSaving}
-                                        className="px-4 py-1 rounded-none bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all shadow flex items-center gap-1.5 active:translate-y-[1px] disabled:opacity-80"
-                                    >
-                                        {isSaving ? (
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                        ) : (
-                                            <Check className="w-3 h-3" />
-                                        )}
-                                        <span>
-                                            {isSaving 
-                                                ? (saveProgress ? `Syncing (${saveProgress.progress}%)` : 'Saving...') 
-                                                : (editingExpense ? 'Update Expense' : 'Save & Sync Expense')}
-                                        </span>
-                                    </button>
-                                </div>
+                                ))}
                             </div>
-                        </form>
-                    );
-                })()}
+                        </div>
+                    )}
+
+                    <div className="space-y-2">
+                        <Input
+                            label="Expense Item / Title *"
+                            value={expenseFormData.expenseName}
+                            onChange={e => setExpenseFormData({ ...expenseFormData, expenseName: e.target.value })}
+                            placeholder="e.g. Generator Fuel, 0.25g BB Bulk Carton"
+                            required
+                        />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <Input
+                                label="Price Paid (ZAR) *"
+                                type="number"
+                                step="0.01"
+                                value={expenseFormData.pricePaid}
+                                onChange={e => setExpenseFormData({ ...expenseFormData, pricePaid: e.target.value })}
+                                placeholder="0.00"
+                                required
+                            />
+
+                            <div>
+                                <label className="block text-[11px] font-medium text-zinc-300 mb-1">
+                                    Expense Category
+                                </label>
+                                <select
+                                    value={expenseFormData.category}
+                                    onChange={e => setExpenseFormData({ ...expenseFormData, category: e.target.value })}
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-2.5 py-1.5 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                                >
+                                    {allExpenseCategoriesList.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <Input
+                                label="Date"
+                                type="date"
+                                value={expenseFormData.date}
+                                onChange={e => setExpenseFormData({ ...expenseFormData, date: e.target.value })}
+                            />
+
+                            <Input
+                                label="Paid To / Vendor"
+                                value={expenseFormData.paidTo}
+                                onChange={e => setExpenseFormData({ ...expenseFormData, paidTo: e.target.value })}
+                                placeholder="e.g. Shell Petrol, Tactical Supplier"
+                            />
+                        </div>
+
+                        <Input
+                            label="Operational Purpose / Reason"
+                            value={expenseFormData.expenseReason}
+                            onChange={e => setExpenseFormData({ ...expenseFormData, expenseReason: e.target.value })}
+                            placeholder="e.g. Replenish floodlight fuel for night skirmish"
+                        />
+
+                        <UrlOrUploadField
+                            label="Slip / Receipt Image"
+                            fileUrl={expenseFormData.receiptImageUrl}
+                            onUrlSet={url => setExpenseFormData({ ...expenseFormData, receiptImageUrl: url })}
+                            onRemove={() => setExpenseFormData({ ...expenseFormData, receiptImageUrl: url => '' })}
+                        />
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-end gap-2 border-t border-white/5">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                                setIsExpenseModalOpen(false);
+                                resetExpenseForm();
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="danger"
+                            size="sm"
+                            disabled={isSaving}
+                            className="font-bold"
+                        >
+                            {isSaving ? 'Saving...' : editingExpense ? 'Update Expense' : 'Save Expense'}
+                        </Button>
+                    </div>
+                </form>
             </Modal>
 
             {/* ========================================================= */}
-            {/* MODAL 2: STRICTLY DEDICATED PROFIT & RETURNS POPUP        */}
+            {/* MODAL 2: LOG / EDIT REALIZED PROFIT                       */}
             {/* ========================================================= */}
             <Modal
                 isOpen={isProfitModalOpen}
                 onClose={() => {
                     setIsProfitModalOpen(false);
                     resetProfitForm();
+                    setSaveProgress(null);
                 }}
-                title={editingProfit ? 'Edit Profit & Returns Entry' : 'Log Profit & Revenue Return'}
-                maxWidth="4xl"
+                title={editingProfit ? 'Edit Realized Profit' : 'Log Realized Profit & ROI Markup'}
+                maxWidth="md"
             >
-                {(() => {
-                    const grossInflow = parseFloat(profitFormData.profitMade) || 0;
-                    const sourceCost = parseFloat(profitFormData.sourceCost) || 0;
-                    const netMargin = grossInflow - sourceCost;
-                    const marginPercent = sourceCost > 0
-                        ? ((netMargin / sourceCost) * 100).toFixed(1)
-                        : (grossInflow > 0 ? '100.0' : '0.0');
-
-                    return (
-                        <form onSubmit={handleSaveProfit} className="space-y-3 text-xs">
-                            {/* SIDE-BY-SIDE 3D SQUARE CONTAINERS */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-stretch">
-                                {/* CONTAINER 1: REVENUE INFLOW & SOURCE */}
-                                <div className="bg-gradient-to-b from-zinc-800/95 via-zinc-850 to-zinc-900 shadow-[0_12px_28px_-6px_rgba(0,0,0,0.85)] rounded-none border-0 p-3 flex flex-col justify-between space-y-2.5">
-                                    <div className="space-y-2.5">
-                                        <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.06]">
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="w-2 h-2 bg-emerald-400 rounded-none shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                                                <span className="font-mono text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-zinc-200">
-                                                    01. Revenue Inflow & Return Source
-                                                </span>
-                                            </div>
-                                            <span className="text-[9px] text-zinc-400 font-mono">Realized Return</span>
-                                        </div>
-
-                                        {/* Quick Profit Presets */}
-                                        {!editingProfit && (
-                                            <div className="space-y-1">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                                                        <Sparkles className="w-2.5 h-2.5 text-emerald-400" /> Presets:
-                                                    </span>
-                                                    <span className="text-[8px] text-zinc-500 font-mono">1-tap fill</span>
-                                                </div>
-                                                <div className="flex flex-wrap gap-1 max-h-14 overflow-y-auto pr-1">
-                                                    {PROFIT_PRESETS.slice(0, 6).map((preset, idx) => (
-                                                        <button
-                                                            key={idx}
-                                                            type="button"
-                                                            onClick={() => handleSelectProfitPreset(preset)}
-                                                            className="px-1.5 py-0.5 rounded-none border-0 bg-emerald-950/50 hover:bg-emerald-900/70 text-emerald-300 hover:text-white text-[8px] sm:text-[9px] font-medium shadow-xs transition-all active:translate-y-[1px]"
-                                                        >
-                                                            {preset.name}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Profit Name & Profit Amount */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                                            <div className="sm:col-span-8 space-y-0.5">
-                                                <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-300">
-                                                    Profit / Return Title *
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={profitFormData.profitName}
-                                                    onChange={e => setProfitFormData(prev => ({ ...prev, profitName: e.target.value }))}
-                                                    placeholder="e.g. Bulk BB Resale Profit"
-                                                    className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-xs px-2 py-1.5 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="sm:col-span-4 space-y-0.5">
-                                                <label className="block text-[9px] font-bold uppercase tracking-wider text-zinc-300">
-                                                    Profit (ZAR) *
-                                                </label>
-                                                <div className="relative">
-                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-emerald-400">R</span>
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        min="0.01"
-                                                        value={profitFormData.profitMade}
-                                                        onChange={e => setProfitFormData(prev => ({ ...prev, profitMade: e.target.value }))}
-                                                        placeholder="0.00"
-                                                        className="w-full pl-6 pr-2 py-1.5 bg-zinc-950 text-white text-xs font-mono font-bold rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-emerald-500 text-right"
-                                                        required
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Profit Reason & Category */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-1.5">
-                                            <div className="sm:col-span-7 space-y-0.5">
-                                                <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-300">
-                                                    Reason / Origin Description
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={profitFormData.profitReason}
-                                                    onChange={e => setProfitFormData(prev => ({ ...prev, profitReason: e.target.value }))}
-                                                    placeholder="e.g. Realized margin from bio-BB ammo"
-                                                    className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-[11px] px-1.5 py-1 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                                />
-                                            </div>
-
-                                            <div className="sm:col-span-5 space-y-0.5">
-                                                <div className="flex items-center justify-between">
-                                                    <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-300">
-                                                        Category
-                                                    </label>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsCreatingProfitCategory(prev => !prev)}
-                                                        className="text-[8px] font-mono text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-0.5"
-                                                    >
-                                                        {isCreatingProfitCategory ? 'Cancel' : '+ New Category'}
-                                                    </button>
-                                                </div>
-                                                <select
-                                                    value={profitFormData.category}
-                                                    onChange={e => {
-                                                        if (e.target.value === '__CREATE_NEW_PROFIT_CAT__') {
-                                                            setIsCreatingProfitCategory(true);
-                                                        } else {
-                                                            setProfitFormData(prev => ({ ...prev, category: e.target.value }));
-                                                            setIsCreatingProfitCategory(false);
-                                                        }
-                                                    }}
-                                                    className="w-full bg-zinc-950 text-white text-[11px] px-1.5 py-1 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                                >
-                                                    {allProfitCategoriesList.map(cat => (
-                                                        <option key={cat} value={cat}>{cat}</option>
-                                                    ))}
-                                                    <option value="__CREATE_NEW_PROFIT_CAT__" className="text-emerald-400 font-bold bg-zinc-900">
-                                                        + Create & Add Custom Category...
-                                                    </option>
-                                                </select>
-
-                                                {isCreatingProfitCategory && (
-                                                    <div className="mt-1 flex items-center gap-1 bg-zinc-900 p-1 border border-emerald-500/60 shadow-lg">
-                                                        <input
-                                                            type="text"
-                                                            value={newProfitCategoryName}
-                                                            onChange={e => setNewProfitCategoryName(e.target.value)}
-                                                            onKeyDown={e => {
-                                                                if (e.key === 'Enter') {
-                                                                    e.preventDefault();
-                                                                    handleAddCustomProfitCategory();
-                                                                }
-                                                            }}
-                                                            placeholder="Type new category..."
-                                                            className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-[10px] px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                                            autoFocus
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleAddCustomProfitCategory}
-                                                            className="px-2 py-1 bg-emerald-500 hover:bg-emerald-400 text-black text-[9px] font-mono font-black uppercase transition-colors shrink-0"
-                                                        >
-                                                            Add
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Inflow Method, Vendor & Date */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                                            <div className="space-y-0.5">
-                                                <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">
-                                                    Inflow Method
-                                                </label>
-                                                <select
-                                                    value={profitFormData.paymentMethod}
-                                                    onChange={e => setProfitFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                                                    className="w-full bg-zinc-950 text-white text-[11px] px-1.5 py-1 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                                >
-                                                    <option value="EFT">EFT / Wire</option>
-                                                    <option value="Cash">Cash at Field</option>
-                                                    <option value="Card">Card / POS</option>
-                                                    <option value="SnapScan">SnapScan / QR</option>
-                                                </select>
-                                            </div>
-
-                                            <div className="space-y-0.5">
-                                                <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">
-                                                    Vendor / Payer
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={profitFormData.paidTo}
-                                                    onChange={e => setProfitFormData(prev => ({ ...prev, paidTo: e.target.value }))}
-                                                    placeholder="e.g. Counter, Player"
-                                                    className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-[11px] px-1.5 py-1 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-0.5">
-                                                <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">
-                                                    Realization Date *
-                                                </label>
-                                                <input
-                                                    type="date"
-                                                    value={profitFormData.date}
-                                                    onChange={e => setProfitFormData(prev => ({ ...prev, date: e.target.value }))}
-                                                    className="w-full bg-zinc-950 text-white text-[11px] px-1.5 py-1 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Reference Notes */}
-                                        <div className="space-y-0.5">
-                                            <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">
-                                                Reference / Batch Notes
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={profitFormData.notes}
-                                                onChange={e => setProfitFormData(prev => ({ ...prev, notes: e.target.value }))}
-                                                placeholder="e.g. Batch #42 surplus reconciliation"
-                                                className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-[11px] px-2 py-1 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* CONTAINER 2: ASSET COGS COST BASIS & LIVE 3D MARGIN AUDIT */}
-                                <div className="bg-gradient-to-b from-zinc-800/95 via-zinc-850 to-zinc-900 shadow-[0_12px_28px_-6px_rgba(0,0,0,0.85)] rounded-none border-0 p-3 flex flex-col justify-between space-y-2.5">
-                                    <div className="space-y-2.5">
-                                        <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.06]">
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="w-2 h-2 bg-cyan-400 rounded-none shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
-                                                <span className="font-mono text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-zinc-200">
-                                                    02. Asset Cost & 3D Margin Audit
-                                                </span>
-                                            </div>
-                                            <span className="text-[9px] text-zinc-400 font-mono">COGS & Margin</span>
-                                        </div>
-
-                                        {/* 3D SUB-PANEL: ORIGINATING ASSET / COGS */}
-                                        <div className="bg-zinc-950/90 shadow-inner rounded-none border-0 p-2 space-y-1.5">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[9px] font-black uppercase tracking-wider text-zinc-300 flex items-center gap-1">
-                                                    <Layers className="w-3 h-3 text-cyan-400" />
-                                                    <span>Originating Asset / COGS (Optional)</span>
-                                                </span>
-                                                <span className="text-[8px] text-zinc-500 font-mono">Cost Basis</span>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-1.5">
-                                                <div className="sm:col-span-7 space-y-0.5">
-                                                    <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">
-                                                        Source Item / Purchase Name
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={profitFormData.sourceExpenseName}
-                                                        onChange={e => setProfitFormData(prev => ({ ...prev, sourceExpenseName: e.target.value }))}
-                                                        placeholder="e.g. Bio-BB 0.25g Bulk Restock"
-                                                        className="w-full bg-zinc-950 text-white placeholder-zinc-500 text-[11px] px-1.5 py-1 rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                                                    />
-                                                </div>
-
-                                                <div className="sm:col-span-5 space-y-0.5">
-                                                    <label className="block text-[8px] font-bold uppercase tracking-wider text-zinc-400">
-                                                        Cost Price (ZAR)
-                                                    </label>
-                                                    <div className="relative">
-                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-mono font-bold text-zinc-500">R</span>
-                                                        <input
-                                                            type="number"
-                                                            step="0.01"
-                                                            value={profitFormData.sourceCost}
-                                                            onChange={e => setProfitFormData(prev => ({ ...prev, sourceCost: e.target.value }))}
-                                                            placeholder="0.00"
-                                                            className="w-full pl-6 pr-2 py-1 bg-zinc-950 text-white text-[11px] font-mono font-bold rounded-none border-0 shadow-inner focus:outline-none focus:ring-1 focus:ring-cyan-500 text-right"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* 3D LIVE METRIC CUBE */}
-                                        <div className="bg-gradient-to-br from-zinc-900 via-zinc-950 to-black shadow-lg rounded-none border-0 p-2.5 space-y-2">
-                                            <div className="flex items-center justify-between pb-1 border-b border-white/[0.06]">
-                                                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1">
-                                                    <TrendingUp className="w-3 h-3 text-emerald-400" />
-                                                    <span>Live 3D Financial Return Metric</span>
-                                                </span>
-                                                <span className="text-[8px] text-zinc-400 font-mono">Real-time</span>
-                                            </div>
-
-                                            {/* 4-Block Metric Matrix */}
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-center">
-                                                <div className="p-1.5 bg-zinc-950/80 rounded-none shadow-inner">
-                                                    <span className="block text-[7px] sm:text-[8px] font-bold uppercase tracking-wider text-zinc-400">Gross Return</span>
-                                                    <span className="font-mono font-black text-[11px] sm:text-xs text-white">R{grossInflow.toFixed(2)}</span>
-                                                </div>
-                                                <div className="p-1.5 bg-zinc-950/80 rounded-none shadow-inner">
-                                                    <span className="block text-[7px] sm:text-[8px] font-bold uppercase tracking-wider text-zinc-400">COGS Cost</span>
-                                                    <span className="font-mono font-bold text-[11px] sm:text-xs text-red-400">R{sourceCost.toFixed(2)}</span>
-                                                </div>
-                                                <div className="p-1.5 bg-zinc-950/80 rounded-none shadow-inner">
-                                                    <span className="block text-[7px] sm:text-[8px] font-bold uppercase tracking-wider text-zinc-400">Net Profit</span>
-                                                    <span className={`font-mono font-black text-[11px] sm:text-xs ${netMargin >= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                                                        R{netMargin.toFixed(2)}
-                                                    </span>
-                                                </div>
-                                                <div className="p-1.5 bg-zinc-950/80 rounded-none shadow-inner">
-                                                    <span className="block text-[7px] sm:text-[8px] font-bold uppercase tracking-wider text-zinc-400">Markup / ROI</span>
-                                                    <span className="font-mono font-black text-[11px] sm:text-xs text-cyan-300">
-                                                        {sourceCost > 0 ? `+${marginPercent}%` : (grossInflow > 0 ? '100% Inflow' : '0%')}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Performance Tier Pill */}
-                                            <div className="p-1.5 bg-zinc-950/90 rounded-none shadow-inner flex items-center justify-between text-[9px]">
-                                                <span className="text-zinc-400 font-mono">Performance:</span>
-                                                <span className="font-bold text-emerald-400 font-mono truncate max-w-[200px]">
-                                                    {grossInflow === 0 
-                                                        ? 'Awaiting amount...' 
-                                                        : sourceCost === 0 
-                                                            ? '⚡ 100% Direct Cash Return' 
-                                                            : netMargin > 0 
-                                                                ? `💎 High-Yield (+${marginPercent}%)` 
-                                                                : '⚖️ Break-Even Return'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* LIVE PROGRESS STATUS FEEDBACK */}
-                            {saveProgress && saveProgress.type === 'profit' && (
-                                <div className="p-2.5 bg-zinc-950 border border-zinc-700/80 shadow-2xl space-y-2 rounded-none">
-                                    <div className="flex items-center justify-between text-xs">
-                                        <div className="flex items-center gap-2">
-                                            {saveProgress.stage === 'error' ? (
-                                                <AlertTriangle className="w-4 h-4 text-red-400 animate-bounce shrink-0" />
-                                            ) : saveProgress.stage === 'success' ? (
-                                                <CheckCircle2 className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
-                                            ) : (
-                                                <Loader2 className="w-4 h-4 text-emerald-400 animate-spin shrink-0" />
-                                            )}
-                                            <span className={`font-mono text-[11px] font-bold ${
-                                                saveProgress.stage === 'error' 
-                                                    ? 'text-red-400' 
-                                                    : saveProgress.stage === 'success' 
-                                                        ? 'text-emerald-400' 
-                                                        : 'text-zinc-200'
-                                            }`}>
-                                                {saveProgress.message}
-                                            </span>
-                                        </div>
-                                        <span className="font-mono text-[10px] font-bold text-zinc-400 shrink-0">
-                                            {saveProgress.progress}%
-                                        </span>
-                                    </div>
-
-                                    {/* Animated Progress Bar */}
-                                    <div className="w-full bg-zinc-900 h-2 overflow-hidden relative">
-                                        <div 
-                                            className={`h-full transition-all duration-300 ${
-                                                saveProgress.stage === 'error'
-                                                    ? 'bg-red-500'
-                                                    : saveProgress.stage === 'success'
-                                                        ? 'bg-emerald-400'
-                                                        : 'bg-gradient-to-r from-emerald-600 via-teal-400 to-emerald-300 animate-pulse'
-                                            }`}
-                                            style={{ width: `${saveProgress.progress}%` }}
-                                        />
-                                    </div>
-
-                                    {/* Step-by-step indicator dots */}
-                                    <div className="grid grid-cols-3 gap-1 pt-0.5 text-[8px] font-mono uppercase tracking-wider text-center">
-                                        <div className={`p-1 border ${saveProgress.progress >= 25 ? 'bg-zinc-900 border-zinc-600 text-zinc-200 font-bold' : 'border-zinc-900 text-zinc-600'}`}>
-                                            1. Validate Payload
-                                        </div>
-                                        <div className={`p-1 border ${saveProgress.progress >= 65 ? 'bg-zinc-900 border-emerald-600/60 text-emerald-300 font-bold' : 'border-zinc-900 text-zinc-600'}`}>
-                                            2. Supabase SQL Insert
-                                        </div>
-                                        <div className={`p-1 border ${saveProgress.progress >= 100 ? 'bg-emerald-950 border-emerald-500 text-emerald-300 font-bold' : 'border-zinc-900 text-zinc-600'}`}>
-                                            3. Realtime Live Synced
-                                        </div>
-                                    </div>
-
-                                    {/* Error diagnosis if failed */}
-                                    {saveProgress.stage === 'error' && (
-                                        <div className="mt-2 p-2 bg-red-950/80 border border-red-800 text-red-200 text-[10px] space-y-1.5">
-                                            <p className="font-bold flex items-center gap-1">
-                                                <span>Database Schema or Permission Issue:</span>
-                                            </p>
-                                            <p className="font-mono text-[9px] text-red-300 bg-black/50 p-1.5 overflow-x-auto">
-                                                {saveProgress.details || 'Unable to upsert profit transaction row to Supabase.'}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* STICKY BOTTOM ACTION STRIP */}
-                            <div className="sticky bottom-0 bg-zinc-900/95 -mx-3 -mb-3 sm:-mx-5 sm:-mb-5 p-2.5 sm:p-3 border-t border-zinc-800 backdrop-blur-md z-20 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-2xl">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-[9px] text-zinc-400 font-mono">Net Profit Addition:</span>
-                                    <span className="px-1.5 py-0.2 bg-emerald-950/60 text-emerald-300 font-mono font-bold text-xs shadow-inner">
-                                        +R{netMargin.toFixed(2)}
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+                <form onSubmit={handleSaveProfit} className="space-y-3 text-xs font-sans">
+                    {!editingProfit && (
+                        <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-zinc-400 font-mono uppercase">Quick Presets:</span>
+                            <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-thin">
+                                {PROFIT_PRESETS.map((p, idx) => (
                                     <button
+                                        key={idx}
                                         type="button"
-                                        disabled={isSaving}
-                                        onClick={() => {
-                                            setIsProfitModalOpen(false);
-                                            resetProfitForm();
-                                        }}
-                                        className="px-3 py-1 rounded-none bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-all shadow active:translate-y-[1px] disabled:opacity-50"
+                                        onClick={() => handleSelectProfitPreset(p)}
+                                        className="px-2 py-0.5 rounded-lg text-[9px] bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white whitespace-nowrap transition font-mono shadow-sm"
                                     >
-                                        Cancel
+                                        + {p.name}
                                     </button>
-                                    <button
-                                        type="submit"
-                                        disabled={isSaving}
-                                        className="px-4 py-1 rounded-none bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow flex items-center gap-1.5 active:translate-y-[1px] disabled:opacity-80"
-                                    >
-                                        {isSaving ? (
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                        ) : (
-                                            <Check className="w-3 h-3" />
-                                        )}
-                                        <span>
-                                            {isSaving 
-                                                ? (saveProgress ? `Syncing (${saveProgress.progress}%)` : 'Saving...') 
-                                                : (editingProfit ? 'Update Profit' : 'Save & Record Profit')}
-                                        </span>
-                                    </button>
-                                </div>
+                                ))}
                             </div>
-                        </form>
-                    );
-                })()}
+                        </div>
+                    )}
+
+                    <div className="space-y-2">
+                        <Input
+                            label="Profit Title / Item *"
+                            value={profitFormData.profitName}
+                            onChange={e => setProfitFormData({ ...profitFormData, profitName: e.target.value })}
+                            placeholder="e.g. Bulk BB Resale Surplus"
+                            required
+                        />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <Input
+                                label="Realized Profit Amount (ZAR) *"
+                                type="number"
+                                step="0.01"
+                                value={profitFormData.profitMade}
+                                onChange={e => setProfitFormData({ ...profitFormData, profitMade: e.target.value })}
+                                placeholder="0.00"
+                                required
+                            />
+
+                            <div>
+                                <label className="block text-[11px] font-medium text-zinc-300 mb-1">
+                                    Profit Category
+                                </label>
+                                <select
+                                    value={profitFormData.category}
+                                    onChange={e => setProfitFormData({ ...profitFormData, category: e.target.value })}
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-2.5 py-1.5 text-white text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                >
+                                    {allProfitCategoriesList.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <Input
+                            label="Operational Reason / Margin Details"
+                            value={profitFormData.profitReason}
+                            onChange={e => setProfitFormData({ ...profitFormData, profitReason: e.target.value })}
+                            placeholder="e.g. Surplus margin realized on player BB carton resale"
+                        />
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-end gap-2 border-t border-white/5">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                                setIsProfitModalOpen(false);
+                                resetProfitForm();
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="secondary"
+                            size="sm"
+                            disabled={isSaving}
+                            className="font-bold !bg-emerald-600 hover:!bg-emerald-500 text-white"
+                        >
+                            {isSaving ? 'Saving...' : editingProfit ? 'Update Profit' : 'Save Profit'}
+                        </Button>
+                    </div>
+                </form>
             </Modal>
 
             {/* ========================================================= */}
@@ -2215,26 +1877,26 @@ export const FinanceTab: React.FC<{
                     title="Transaction Audit & Slip Voucher"
                     maxWidth="lg"
                 >
-                    <div className="space-y-3 text-xs">
-                        <div className="p-2.5 rounded-none bg-zinc-950 border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="space-y-3 text-xs font-sans">
+                        <div className="p-3 rounded-2xl bg-zinc-950 shadow-inner flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div>
-                                <span className={`px-1.5 py-0.2 text-[9px] font-black uppercase tracking-wider border ${
+                                <span className={`px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider font-mono ${
                                     inspectingExpense.profitMade && Number(inspectingExpense.profitMade) > 0
-                                        ? 'bg-emerald-950 text-emerald-400 border-emerald-500/30'
-                                        : 'bg-red-950 text-red-400 border-red-500/30'
+                                        ? 'bg-emerald-950 text-emerald-300'
+                                        : 'bg-red-950 text-red-300'
                                 }`}>
                                     {inspectingExpense.category || 'Financial Entry'}
                                 </span>
-                                <h3 className="text-sm font-black text-white mt-0.5">
+                                <h3 className="text-sm font-black text-white mt-1">
                                     {inspectingExpense.profitName || inspectingExpense.expenseName || inspectingExpense.description}
                                 </h3>
-                                <p className="text-[10px] text-zinc-400 mt-0.5">
+                                <p className="text-[10px] text-zinc-400 font-mono mt-0.5">
                                     Date: {new Date(inspectingExpense.date || inspectingExpense.profitDate || Date.now()).toLocaleString()}
                                 </p>
                             </div>
 
                             <div className="text-right">
-                                <p className="text-[9px] text-zinc-400 uppercase font-black">
+                                <p className="text-[9px] text-zinc-400 uppercase font-mono font-bold">
                                     {inspectingExpense.profitMade && Number(inspectingExpense.profitMade) > 0 ? 'Profit Realized' : 'Price Paid'}
                                 </p>
                                 <p className={`text-xl font-mono font-black ${
@@ -2246,32 +1908,17 @@ export const FinanceTab: React.FC<{
                         </div>
 
                         {(inspectingExpense.expenseReason || inspectingExpense.profitReason) && (
-                            <div className="p-2.5 bg-zinc-900/50 border border-zinc-800">
-                                <p className="text-[9px] text-zinc-400 uppercase font-black mb-0.5">Operational Reason / Purpose</p>
-                                <p className="text-zinc-200 leading-relaxed text-xs">
-                                    {inspectingExpense.profitReason || inspectingExpense.expenseReason}
+                            <div className="p-2.5 rounded-xl bg-zinc-900/80 shadow-inner">
+                                <p className="text-[9px] text-zinc-400 uppercase font-mono font-bold mb-0.5">Operational Reason / Purpose</p>
+                                <p className="text-zinc-200 text-xs">
+                                    "{inspectingExpense.profitReason || inspectingExpense.expenseReason}"
                                 </p>
                             </div>
                         )}
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-[10px]">
-                            <div className="p-1.5 bg-zinc-900 border border-zinc-800/80">
-                                <span className="text-zinc-500 block text-[8px] uppercase font-bold">Payment Method</span>
-                                <span className="text-white font-semibold">{inspectingExpense.paymentMethod || 'EFT'}</span>
-                            </div>
-                            <div className="p-1.5 bg-zinc-900 border border-zinc-800/80">
-                                <span className="text-zinc-500 block text-[8px] uppercase font-bold">Paid To / Vendor</span>
-                                <span className="text-white font-semibold">{inspectingExpense.paidTo || 'Direct / Armory'}</span>
-                            </div>
-                            <div className="p-1.5 bg-zinc-900 border border-zinc-800/80">
-                                <span className="text-zinc-500 block text-[8px] uppercase font-bold">Slip Ref / Invoice</span>
-                                <span className="text-white font-semibold">{inspectingExpense.notes || inspectingExpense.receiptNumber || 'None'}</span>
-                            </div>
-                        </div>
-
-                        <div className="p-2.5 bg-zinc-950 border border-zinc-800">
-                            <div className="flex items-center justify-between mb-1.5">
-                                <span className="font-bold text-zinc-300 flex items-center gap-1 text-[11px]">
+                        <div className="p-3 rounded-2xl bg-zinc-950 shadow-inner space-y-1.5">
+                            <div className="flex items-center justify-between">
+                                <span className="font-bold text-zinc-300 flex items-center gap-1.5 text-xs font-mono">
                                     <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
                                     <span>Slip / Proof of Payment Document</span>
                                 </span>
@@ -2280,7 +1927,7 @@ export const FinanceTab: React.FC<{
                                         <button
                                             type="button"
                                             onClick={() => setZoomSlip(!zoomSlip)}
-                                            className="text-[9px] text-zinc-400 hover:text-white flex items-center gap-0.5"
+                                            className="text-[9px] text-zinc-400 hover:text-white flex items-center gap-0.5 font-mono"
                                         >
                                             <ZoomIn className="w-3 h-3" /> {zoomSlip ? 'Fit View' : 'Zoom Slip'}
                                         </button>
@@ -2288,7 +1935,7 @@ export const FinanceTab: React.FC<{
                                             href={inspectingExpense.receiptImageUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="text-[9px] text-blue-400 hover:underline"
+                                            className="text-[9px] text-blue-400 hover:underline font-mono"
                                         >
                                             Open Full
                                         </a>
@@ -2297,7 +1944,7 @@ export const FinanceTab: React.FC<{
                             </div>
 
                             {inspectingExpense.receiptImageUrl ? (
-                                <div className={`relative overflow-hidden bg-black border border-zinc-800 flex items-center justify-center ${zoomSlip ? 'max-h-[500px]' : 'max-h-64'}`}>
+                                <div className={`relative overflow-hidden rounded-xl bg-black flex items-center justify-center ${zoomSlip ? 'max-h-[500px]' : 'max-h-64'}`}>
                                     <img
                                         src={inspectingExpense.receiptImageUrl}
                                         alt="Expense Slip Proof"
@@ -2306,21 +1953,21 @@ export const FinanceTab: React.FC<{
                                     />
                                 </div>
                             ) : (
-                                <div className="py-6 px-3 text-center border border-dashed border-zinc-800 text-zinc-500">
+                                <div className="py-6 px-3 text-center rounded-xl bg-zinc-900/40 text-zinc-500">
                                     <Receipt className="w-6 h-6 mx-auto mb-1 opacity-50" />
-                                    <p className="font-semibold text-[10px]">No digital slip image was attached to this transaction.</p>
+                                    <p className="font-mono text-[10px]">No digital slip image was attached to this transaction.</p>
                                 </div>
                             )}
                         </div>
 
-                        <div className="sticky bottom-0 bg-zinc-900/95 -mx-3 -mb-3 sm:-mx-5 sm:-mb-5 p-2.5 sm:p-3 border-t border-zinc-800 backdrop-blur-md z-20 flex items-center justify-between">
+                        <div className="pt-2 flex items-center justify-between border-t border-white/5">
                             <Button
                                 variant="secondary"
                                 size="sm"
                                 onClick={() => handleDeleteExpense(inspectingExpense)}
                                 className="!text-red-400 hover:!bg-red-950/40 text-xs"
                             >
-                                <Trash2 className="w-3 h-3 mr-1" /> Delete
+                                <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
                             </Button>
 
                             <div className="flex items-center gap-1.5">
@@ -2338,24 +1985,13 @@ export const FinanceTab: React.FC<{
                                     }}
                                     className="text-xs"
                                 >
-                                    <Edit3 className="w-3 h-3 mr-1" /> Edit
-                                </Button>
-                                <Button
-                                    variant="danger"
-                                    size="sm"
-                                    onClick={() => {
-                                        window.print();
-                                    }}
-                                    className="text-xs"
-                                >
-                                    <PrinterIcon className="w-3 h-3 mr-1" /> Print Voucher
+                                    <Edit3 className="w-3.5 h-3.5 mr-1" /> Edit
                                 </Button>
                             </div>
                         </div>
                     </div>
                 </Modal>
             )}
-
         </div>
     );
 };
